@@ -16,6 +16,7 @@ builder.Services.AddOptions<StravaOptions>()
 builder.Services.AddHttpClient<StravaClient>();
 builder.Services.AddSingleton<StravaRateLimits>();
 builder.Services.AddScoped<RunImport>();
+builder.Services.AddScoped<RunDetailImport>();
 builder.Services.AddSingleton<SyncWorker>();
 builder.Services.AddHostedService(services => services.GetRequiredService<SyncWorker>());
 

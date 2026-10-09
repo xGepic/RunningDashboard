@@ -114,6 +114,7 @@ public sealed record SyncStatusResponse(
     DateTimeOffset? LastSyncedAt,
     string? Phase = null,
     int ImportedRuns = 0,
+    int DetailedRuns = 0,
     DateTimeOffset? PausedUntil = null,
     string? LastError = null,
     bool ReconnectRequired = false);

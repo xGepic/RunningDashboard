@@ -4,9 +4,11 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 /** As returned by GET/POST /api/sync. */
 export interface SyncStatus {
   running: boolean;
-  phase: 'idle' | 'importing-runs';
+  phase: 'idle' | 'importing-runs' | 'importing-details';
   /** Runs stored so far. */
   importedRuns: number;
+  /** Runs whose Best Efforts and splits have been fetched. */
+  detailedRuns: number;
   /** Set while the sync waits for Strava's rate limit to reset. */
   pausedUntil: string | null;
   lastSyncedAt: string | null;

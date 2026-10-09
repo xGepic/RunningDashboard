@@ -19,6 +19,7 @@ public sealed class SyncWorker(
     private readonly Lock _lock = new();
     private bool _running;
     private bool _followUpRequested;
+    private string _phase = SyncPhase.Idle;
 
     public bool IsRunning
     {
@@ -45,19 +46,27 @@ public sealed class SyncWorker(
             }
 
             _running = true;
+            _phase = SyncPhase.ImportingRuns;
             _syncRequested.Release();
         }
     }
 
     public async Task<SyncStatus> GetStatusAsync(AppDbContext db, CancellationToken cancellationToken)
     {
-        var running = IsRunning;
         var state = await db.GetSyncStateAsync(cancellationToken);
         var importedRuns = await db.Runs.CountAsync(cancellationToken);
+        var detailedRuns = await db.Runs.CountAsync(r => r.DetailFetchedAt != null, cancellationToken);
+
+        // Read after the counts, so the phase is never older than them.
+        bool running;
+        string phase;
+        lock (_lock)
+            (running, phase) = (_running, _running ? _phase : SyncPhase.Idle);
         return new SyncStatus(
             running,
-            running ? SyncPhase.ImportingRuns : SyncPhase.Idle,
+            phase,
             importedRuns,
+            detailedRuns,
             running ? rateLimits.PausedUntil : null,
             state.LastSyncedAt,
             state.LastError,
@@ -90,7 +99,10 @@ public sealed class SyncWorker(
                 {
                     _running = _followUpRequested;
                     if (_followUpRequested)
+                    {
+                        _phase = SyncPhase.ImportingRuns;
                         _syncRequested.Release();
+                    }
                     _followUpRequested = false;
                 }
             }
@@ -102,8 +114,14 @@ public sealed class SyncWorker(
         Action<SyncState> outcome;
         try
         {
+            SetPhase(SyncPhase.ImportingRuns);
             using (var scope = scopes.CreateScope())
                 await scope.ServiceProvider.GetRequiredService<RunImport>().ImportAsync(stoppingToken);
+
+            SetPhase(SyncPhase.ImportingDetails);
+            using (var scope = scopes.CreateScope())
+                await scope.ServiceProvider.GetRequiredService<RunDetailImport>().ImportAsync(stoppingToken);
+
             var now = clock.GetUtcNow();
             outcome = state => state.Succeeded(now);
         }
@@ -125,6 +143,12 @@ public sealed class SyncWorker(
         await db.SaveChangesAsync(stoppingToken);
     }
 
+    private void SetPhase(string phase)
+    {
+        lock (_lock)
+            _phase = phase;
+    }
+
     /// <remarks>Never throws: a failure here must not stop the backend.</remarks>
     private async Task RequestSyncIfConnectedAsync(CancellationToken cancellationToken)
     {
@@ -144,16 +168,22 @@ public sealed class SyncWorker(
 public static class SyncPhase
 {
     public const string Idle = "idle";
+    /// <summary>Walking through the Activity summaries and storing the Runs.</summary>
     public const string ImportingRuns = "importing-runs";
+
+    /// <summary>Fetching the detailed Activity (Best Efforts, splits) of each Run that has none yet.</summary>
+    public const string ImportingDetails = "importing-details";
 }
 
 /// <param name="Phase">One of <see cref="SyncPhase"/>.</param>
 /// <param name="ImportedRuns">Runs stored so far.</param>
+/// <param name="DetailedRuns">Runs whose detailed Activity has been fetched.</param>
 /// <param name="PausedUntil">Set while the sync waits for Strava's rate limit to reset.</param>
 public sealed record SyncStatus(
     bool Running,
     string Phase,
     int ImportedRuns,
+    int DetailedRuns,
     DateTimeOffset? PausedUntil,
     DateTimeOffset? LastSyncedAt,
     string? LastError,

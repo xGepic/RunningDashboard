@@ -40,18 +40,61 @@ public sealed class Run
 
     public required string RawSummaryJson { get; set; }
 
+    /// <summary>When the detailed Activity was fetched; null while it is still to be fetched.</summary>
+    public DateTimeOffset? DetailFetchedAt { get; set; }
+
+    /// <summary>Strava's detailed Activity; null if not fetched yet or Strava no longer had it.</summary>
+    public string? RawDetailJson { get; set; }
+
+    public List<BestEffort> BestEfforts { get; } = [];
+
+    public List<Split> Splits { get; } = [];
+
     public static bool IsRunningSportType(string sportType) => RunningSportTypes.Contains(sportType);
 
     /// <summary>
     /// Pace: Moving Time per kilometre, in seconds. A Run without distance has none.
     /// </summary>
-    public static double? PaceOf(int movingTime, double distance) => distance > 0 ? movingTime / (distance / 1000) : null;
+    public static double? PaceOf(int movingTime, double distance) => PerKilometre(movingTime, distance);
+
+    /// <summary>Seconds per kilometre for <paramref name="seconds"/> over <paramref name="distance"/> metres.</summary>
+    public static double? PerKilometre(int seconds, double distance) => distance > 0 ? seconds / (distance / 1000) : null;
+
+    public RunDetailStatus DetailStatus => (DetailFetchedAt, RawDetailJson) switch
+    {
+        (null, _) => RunDetailStatus.Pending,
+        (_, null) => RunDetailStatus.Unavailable,
+        _ => RunDetailStatus.Loaded,
+    };
 
     public static Run From(StravaActivity activity)
     {
         var run = new Run { Id = activity.Id, Name = activity.Name, SportType = activity.SportType, RawSummaryJson = activity.RawJson };
         run.UpdateFrom(activity);
         return run;
+    }
+
+    /// <summary>
+    /// Replaces Best Efforts and splits with those of the detailed Activity; null when Strava no longer has it.
+    /// </summary>
+    public void UseDetail(StravaActivityDetail? detail, DateTimeOffset now)
+    {
+        DetailFetchedAt = now;
+        RawDetailJson = detail?.RawJson;
+        BestEfforts.Clear();
+        Splits.Clear();
+        if (detail is null)
+            return;
+
+        BestEfforts.AddRange(detail.BestEfforts.Select(e => new BestEffort { Name = e.Name, Distance = e.Distance, ElapsedTime = e.ElapsedTime }));
+        Splits.AddRange(detail.Splits.Select(s => new Split
+        {
+            Index = s.Index,
+            Distance = s.Distance,
+            MovingTime = s.MovingTime,
+            ElapsedTime = s.ElapsedTime,
+            ElevationDifference = s.ElevationDifference,
+        }));
     }
 
     public void UpdateFrom(StravaActivity activity)
@@ -68,4 +111,16 @@ public sealed class Run
         ShoeId = activity.GearId;
         RawSummaryJson = activity.RawJson;
     }
+}
+
+public enum RunDetailStatus
+{
+    /// <summary>The import has not fetched the detailed Activity yet.</summary>
+    Pending,
+
+    /// <summary>Best Efforts and splits are stored.</summary>
+    Loaded,
+
+    /// <summary>Strava no longer had the detailed Activity (it answered 404).</summary>
+    Unavailable,
 }

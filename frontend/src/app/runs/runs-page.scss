@@ -3,40 +3,17 @@ h1 {
   font-size: 1.4rem;
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: var(--surface);
-  font-size: 0.9rem;
-}
-
-th,
-td {
-  padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid var(--border);
-  text-align: left;
-}
-
-th {
-  color: var(--text-muted);
-  font-weight: 600;
-}
-
-.number {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
 .date {
   white-space: nowrap;
   color: var(--text-muted);
 }
 
-.empty {
-  color: var(--text-muted);
-}
+td a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
 
-.error {
-  color: var(--error);
+  &:hover {
+    text-decoration: underline;
+  }
 }

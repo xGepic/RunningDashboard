@@ -12,10 +12,65 @@ public static class RunEndpoints
                 .OrderByDescending(r => r.StartUtc)
                 .Select(r => new RunResponse(r.Id, r.Name, r.SportType, r.StartLocal, r.Distance, r.MovingTime, Run.PaceOf(r.MovingTime, r.Distance)))
                 .ToListAsync(cancellationToken));
+
+        app.MapGet("/api/runs/{id:long}", async (long id, AppDbContext db, CancellationToken cancellationToken) =>
+        {
+            var run = await db.Runs
+                .Include(r => r.BestEfforts)
+                .Include(r => r.Splits)
+                .SingleOrDefaultAsync(r => r.Id == id, cancellationToken);
+
+            return run is null ? Results.NotFound() : Results.Ok(RunDetailResponse.From(run));
+        });
     }
 
     /// <param name="Distance">Metres.</param>
     /// <param name="MovingTime">Seconds.</param>
     /// <param name="Pace">Seconds per kilometre.</param>
     private sealed record RunResponse(long Id, string Name, string SportType, DateTime StartLocal, double Distance, int MovingTime, double? Pace);
+
+    /// <param name="Detail">"pending", "loaded" or "unavailable": whether Best Efforts and splits are in.</param>
+    private sealed record RunDetailResponse(
+        long Id,
+        string Name,
+        string SportType,
+        DateTime StartLocal,
+        double Distance,
+        int MovingTime,
+        int ElapsedTime,
+        double? Pace,
+        double ElevationGain,
+        double? RelativeEffort,
+        string StravaUrl,
+        string Detail,
+        IReadOnlyList<BestEffortResponse> BestEfforts,
+        IReadOnlyList<SplitResponse> Splits)
+    {
+        public static RunDetailResponse From(Run run) => new(
+            run.Id,
+            run.Name,
+            run.SportType,
+            run.StartLocal,
+            run.Distance,
+            run.MovingTime,
+            run.ElapsedTime,
+            Run.PaceOf(run.MovingTime, run.Distance),
+            run.ElevationGain,
+            run.RelativeEffort,
+            $"https://www.strava.com/activities/{run.Id}",
+            run.DetailStatus.ToString().ToLowerInvariant(),
+            run.BestEfforts
+                .OrderBy(e => e.Distance)
+                .Select(e => new BestEffortResponse(e.Name, e.Distance, e.ElapsedTime, Run.PerKilometre(e.ElapsedTime, e.Distance)))
+                .ToList(),
+            run.Splits
+                .OrderBy(s => s.Index)
+                .Select(s => new SplitResponse(s.Index, s.Distance, s.MovingTime, Run.PaceOf(s.MovingTime, s.Distance), s.ElevationDifference))
+                .ToList());
+    }
+
+    /// <param name="TimePerKm">Elapsed time per kilometre, in seconds. Not Pace, which is Moving Time based.</param>
+    private sealed record BestEffortResponse(string Name, double Distance, int ElapsedTime, double? TimePerKm);
+
+    private sealed record SplitResponse(int Index, double Distance, int MovingTime, double? Pace, double ElevationDifference);
 }

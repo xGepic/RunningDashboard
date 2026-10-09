@@ -39,6 +39,10 @@ _Avoid_: Gear (when only shoes are meant), sneaker
 Strava's fastest time over a standard distance (e.g. 1k, 5k, 10k, half marathon, marathon) within a single Run, including parts of longer Runs.
 _Avoid_: Split, segment
 
+**Split**:
+One kilometre of a single Run as Strava divides it, with its own Moving Time and Pace; the last Split is usually shorter. Not the same as a Best Effort.
+_Avoid_: Lap, km segment
+
 **Personal Best**:
 The fastest Best Effort for a standard distance across all Runs.
 _Avoid_: PR, record

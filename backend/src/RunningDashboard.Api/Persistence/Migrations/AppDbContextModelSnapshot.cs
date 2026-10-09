@@ -17,10 +17,40 @@ namespace RunningDashboard.Api.Persistence.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
 
+            modelBuilder.Entity("RunningDashboard.Api.Persistence.BestEffort", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("Distance")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("ElapsedTime")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("RunId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RunId");
+
+                    b.ToTable("BestEffort");
+                });
+
             modelBuilder.Entity("RunningDashboard.Api.Persistence.Run", b =>
                 {
                     b.Property<long>("Id")
                         .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset?>("DetailFetchedAt")
+                        .HasColumnType("TEXT");
 
                     b.Property<double>("Distance")
                         .HasColumnType("REAL");
@@ -36,6 +66,9 @@ namespace RunningDashboard.Api.Persistence.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RawDetailJson")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("RawSummaryJson")
@@ -65,6 +98,31 @@ namespace RunningDashboard.Api.Persistence.Migrations
                     b.HasIndex("StartUtc");
 
                     b.ToTable("Runs");
+                });
+
+            modelBuilder.Entity("RunningDashboard.Api.Persistence.Split", b =>
+                {
+                    b.Property<long>("RunId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Index")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("Distance")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("ElapsedTime")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("ElevationDifference")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("MovingTime")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("RunId", "Index");
+
+                    b.ToTable("Split");
                 });
 
             modelBuilder.Entity("RunningDashboard.Api.Persistence.StravaConnection", b =>
@@ -124,6 +182,31 @@ namespace RunningDashboard.Api.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("SyncStates");
+                });
+
+            modelBuilder.Entity("RunningDashboard.Api.Persistence.BestEffort", b =>
+                {
+                    b.HasOne("RunningDashboard.Api.Persistence.Run", null)
+                        .WithMany("BestEfforts")
+                        .HasForeignKey("RunId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("RunningDashboard.Api.Persistence.Split", b =>
+                {
+                    b.HasOne("RunningDashboard.Api.Persistence.Run", null)
+                        .WithMany("Splits")
+                        .HasForeignKey("RunId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("RunningDashboard.Api.Persistence.Run", b =>
+                {
+                    b.Navigation("BestEfforts");
+
+                    b.Navigation("Splits");
                 });
 #pragma warning restore 612, 618
         }

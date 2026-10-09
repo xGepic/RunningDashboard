@@ -1,4 +1,5 @@
 import { DatePipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { httpResource } from '@angular/common/http';
 import { Component, effect, inject, untracked } from '@angular/core';
 import { formatDistance, formatDuration, formatPace } from '../shared/format';
@@ -7,7 +8,7 @@ import { Run } from './run';
 
 @Component({
   selector: 'app-runs-page',
-  imports: [DatePipe],
+  imports: [DatePipe, RouterLink],
   templateUrl: './runs-page.html',
   styleUrl: './runs-page.scss',
 })

@@ -20,6 +20,7 @@ public sealed class StravaClient(
 {
     private static readonly Uri TokenUrl = new("https://www.strava.com/oauth/token");
     private const string ActivitiesUrl = "https://www.strava.com/api/v3/athlete/activities";
+    private const string ActivityUrl = "https://www.strava.com/api/v3/activities/";
     private const int ActivitiesPerPage = 200;
 
     /// <summary>Refresh this long before Strava's expiry, so a token never runs out mid-request.</summary>
@@ -81,6 +82,33 @@ public sealed class StravaClient(
     }
 
     /// <summary>
+    /// The detailed Activity with its Best Efforts and metric splits; null if Strava no longer has it.
+    /// </summary>
+    public async Task<StravaActivityDetail?> GetActivityDetailAsync(long activityId, CancellationToken cancellationToken)
+    {
+        HttpResponseMessage response;
+        try
+        {
+            response = await SendApiRequestAsync($"{ActivityUrl}{activityId}", cancellationToken);
+        }
+        catch (HttpRequestException exception) when (exception.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        using (response)
+        {
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            var detail = JsonSerializer.Deserialize<ActivityDetailResponse>(json, SnakeCaseJson)!;
+            return new StravaActivityDetail(
+                detail.Id,
+                (detail.BestEfforts ?? []).Select(e => new StravaBestEffort(e.Name, e.Distance, e.ElapsedTime)).ToList(),
+                (detail.SplitsMetric ?? []).Select(s => new StravaSplit(s.Split, s.Distance, s.MovingTime, s.ElapsedTime, s.ElevationDifference ?? 0)).ToList(),
+                json);
+        }
+    }
+
+    /// <summary>
     /// GETs from the API within Strava's rate limits; a 429 waits for the next window and tries again. A refused
     /// access token is refreshed once and tried again; refused again, only reconnecting helps.
     /// </summary>
@@ -112,7 +140,13 @@ public sealed class StravaClient(
                 continue;
             }
 
-            response.EnsureSuccessStatusCode();
+            if (!response.IsSuccessStatusCode)
+            {
+                var status = response.StatusCode;
+                response.Dispose();
+                throw new HttpRequestException($"Strava answered {(int)status} ({status}) for {url}.", null, status);
+            }
+
             return response;
         }
     }
@@ -170,6 +204,12 @@ public sealed class StravaClient(
         double? SufferScore,
         string? GearId);
 
+    private sealed record ActivityDetailResponse(long Id, List<BestEffortResponse>? BestEfforts, List<SplitResponse>? SplitsMetric);
+
+    private sealed record BestEffortResponse(string Name, double Distance, int ElapsedTime);
+
+    private sealed record SplitResponse(int Split, double Distance, int MovingTime, int ElapsedTime, double? ElevationDifference);
+
     /// <param name="Athlete">Only sent when exchanging an authorization code, not when refreshing.</param>
     private sealed record TokenResponse(string AccessToken, string RefreshToken, long ExpiresAt, AthleteResponse? Athlete);
 
@@ -196,6 +236,17 @@ public sealed record StravaActivity(
     double? RelativeEffort,
     string? GearId,
     string RawJson);
+
+/// <summary>
+/// A detailed Activity: what the summary lacks. <see cref="RawJson"/> is the untouched JSON.
+/// </summary>
+public sealed record StravaActivityDetail(long Id, IReadOnlyList<StravaBestEffort> BestEfforts, IReadOnlyList<StravaSplit> Splits, string RawJson);
+
+/// <param name="Name">Strava's name for the distance, e.g. "5K".</param>
+public sealed record StravaBestEffort(string Name, double Distance, int ElapsedTime);
+
+/// <param name="Index">1-based.</param>
+public sealed record StravaSplit(int Index, double Distance, int MovingTime, int ElapsedTime, double ElevationDifference);
 
 /// <summary>
 /// Strava no longer accepts the app's tokens; only the Athlete connecting again fixes it.

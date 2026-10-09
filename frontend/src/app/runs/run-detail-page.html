@@ -1,0 +1,78 @@
+<a class="back" routerLink="/runs">← Runs</a>
+
+@if (run.value(); as run) {
+  <header>
+    <h1>{{ run.name }}</h1>
+    <p class="when">{{ run.startLocal | date: 'EEEE d MMMM y, HH:mm' }}</p>
+    <a class="strava" [href]="run.stravaUrl" target="_blank" rel="noopener">View on Strava</a>
+  </header>
+
+  <dl class="summary">
+    <div><dt>Distance</dt><dd>{{ formatDistance(run.distance) }}</dd></div>
+    <div><dt>Moving Time</dt><dd>{{ formatDuration(run.movingTime) }}</dd></div>
+    <div><dt>Elapsed time</dt><dd>{{ formatDuration(run.elapsedTime) }}</dd></div>
+    <div><dt>Pace</dt><dd>{{ formatPace(run.pace) }}</dd></div>
+    <div><dt>Elevation gain</dt><dd>{{ run.elevationGain | number: '1.0-0' }} m</dd></div>
+    <div><dt>Relative Effort</dt><dd>{{ run.relativeEffort ?? '–' }}</dd></div>
+  </dl>
+
+  @if (run.detail === 'pending') {
+    <p class="empty">Best Efforts and Splits are still being loaded from Strava.</p>
+  } @else if (run.detail === 'unavailable') {
+    <p class="empty">Strava no longer has the details of this Run, so there are no Best Efforts or Splits.</p>
+  } @else {
+    <section>
+      <h2>Best Efforts</h2>
+      @if (run.bestEfforts.length === 0) {
+        <p class="empty">No Best Efforts for this Run.</p>
+      } @else {
+        <table class="data-table">
+          <thead>
+            <tr><th>Distance</th><th class="number">Time</th><th class="number">Per km</th></tr>
+          </thead>
+          <tbody>
+            @for (effort of run.bestEfforts; track effort.name) {
+              <tr>
+                <td>{{ effort.name }}</td>
+                <td class="number">{{ formatDuration(effort.elapsedTime) }}</td>
+                <td class="number">{{ formatPace(effort.timePerKm) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </section>
+
+    <section>
+      <h2>Splits</h2>
+      @if (run.splits.length === 0) {
+        <p class="empty">No Splits for this Run.</p>
+      } @else {
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>km</th>
+              <th class="number">Distance</th>
+              <th class="number">Moving Time</th>
+              <th class="number">Pace</th>
+              <th class="number">Elevation</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (split of run.splits; track split.index) {
+              <tr>
+                <td>{{ split.index }}</td>
+                <td class="number">{{ formatDistance(split.distance) }}</td>
+                <td class="number">{{ formatDuration(split.movingTime) }}</td>
+                <td class="number">{{ formatPace(split.pace) }}</td>
+                <td class="number">{{ split.elevationDifference | number: '1.0-1' }} m</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </section>
+  }
+} @else if (run.error()) {
+  <p class="error" role="alert">This Run could not be loaded.</p>
+}

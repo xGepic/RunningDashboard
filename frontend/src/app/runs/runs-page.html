@@ -4,7 +4,7 @@
   @if (runs.length === 0) {
     <p class="empty">No Runs yet. Connect Strava and sync to import them.</p>
   } @else {
-    <table>
+    <table class="data-table">
       <thead>
         <tr>
           <th>Date</th>
@@ -18,7 +18,7 @@
         @for (run of runs; track run.id) {
           <tr>
             <td class="date">{{ run.startLocal | date: 'EEE d MMM y, HH:mm' }}</td>
-            <td>{{ run.name }}</td>
+            <td><a [routerLink]="['/runs', run.id]">{{ run.name }}</a></td>
             <td class="number">{{ formatDistance(run.distance) }}</td>
             <td class="number">{{ formatDuration(run.movingTime) }}</td>
             <td class="number">{{ formatPace(run.pace) }}</td>

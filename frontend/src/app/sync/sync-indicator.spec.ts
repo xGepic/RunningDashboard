@@ -9,6 +9,7 @@ describe('SyncIndicator', () => {
     running: false,
     phase: 'idle',
     importedRuns: 540,
+    detailedRuns: 540,
     pausedUntil: null,
     lastSyncedAt: '2026-10-09T18:00:00+00:00',
     lastError: null,
@@ -40,6 +41,19 @@ describe('SyncIndicator', () => {
     expect(element.textContent).toContain('312 Runs');
     expect(element.textContent).toContain('Paused for Strava’s rate limit until');
     expect(element.querySelector('button')?.disabled).toBe(true);
+  });
+
+  it('shows how many Runs are detailed while Run details load', async () => {
+    const element = await render({
+      ...idle,
+      running: true,
+      phase: 'importing-details',
+      importedRuns: 540,
+      detailedRuns: 312,
+    });
+
+    expect(element.textContent).toContain('Loading Run details');
+    expect(element.textContent).toContain('312 of 540 Runs detailed');
   });
 
   it('asks to reconnect Strava when access was lost', async () => {
