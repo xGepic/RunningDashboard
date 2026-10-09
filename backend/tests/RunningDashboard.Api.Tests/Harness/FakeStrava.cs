@@ -5,10 +5,17 @@ namespace RunningDashboard.Api.Tests.Harness;
 
 /// <summary>
 /// Stands in for strava.com at the HTTP level. Responses are Strava JSON from the Fixtures/Strava folder,
-/// queued per path and served in order; every request the app sends is kept for assertions.
+/// queued per path and served in order; every request the app sends is kept for assertions. The sync's recheck of the
+/// most recent Activities has its own queue (<see cref="RecentActivitiesPath"/>) and finds none unless a test queues
+/// some. Anything else without a queued response is 404 (as for an Activity Strava does not have).
 /// </summary>
 public sealed class FakeStrava : HttpMessageHandler
 {
+    private const string ActivityListPath = "/api/v3/athlete/activities";
+
+    /// <summary>Queue responses here for the sync's one request for the 20 most recent Activities.</summary>
+    public const string RecentActivitiesPath = ActivityListPath + "#recent";
+
     private readonly Dictionary<(HttpMethod, string), Queue<Func<Task<HttpResponseMessage>>>> _responses = new();
 
     public List<RecordedRequest> Requests { get; } = [];
@@ -47,6 +54,12 @@ public sealed class FakeStrava : HttpMessageHandler
             "application/json"),
     };
 
+    private static string QueuePath(HttpRequestMessage request)
+    {
+        var path = request.RequestUri!.AbsolutePath;
+        return path == ActivityListPath && request.RequestUri.Query.Contains("per_page=20&") ? RecentActivitiesPath : path;
+    }
+
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         var body = request.Content is null ? null : await request.Content.ReadAsStringAsync(cancellationToken);
@@ -54,16 +67,20 @@ public sealed class FakeStrava : HttpMessageHandler
         lock (_responses)
         {
             Requests.Add(new RecordedRequest(request.RequestUri!, request.Headers.Authorization?.ToString(), body));
-            if (_responses.TryGetValue((request.Method, request.RequestUri!.AbsolutePath), out var queue) && queue.Count > 0)
+            if (_responses.TryGetValue((request.Method, QueuePath(request)), out var queue) && queue.Count > 0)
                 respond = queue.Dequeue();
         }
 
-        return respond is not null
-            ? await respond().WaitAsync(cancellationToken)
-            : new HttpResponseMessage(HttpStatusCode.NotFound)
-            {
-                Content = new StringContent($"FakeStrava has no response for {request.Method} {request.RequestUri}"),
-            };
+        if (respond is not null)
+            return await respond().WaitAsync(cancellationToken);
+
+        if (request.Method == HttpMethod.Get && QueuePath(request) == RecentActivitiesPath)
+            return FixtureResponse("activities-empty.json");
+
+        return new HttpResponseMessage(HttpStatusCode.NotFound)
+        {
+            Content = new StringContent($"FakeStrava has no response for {request.Method} {request.RequestUri}"),
+        };
     }
 }
 

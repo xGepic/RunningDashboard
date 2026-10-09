@@ -17,6 +17,16 @@ public sealed class SyncState
     /// </summary>
     public DateTime? ImportCursor { get; set; }
 
+    /// <summary>
+    /// The first import has walked back through the whole history; from now on syncs fetch only what is new.
+    /// </summary>
+    public bool InitialImportCompleted { get; set; }
+
+    /// <summary>
+    /// The start (UTC) of the newest Activity of any sport seen so far; later syncs fetch only what started after it.
+    /// </summary>
+    public DateTime? LatestActivityStart { get; set; }
+
     public string? LastError { get; set; }
 
     /// <summary>Strava no longer accepts the app's tokens; syncing stays broken until the Athlete reconnects.</summary>

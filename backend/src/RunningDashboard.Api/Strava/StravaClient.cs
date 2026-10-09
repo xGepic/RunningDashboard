@@ -21,7 +21,6 @@ public sealed class StravaClient(
     private static readonly Uri TokenUrl = new("https://www.strava.com/oauth/token");
     private const string ActivitiesUrl = "https://www.strava.com/api/v3/athlete/activities";
     private const string ActivityUrl = "https://www.strava.com/api/v3/activities/";
-    private const int ActivitiesPerPage = 200;
 
     /// <summary>Refresh this long before Strava's expiry, so a token never runs out mid-request.</summary>
     private static readonly TimeSpan RefreshMargin = TimeSpan.FromMinutes(5);
@@ -50,14 +49,16 @@ public sealed class StravaClient(
     }
 
     /// <summary>
-    /// The newest page of the athlete's Activities of any sport that started before <paramref name="before"/>
-    /// (UTC; all when null), newest first. An empty page means there are no more.
+    /// One page of the athlete's Activities of any sport. Strava lists them newest first, except with only
+    /// <see cref="ActivityQuery.After"/> (oldest first). An empty page means there are no more.
     /// </summary>
-    public async Task<IReadOnlyList<StravaActivity>> ListActivitiesAsync(DateTime? before, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<StravaActivity>> ListActivitiesAsync(ActivityQuery query, CancellationToken cancellationToken)
     {
-        var url = $"{ActivitiesUrl}?per_page={ActivitiesPerPage}";
-        if (before is { } cursor)
-            url += $"&before={new DateTimeOffset(cursor, TimeSpan.Zero).ToUnixTimeSeconds()}";
+        var url = $"{ActivitiesUrl}?per_page={query.PerPage}&page={query.Page}";
+        if (query.Before is { } before)
+            url += $"&before={new DateTimeOffset(before, TimeSpan.Zero).ToUnixTimeSeconds()}";
+        if (query.After is { } after)
+            url += $"&after={new DateTimeOffset(after, TimeSpan.Zero).ToUnixTimeSeconds()}";
         using var response = await SendApiRequestAsync(url, cancellationToken);
 
         using var json = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
@@ -219,6 +220,11 @@ public sealed class StravaClient(
 public sealed record StravaAthlete(long Id, string FirstName, string LastName);
 
 public sealed record StravaTokenGrant(StravaAthlete Athlete, string AccessToken, string RefreshToken, DateTimeOffset ExpiresAt);
+
+/// <summary>
+/// Which Activities to list: started strictly before / after the given UTC times (whole seconds), one page of them.
+/// </summary>
+public sealed record ActivityQuery(DateTime? Before = null, DateTime? After = null, int Page = 1, int PerPage = 200);
 
 /// <summary>
 /// An Activity summary as listed by Strava; <see cref="RawJson"/> is the untouched JSON for later re-derivation.

@@ -42,9 +42,11 @@ public sealed class TokenRefreshTests : IAsyncLifetime
         Assert.Equal("e5n567567a8f9b0c1d2e3f4a5b6c7d8e9f0a1b2c", form["refresh_token"]);
         Assert.Equal(TestApp.ClientId, form["client_id"]);
         Assert.Equal(TestApp.ClientSecret, form["client_secret"]);
-        Assert.Equal(
-            [ConnectAccessToken, RefreshedAccessToken, RefreshedAccessToken],
-            _app.Strava.Requests.Where(r => r.Uri.AbsolutePath == ActivitiesPath).Select(r => r.Authorization));
+        var refreshAt = _app.Strava.Requests.IndexOf(refresh);
+        var listTokens = _app.Strava.Requests.Select((r, i) => (Request: r, Index: i)).Where(x => x.Request.Uri.AbsolutePath == ActivitiesPath).ToList();
+        Assert.All(listTokens.Where(x => x.Index < refreshAt), x => Assert.Equal(ConnectAccessToken, x.Request.Authorization));
+        Assert.All(listTokens.Where(x => x.Index > refreshAt), x => Assert.Equal(RefreshedAccessToken, x.Request.Authorization));
+        Assert.Contains(listTokens, x => x.Index > refreshAt);
     }
 
     [Fact]

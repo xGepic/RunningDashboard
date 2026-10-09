@@ -170,10 +170,16 @@ namespace RunningDashboard.Api.Persistence.Migrations
                     b.Property<DateTime?>("ImportCursor")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("InitialImportCompleted")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("LastError")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTimeOffset?>("LastSyncedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LatestActivityStart")
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("ReconnectRequired")

@@ -84,7 +84,7 @@ public sealed class ImportRunsTests : IAsyncLifetime
         await TestApp.WaitForSyncAsync(browser);
 
         Assert.True(status!.Running);
-        Assert.Single(_app.Strava.Requests, r => r.Uri.AbsolutePath == ActivitiesPath && !r.Uri.Query.Contains("before="));
+        Assert.Single(_app.Strava.Requests, r => r.Uri.AbsolutePath == ActivitiesPath && r.Uri.Query.Contains("per_page=200&") && !r.Uri.Query.Contains("before="));
         Assert.Equal(5, (await GetRunsAsync(browser)).Count);
     }
 
@@ -171,6 +171,26 @@ public sealed class ImportRunsTests : IAsyncLifetime
         {
             File.Delete(databasePath);
         }
+    }
+
+    [Fact]
+    public async Task Without_any_runs_yet_later_syncs_still_fetch_only_activities_after_the_newest_one()
+    {
+        _app.Strava.RespondWithFixture(HttpMethod.Get, ActivitiesPath, "activities-no-runs.json");
+        _app.Strava.RespondWithFixture(HttpMethod.Get, ActivitiesPath, "activities-empty.json");
+        var browser = _app.CreateBrowser();
+        await _app.ConnectStravaAsync(browser);
+        var firstSync = await TestApp.WaitForSyncAsync(browser);
+        _app.Clock.Advance(TimeSpan.FromHours(1));
+        _app.Strava.RespondWithFixture(HttpMethod.Get, ActivitiesPath, "activities-empty.json");
+        var requestsBefore = _app.Strava.Requests.Count;
+
+        await browser.PostAsync("/api/sync", null);
+        await TestApp.WaitForSyncAsync(browser, finishedAfter: firstSync.LastSyncedAt);
+
+        // One second before the Morning Ride (2026-10-05T07:12:03Z), the newest Activity, though not a Run.
+        var newActivitiesRequest = _app.Strava.Requests.Skip(requestsBefore).First(r => r.Uri.AbsolutePath == ActivitiesPath);
+        Assert.Contains("after=1791184322", newActivitiesRequest.Uri.Query);
     }
 
     [Fact]

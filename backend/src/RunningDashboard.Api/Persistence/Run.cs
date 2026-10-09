@@ -97,8 +97,15 @@ public sealed class Run
         }));
     }
 
+    /// <summary>
+    /// Takes over the summary. If the distance or times changed (e.g. the Athlete cropped the Activity on Strava),
+    /// Best Efforts and splits no longer fit, so the detail is fetched again.
+    /// </summary>
     public void UpdateFrom(StravaActivity activity)
     {
+        if (Distance != activity.Distance || MovingTime != activity.MovingTime || ElapsedTime != activity.ElapsedTime)
+            DetailFetchedAt = null;
+
         Name = activity.Name;
         SportType = activity.SportType;
         StartUtc = activity.StartUtc;
