@@ -1,0 +1,7 @@
+{
+  "token_type": "Bearer",
+  "access_token": "c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6",
+  "expires_at": 1791633600,
+  "expires_in": 21600,
+  "refresh_token": "d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7"
+}

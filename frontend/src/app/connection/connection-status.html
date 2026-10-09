@@ -4,7 +4,7 @@
 @if (connection.value(); as current) {
   @if (current.connected && current.athlete; as athlete) {
     <span class="connected">Connected as {{ athlete.firstName }} {{ athlete.lastName }}</span>
-    <app-sync-button />
+    <app-sync-indicator />
   } @else {
     <a class="connect" href="/api/strava/connect">Connect Strava</a>
   }

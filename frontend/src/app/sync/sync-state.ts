@@ -4,7 +4,14 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 /** As returned by GET/POST /api/sync. */
 export interface SyncStatus {
   running: boolean;
+  phase: 'idle' | 'importing-runs';
+  /** Runs stored so far. */
+  importedRuns: number;
+  /** Set while the sync waits for Strava's rate limit to reset. */
+  pausedUntil: string | null;
   lastSyncedAt: string | null;
+  lastError: string | null;
+  reconnectRequired: boolean;
 }
 
 const pollIntervalMs = 2000;
@@ -13,11 +20,10 @@ const pollIntervalMs = 2000;
 @Injectable({ providedIn: 'root' })
 export class SyncState {
   private readonly http = inject(HttpClient);
-  private readonly status = signal<SyncStatus | null>(null);
   private pollTimer?: ReturnType<typeof setTimeout>;
 
+  readonly status = signal<SyncStatus | null>(null);
   readonly running = computed(() => this.status()?.running ?? false);
-  readonly lastSyncedAt = computed(() => this.status()?.lastSyncedAt ?? null);
 
   constructor() {
     this.refresh();

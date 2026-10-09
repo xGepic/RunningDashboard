@@ -1,0 +1,27 @@
+@if (sync.status(); as status) {
+  @if (status.reconnectRequired) {
+    <span class="error" role="alert">{{ status.lastError ?? 'Strava access was lost.' }}</span>
+    <a class="reconnect" href="/api/strava/connect">Reconnect Strava</a>
+  } @else {
+    @if (status.running) {
+      <span class="progress">Importing Runs… {{ status.importedRuns }} Runs</span>
+      @if (status.pausedUntil) {
+        <span class="paused">Paused for Strava’s rate limit until {{ status.pausedUntil | date: 'd MMM, HH:mm' }}</span>
+      }
+    } @else {
+      <span class="last-synced">
+        @if (status.lastSyncedAt) {
+          Last synced {{ status.lastSyncedAt | date: 'd MMM, HH:mm' }}
+        } @else {
+          Not synced yet
+        }
+      </span>
+      @if (status.lastError) {
+        <span class="error" role="alert">{{ status.lastError }}</span>
+      }
+    }
+    <button type="button" (click)="sync.syncNow()" [disabled]="status.running">
+      {{ status.running ? 'Syncing…' : 'Sync now' }}
+    </button>
+  }
+}

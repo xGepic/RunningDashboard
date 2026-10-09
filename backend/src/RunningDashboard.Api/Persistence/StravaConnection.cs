@@ -37,17 +37,23 @@ public sealed class StravaConnection
     };
 
     /// <summary>
-    /// Takes over new tokens (and any name change) for the same athlete; ConnectedAt keeps the first connection time.
+    /// Takes over new tokens (and any name change) when the same athlete connects again; ConnectedAt keeps the
+    /// first connection time.
     /// </summary>
-    public void Refresh(StravaTokenGrant grant)
+    public void Reconnect(StravaTokenGrant grant)
     {
         if (grant.Athlete.Id != AthleteId)
             throw new InvalidOperationException("Tokens belong to a different Strava athlete.");
 
         FirstName = grant.Athlete.FirstName;
         LastName = grant.Athlete.LastName;
-        AccessToken = grant.AccessToken;
-        RefreshToken = grant.RefreshToken;
-        AccessTokenExpiresAt = grant.ExpiresAt;
+        UseTokens(grant.AccessToken, grant.RefreshToken, grant.ExpiresAt);
+    }
+
+    public void UseTokens(string accessToken, string refreshToken, DateTimeOffset accessTokenExpiresAt)
+    {
+        AccessToken = accessToken;
+        RefreshToken = refreshToken;
+        AccessTokenExpiresAt = accessTokenExpiresAt;
     }
 }

@@ -103,6 +103,28 @@ namespace RunningDashboard.Api.Persistence.Migrations
 
                     b.ToTable("StravaConnections");
                 });
+
+            modelBuilder.Entity("RunningDashboard.Api.Persistence.SyncState", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("ImportCursor")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastError")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset?>("LastSyncedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("ReconnectRequired")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SyncStates");
+                });
 #pragma warning restore 612, 618
         }
     }

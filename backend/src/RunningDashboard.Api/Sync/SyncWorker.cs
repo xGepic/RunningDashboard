@@ -1,39 +1,67 @@
+using Microsoft.EntityFrameworkCore;
 using RunningDashboard.Api.Persistence;
+using RunningDashboard.Api.Strava;
 
 namespace RunningDashboard.Api.Sync;
 
 /// <summary>
-/// Runs syncs in the background, one at a time. Asking for a sync while one runs just reports the running one.
+/// Runs syncs in the background, one at a time. Asking for a sync while one runs just reports the running one,
+/// except after a reconnect: the running sync may still use the old tokens, so another sync follows it.
 /// A sync starts when the backend starts (if Strava is connected), after connecting, and on "Sync now".
 /// </summary>
-public sealed class SyncWorker(IServiceScopeFactory scopes, TimeProvider clock, ILogger<SyncWorker> logger) : BackgroundService
+public sealed class SyncWorker(
+    IServiceScopeFactory scopes,
+    StravaRateLimits rateLimits,
+    TimeProvider clock,
+    ILogger<SyncWorker> logger) : BackgroundService
 {
     private readonly SemaphoreSlim _syncRequested = new(0, 1);
     private readonly Lock _lock = new();
     private bool _running;
-    private DateTimeOffset? _lastSyncedAt;
+    private bool _followUpRequested;
 
-    public SyncStatus Status
+    public bool IsRunning
     {
         get
         {
             lock (_lock)
-                return CurrentStatus();
+                return _running;
         }
     }
 
-    public SyncStatus RequestSync()
+    public void RequestSync() => RequestSync(followUpIfRunning: false);
+
+    /// <summary>Syncs with the new tokens, after the running sync if there is one.</summary>
+    public void RequestSyncAfterReconnect() => RequestSync(followUpIfRunning: true);
+
+    private void RequestSync(bool followUpIfRunning)
     {
         lock (_lock)
         {
-            if (!_running)
+            if (_running)
             {
-                _running = true;
-                _syncRequested.Release();
+                _followUpRequested |= followUpIfRunning;
+                return;
             }
 
-            return CurrentStatus();
+            _running = true;
+            _syncRequested.Release();
         }
+    }
+
+    public async Task<SyncStatus> GetStatusAsync(AppDbContext db, CancellationToken cancellationToken)
+    {
+        var running = IsRunning;
+        var state = await db.GetSyncStateAsync(cancellationToken);
+        var importedRuns = await db.Runs.CountAsync(cancellationToken);
+        return new SyncStatus(
+            running,
+            running ? SyncPhase.ImportingRuns : SyncPhase.Idle,
+            importedRuns,
+            running ? rateLimits.PausedUntil : null,
+            state.LastSyncedAt,
+            state.LastError,
+            state.ReconnectRequired);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -45,10 +73,7 @@ public sealed class SyncWorker(IServiceScopeFactory scopes, TimeProvider clock, 
             try
             {
                 await _syncRequested.WaitAsync(stoppingToken);
-                using var scope = scopes.CreateScope();
-                await scope.ServiceProvider.GetRequiredService<RunImport>().ImportAsync(stoppingToken);
-                lock (_lock)
-                    _lastSyncedAt = clock.GetUtcNow();
+                await SyncAsync(stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -56,14 +81,48 @@ public sealed class SyncWorker(IServiceScopeFactory scopes, TimeProvider clock, 
             }
             catch (Exception exception)
             {
-                logger.LogError(exception, "Sync failed");
+                // E.g. the database is locked while recording the outcome; never let it stop the backend.
+                logger.LogError(exception, "Sync could not finish");
             }
             finally
             {
                 lock (_lock)
-                    _running = false;
+                {
+                    _running = _followUpRequested;
+                    if (_followUpRequested)
+                        _syncRequested.Release();
+                    _followUpRequested = false;
+                }
             }
         }
+    }
+
+    private async Task SyncAsync(CancellationToken stoppingToken)
+    {
+        Action<SyncState> outcome;
+        try
+        {
+            using (var scope = scopes.CreateScope())
+                await scope.ServiceProvider.GetRequiredService<RunImport>().ImportAsync(stoppingToken);
+            var now = clock.GetUtcNow();
+            outcome = state => state.Succeeded(now);
+        }
+        catch (StravaReconnectRequiredException exception)
+        {
+            logger.LogWarning(exception, "Sync stopped: Strava needs to be reconnected");
+            outcome = state => state.NeedsReconnect("Strava no longer accepts the app's access. Reconnect Strava.");
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException || !stoppingToken.IsCancellationRequested)
+        {
+            logger.LogError(exception, "Sync failed");
+            outcome = state => state.Failed($"Sync failed: {exception.Message}");
+        }
+
+        // A fresh scope: the import's DbContext may hold changes that failed to save.
+        using var outcomeScope = scopes.CreateScope();
+        var db = outcomeScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        outcome(await db.GetSyncStateAsync(stoppingToken));
+        await db.SaveChangesAsync(stoppingToken);
     }
 
     /// <remarks>Never throws: a failure here must not stop the backend.</remarks>
@@ -80,9 +139,22 @@ public sealed class SyncWorker(IServiceScopeFactory scopes, TimeProvider clock, 
             logger.LogError(exception, "Could not check the Strava connection at startup; no startup sync");
         }
     }
-
-    /// <remarks>Caller holds <see cref="_lock"/>.</remarks>
-    private SyncStatus CurrentStatus() => new(_running, _lastSyncedAt);
 }
 
-public sealed record SyncStatus(bool Running, DateTimeOffset? LastSyncedAt);
+public static class SyncPhase
+{
+    public const string Idle = "idle";
+    public const string ImportingRuns = "importing-runs";
+}
+
+/// <param name="Phase">One of <see cref="SyncPhase"/>.</param>
+/// <param name="ImportedRuns">Runs stored so far.</param>
+/// <param name="PausedUntil">Set while the sync waits for Strava's rate limit to reset.</param>
+public sealed record SyncStatus(
+    bool Running,
+    string Phase,
+    int ImportedRuns,
+    DateTimeOffset? PausedUntil,
+    DateTimeOffset? LastSyncedAt,
+    string? LastError,
+    bool ReconnectRequired);

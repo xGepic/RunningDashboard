@@ -84,7 +84,7 @@ public sealed class ImportRunsTests : IAsyncLifetime
         await TestApp.WaitForSyncAsync(browser);
 
         Assert.True(status!.Running);
-        Assert.Single(_app.Strava.Requests, r => r.Uri.AbsolutePath == ActivitiesPath && r.Uri.Query.Contains("page=1&"));
+        Assert.Single(_app.Strava.Requests, r => r.Uri.AbsolutePath == ActivitiesPath && !r.Uri.Query.Contains("before="));
         Assert.Equal(5, (await GetRunsAsync(browser)).Count);
     }
 
@@ -103,13 +103,69 @@ public sealed class ImportRunsTests : IAsyncLifetime
             }
 
             await using var restarted = new TestApp(databasePath);
+            restarted.Clock.Advance(TimeSpan.FromHours(1));
             restarted.Strava.RespondWithFixture(HttpMethod.Get, ActivitiesPath, "activities-page-1.json");
             restarted.Strava.RespondWithFixture(HttpMethod.Get, ActivitiesPath, "activities-empty.json");
 
             var browser = restarted.CreateBrowser();
-            await TestApp.WaitForSyncAsync(browser);
+            await TestApp.WaitForSyncAsync(browser, finishedAfter: restarted.Clock.GetUtcNow().AddMinutes(-1));
 
             Assert.Equal(["Evening Run", "Lauf am Nachmittag"], (await GetRunsAsync(browser)).Select(r => r.Name));
+        }
+        finally
+        {
+            File.Delete(databasePath);
+        }
+    }
+
+    [Fact]
+    public async Task Runs_show_up_while_the_import_is_still_running()
+    {
+        var releaseSecondPage = new TaskCompletionSource();
+        _app.Strava.RespondWithFixture(HttpMethod.Get, ActivitiesPath, "activities-page-1.json");
+        _app.Strava.RespondWithFixtureAfter(releaseSecondPage.Task, HttpMethod.Get, ActivitiesPath, "activities-page-2.json");
+        _app.Strava.RespondWithFixture(HttpMethod.Get, ActivitiesPath, "activities-empty.json");
+        var browser = _app.CreateBrowser();
+
+        await _app.ConnectStravaAsync(browser);
+        var midImport = await TestApp.WaitForStatusAsync(browser, s => s.ImportedRuns == 2);
+        var runsMidImport = await GetRunsAsync(browser);
+        releaseSecondPage.SetResult();
+        var finished = await TestApp.WaitForSyncAsync(browser);
+
+        Assert.True(midImport.Running);
+        Assert.Equal("importing-runs", midImport.Phase);
+        Assert.Equal(["Evening Run", "Lauf am Nachmittag"], runsMidImport.Select(r => r.Name));
+        Assert.Equal(5, finished.ImportedRuns);
+        Assert.Equal("idle", finished.Phase);
+    }
+
+    [Fact]
+    public async Task An_interrupted_import_continues_after_a_restart_without_fetching_the_imported_activities_again()
+    {
+        var databasePath = Path.Combine(Path.GetTempPath(), $"running-dashboard-test-{Guid.NewGuid():N}.db");
+        try
+        {
+            await using (var interrupted = new TestApp(databasePath))
+            {
+                interrupted.Strava.RespondWithFixture(HttpMethod.Get, ActivitiesPath, "activities-page-1.json");
+                interrupted.Strava.RespondWithFixtureAfter(new TaskCompletionSource().Task, HttpMethod.Get, ActivitiesPath, "activities-page-2.json");
+                var firstBrowser = interrupted.CreateBrowser();
+                await interrupted.ConnectStravaAsync(firstBrowser);
+                await TestApp.WaitForStatusAsync(firstBrowser, s => s.ImportedRuns == 2);
+            }
+
+            await using var restarted = new TestApp(databasePath);
+            restarted.Strava.RespondWithFixture(HttpMethod.Get, ActivitiesPath, "activities-page-2.json");
+            restarted.Strava.RespondWithFixture(HttpMethod.Get, ActivitiesPath, "activities-empty.json");
+            var browser = restarted.CreateBrowser();
+            var finished = await TestApp.WaitForSyncAsync(browser);
+
+            // Continues from the oldest Activity of the first page (Evening Walk, 2026-10-01T17:02:10Z); Strava's
+            // "before" is exclusive, so one second later keeps Activities from that same second.
+            var firstRequestAfterRestart = restarted.Strava.Requests.First(r => r.Uri.AbsolutePath == ActivitiesPath);
+            Assert.Contains("before=1790874131", firstRequestAfterRestart.Uri.Query);
+            Assert.Equal(5, finished.ImportedRuns);
         }
         finally
         {

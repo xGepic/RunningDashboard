@@ -39,7 +39,7 @@ public sealed class FakeStrava : HttpMessageHandler
         }
     }
 
-    private static HttpResponseMessage FixtureResponse(string fixture) => new(HttpStatusCode.OK)
+    public static HttpResponseMessage FixtureResponse(string fixture) => new(HttpStatusCode.OK)
     {
         Content = new StringContent(
             File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "Fixtures", "Strava", fixture)),

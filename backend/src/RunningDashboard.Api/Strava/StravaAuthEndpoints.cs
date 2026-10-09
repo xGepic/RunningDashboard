@@ -84,10 +84,11 @@ public static class StravaAuthEndpoints
             else if (connection.AthleteId != grant.Athlete.Id)
                 return RedirectWithError(ConnectError.DifferentAthlete);
             else
-                connection.Refresh(grant);
+                connection.Reconnect(grant);
 
+            (await db.GetSyncStateAsync(cancellationToken)).Reconnected();
             await db.SaveChangesAsync(cancellationToken);
-            sync.RequestSync();
+            sync.RequestSyncAfterReconnect();
             return Results.Redirect("/?strava=connected");
         });
     }

@@ -8,8 +8,25 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
     public DbSet<Run> Runs => Set<Run>();
 
+    public DbSet<SyncState> SyncStates => Set<SyncState>();
+
     public Task<bool> IsStravaConnectedAsync(CancellationToken cancellationToken) =>
         StravaConnections.AnyAsync(cancellationToken);
+
+    /// <summary>
+    /// The single sync state row, created (and tracked) on first use.
+    /// </summary>
+    public async Task<SyncState> GetSyncStateAsync(CancellationToken cancellationToken)
+    {
+        var state = await SyncStates.SingleOrDefaultAsync(cancellationToken);
+        if (state is null)
+        {
+            state = new SyncState();
+            SyncStates.Add(state);
+        }
+
+        return state;
+    }
 
     protected override void OnModelCreating(ModelBuilder model)
     {
@@ -27,5 +44,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             run.Property(r => r.ShoeId).HasMaxLength(50);
             run.HasIndex(r => r.StartUtc);
         });
+
+        model.Entity<SyncState>(state => state.Property(s => s.Id).ValueGeneratedNever());
     }
 }

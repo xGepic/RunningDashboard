@@ -80,16 +80,23 @@ public sealed class TestApp : WebApplicationFactory<Program>
     /// <summary>
     /// Waits until no sync is running and one finished (after <paramref name="finishedAfter"/>, if given).
     /// </summary>
-    public static async Task<SyncStatusResponse> WaitForSyncAsync(HttpClient browser, DateTimeOffset? finishedAfter = null)
+    public static Task<SyncStatusResponse> WaitForSyncAsync(HttpClient browser, DateTimeOffset? finishedAfter = null) =>
+        WaitForStatusAsync(browser, status =>
+            !status.Running && status.LastSyncedAt is { } finished && (finishedAfter is null || finished > finishedAfter));
+
+    /// <summary>
+    /// Polls the sync status until <paramref name="condition"/> holds (real time; the fake clock does not move).
+    /// </summary>
+    public static async Task<SyncStatusResponse> WaitForStatusAsync(HttpClient browser, Func<SyncStatusResponse, bool> condition)
     {
         var deadline = DateTime.UtcNow.AddSeconds(10);
         while (true)
         {
             var status = (await browser.GetFromJsonAsync<SyncStatusResponse>("/api/sync"))!;
-            if (!status.Running && status.LastSyncedAt is { } finished && (finishedAfter is null || finished > finishedAfter))
+            if (condition(status))
                 return status;
             if (DateTime.UtcNow > deadline)
-                throw new TimeoutException($"Sync did not finish: {status}");
+                throw new TimeoutException($"Sync status never matched: {status}");
             await Task.Delay(20);
         }
     }
@@ -102,4 +109,11 @@ public sealed class TestApp : WebApplicationFactory<Program>
     }
 }
 
-public sealed record SyncStatusResponse(bool Running, DateTimeOffset? LastSyncedAt);
+public sealed record SyncStatusResponse(
+    bool Running,
+    DateTimeOffset? LastSyncedAt,
+    string? Phase = null,
+    int ImportedRuns = 0,
+    DateTimeOffset? PausedUntil = null,
+    string? LastError = null,
+    bool ReconnectRequired = false);

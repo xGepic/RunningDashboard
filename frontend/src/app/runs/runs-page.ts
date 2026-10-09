@@ -20,12 +20,13 @@ export class RunsPage {
   protected readonly formatPace = formatPace;
 
   constructor() {
-    // Reload after each finished sync; the first pass only records where we start from.
-    let seenLastSyncedAt: string | null | undefined;
+    // Reload whenever a sync stored more Runs or finished; the first pass only records where we start from.
+    let seenProgress: string | undefined;
     effect(() => {
-      const lastSyncedAt = this.sync.lastSyncedAt();
-      if (seenLastSyncedAt !== undefined && lastSyncedAt !== seenLastSyncedAt) untracked(() => this.runs.reload());
-      seenLastSyncedAt = lastSyncedAt;
+      const status = this.sync.status();
+      const progress = `${status?.importedRuns}|${status?.lastSyncedAt}`;
+      if (seenProgress !== undefined && progress !== seenProgress) untracked(() => this.runs.reload());
+      seenProgress = progress;
     });
   }
 }
