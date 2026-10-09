@@ -1,0 +1,3 @@
+# Strava is the only data source, Garmin is not used
+
+The Athlete's Garmin watch uploads every Run to Strava. Strava has a documented public API that any single developer can register for. Garmin's official API is only available to approved businesses, and the unofficial clients log in with the account password and break whenever Garmin changes something. So the dashboard reads only from the Strava API. This means Garmin-only metrics (HRV, sleep, Training Readiness, Garmin's VO2max estimate, Body Battery) are deliberately left out. Adding them later would mean a second data source and merging its records with the Strava data.
