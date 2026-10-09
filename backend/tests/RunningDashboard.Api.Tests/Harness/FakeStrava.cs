@@ -7,11 +7,14 @@ namespace RunningDashboard.Api.Tests.Harness;
 /// Stands in for strava.com at the HTTP level. Responses are Strava JSON from the Fixtures/Strava folder,
 /// queued per path and served in order; every request the app sends is kept for assertions. The sync's recheck of the
 /// most recent Activities has its own queue (<see cref="RecentActivitiesPath"/>) and finds none unless a test queues
-/// some. Anything else without a queued response is 404 (as for an Activity Strava does not have).
+/// some; the athlete (for the Shoes) has no Shoes unless a test queues one. Anything else without a queued response
+/// is 404 (as for an Activity Strava does not have).
 /// </summary>
 public sealed class FakeStrava : HttpMessageHandler
 {
     private const string ActivityListPath = "/api/v3/athlete/activities";
+
+    private const string AthletePath = "/api/v3/athlete";
 
     /// <summary>Queue responses here for the sync's one request for the 20 most recent Activities.</summary>
     public const string RecentActivitiesPath = ActivityListPath + "#recent";
@@ -83,6 +86,8 @@ public sealed class FakeStrava : HttpMessageHandler
 
         if (request.Method == HttpMethod.Get && QueuePath(request) == RecentActivitiesPath)
             return FixtureResponse("activities-empty.json");
+        if (request.Method == HttpMethod.Get && QueuePath(request) == AthletePath)
+            return FixtureResponse("athlete-without-shoes.json");
 
         return new HttpResponseMessage(HttpStatusCode.NotFound)
         {

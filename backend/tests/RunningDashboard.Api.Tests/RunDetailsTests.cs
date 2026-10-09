@@ -144,6 +144,22 @@ public sealed class RunDetailsTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_failed_shoe_refresh_does_not_hold_up_the_details_and_is_reported()
+    {
+        StravaHasTheFirstPageOfActivities(_app);
+        _app.Strava.Respond(HttpMethod.Get, "/api/v3/athlete", () => new HttpResponseMessage(HttpStatusCode.ServiceUnavailable));
+        _app.Strava.RespondWithFixture(HttpMethod.Get, DetailPath(EveningRun), $"activity-{EveningRun}.json");
+        _app.Strava.RespondWithFixture(HttpMethod.Get, DetailPath(LaufAmNachmittag), $"activity-{LaufAmNachmittag}.json");
+        var browser = _app.CreateBrowser();
+
+        await _app.ConnectStravaAsync(browser);
+        var finished = await TestApp.WaitForStatusAsync(browser, s => !s.Running && s.LastError is not null);
+
+        Assert.Equal(2, finished.DetailedRuns);
+        Assert.Contains("Shoes", finished.LastError);
+    }
+
+    [Fact]
     public async Task An_unknown_run_is_not_found()
     {
         var browser = _app.CreateBrowser();

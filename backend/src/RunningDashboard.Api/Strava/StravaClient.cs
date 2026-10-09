@@ -21,6 +21,7 @@ public sealed class StravaClient(
     private static readonly Uri TokenUrl = new("https://www.strava.com/oauth/token");
     private const string ActivitiesUrl = "https://www.strava.com/api/v3/athlete/activities";
     private const string ActivityUrl = "https://www.strava.com/api/v3/activities/";
+    private const string AthleteUrl = "https://www.strava.com/api/v3/athlete";
 
     /// <summary>Refresh this long before Strava's expiry, so a token never runs out mid-request.</summary>
     private static readonly TimeSpan RefreshMargin = TimeSpan.FromMinutes(5);
@@ -79,6 +80,24 @@ public sealed class StravaClient(
                 activity.SufferScore,
                 activity.GearId,
                 element.GetRawText());
+        }).ToList();
+    }
+
+    /// <summary>
+    /// The Athlete's Shoes as Strava lists them on the authenticated athlete, retired ones included; null if the
+    /// response has no Shoes at all (not the same as an empty list).
+    /// </summary>
+    public async Task<IReadOnlyList<StravaShoe>?> ListShoesAsync(CancellationToken cancellationToken)
+    {
+        using var response = await SendApiRequestAsync(AthleteUrl, cancellationToken);
+        using var json = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
+        if (!json.RootElement.TryGetProperty("shoes", out var shoes) || shoes.ValueKind != JsonValueKind.Array)
+            return null;
+
+        return shoes.EnumerateArray().Select(element =>
+        {
+            var shoe = element.Deserialize<ShoeResponse>(SnakeCaseJson)!;
+            return new StravaShoe(shoe.Id, shoe.Name, shoe.Distance, shoe.Retired, element.GetRawText());
         }).ToList();
     }
 
@@ -205,6 +224,8 @@ public sealed class StravaClient(
         double? SufferScore,
         string? GearId);
 
+    private sealed record ShoeResponse(string Id, string Name, double Distance, bool Retired);
+
     private sealed record ActivityDetailResponse(long Id, List<BestEffortResponse>? BestEfforts, List<SplitResponse>? SplitsMetric);
 
     private sealed record BestEffortResponse(string Name, double Distance, int ElapsedTime);
@@ -253,6 +274,10 @@ public sealed record StravaBestEffort(string Name, double Distance, int ElapsedT
 
 /// <param name="Index">1-based.</param>
 public sealed record StravaSplit(int Index, double Distance, int MovingTime, int ElapsedTime, double ElevationDifference);
+
+/// <param name="Id">Strava's gear id.</param>
+/// <param name="Distance">Metres, as Strava counts them.</param>
+public sealed record StravaShoe(string Id, string Name, double Distance, bool Retired, string RawJson);
 
 /// <summary>
 /// Strava no longer accepts the app's tokens; only the Athlete connecting again fixes it.

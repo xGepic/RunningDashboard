@@ -100,6 +100,32 @@ namespace RunningDashboard.Api.Persistence.Migrations
                     b.ToTable("Runs");
                 });
 
+            modelBuilder.Entity("RunningDashboard.Api.Persistence.Shoe", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("Distance")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RawJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Retired")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Shoes");
+                });
+
             modelBuilder.Entity("RunningDashboard.Api.Persistence.Split", b =>
                 {
                     b.Property<long>("RunId")

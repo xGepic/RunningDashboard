@@ -54,6 +54,7 @@
           <th class="number" [attr.aria-sort]="ariaSort('distance')"><button type="button" (click)="sortBy('distance')">Distance{{ sortIndicator('distance') }}</button></th>
           <th class="number" [attr.aria-sort]="ariaSort('movingTime')"><button type="button" (click)="sortBy('movingTime')">Moving Time{{ sortIndicator('movingTime') }}</button></th>
           <th class="number" [attr.aria-sort]="ariaSort('pace')"><button type="button" (click)="sortBy('pace')">Pace{{ sortIndicator('pace') }}</button></th>
+          <th>Shoe</th>
         </tr>
       </thead>
       <tbody>
@@ -64,6 +65,7 @@
             <td class="number">{{ formatDistance(run.distance) }}</td>
             <td class="number">{{ formatDuration(run.movingTime) }}</td>
             <td class="number">{{ formatPace(run.pace) }}</td>
+            <td class="shoe">{{ run.shoeName ?? '–' }}</td>
           </tr>
         }
       </tbody>

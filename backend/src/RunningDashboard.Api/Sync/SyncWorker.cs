@@ -118,9 +118,14 @@ public sealed class SyncWorker(
             using (var scope = scopes.CreateScope())
                 await scope.ServiceProvider.GetRequiredService<RunImport>().ImportAsync(stoppingToken);
 
+            var shoesRefreshed = await RefreshShoesAsync(stoppingToken);
+
             SetPhase(SyncPhase.ImportingDetails);
             using (var scope = scopes.CreateScope())
                 await scope.ServiceProvider.GetRequiredService<RunDetailImport>().ImportAsync(stoppingToken);
+
+            if (!shoesRefreshed)
+                throw new ShoesNotRefreshedException();
 
             var now = clock.GetUtcNow();
             outcome = state => state.Succeeded(now);
@@ -141,6 +146,24 @@ public sealed class SyncWorker(
         var db = outcomeScope.ServiceProvider.GetRequiredService<AppDbContext>();
         outcome(await db.GetSyncStateAsync(stoppingToken));
         await db.SaveChangesAsync(stoppingToken);
+    }
+
+    /// <summary>
+    /// Refreshes the Shoes; a failure is logged and reported after the Run details, which it must not hold up.
+    /// </summary>
+    private async Task<bool> RefreshShoesAsync(CancellationToken stoppingToken)
+    {
+        try
+        {
+            using var scope = scopes.CreateScope();
+            await scope.ServiceProvider.GetRequiredService<ShoeImport>().ImportAsync(stoppingToken);
+            return true;
+        }
+        catch (Exception exception) when (exception is HttpRequestException or System.Text.Json.JsonException)
+        {
+            logger.LogWarning(exception, "Could not refresh the Shoes; the next sync tries again");
+            return false;
+        }
     }
 
     private void SetPhase(string phase)
@@ -168,7 +191,7 @@ public sealed class SyncWorker(
 public static class SyncPhase
 {
     public const string Idle = "idle";
-    /// <summary>Walking through the Activity summaries and storing the Runs.</summary>
+    /// <summary>Walking through the Activity summaries and storing the Runs, then refreshing the Shoes.</summary>
     public const string ImportingRuns = "importing-runs";
 
     /// <summary>Fetching the detailed Activity (Best Efforts, splits) of each Run that has none yet.</summary>
@@ -188,3 +211,6 @@ public sealed record SyncStatus(
     DateTimeOffset? LastSyncedAt,
     string? LastError,
     bool ReconnectRequired);
+
+public sealed class ShoesNotRefreshedException()
+    : Exception("Could not refresh the Shoes; the next sync tries again.");

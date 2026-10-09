@@ -15,9 +15,14 @@ public static class RunEndpoints
 
             // Filtered and sorted in memory over a lean projection: a few thousand Runs at most, and it keeps the
             // name search case-insensitive beyond ASCII (SQLite's LIKE is not), independent of the server's culture.
-            var runs = await db.Runs
-                .Select(r => new RunResponse(r.Id, r.Name, r.SportType, r.StartLocal, r.Distance, r.MovingTime, Run.PaceOf(r.MovingTime, r.Distance)))
-                .ToListAsync(cancellationToken);
+            var shoeNames = await db.Shoes.ToDictionaryAsync(s => s.Id, s => s.Name, cancellationToken);
+            var runs = (await db.Runs
+                    .Select(r => new { r.Id, r.Name, r.SportType, r.StartLocal, r.Distance, r.MovingTime, r.ShoeId })
+                    .ToListAsync(cancellationToken))
+                .Select(r => new RunResponse(
+                    r.Id, r.Name, r.SportType, r.StartLocal, r.Distance, r.MovingTime, Run.PaceOf(r.MovingTime, r.Distance),
+                    r.ShoeId is null ? null : shoeNames.GetValueOrDefault(r.ShoeId)))
+                .ToList();
 
             var matching = runs.Where(r =>
                 (string.IsNullOrWhiteSpace(query.Search) || r.Name.Contains(query.Search.Trim(), StringComparison.InvariantCultureIgnoreCase))
@@ -41,7 +46,11 @@ public static class RunEndpoints
                 .Include(r => r.Splits)
                 .SingleOrDefaultAsync(r => r.Id == id, cancellationToken);
 
-            return run is null ? Results.NotFound() : Results.Ok(RunDetailResponse.From(run));
+            if (run is null)
+                return Results.NotFound();
+
+            var shoe = run.ShoeId is null ? null : await db.Shoes.FindAsync([run.ShoeId], cancellationToken);
+            return Results.Ok(RunDetailResponse.From(run, shoe?.Name));
         });
     }
 
@@ -67,7 +76,8 @@ public static class RunEndpoints
     /// <param name="Distance">Metres.</param>
     /// <param name="MovingTime">Seconds.</param>
     /// <param name="Pace">Seconds per kilometre.</param>
-    private sealed record RunResponse(long Id, string Name, string SportType, DateTime StartLocal, double Distance, int MovingTime, double? Pace);
+    /// <param name="ShoeName">Name of the Shoe logged with the Run, if Strava still lists it.</param>
+    private sealed record RunResponse(long Id, string Name, string SportType, DateTime StartLocal, double Distance, int MovingTime, double? Pace, string? ShoeName);
 
     /// <param name="Detail">"pending", "loaded" or "unavailable": whether Best Efforts and splits are in.</param>
     private sealed record RunDetailResponse(
@@ -82,11 +92,12 @@ public static class RunEndpoints
         double ElevationGain,
         double? RelativeEffort,
         string StravaUrl,
+        string? ShoeName,
         string Detail,
         IReadOnlyList<BestEffortResponse> BestEfforts,
         IReadOnlyList<SplitResponse> Splits)
     {
-        public static RunDetailResponse From(Run run) => new(
+        public static RunDetailResponse From(Run run, string? shoeName) => new(
             run.Id,
             run.Name,
             run.SportType,
@@ -98,6 +109,7 @@ public static class RunEndpoints
             run.ElevationGain,
             run.RelativeEffort,
             $"https://www.strava.com/activities/{run.Id}",
+            shoeName,
             run.DetailStatus.ToString().ToLowerInvariant(),
             run.BestEfforts
                 .OrderBy(e => e.Distance)

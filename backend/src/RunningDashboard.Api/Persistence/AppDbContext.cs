@@ -10,6 +10,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
     public DbSet<SyncState> SyncStates => Set<SyncState>();
 
+    public DbSet<Shoe> Shoes => Set<Shoe>();
+
     public Task<bool> IsStravaConnectedAsync(CancellationToken cancellationToken) =>
         StravaConnections.AnyAsync(cancellationToken);
 
@@ -52,5 +54,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         model.Entity<Split>(split => split.HasKey(s => new { s.RunId, s.Index }));
 
         model.Entity<SyncState>(state => state.Property(s => s.Id).ValueGeneratedNever());
+
+        model.Entity<Shoe>(shoe =>
+        {
+            shoe.Property(s => s.Id).HasMaxLength(50);
+            shoe.Property(s => s.Name).HasMaxLength(200);
+        });
     }
 }

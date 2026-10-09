@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using RunningDashboard.Api.Overview;
 using RunningDashboard.Api.Persistence;
 using RunningDashboard.Api.Runs;
+using RunningDashboard.Api.Shoes;
 using RunningDashboard.Api.Strava;
 using RunningDashboard.Api.Sync;
 
@@ -18,6 +19,7 @@ builder.Services.AddHttpClient<StravaClient>();
 builder.Services.AddSingleton<StravaRateLimits>();
 builder.Services.AddScoped<RunImport>();
 builder.Services.AddScoped<RunDetailImport>();
+builder.Services.AddScoped<ShoeImport>();
 builder.Services.AddSingleton<SyncWorker>();
 builder.Services.AddHostedService(services => services.GetRequiredService<SyncWorker>());
 
@@ -33,6 +35,7 @@ app.MapStravaAuthEndpoints();
 app.MapSyncEndpoints();
 app.MapRunEndpoints();
 app.MapOverviewEndpoints();
+app.MapShoeEndpoints();
 
 app.Run();
 

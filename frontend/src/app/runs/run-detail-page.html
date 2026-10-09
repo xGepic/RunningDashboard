@@ -14,6 +14,7 @@
     <div><dt>Pace</dt><dd>{{ formatPace(run.pace) }}</dd></div>
     <div><dt>Elevation gain</dt><dd>{{ run.elevationGain | number: '1.0-0' }} m</dd></div>
     <div><dt>Relative Effort</dt><dd>{{ run.relativeEffort ?? '–' }}</dd></div>
+    <div><dt>Shoe</dt><dd>{{ run.shoeName ?? '–' }}</dd></div>
   </dl>
 
   @if (run.detail === 'pending') {

@@ -1,0 +1,36 @@
+<h1>Shoes</h1>
+
+@if (shoes.value(); as shoes) {
+  @if (shoes.length === 0) {
+    <p class="empty">No Shoes on Strava yet. Add them under Gear in your Strava settings, then sync.</p>
+  } @else {
+    <p class="hint">Distance as Strava counts it, including any distance entered there by hand.</p>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Shoe</th>
+          <th class="number">Distance</th>
+          <th class="number">Runs</th>
+          <th class="number">Last Run</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (shoe of shoes; track shoe.id) {
+          <tr [class.retired]="shoe.retired">
+            <td>
+              {{ shoe.name }}
+              @if (shoe.retired) {
+                <span class="badge">Retired</span>
+              }
+            </td>
+            <td class="number">{{ formatTotalDistance(shoe.distance) }}</td>
+            <td class="number">{{ shoe.runs }}</td>
+            <td class="number">{{ shoe.lastRun ? (shoe.lastRun | date: 'd MMM y') : '–' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+} @else if (shoes.error()) {
+  <p class="error" role="alert">Shoes could not be loaded.</p>
+}

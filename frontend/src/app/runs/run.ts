@@ -8,6 +8,8 @@ export interface Run {
   distance: number;
   movingTime: number;
   pace: number | null;
+  /** Name of the Shoe logged with the Run, if Strava still lists it. */
+  shoeName: string | null;
 }
 
 /** One page of GET /api/runs. */
