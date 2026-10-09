@@ -10,6 +10,17 @@ export interface Run {
   pace: number | null;
 }
 
+/** One page of GET /api/runs. */
+export interface RunPage {
+  items: Run[];
+  /** 1-based. */
+  page: number;
+  pageSize: number;
+  totalCount: number;
+}
+
+export type RunSortKey = 'date' | 'distance' | 'movingTime' | 'pace';
+
 /** A Run with its detail, as returned by GET /api/runs/{id}. */
 export interface RunDetail extends Run {
   elapsedTime: number;

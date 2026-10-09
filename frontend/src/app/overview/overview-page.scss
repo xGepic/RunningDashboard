@@ -1,0 +1,70 @@
+h1 {
+  margin: 0 0 1rem;
+  font-size: 1.4rem;
+}
+
+h2 {
+  font-size: 1.1rem;
+}
+
+section {
+  margin-bottom: 2rem;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.75rem;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+
+  .label {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+
+  .value {
+    font-size: 1.6rem;
+    font-weight: 600;
+  }
+}
+
+.years {
+  max-width: 44rem;
+}
+
+.chart {
+  height: 18rem;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+}
+
+.hint {
+  margin-top: -0.5rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+details {
+  margin-top: 0.5rem;
+
+  summary {
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+
+  .data-table {
+    max-width: 28rem;
+    margin-top: 0.5rem;
+  }
+}

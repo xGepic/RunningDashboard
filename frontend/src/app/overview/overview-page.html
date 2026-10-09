@@ -1,0 +1,85 @@
+<h1>Overview</h1>
+
+@if (overview.value(); as overview) {
+  @if (overview.totals.runs === 0) {
+    <p class="empty">No Runs yet. Connect Strava and sync to import them.</p>
+  } @else {
+    <section class="tiles" aria-label="All-time totals">
+      <div class="tile"><span class="label">Runs</span><span class="value">{{ overview.totals.runs | number }}</span></div>
+      <div class="tile"><span class="label">Distance</span><span class="value">{{ formatTotalDistance(overview.totals.distance) }}</span></div>
+      <div class="tile"><span class="label">Moving Time</span><span class="value">{{ formatHours(overview.totals.movingTime) }}</span></div>
+      <div class="tile"><span class="label">Elevation gain</span><span class="value">{{ overview.totals.elevationGain | number: '1.0-0' }} m</span></div>
+    </section>
+
+    <section>
+      <h2>Per year</h2>
+      <table class="data-table years">
+        <thead>
+          <tr>
+            <th>Year</th>
+            <th class="number">Runs</th>
+            <th class="number">Distance</th>
+            <th class="number">Moving Time</th>
+            <th class="number">Elevation gain</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (year of overview.years; track year.year) {
+            <tr>
+              <td>{{ year.year }}</td>
+              <td class="number">{{ year.runs }}</td>
+              <td class="number">{{ formatTotalDistance(year.distance) }}</td>
+              <td class="number">{{ formatHours(year.movingTime) }}</td>
+              <td class="number">{{ year.elevationGain | number: '1.0-0' }} m</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Distance per Training Week</h2>
+      @if (weeklyDistance(); as options) {
+        <div class="chart" echarts [options]="options" [autoResize]="true" role="img"
+             aria-label="Column chart of distance per Training Week; the table below has the same numbers"></div>
+      }
+      <details>
+        <summary>Show as table</summary>
+        <table class="data-table">
+          <thead><tr><th>Week starting</th><th class="number">Distance</th></tr></thead>
+          <tbody>
+            @for (week of overview.weeks; track week.start) {
+              <tr><td>{{ weekLabel(week.start) }}</td><td class="number">{{ formatDistance(week.distance) }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </details>
+    </section>
+
+    <section>
+      <h2>Average Pace per month</h2>
+      <p class="hint">Total Moving Time ÷ total distance of the month, so longer Runs count for more. Lower is faster.</p>
+      @if (monthlyPace(); as options) {
+        <div class="chart" echarts [options]="options" [autoResize]="true" role="img"
+             aria-label="Line chart of average Pace per month; the table below has the same numbers"></div>
+      }
+      <details>
+        <summary>Show as table</summary>
+        <table class="data-table">
+          <thead><tr><th>Month</th><th class="number">Distance</th><th class="number">Pace</th></tr></thead>
+          <tbody>
+            @for (month of overview.months; track month.year * 100 + month.month) {
+              <tr>
+                <td>{{ monthLabel(month) }}</td>
+                <td class="number">{{ formatDistance(month.distance) }}</td>
+                <td class="number">{{ formatPace(month.pace) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </details>
+    </section>
+  }
+} @else if (overview.error()) {
+  <p class="error" role="alert">The overview could not be loaded.</p>
+}

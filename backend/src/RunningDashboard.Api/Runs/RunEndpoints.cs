@@ -7,11 +7,32 @@ public static class RunEndpoints
 {
     public static void MapRunEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/runs", async (AppDbContext db, CancellationToken cancellationToken) =>
-            await db.Runs
-                .OrderByDescending(r => r.StartUtc)
+        app.MapGet("/api/runs", async ([AsParameters] RunListQuery query, AppDbContext db, CancellationToken cancellationToken) =>
+        {
+            var errors = query.Validate();
+            if (errors.Count > 0)
+                return Results.ValidationProblem(errors);
+
+            // Filtered and sorted in memory over a lean projection: a few thousand Runs at most, and it keeps the
+            // name search case-insensitive beyond ASCII (SQLite's LIKE is not), independent of the server's culture.
+            var runs = await db.Runs
                 .Select(r => new RunResponse(r.Id, r.Name, r.SportType, r.StartLocal, r.Distance, r.MovingTime, Run.PaceOf(r.MovingTime, r.Distance)))
-                .ToListAsync(cancellationToken));
+                .ToListAsync(cancellationToken);
+
+            var matching = runs.Where(r =>
+                (string.IsNullOrWhiteSpace(query.Search) || r.Name.Contains(query.Search.Trim(), StringComparison.InvariantCultureIgnoreCase))
+                && (query.From is null || DateOnly.FromDateTime(r.StartLocal) >= query.From)
+                && (query.To is null || DateOnly.FromDateTime(r.StartLocal) <= query.To)
+                && (query.SportType is null || r.SportType == query.SportType))
+                .ToList();
+
+            var page = Sorted(matching, query)
+                .Skip((query.PageOrDefault - 1) * query.PageSizeOrDefault)
+                .Take(query.PageSizeOrDefault)
+                .ToList();
+
+            return Results.Ok(new RunPageResponse(page, query.PageOrDefault, query.PageSizeOrDefault, matching.Count));
+        });
 
         app.MapGet("/api/runs/{id:long}", async (long id, AppDbContext db, CancellationToken cancellationToken) =>
         {
@@ -23,6 +44,25 @@ public static class RunEndpoints
             return run is null ? Results.NotFound() : Results.Ok(RunDetailResponse.From(run));
         });
     }
+
+    /// <summary>
+    /// In the requested order; equal keys fall back to newest first, and Runs without a Pace go last.
+    /// </summary>
+    private static IOrderedEnumerable<RunResponse> Sorted(IEnumerable<RunResponse> runs, RunListQuery query)
+    {
+        var ascending = query.Ascending;
+        var sorted = query.SortKey switch
+        {
+            "distance" => ascending ? runs.OrderBy(r => r.Distance) : runs.OrderByDescending(r => r.Distance),
+            "movingTime" => ascending ? runs.OrderBy(r => r.MovingTime) : runs.OrderByDescending(r => r.MovingTime),
+            "pace" => runs.OrderBy(r => r.Pace is null)
+                .ThenBy(r => ascending ? r.Pace : -r.Pace),
+            _ => ascending ? runs.OrderBy(r => r.StartLocal) : runs.OrderByDescending(r => r.StartLocal),
+        };
+        return sorted.ThenByDescending(r => r.StartLocal);
+    }
+
+    private sealed record RunPageResponse(IReadOnlyList<RunResponse> Items, int Page, int PageSize, int TotalCount);
 
     /// <param name="Distance">Metres.</param>
     /// <param name="MovingTime">Seconds.</param>

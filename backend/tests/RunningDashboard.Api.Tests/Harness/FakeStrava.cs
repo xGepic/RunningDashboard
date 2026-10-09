@@ -33,6 +33,13 @@ public sealed class FakeStrava : HttpMessageHandler
             return FixtureResponse(fixture);
         });
 
+    /// <summary>Serves <paramref name="activities"/> as one page of Strava's Activity list.</summary>
+    public void RespondWithActivities(string path, params TestActivity[] activities) =>
+        Respond(HttpMethod.Get, path, () => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(TestActivity.ToJson(activities), Encoding.UTF8, "application/json"),
+        });
+
     public void Respond(HttpMethod method, string path, Func<HttpResponseMessage> response) =>
         Enqueue(method, path, () => Task.FromResult(response()));
 

@@ -69,6 +69,19 @@ public sealed class TestApp : WebApplicationFactory<Program>
     }
 
     /// <summary>
+    /// Connects Strava and waits for the first sync, which imports exactly <paramref name="activities"/>.
+    /// </summary>
+    public async Task<HttpClient> ConnectWithActivitiesAsync(params TestActivity[] activities)
+    {
+        Strava.RespondWithActivities("/api/v3/athlete/activities", activities);
+        Strava.RespondWithFixture(HttpMethod.Get, "/api/v3/athlete/activities", "activities-empty.json");
+        var browser = CreateBrowser();
+        await ConnectStravaAsync(browser);
+        await WaitForSyncAsync(browser);
+        return browser;
+    }
+
+    /// <summary>
     /// Clicks "Connect Strava" and returns the state the app expects back from Strava.
     /// </summary>
     public static async Task<string> StartConnectAsync(HttpClient browser)

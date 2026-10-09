@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using RunningDashboard.Api.Overview;
 using RunningDashboard.Api.Persistence;
 using RunningDashboard.Api.Runs;
 using RunningDashboard.Api.Strava;
@@ -31,6 +32,7 @@ app.MapConnectionEndpoints();
 app.MapStravaAuthEndpoints();
 app.MapSyncEndpoints();
 app.MapRunEndpoints();
+app.MapOverviewEndpoints();
 
 app.Run();
 

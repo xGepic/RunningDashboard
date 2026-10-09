@@ -1,0 +1,58 @@
+using System.Globalization;
+using System.Text.Json;
+
+namespace RunningDashboard.Api.Tests.Harness;
+
+/// <summary>
+/// A Strava Activity summary for tests that need specific dates, distances or times. <see cref="ToJson"/> renders
+/// it the way Strava lists Activities; fields a test does not set get plausible values.
+/// </summary>
+/// <param name="StartLocal">Wall-clock start where the Activity happened.</param>
+/// <param name="UtcOffsetHours">Offset of that place from UTC, e.g. 2 for Vienna in summer, -4 for New York.</param>
+public sealed record TestActivity(
+    long Id,
+    string Name,
+    DateTime StartLocal,
+    double Distance,
+    int MovingTime,
+    string SportType = "Run",
+    double UtcOffsetHours = 2,
+    double ElevationGain = 0)
+{
+    public static string ToJson(IEnumerable<TestActivity> activities) =>
+        JsonSerializer.Serialize(activities.Select(a => a.ToStrava()));
+
+    private Dictionary<string, object?> ToStrava()
+    {
+        var startUtc = StartLocal.AddHours(-UtcOffsetHours);
+        return new Dictionary<string, object?>
+        {
+            ["resource_state"] = 2,
+            ["athlete"] = new { id = 133415890, resource_state = 1 },
+            ["name"] = Name,
+            ["distance"] = Distance,
+            ["moving_time"] = MovingTime,
+            ["elapsed_time"] = MovingTime,
+            ["total_elevation_gain"] = ElevationGain,
+            ["type"] = SportType == "TrailRun" ? "Run" : SportType,
+            ["sport_type"] = SportType,
+            ["workout_type"] = 0,
+            ["id"] = Id,
+            // Strava writes both with "Z", although start_date_local is the local wall-clock time.
+            ["start_date"] = startUtc.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture),
+            ["start_date_local"] = StartLocal.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture),
+            ["timezone"] = $"(GMT{UtcOffsetHours:+00;-00}:00) Test/Zone",
+            ["utc_offset"] = UtcOffsetHours * 3600,
+            ["trainer"] = SportType == "VirtualRun",
+            ["commute"] = false,
+            ["manual"] = false,
+            ["private"] = false,
+            ["visibility"] = "everyone",
+            ["gear_id"] = null,
+            ["average_speed"] = MovingTime > 0 ? Distance / MovingTime : 0,
+            ["has_heartrate"] = false,
+            ["pr_count"] = 0,
+            ["suffer_score"] = null,
+        };
+    }
+}

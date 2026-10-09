@@ -1,21 +1,63 @@
 <h1>Runs</h1>
 
-@if (runs.value(); as runs) {
-  @if (runs.length === 0) {
-    <p class="empty">No Runs yet. Connect Strava and sync to import them.</p>
+<form class="filters" role="search" (submit)="$event.preventDefault()">
+  <label>
+    Name
+    <input #searchBox type="search" placeholder="e.g. Lauf" [value]="search() ?? ''"
+           (change)="filter({ search: searchBox.value.trim() })" />
+  </label>
+  <label>
+    From
+    <input #fromDate type="date" [value]="from() ?? ''" (change)="filter({ from: fromDate.value })" />
+  </label>
+  <label>
+    To
+    <input #toDate type="date" [value]="to() ?? ''" (change)="filter({ to: toDate.value })" />
+  </label>
+  <label>
+    Type
+    <select #type (change)="filter({ sportType: type.value })">
+      <option value="" [selected]="!sportType()">All Runs</option>
+      <option value="Run" [selected]="sportType() === 'Run'">Road</option>
+      <option value="TrailRun" [selected]="sportType() === 'TrailRun'">Trail</option>
+      <option value="VirtualRun" [selected]="sportType() === 'VirtualRun'">Treadmill</option>
+    </select>
+  </label>
+  @if (filtered()) {
+    <button type="button" class="link" (click)="clearFilters()">Clear filters</button>
+  }
+</form>
+
+@if (runs.value(); as page) {
+  @if (page.totalCount === 0) {
+    <p class="empty">
+      @if (page.page > 1) {
+        There are no Runs on page {{ page.page }}.
+        <button type="button" class="link" (click)="goToPage(1)">Go to the first page</button>
+      } @else if (filtered()) {
+        No Runs match these filters.
+      } @else {
+        No Runs yet. Connect Strava and sync to import them.
+      }
+    </p>
+  } @else if (page.items.length === 0) {
+    <p class="empty">
+      There are only {{ pageCount() }} pages of Runs.
+      <button type="button" class="link" (click)="goToPage(pageCount())">Go to the last page</button>
+    </p>
   } @else {
     <table class="data-table">
       <thead>
         <tr>
-          <th>Date</th>
+          <th [attr.aria-sort]="ariaSort('date')"><button type="button" (click)="sortBy('date')">Date{{ sortIndicator('date') }}</button></th>
           <th>Name</th>
-          <th class="number">Distance</th>
-          <th class="number">Moving Time</th>
-          <th class="number">Pace</th>
+          <th class="number" [attr.aria-sort]="ariaSort('distance')"><button type="button" (click)="sortBy('distance')">Distance{{ sortIndicator('distance') }}</button></th>
+          <th class="number" [attr.aria-sort]="ariaSort('movingTime')"><button type="button" (click)="sortBy('movingTime')">Moving Time{{ sortIndicator('movingTime') }}</button></th>
+          <th class="number" [attr.aria-sort]="ariaSort('pace')"><button type="button" (click)="sortBy('pace')">Pace{{ sortIndicator('pace') }}</button></th>
         </tr>
       </thead>
       <tbody>
-        @for (run of runs; track run.id) {
+        @for (run of page.items; track run.id) {
           <tr>
             <td class="date">{{ run.startLocal | date: 'EEE d MMM y, HH:mm' }}</td>
             <td><a [routerLink]="['/runs', run.id]">{{ run.name }}</a></td>
@@ -26,7 +68,16 @@
         }
       </tbody>
     </table>
+
+    <nav class="pager" aria-label="Pages">
+      <button type="button" (click)="goToPage(page.page - 1)" [disabled]="page.page <= 1">← Previous</button>
+      <span>Page {{ page.page }} of {{ pageCount() }} · {{ page.totalCount }} Runs</span>
+      <button type="button" (click)="goToPage(page.page + 1)" [disabled]="page.page >= pageCount()">Next →</button>
+    </nav>
   }
 } @else if (runs.error()) {
-  <p class="error" role="alert">Runs could not be loaded.</p>
+  <p class="error" role="alert">
+    Runs could not be loaded with these options.
+    <a routerLink="/runs">Show all Runs</a>
+  </p>
 }

@@ -117,7 +117,9 @@ public sealed class IncrementalSyncTests : IAsyncLifetime
     private IEnumerable<RecordedRequest> SecondSyncRequests() => _app.Strava.Requests.Skip(_requestsBeforeSecondSync);
 
     private async Task<List<string>> RunNamesAsync() =>
-        (await _browser.GetFromJsonAsync<List<RunResponse>>("/api/runs"))!.Select(r => r.Name).ToList();
+        (await _browser.GetFromJsonAsync<RunPage>("/api/runs"))!.Items.Select(r => r.Name).ToList();
+
+    private sealed record RunPage(List<RunResponse> Items);
 
     private sealed record RunResponse(long Id, string Name);
 

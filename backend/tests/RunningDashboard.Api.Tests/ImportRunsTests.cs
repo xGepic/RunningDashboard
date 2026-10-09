@@ -211,7 +211,9 @@ public sealed class ImportRunsTests : IAsyncLifetime
     }
 
     private static async Task<List<RunResponse>> GetRunsAsync(HttpClient browser) =>
-        (await browser.GetFromJsonAsync<List<RunResponse>>("/api/runs"))!;
+        (await browser.GetFromJsonAsync<RunPage>("/api/runs"))!.Items;
+
+    private sealed record RunPage(List<RunResponse> Items);
 
     private sealed record RunResponse(long Id, string Name, string SportType, DateTime StartLocal, double Distance, int MovingTime, double Pace);
 }

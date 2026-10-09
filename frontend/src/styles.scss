@@ -6,6 +6,9 @@
   --text-muted: #5b6270;
   --border: #dfe2e7;
   --error: #c62828;
+  /* Chart tokens (dataviz reference palette, validated against both surfaces). */
+  --chart-series: #2a78d6;
+  --chart-grid: #e8e9ec;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -16,6 +19,8 @@
     --text-muted: #a2a8b3;
     --border: #2f333a;
     --error: #ef7070;
+    --chart-series: #3987e5;
+    --chart-grid: #2f333a;
   }
 }
 

@@ -1,4 +1,4 @@
-import { formatDistance, formatDuration, formatPace } from './format';
+import { formatDistance, formatDuration, formatHours, formatPace, formatTotalDistance } from './format';
 
 describe('formatDistance', () => {
   it('shows metres as kilometres with two decimals', () => {
@@ -31,5 +31,19 @@ describe('formatPace', () => {
 
   it('shows a dash for a Run without a Pace', () => {
     expect(formatPace(null)).toBe('–');
+  });
+});
+
+describe('formatTotalDistance', () => {
+  it('shows whole kilometres with thousands separators', () => {
+    expect(formatTotalDistance(4_321_456)).toBe('4,321 km');
+    expect(formatTotalDistance(42_582.8)).toBe('43 km');
+  });
+});
+
+describe('formatHours', () => {
+  it('shows whole hours for long totals', () => {
+    expect(formatHours(1_843_200)).toBe('512 h');
+    expect(formatHours(5_399)).toBe('1 h');
   });
 });
