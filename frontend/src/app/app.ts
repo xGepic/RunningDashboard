@@ -1,9 +1,9 @@
 import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { ConnectionStatus } from './connection/connection-status';
 
 @Component({
-  imports: [RouterOutlet, ConnectionStatus],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ConnectionStatus],
   selector: 'app-root',
   styleUrl: './app.scss',
   templateUrl: './app.html',

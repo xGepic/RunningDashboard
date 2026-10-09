@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using RunningDashboard.Api.Persistence;
+using RunningDashboard.Api.Sync;
 
 namespace RunningDashboard.Api.Strava;
 
@@ -53,6 +54,7 @@ public static class StravaAuthEndpoints
             AppDbContext db,
             TimeProvider clock,
             ILoggerFactory loggers,
+            SyncWorker sync,
             CancellationToken cancellationToken) =>
         {
             var expectedState = http.Request.Cookies[StateCookie];
@@ -85,6 +87,7 @@ public static class StravaAuthEndpoints
                 connection.Refresh(grant);
 
             await db.SaveChangesAsync(cancellationToken);
+            sync.RequestSync();
             return Results.Redirect("/?strava=connected");
         });
     }

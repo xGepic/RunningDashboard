@@ -1,0 +1,32 @@
+<h1>Runs</h1>
+
+@if (runs.value(); as runs) {
+  @if (runs.length === 0) {
+    <p class="empty">No Runs yet. Connect Strava and sync to import them.</p>
+  } @else {
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Name</th>
+          <th class="number">Distance</th>
+          <th class="number">Moving Time</th>
+          <th class="number">Pace</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (run of runs; track run.id) {
+          <tr>
+            <td class="date">{{ run.startLocal | date: 'EEE d MMM y, HH:mm' }}</td>
+            <td>{{ run.name }}</td>
+            <td class="number">{{ formatDistance(run.distance) }}</td>
+            <td class="number">{{ formatDuration(run.movingTime) }}</td>
+            <td class="number">{{ formatPace(run.pace) }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+} @else if (runs.error()) {
+  <p class="error" role="alert">Runs could not be loaded.</p>
+}

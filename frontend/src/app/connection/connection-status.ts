@@ -3,10 +3,12 @@ import { Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { map } from 'rxjs';
+import { SyncButton } from '../sync/sync-button';
 import { ConnectErrorReason, Connection, connectErrorMessages } from './connection';
 
 @Component({
   selector: 'app-connection-status',
+  imports: [SyncButton],
   templateUrl: './connection-status.html',
   styleUrl: './connection-status.scss',
 })

@@ -18,6 +18,23 @@
   font-size: 1.1rem;
 }
 
+nav {
+  display: flex;
+  gap: 1rem;
+  margin-right: auto;
+  margin-left: 1.5rem;
+
+  a {
+    color: var(--text-muted);
+    text-decoration: none;
+
+    &.active {
+      color: var(--text);
+      font-weight: 600;
+    }
+  }
+}
+
 .shell-main {
   padding: 1.5rem;
 }
