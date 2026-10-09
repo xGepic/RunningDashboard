@@ -1,0 +1,23 @@
+:host {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.connect {
+  padding: 0.4rem 0.9rem;
+  border-radius: 4px;
+  background: #fc4c02;
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.connected {
+  color: var(--text-muted);
+}
+
+.error {
+  color: var(--error);
+}

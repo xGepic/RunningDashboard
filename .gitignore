@@ -1,0 +1,16 @@
+# .NET
+bin/
+obj/
+*.user
+.vs/
+TestResults/
+
+# Local SQLite database
+*.db
+*.db-shm
+*.db-wal
+
+# Editors / OS
+.idea/
+.DS_Store
+Thumbs.db

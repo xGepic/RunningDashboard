@@ -1,0 +1,29 @@
+{
+  "token_type": "Bearer",
+  "expires_at": 1791612000,
+  "expires_in": 21600,
+  "refresh_token": "f6o678678b9a0c1d2e3f4a5b6c7d8e9f0a1b2c3d",
+  "access_token": "b5c056798h2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f",
+  "athlete": {
+    "id": 98765432,
+    "username": null,
+    "resource_state": 2,
+    "firstname": "Erika",
+    "lastname": "Mustermann",
+    "bio": null,
+    "city": "Wien",
+    "state": "",
+    "country": "Austria",
+    "sex": "F",
+    "premium": false,
+    "summit": false,
+    "created_at": "2021-04-18T08:30:12Z",
+    "updated_at": "2026-09-30T06:45:51Z",
+    "badge_type_id": 0,
+    "weight": 60.0,
+    "profile_medium": "avatar/athlete/medium.png",
+    "profile": "avatar/athlete/large.png",
+    "friend": null,
+    "follower": null
+  }
+}
