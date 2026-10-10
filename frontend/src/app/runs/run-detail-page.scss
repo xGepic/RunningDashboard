@@ -60,3 +60,13 @@ section {
 .data-table {
   max-width: 40rem;
 }
+
+.badge {
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid var(--chart-series);
+  border-radius: 4px;
+  color: var(--chart-series);
+  font-size: 0.75rem;
+  font-weight: 600;
+}

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using RunningDashboard.Api.Persistence;
+using RunningDashboard.Api.Records;
 
 namespace RunningDashboard.Api.Runs;
 
@@ -50,7 +51,8 @@ public static class RunEndpoints
                 return Results.NotFound();
 
             var shoe = run.ShoeId is null ? null : await db.Shoes.FindAsync([run.ShoeId], cancellationToken);
-            return Results.Ok(RunDetailResponse.From(run, shoe?.Name));
+            var personalBestDistances = await PersonalBests.DistancesSetByAsync(run, db, cancellationToken);
+            return Results.Ok(RunDetailResponse.From(run, shoe?.Name, personalBestDistances));
         });
     }
 
@@ -97,7 +99,8 @@ public static class RunEndpoints
         IReadOnlyList<BestEffortResponse> BestEfforts,
         IReadOnlyList<SplitResponse> Splits)
     {
-        public static RunDetailResponse From(Run run, string? shoeName) => new(
+        /// <param name="personalBestDistances">Distances at which the Run's Best Effort was a Personal Best at the time.</param>
+        public static RunDetailResponse From(Run run, string? shoeName, IReadOnlySet<double> personalBestDistances) => new(
             run.Id,
             run.Name,
             run.SportType,
@@ -113,7 +116,8 @@ public static class RunEndpoints
             run.DetailStatus.ToString().ToLowerInvariant(),
             run.BestEfforts
                 .OrderBy(e => e.Distance)
-                .Select(e => new BestEffortResponse(e.Name, e.Distance, e.ElapsedTime, Run.PerKilometre(e.ElapsedTime, e.Distance)))
+                .Select(e => new BestEffortResponse(
+                    e.Name, e.Distance, e.ElapsedTime, Run.PerKilometre(e.ElapsedTime, e.Distance), personalBestDistances.Contains(e.Distance)))
                 .ToList(),
             run.Splits
                 .OrderBy(s => s.Index)
@@ -122,7 +126,8 @@ public static class RunEndpoints
     }
 
     /// <param name="TimePerKm">Elapsed time per kilometre, in seconds. Not Pace, which is Moving Time based.</param>
-    private sealed record BestEffortResponse(string Name, double Distance, int ElapsedTime, double? TimePerKm);
+    /// <param name="PersonalBest">Whether it was a Personal Best when it was run: faster than every earlier Best Effort.</param>
+    private sealed record BestEffortResponse(string Name, double Distance, int ElapsedTime, double? TimePerKm, bool PersonalBest);
 
     private sealed record SplitResponse(int Index, double Distance, int MovingTime, double? Pace, double ElevationDifference);
 }

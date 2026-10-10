@@ -43,6 +43,13 @@ public sealed class FakeStrava : HttpMessageHandler
             Content = new StringContent(TestActivity.ToJson(activities), Encoding.UTF8, "application/json"),
         });
 
+    /// <summary>Serves <paramref name="activity"/> as Strava's detailed Activity, with its Best Efforts.</summary>
+    public void RespondWithDetail(TestActivity activity) =>
+        Respond(HttpMethod.Get, $"/api/v3/activities/{activity.Id}", () => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(activity.ToDetailJson(), Encoding.UTF8, "application/json"),
+        });
+
     public void Respond(HttpMethod method, string path, Func<HttpResponseMessage> response) =>
         Enqueue(method, path, () => Task.FromResult(response()));
 

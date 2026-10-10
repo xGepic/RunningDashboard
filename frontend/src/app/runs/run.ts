@@ -42,6 +42,8 @@ export interface BestEffort {
   elapsedTime: number;
   /** Elapsed time per km in seconds; not Pace, which is Moving Time based. */
   timePerKm: number | null;
+  /** Whether it was a Personal Best when it was run: faster than every earlier Best Effort over the distance. */
+  personalBest: boolean;
 }
 
 /** A Split: one kilometre of the Run; the last one is usually shorter. */

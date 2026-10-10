@@ -1,0 +1,65 @@
+<h1>Records</h1>
+
+@if (records.value(); as records) {
+  @if (records.length === 0) {
+    <p class="empty">No Best Efforts yet. They come in with each Run's details from Strava.</p>
+  } @else {
+    <section>
+      <h2>Personal Bests</h2>
+      <p class="hint">Fastest Best Effort for each distance, including parts of longer Runs.</p>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Distance</th>
+            <th class="number">Time</th>
+            <th class="number">Per km</th>
+            <th class="number">Date</th>
+            <th>Run</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (record of records; track record.distance) {
+            <tr>
+              <td>{{ record.name }}</td>
+              <td class="number">{{ formatDuration(record.personalBest.elapsedTime) }}</td>
+              <td class="number">{{ formatPace(record.personalBest.timePerKm) }}</td>
+              <td class="number">{{ record.personalBest.date | date: 'd MMM y' }}</td>
+              <td><a [routerLink]="['/runs', record.personalBest.runId]">{{ record.personalBest.runName }}</a></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>How each Personal Best improved</h2>
+      <p class="hint">Each step is a Best Effort strictly faster than every earlier one. Lower is faster.</p>
+      <fieldset class="distances">
+        <legend>Distances</legend>
+        @for (record of records; track record.distance) {
+          <label>
+            <input type="checkbox" [checked]="shown().has(record.distance)" (change)="toggle(record.distance)" />
+            {{ record.name }}
+          </label>
+        }
+      </fieldset>
+
+      <div class="charts">
+        @for (chart of charts(); track chart.record.distance) {
+          <figure>
+            <figcaption>
+              <span class="name">{{ chart.record.name }}</span>
+              <span class="best">{{ formatDuration(chart.record.personalBest.elapsedTime) }}</span>
+            </figcaption>
+            <div class="chart" echarts [options]="chart.options" [autoResize]="true" role="img"
+                 [attr.aria-label]="'Step chart of the ' + chart.record.name + ' Personal Best over time; the table above has the current one'"></div>
+          </figure>
+        } @empty {
+          <p class="empty">Pick a distance to see how its Personal Best improved.</p>
+        }
+      </div>
+    </section>
+  }
+} @else if (records.error()) {
+  <p class="error" role="alert">Records could not be loaded.</p>
+}

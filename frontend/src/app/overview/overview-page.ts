@@ -3,7 +3,7 @@ import { httpResource } from '@angular/common/http';
 import { Component, computed, inject } from '@angular/core';
 import type { EChartsCoreOption } from 'echarts/core';
 import { NgxEchartsDirective } from 'ngx-echarts';
-import { ChartColors, ChartTheme } from '../shared/chart-theme';
+import { ChartColors, ChartTheme, baseChartOptions } from '../shared/chart-theme';
 import { formatDistance, formatHours, formatPace, formatTotalDistance } from '../shared/format';
 import { reloadOnSync } from '../sync/reload-on-sync';
 import { MonthPace, Overview, WeekDistance } from './overview';
@@ -53,21 +53,6 @@ function monthLabel(month: MonthPace): string {
   return `${monthNames[month.month - 1]} ${month.year}`;
 }
 
-/** Shared axis and tooltip styling: recessive hairline grid, muted text. */
-function baseOptions(colors: ChartColors) {
-  return {
-    backgroundColor: 'transparent',
-    textStyle: { color: colors.muted },
-    grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true },
-    tooltip: {
-      trigger: 'axis',
-      backgroundColor: colors.surface,
-      borderColor: colors.grid,
-      textStyle: { color: colors.text },
-    },
-  };
-}
-
 function categoryAxis(labels: string[], colors: ChartColors) {
   return {
     type: 'category',
@@ -89,9 +74,9 @@ function valueAxis(colors: ChartColors, formatter: (value: number) => string, fr
 
 function weeklyDistanceChart(weeks: WeekDistance[], colors: ChartColors): EChartsCoreOption {
   return {
-    ...baseOptions(colors),
+    ...baseChartOptions(colors),
     tooltip: {
-      ...baseOptions(colors).tooltip,
+      ...baseChartOptions(colors).tooltip,
       axisPointer: { type: 'shadow' },
       formatter: (params: { dataIndex: number }[]) => {
         const week = weeks[params[0]?.dataIndex];
@@ -115,9 +100,9 @@ function weeklyDistanceChart(weeks: WeekDistance[], colors: ChartColors): EChart
 
 function monthlyPaceChart(months: MonthPace[], colors: ChartColors): EChartsCoreOption {
   return {
-    ...baseOptions(colors),
+    ...baseChartOptions(colors),
     tooltip: {
-      ...baseOptions(colors).tooltip,
+      ...baseChartOptions(colors).tooltip,
       axisPointer: { type: 'line', lineStyle: { color: colors.muted } },
       formatter: (params: { dataIndex: number }[]) => {
         const month = months[params[0]?.dataIndex];

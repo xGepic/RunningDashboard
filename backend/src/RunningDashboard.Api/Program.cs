@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using RunningDashboard.Api.Overview;
 using RunningDashboard.Api.Persistence;
+using RunningDashboard.Api.Records;
 using RunningDashboard.Api.Runs;
 using RunningDashboard.Api.Shoes;
 using RunningDashboard.Api.Strava;
@@ -36,6 +37,7 @@ app.MapSyncEndpoints();
 app.MapRunEndpoints();
 app.MapOverviewEndpoints();
 app.MapShoeEndpoints();
+app.MapRecordEndpoints();
 
 app.Run();
 

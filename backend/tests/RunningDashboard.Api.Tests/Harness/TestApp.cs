@@ -69,12 +69,15 @@ public sealed class TestApp : WebApplicationFactory<Program>
     }
 
     /// <summary>
-    /// Connects Strava and waits for the first sync, which imports exactly <paramref name="activities"/>.
+    /// Connects Strava and waits for the first sync, which imports exactly <paramref name="activities"/>. Those with
+    /// Best Efforts get them as their detail; Strava has no detail for the others.
     /// </summary>
     public async Task<HttpClient> ConnectWithActivitiesAsync(params TestActivity[] activities)
     {
         Strava.RespondWithActivities("/api/v3/athlete/activities", activities);
         Strava.RespondWithFixture(HttpMethod.Get, "/api/v3/athlete/activities", "activities-empty.json");
+        foreach (var activity in activities.Where(a => a.BestEfforts is not null))
+            Strava.RespondWithDetail(activity);
         var browser = CreateBrowser();
         await ConnectStravaAsync(browser);
         await WaitForSyncAsync(browser);

@@ -34,7 +34,12 @@
           <tbody>
             @for (effort of run.bestEfforts; track effort.name) {
               <tr>
-                <td>{{ effort.name }}</td>
+                <td>
+                  {{ effort.name }}
+                  @if (effort.personalBest) {
+                    <span class="badge" title="Faster than every earlier Best Effort over this distance">Personal Best</span>
+                  }
+                </td>
                 <td class="number">{{ formatDuration(effort.elapsedTime) }}</td>
                 <td class="number">{{ formatPace(effort.timePerKm) }}</td>
               </tr>

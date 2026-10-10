@@ -39,3 +39,18 @@ export class ChartTheme {
     return this.document.defaultView?.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
   }
 }
+
+/** Styling every chart shares: transparent background, recessive hairline grid, muted text, axis tooltip. */
+export function baseChartOptions(colors: ChartColors) {
+  return {
+    backgroundColor: 'transparent',
+    textStyle: { color: colors.muted },
+    grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true },
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: colors.surface,
+      borderColor: colors.grid,
+      textStyle: { color: colors.text },
+    },
+  };
+}
