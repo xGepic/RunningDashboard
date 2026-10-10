@@ -122,3 +122,24 @@ section {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+td a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.note,
+.difference {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.difference.under {
+  font-weight: 600;
+}

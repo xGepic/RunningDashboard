@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using RunningDashboard.Api.Persistence;
 using RunningDashboard.Api.Training;
@@ -11,7 +12,7 @@ public static class GoalRaceEndpoints
         app.MapGet("/api/goal-races", async (AppDbContext db, CancellationToken cancellationToken) =>
         {
             var races = await db.GoalRaces.ToListAsync(cancellationToken);
-            return races.OrderByDescending(r => r.Date).Select(GoalRaceResponse.From).ToList();
+            return await ResponsesAsync(races.OrderByDescending(r => r.Date).ToList(), db, cancellationToken);
         });
 
         app.MapPost("/api/goal-races", async (GoalRaceRequest request, AppDbContext db, CancellationToken cancellationToken) =>
@@ -22,7 +23,7 @@ public static class GoalRaceEndpoints
             var race = request.ToGoalRace();
             db.GoalRaces.Add(race);
             await db.SaveChangesAsync(cancellationToken);
-            return Results.Created($"/api/goal-races/{race.Id}", GoalRaceResponse.From(race));
+            return Results.Created($"/api/goal-races/{race.Id}", (await ResponsesAsync([race], db, cancellationToken)).Single());
         });
 
         app.MapPut("/api/goal-races/{id:int}", async (int id, GoalRaceRequest request, AppDbContext db, CancellationToken cancellationToken) =>
@@ -35,13 +36,20 @@ public static class GoalRaceEndpoints
 
             request.ApplyTo(race);
             await db.SaveChangesAsync(cancellationToken);
-            return Results.Ok(GoalRaceResponse.From(race));
+            return Results.Ok((await ResponsesAsync([race], db, cancellationToken)).Single());
         });
 
         app.MapDelete("/api/goal-races/{id:int}", async (int id, AppDbContext db, CancellationToken cancellationToken) =>
             await db.GoalRaces.Where(r => r.Id == id).ExecuteDeleteAsync(cancellationToken) == 0
                 ? Results.NotFound()
                 : Results.NoContent());
+    }
+
+    /// <summary>The <paramref name="races"/> with their Race Results, in the same order.</summary>
+    private static async Task<List<GoalRaceResponse>> ResponsesAsync(IReadOnlyCollection<GoalRace> races, AppDbContext db, CancellationToken cancellationToken)
+    {
+        var results = await RaceResults.OfAsync(races, db, cancellationToken);
+        return races.Select(r => GoalRaceResponse.From(r, results.GetValueOrDefault(r.Id))).ToList();
     }
 
     /// <summary>
@@ -125,6 +133,7 @@ public static class GoalRaceEndpoints
     /// <param name="TargetTime">Seconds.</param>
     /// <param name="TrainingBlockStart">The Monday the Training Block starts.</param>
     /// <param name="TrainingBlockEnd">The Sunday of the Race Week, when the Training Block ends.</param>
+    /// <param name="RaceResult">None without a Run on race day.</param>
     private sealed record GoalRaceResponse(
         int Id,
         string Name,
@@ -133,9 +142,10 @@ public static class GoalRaceEndpoints
         int? TargetTime,
         int TrainingBlockWeeks,
         DateOnly TrainingBlockStart,
-        DateOnly TrainingBlockEnd)
+        DateOnly TrainingBlockEnd,
+        RaceResultResponse? RaceResult)
     {
-        public static GoalRaceResponse From(GoalRace race) => new(
+        public static GoalRaceResponse From(GoalRace race, RaceResult? result) => new(
             race.Id,
             race.Name,
             race.Date,
@@ -143,6 +153,23 @@ public static class GoalRaceEndpoints
             race.TargetTime,
             race.TrainingBlockWeeks,
             race.TrainingBlock.Start,
-            race.TrainingBlock.End);
+            race.TrainingBlock.End,
+            result is null ? null : RaceResultResponse.From(result, race.TargetTime));
+    }
+
+    /// <param name="ElapsedTime">Seconds; none while pending.</param>
+    /// <param name="Source">
+    /// "bestEffort": the Run's Best Effort over the race distance; "elapsedTime": the whole Run's, as it has none;
+    /// "pending": the Run's Best Efforts are still to be fetched.
+    /// </param>
+    /// <param name="DifferenceFromTarget">Seconds over (positive) or under (negative) the Target Time; none without one.</param>
+    private sealed record RaceResultResponse(long RunId, string RunName, int? ElapsedTime, string Source, int? DifferenceFromTarget)
+    {
+        public static RaceResultResponse From(RaceResult result, int? targetTime) => new(
+            result.RunId,
+            result.RunName,
+            result.ElapsedTime,
+            JsonNamingPolicy.CamelCase.ConvertName(result.Source.ToString()),
+            result.ElapsedTime - targetTime);
     }
 }

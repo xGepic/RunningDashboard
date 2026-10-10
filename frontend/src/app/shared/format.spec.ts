@@ -1,4 +1,4 @@
-import { formatDistance, formatDuration, formatHours, formatPace, formatTotalDistance, parseDuration } from './format';
+import { formatDifference, formatDistance, formatDuration, formatHours, formatPace, formatTotalDistance, parseDuration } from './format';
 
 describe('formatDistance', () => {
   it('shows metres as kilometres with two decimals', () => {
@@ -60,5 +60,17 @@ describe('parseDuration', () => {
     expect(parseDuration('5h')).toBeNull();
     expect(parseDuration('4:75:00')).toBeNull();
     expect(parseDuration('1:2:3:4')).toBeNull();
+  });
+});
+
+describe('formatDifference', () => {
+  it('says how far over or under a Target Time a result was', () => {
+    expect(formatDifference(11)).toBe('0:11 over');
+    expect(formatDifference(-280)).toBe('4:40 under');
+    expect(formatDifference(-3725)).toBe('1:02:05 under');
+  });
+
+  it('says when a result hit the Target Time exactly', () => {
+    expect(formatDifference(0)).toBe('on target');
   });
 });

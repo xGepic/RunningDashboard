@@ -10,6 +10,7 @@ namespace RunningDashboard.Api.Tests.Harness;
 /// </summary>
 /// <param name="StartLocal">Wall-clock start where the Activity happened.</param>
 /// <param name="UtcOffsetHours">Offset of that place from UTC, e.g. 2 for Vienna in summer, -4 for New York.</param>
+/// <param name="ElapsedTime">Seconds; the Moving Time unless a test sets it.</param>
 public sealed record TestActivity(
     long Id,
     string Name,
@@ -19,7 +20,8 @@ public sealed record TestActivity(
     string SportType = "Run",
     double UtcOffsetHours = 2,
     double ElevationGain = 0,
-    TestBestEffort[]? BestEfforts = null)
+    TestBestEffort[]? BestEfforts = null,
+    int? ElapsedTime = null)
 {
     public static string ToJson(IEnumerable<TestActivity> activities) =>
         JsonSerializer.Serialize(activities.Select(a => a.ToStrava()));
@@ -49,7 +51,7 @@ public sealed record TestActivity(
             ["name"] = Name,
             ["distance"] = Distance,
             ["moving_time"] = MovingTime,
-            ["elapsed_time"] = MovingTime,
+            ["elapsed_time"] = ElapsedTime ?? MovingTime,
             ["total_elevation_gain"] = ElevationGain,
             ["type"] = SportType == "TrailRun" ? "Run" : SportType,
             ["sport_type"] = SportType,

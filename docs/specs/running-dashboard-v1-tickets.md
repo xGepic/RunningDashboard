@@ -229,7 +229,7 @@ These tickets break down [running-dashboard-v1.md](running-dashboard-v1.md). Eac
 
 **Status:** ready-for-agent
 
-- [ ] The Race Result comes from the longest Run on the race date. It is that Run's Best Effort whose distance exactly equals the Goal Race distance.
+- [ ] The Race Result comes from the longest Run on the race date. It is that Run's Best Effort whose distance equals the Goal Race distance to within 1 m (Strava's half marathon is 21,097 m, the official one 21,097.5 m).
 - [ ] If the distance has no matching Best Effort, the Run's elapsed time is used.
 - [ ] With no Run on the race date, there's no Race Result.
 - [ ] The Goal Races list shows the Race Result, a link to the Run, and the difference from the Target Time (over or under) when there is one.

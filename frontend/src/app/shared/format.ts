@@ -32,6 +32,12 @@ export function formatPace(secondsPerKm: number | null): string {
   return `${Math.floor(total / 60)}:${pad(total % 60)} /km`;
 }
 
+/** A result against its Target Time: "0:11 over", "4:40 under" or "on target". */
+export function formatDifference(seconds: number): string {
+  if (seconds === 0) return 'on target';
+  return `${formatDuration(Math.abs(seconds))} ${seconds > 0 ? 'over' : 'under'}`;
+}
+
 /** Seconds from "h:mm:ss" or "m:ss" as the Athlete types it; null if it is not one. */
 export function parseDuration(text: string): number | null {
   const match = /^(?:(\d+):)?(\d{1,2}):(\d{2})$/.exec(text.trim());

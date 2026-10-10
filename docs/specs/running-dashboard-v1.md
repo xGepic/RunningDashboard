@@ -216,7 +216,7 @@ The modules are listed from the outside in. Each should keep a small interface a
 
 - OAuth scopes: `read`, `activity:read_all` (includes private Runs) and `profile:read_all` (includes Shoes on the athlete). The callback is on localhost. The client id and secret come from .NET user secrets.
 - The running sport types are Run, TrailRun and VirtualRun.
-- Best Effort distances are matched by Strava's distance name or exact distance in metres. A Goal Race distance counts as matching a Best Effort only when it is exactly equal (for example 42,195 m for a marathon).
+- Best Effort distances are matched by Strava's distance name or exact distance in metres. A Goal Race distance counts as matching a Best Effort only when it is equal to within 1 m (for example 42,195 m for a marathon; Strava's half marathon Best Effort is 21,097 m, the official distance 21,097.5 m).
 - New Strava API apps are limited to one connected athlete until Strava reviews them, which fits a single-Athlete app.
 
 ## Testing Decisions

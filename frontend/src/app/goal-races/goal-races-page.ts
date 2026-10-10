@@ -2,7 +2,9 @@ import { DatePipe } from '@angular/common';
 import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { formatDistance, formatDuration, parseDuration } from '../shared/format';
+import { RouterLink } from '@angular/router';
+import { formatDifference, formatDistance, formatDuration, parseDuration } from '../shared/format';
+import { reloadOnSync } from '../sync/reload-on-sync';
 import { GoalRace, GoalRaceRequest, distancePresets } from './goal-race';
 
 /** Field errors as the API reports them in its problem details, keyed by field name. */
@@ -16,7 +18,7 @@ const formError = 'form';
 
 @Component({
   selector: 'app-goal-races-page',
-  imports: [DatePipe, ReactiveFormsModule],
+  imports: [DatePipe, ReactiveFormsModule, RouterLink],
   templateUrl: './goal-races-page.html',
   styleUrl: './goal-races-page.scss',
 })
@@ -28,6 +30,7 @@ export class GoalRacesPage {
   protected readonly custom = custom;
   protected readonly formError = formError;
   protected readonly formatDuration = formatDuration;
+  protected readonly formatDifference = formatDifference;
 
   /** The race being edited; null while the form creates a new one. */
   protected readonly editing = signal<GoalRace | null>(null);
@@ -47,6 +50,11 @@ export class GoalRacesPage {
     /** From a number input: null while it is empty or not a number. */
     trainingBlockWeeks: this.formBuilder.control<number | null>(16),
   });
+
+  constructor() {
+    // Race Results come from the Runs, so a sync can bring one in.
+    reloadOnSync(() => this.races.reload());
+  }
 
   protected distanceLabel(metres: number): string {
     return presetFor(metres)?.name ?? formatDistance(metres);

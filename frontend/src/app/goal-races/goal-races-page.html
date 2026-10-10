@@ -87,6 +87,7 @@
             <th>Distance</th>
             <th class="number">Target Time</th>
             <th>Training Block</th>
+            <th class="number">Race Result</th>
             <th><span class="visually-hidden">Actions</span></th>
           </tr>
         </thead>
@@ -100,6 +101,26 @@
               <td>
                 {{ race.trainingBlockStart | date: 'EEE d MMM y' }} – {{ race.trainingBlockEnd | date: 'EEE d MMM y' }}
                 <span class="weeks">({{ race.trainingBlockWeeks }} weeks)</span>
+              </td>
+              <td class="number">
+                @if (race.raceResult; as result) {
+                  @if (result.elapsedTime === null) {
+                    <a [routerLink]="['/runs', result.runId]" [title]="result.runName">{{ result.runName }}</a>
+                    <span class="note">Best Efforts still loading</span>
+                  } @else {
+                    <a [routerLink]="['/runs', result.runId]" [title]="result.runName">{{ formatDuration(result.elapsedTime) }}</a>
+                  }
+                  @if (result.source === 'elapsedTime') {
+                    <span class="note" title="The Run has no Best Effort over this distance, so this is its elapsed time">elapsed</span>
+                  }
+                  @if (result.differenceFromTarget !== null) {
+                    <span class="difference" [class.under]="result.differenceFromTarget <= 0">
+                      {{ formatDifference(result.differenceFromTarget) }}
+                    </span>
+                  }
+                } @else {
+                  –
+                }
               </td>
               <td class="row-actions">
                 <button type="button" class="link" (click)="edit(race)">Edit</button>

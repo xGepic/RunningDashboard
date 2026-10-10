@@ -12,6 +12,23 @@ export interface GoalRace {
   trainingBlockStart: string;
   /** The Sunday of the Race Week, yyyy-MM-dd. */
   trainingBlockEnd: string;
+  /** None without a Run on race day. */
+  raceResult: RaceResult | null;
+}
+
+/** How a Goal Race went, from the longest Run on race day. */
+export interface RaceResult {
+  runId: number;
+  runName: string;
+  /** Seconds; none while pending. */
+  elapsedTime: number | null;
+  /**
+   * The Run's Best Effort over the race distance, the whole Run's elapsed time when it has none, or pending while the
+   * Run's Best Efforts are still being loaded from Strava.
+   */
+  source: 'bestEffort' | 'elapsedTime' | 'pending';
+  /** Seconds over (positive) or under (negative) the Target Time; none without one. */
+  differenceFromTarget: number | null;
 }
 
 /** What POST and PUT /api/goal-races take. */
