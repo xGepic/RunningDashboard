@@ -1,0 +1,87 @@
+h1 {
+  margin: 0 0 1rem;
+  font-size: 1.4rem;
+}
+
+.selector {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+
+  select {
+    padding: 0.35rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    font-size: 1rem;
+  }
+}
+
+.race {
+  margin-bottom: 1rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.1rem;
+  }
+
+  p {
+    margin: 0.25rem 0 0;
+    color: var(--text-muted);
+  }
+
+  b {
+    color: var(--text);
+  }
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.weeks {
+  max-width: 64rem;
+}
+
+.dates {
+  white-space: nowrap;
+}
+
+tr.current td {
+  background: color-mix(in srgb, var(--chart-series) 10%, transparent);
+  font-weight: 600;
+}
+
+tr.future td {
+  color: var(--text-muted);
+}
+
+td a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.vs-target {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+
+  &.ahead {
+    color: var(--text);
+    font-weight: 600;
+  }
+}
+
+.empty a {
+  color: inherit;
+}

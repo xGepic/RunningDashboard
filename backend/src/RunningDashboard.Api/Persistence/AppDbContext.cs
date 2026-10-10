@@ -67,6 +67,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         {
             race.Property(r => r.Name).HasMaxLength(200);
             race.Ignore(r => r.TrainingBlock);
+            race.Ignore(r => r.TargetPace);
         });
     }
 }

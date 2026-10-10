@@ -1,0 +1,80 @@
+<h1>Training</h1>
+
+<label class="selector">
+  Training Block
+  <select #picker (change)="select(picker.value)">
+    <option value="" [selected]="!goalRace()">Current block</option>
+    @for (race of goalRaces.value() ?? []; track race.id) {
+      <option [value]="race.id" [selected]="goalRace() === '' + race.id">{{ race.name }} ({{ race.date | date: 'd MMM y' }})</option>
+    }
+  </select>
+</label>
+
+@if (training.value(); as training) {
+  @if (training.block; as block) {
+    <header class="race">
+      <h2>{{ block.goalRace.name }}</h2>
+      <p>
+        {{ block.goalRace.date | date: 'EEEE d MMMM y' }} · {{ formatDistance(block.goalRace.distance) }}
+        @if (block.goalRace.targetTime !== null && block.targetPace !== null) {
+          · Target Time <b>{{ formatDuration(block.goalRace.targetTime) }}</b>, Target Pace <b>{{ formatPace(block.targetPace) }}</b>
+        }
+      </p>
+    </header>
+
+    <div class="table-scroll">
+      <table class="data-table weeks">
+        <thead>
+          <tr>
+            <th class="number">Weeks to Race</th>
+            <th>Training Week</th>
+            <th class="number">Runs</th>
+            <th class="number">Distance</th>
+            <th class="number">Moving Time</th>
+            <th class="number">Relative Effort</th>
+            <th>Long Run</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (week of block.weeks; track week.weeksToRace) {
+            <tr [class.current]="week.status === 'current'" [class.future]="week.status === 'future'"
+                [attr.aria-current]="week.status === 'current' ? 'date' : null">
+              <td class="number">{{ week.weeksToRace }}@if (week.weeksToRace === 0) { · Race Week }</td>
+              <td class="dates">{{ week.start | date: 'd MMM' }} – {{ week.end | date: 'd MMM y' }}</td>
+              @if (week.actual; as actual) {
+                <td class="number">{{ actual.runs }}</td>
+                <td class="number">{{ formatDistance(actual.distance) }}</td>
+                <td class="number">{{ formatDuration(actual.movingTime) }}</td>
+                <td class="number">{{ actual.relativeEffort === null ? '–' : (actual.relativeEffort | number: '1.0-0') }}</td>
+                <td>
+                  @if (actual.longRun; as longRun) {
+                    <a [routerLink]="['/runs', longRun.runId]" [title]="longRun.name">{{ formatDistance(longRun.distance) }}</a>
+                    at {{ formatPace(longRun.pace) }}
+                    @if (longRun.paceVsTarget !== null) {
+                      <span class="vs-target" [class.ahead]="longRun.paceVsTarget <= 0">{{ formatPaceDifference(longRun.paceVsTarget) }}</span>
+                    }
+                  } @else {
+                    –
+                  }
+                </td>
+              } @else {
+                <td class="number">–</td>
+                <td class="number">–</td>
+                <td class="number">–</td>
+                <td class="number">–</td>
+                <td>–</td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <p class="empty">
+      Today is not in any Training Block. Pick a Goal Race above to look at its block, or
+      <a routerLink="/goal-races">add a Goal Race</a>.
+    </p>
+  }
+} @else if (training.error()) {
+  <p class="error" role="alert">The Training Block could not be loaded.</p>
+}

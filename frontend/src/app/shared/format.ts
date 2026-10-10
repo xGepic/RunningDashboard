@@ -32,6 +32,14 @@ export function formatPace(secondsPerKm: number | null): string {
   return `${Math.floor(total / 60)}:${pad(total % 60)} /km`;
 }
 
+/** Whole seconds per km against the Target Pace: "3 s/km slower", "1:12 /km faster" or "on Target Pace". */
+export function formatPaceDifference(secondsPerKm: number): string {
+  const seconds = Math.round(Math.abs(secondsPerKm));
+  if (seconds === 0) return 'on Target Pace';
+  const amount = seconds < 60 ? `${seconds} s/km` : formatPace(seconds);
+  return `${amount} ${secondsPerKm > 0 ? 'slower' : 'faster'}`;
+}
+
 /** A result against its Target Time: "0:11 over", "4:40 under" or "on target". */
 export function formatDifference(seconds: number): string {
   if (seconds === 0) return 'on target';

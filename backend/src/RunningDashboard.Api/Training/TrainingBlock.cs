@@ -24,6 +24,14 @@ public readonly record struct TrainingBlock(TrainingWeek FirstWeek, TrainingWeek
 
     public bool Overlaps(TrainingBlock other) => Start <= other.End && other.Start <= End;
 
+    public bool Contains(DateOnly date) => Start <= date && date <= End;
+
+    /// <summary>The block's Training Weeks, first to Race Week.</summary>
+    public IEnumerable<TrainingWeek> Weeks => TrainingWeek.Range(FirstWeek, RaceWeek);
+
+    /// <summary>Weeks to Race of <paramref name="week"/>: 0 for the Race Week, −1 for the week before, and so on.</summary>
+    public int WeeksToRace(TrainingWeek week) => (week.Start.DayNumber - RaceWeek.Start.DayNumber) / 7;
+
     /// <summary>"22 Jun – 27 Sep 2026", with both years when the block spans New Year.</summary>
     public override string ToString()
     {

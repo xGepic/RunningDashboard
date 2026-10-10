@@ -251,7 +251,7 @@ These tickets break down [running-dashboard-v1.md](running-dashboard-v1.md). Eac
 - [ ] When the Goal Race has a Target Time, the Target Pace (Target Time ÷ distance) is shown, and each week's Long Run Pace is compared with it.
 - [ ] A Goal Race selector opens any past or upcoming Training Block in the same view.
 - [ ] Future weeks show as empty for actual values.
-- [ ] Tests cover: Weeks to Race on fixed dates (for example 10 Mar 2027 is in week −11 of the second marathon block), the Long Run choice, the Target Pace for 5:00:00 over a marathon (≈ 7:06/km), and opening the 14-week first marathon block.
+- [ ] Tests cover: Weeks to Race on fixed dates (for example 10 Mar 2027 is in week −10 of the second marathon block, 3 Mar 2027 in week −11), the Long Run choice, the Target Pace for 5:00:00 over a marathon (≈ 7:06/km), and opening the 14-week first marathon block.
 
 ---
 

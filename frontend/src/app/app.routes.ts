@@ -5,6 +5,7 @@ import { RecordsPage } from './records/records-page';
 import { RunDetailPage } from './runs/run-detail-page';
 import { RunsPage } from './runs/runs-page';
 import { ShoesPage } from './shoes/shoes-page';
+import { TrainingPage } from './training/training-page';
 
 export const routes: Routes = [
   { path: '', component: OverviewPage, title: 'Overview · Running Dashboard' },
@@ -13,4 +14,5 @@ export const routes: Routes = [
   { path: 'runs', component: RunsPage, title: 'Runs · Running Dashboard' },
   { path: 'runs/:id', component: RunDetailPage, title: 'Run · Running Dashboard' },
   { path: 'shoes', component: ShoesPage, title: 'Shoes · Running Dashboard' },
+  { path: 'training', component: TrainingPage, title: 'Training · Running Dashboard' },
 ];

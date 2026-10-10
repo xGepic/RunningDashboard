@@ -23,4 +23,10 @@ public sealed class GoalRace
     public int TrainingBlockWeeks { get; set; }
 
     public TrainingBlock TrainingBlock => TrainingBlock.Ending(Date, TrainingBlockWeeks);
+
+    /// <summary>
+    /// The Pace needed for the Target Time (Target Time ÷ distance), in whole seconds per km rounded down, so that
+    /// running it to the second still beats the Target Time; none without one.
+    /// </summary>
+    public int? TargetPace => TargetTime is { } targetTime ? (int)Math.Floor(Run.PerKilometre(targetTime, Distance)!.Value) : null;
 }

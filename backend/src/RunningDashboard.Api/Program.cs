@@ -7,6 +7,7 @@ using RunningDashboard.Api.Runs;
 using RunningDashboard.Api.Shoes;
 using RunningDashboard.Api.Strava;
 using RunningDashboard.Api.Sync;
+using RunningDashboard.Api.Training;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,6 +41,7 @@ app.MapOverviewEndpoints();
 app.MapShoeEndpoints();
 app.MapRecordEndpoints();
 app.MapGoalRaceEndpoints();
+app.MapTrainingEndpoints();
 
 app.Run();
 

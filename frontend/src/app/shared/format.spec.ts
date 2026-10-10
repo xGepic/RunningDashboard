@@ -1,4 +1,4 @@
-import { formatDifference, formatDistance, formatDuration, formatHours, formatPace, formatTotalDistance, parseDuration } from './format';
+import { formatDifference, formatDistance, formatDuration, formatHours, formatPace, formatPaceDifference, formatTotalDistance, parseDuration } from './format';
 
 describe('formatDistance', () => {
   it('shows metres as kilometres with two decimals', () => {
@@ -72,5 +72,16 @@ describe('formatDifference', () => {
 
   it('says when a result hit the Target Time exactly', () => {
     expect(formatDifference(0)).toBe('on target');
+  });
+});
+
+describe('formatPaceDifference', () => {
+  it('says how much slower or faster than the Target Pace', () => {
+    expect(formatPaceDifference(4)).toBe('4 s/km slower');
+    expect(formatPaceDifference(-72)).toBe('1:12 /km faster');
+  });
+
+  it('says when a Pace matches the Target Pace to the second', () => {
+    expect(formatPaceDifference(0)).toBe('on Target Pace');
   });
 });
