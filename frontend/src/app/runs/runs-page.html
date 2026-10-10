@@ -28,7 +28,12 @@
   }
 </form>
 
-@if (runs.value(); as page) {
+@if (runs.error()) {
+  <p class="error" role="alert">
+    Runs could not be loaded with these options.
+    <a routerLink="/runs">Show all Runs</a>
+  </p>
+} @else if (runs.value(); as page) {
   @if (page.totalCount === 0) {
     <p class="empty">
       @if (page.page > 1) {
@@ -77,9 +82,4 @@
       <button type="button" (click)="goToPage(page.page + 1)" [disabled]="page.page >= pageCount()">Next →</button>
     </nav>
   }
-} @else if (runs.error()) {
-  <p class="error" role="alert">
-    Runs could not be loaded with these options.
-    <a routerLink="/runs">Show all Runs</a>
-  </p>
 }

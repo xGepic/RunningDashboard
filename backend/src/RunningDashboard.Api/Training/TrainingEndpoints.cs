@@ -170,7 +170,7 @@ public static class TrainingEndpoints
         public static WeekResponse From(TrainingBlockWeek week, int? targetPace) => new(
             week.WeeksToRace,
             week.Week.Start,
-            week.Week.Start.AddDays(6),
+            week.Week.End,
             JsonNamingPolicy.CamelCase.ConvertName(week.Status.ToString()),
             week.Actual is { } actual
                 ? new ActualResponse(actual.Runs, actual.Distance, actual.MovingTime, actual.RelativeEffort, LongRunResponse.From(actual.LongRun, targetPace))

@@ -1,6 +1,8 @@
 <a class="back" routerLink="/runs">← Runs</a>
 
-@if (run.value(); as run) {
+@if (run.error()) {
+  <p class="error" role="alert">This Run could not be loaded.</p>
+} @else if (run.value(); as run) {
   <header>
     <h1>{{ run.name }}</h1>
     <p class="when">{{ run.startLocal | date: 'EEEE d MMMM y, HH:mm' }}</p>
@@ -79,6 +81,4 @@
       }
     </section>
   }
-} @else if (run.error()) {
-  <p class="error" role="alert">This Run could not be loaded.</p>
 }

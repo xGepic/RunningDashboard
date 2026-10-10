@@ -1,0 +1,82 @@
+<a class="back" routerLink="/goal-races">← Goal Races</a>
+
+@if (race(); as race) {
+  <h1>Training Plan: {{ race.name }}</h1>
+  <p class="when">
+    {{ race.date | date: 'EEEE d MMMM y' }}
+    @if (!hasPlan() && !plan.isLoading()) {
+      · no plan yet; its Training Block is {{ race.trainingBlockWeeks }} weeks long
+    }
+  </p>
+
+  <section class="shape">
+    <label>
+      Length
+      <select #lengthPicker (change)="setLength(+lengthPicker.value)" [attr.aria-invalid]="!!errors()['length']">
+        @for (weeks of planLengths; track weeks) {
+          <option [value]="weeks" [selected]="weeks === length()">{{ weeks }} weeks</option>
+        }
+      </select>
+      @for (error of errors()['length']; track error) {
+        <span class="field-error">{{ error }}</span>
+      }
+    </label>
+
+    <fieldset class="phases" [attr.aria-invalid]="!!errors()['phases']">
+      <legend>Phases of 4 weeks</legend>
+      @for (phase of phases(); track $index) {
+        <label>
+          Weeks to Race {{ phaseRanges()[$index].first }} to {{ phaseRanges()[$index].last }}
+          <select #phasePicker (change)="setPhase($index, $any(phasePicker.value))">
+            @for (option of phaseTypes; track option.type) {
+              <option [value]="option.type" [selected]="option.type === phase">{{ option.name }}</option>
+            }
+          </select>
+        </label>
+      }
+      @for (error of errors()['phases']; track error) {
+        <span class="field-error">{{ error }}</span>
+      }
+    </fieldset>
+
+    @for (error of errors()[formError]; track error) {
+      <p class="error" role="alert">{{ error }}</p>
+    }
+
+    <div class="actions">
+      <button type="button" class="primary" [disabled]="saving()" (click)="save()">
+        {{ hasPlan() ? 'Save Training Plan' : 'Create Training Plan' }}
+      </button>
+      @if (saved()) {
+        <span class="saved" role="status">Saved.</span>
+      }
+    </div>
+    @if (hasPlan()) {
+      <p class="hint">Weeks that stay within a new length keep what was planned for them; new weeks start empty.</p>
+    }
+  </section>
+
+  @if (plan.hasValue()) {
+    <section>
+      <h2>Weeks</h2>
+      <table class="data-table">
+        <thead>
+          <tr><th class="number">Weeks to Race</th><th>Training Week</th><th>Phase</th></tr>
+        </thead>
+        <tbody>
+          @for (week of plan.value().weeks; track week.weeksToRace) {
+            <tr [class]="'phase-' + week.phase">
+              <td class="number">{{ week.weeksToRace }}@if (week.weeksToRace === 0) { · Race Week }</td>
+              <td>{{ week.start | date: 'd MMM' }} – {{ week.end | date: 'd MMM y' }}</td>
+              <td class="phase">{{ week.phase }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+} @else if (goalRaces.error()) {
+  <p class="error" role="alert">The Goal Race could not be loaded.</p>
+} @else if (goalRaces.hasValue()) {
+  <p class="error" role="alert">There is no such Goal Race.</p>
+}

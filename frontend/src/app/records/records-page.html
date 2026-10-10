@@ -1,6 +1,8 @@
 <h1>Records</h1>
 
-@if (records.value(); as records) {
+@if (records.error()) {
+  <p class="error" role="alert">Records could not be loaded.</p>
+} @else if (records.value(); as records) {
   @if (records.length === 0) {
     <p class="empty">No Best Efforts yet. They come in with each Run's details from Strava.</p>
   } @else {
@@ -60,6 +62,4 @@
       </div>
     </section>
   }
-} @else if (records.error()) {
-  <p class="error" role="alert">Records could not be loaded.</p>
 }

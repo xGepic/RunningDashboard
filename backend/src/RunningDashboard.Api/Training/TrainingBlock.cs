@@ -20,7 +20,7 @@ public readonly record struct TrainingBlock(TrainingWeek FirstWeek, TrainingWeek
     public DateOnly Start => FirstWeek.Start;
 
     /// <summary>The Sunday of the Race Week.</summary>
-    public DateOnly End => RaceWeek.Start.AddDays(6);
+    public DateOnly End => RaceWeek.End;
 
     public bool Overlaps(TrainingBlock other) => Start <= other.End && other.Start <= End;
 
@@ -28,6 +28,9 @@ public readonly record struct TrainingBlock(TrainingWeek FirstWeek, TrainingWeek
 
     /// <summary>The block's Training Weeks, first to Race Week.</summary>
     public IEnumerable<TrainingWeek> Weeks => TrainingWeek.Range(FirstWeek, RaceWeek);
+
+    /// <summary>The Training Week <paramref name="weeksToRace"/> (0 or less) from the Race Week.</summary>
+    public TrainingWeek WeekAt(int weeksToRace) => RaceWeek.WeeksBefore(-weeksToRace);
 
     /// <summary>Weeks to Race of <paramref name="week"/>: 0 for the Race Week, −1 for the week before, and so on.</summary>
     public int WeeksToRace(TrainingWeek week) => (week.Start.DayNumber - RaceWeek.Start.DayNumber) / 7;

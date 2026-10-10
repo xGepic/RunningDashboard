@@ -52,7 +52,7 @@ export class TrainingPage {
   /** The Goal Races the viewed block can be compared with. */
   protected readonly comparableRaces = computed(() => {
     const viewed = this.training.value()?.block?.goalRace.id;
-    return (this.goalRaces.value() ?? []).filter((r) => r.id !== viewed);
+    return this.goalRaces.hasValue() ? this.goalRaces.value().filter((r) => r.id !== viewed) : [];
   });
 
   /** What the comparison picker shows: the choice in the URL, or else the default the API picked. */

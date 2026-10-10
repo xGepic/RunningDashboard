@@ -4,13 +4,20 @@
   Training Block
   <select #picker (change)="select(picker.value)">
     <option value="" [selected]="!goalRace()">Today</option>
-    @for (race of goalRaces.value() ?? []; track race.id) {
+    @for (race of goalRaces.hasValue() ? goalRaces.value() : []; track race.id) {
       <option [value]="race.id" [selected]="goalRace() === '' + race.id">{{ race.name }} ({{ race.date | date: 'd MMM y' }})</option>
     }
   </select>
 </label>
 
-@if (training.value(); as training) {
+@if (training.error()) {
+  <p class="error" role="alert">
+    The Training Block could not be loaded.
+    @if (compareWith()) {
+      <button type="button" class="link" (click)="compare(null)">Show it without that comparison</button>
+    }
+  </p>
+} @else if (training.value(); as training) {
   @if (training.block; as block) {
     <header class="race">
       <h2>{{ block.goalRace.name }}</h2>
@@ -146,14 +153,7 @@
   } @else {
     <p class="empty">
       No upcoming Goal Race, so there is no Training Block ahead.
-      <a routerLink="/goal-races">Add the race you are training for</a>@if (goalRaces.value()?.length) {, or pick a past one above to look at its block}.
+      <a routerLink="/goal-races">Add the race you are training for</a>@if (goalRaces.hasValue() && goalRaces.value().length) {, or pick a past one above to look at its block}.
     </p>
   }
-} @else if (training.error()) {
-  <p class="error" role="alert">
-    The Training Block could not be loaded.
-    @if (compareWith()) {
-      <button type="button" class="link" (click)="compare(null)">Show it without that comparison</button>
-    }
-  </p>
 }

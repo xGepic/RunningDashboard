@@ -1,6 +1,8 @@
 <h1>Shoes</h1>
 
-@if (shoes.value(); as shoes) {
+@if (shoes.error()) {
+  <p class="error" role="alert">Shoes could not be loaded.</p>
+} @else if (shoes.value(); as shoes) {
   @if (shoes.length === 0) {
     <p class="empty">No Shoes on Strava yet. Add them under Gear in your Strava settings, then sync.</p>
   } @else {
@@ -31,6 +33,4 @@
       </tbody>
     </table>
   }
-} @else if (shoes.error()) {
-  <p class="error" role="alert">Shoes could not be loaded.</p>
 }

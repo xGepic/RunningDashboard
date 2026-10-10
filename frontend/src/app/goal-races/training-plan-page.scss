@@ -1,0 +1,120 @@
+.back {
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+h1 {
+  margin: 1rem 0 0;
+  font-size: 1.4rem;
+}
+
+h2 {
+  font-size: 1.1rem;
+}
+
+.when {
+  margin: 0.25rem 0 1rem;
+  color: var(--text-muted);
+}
+
+section {
+  margin-bottom: 2rem;
+}
+
+.shape {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 48rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+select {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+}
+
+[aria-invalid='true'] {
+  border-color: var(--error);
+}
+
+.phases {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 11rem), 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+
+  legend {
+    margin-bottom: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+
+  .field-error {
+    grid-column: 1 / -1;
+  }
+}
+
+.field-error {
+  color: var(--error);
+  font-size: 0.8rem;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  .primary {
+    padding: 0.4rem 0.9rem;
+    border: 1px solid var(--chart-series);
+    border-radius: 4px;
+    background: var(--chart-series);
+    color: #fff;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  button:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.saved,
+.hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.data-table {
+  max-width: 32rem;
+}
+
+.phase {
+  text-transform: capitalize;
+}
+
+.phase-taper td {
+  background: var(--background);
+}

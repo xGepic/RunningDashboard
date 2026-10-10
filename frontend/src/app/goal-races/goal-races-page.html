@@ -54,7 +54,12 @@
       Training Block (weeks)
       <input type="number" min="1" step="1" formControlName="trainingBlockWeeks" required
              [attr.aria-invalid]="!!errors()['trainingBlockWeeks']" />
-      <span class="hint">Ends with the Race Week.</span>
+      <span class="hint">
+        Ends with the Race Week.
+        @if (editing()?.trainingPlanLength; as planWeeks) {
+          While the race has its Training Plan, the plan's {{ planWeeks }} weeks count instead.
+        }
+      </span>
       @for (error of errors()['trainingBlockWeeks']; track error) {
         <span class="field-error">{{ error }}</span>
       }
@@ -75,7 +80,9 @@
 
 <section>
   <h2>All Goal Races</h2>
-  @if (races.value(); as races) {
+  @if (races.error()) {
+    <p class="error" role="alert">Goal Races could not be loaded.</p>
+  } @else if (races.value(); as races) {
     @if (races.length === 0) {
       <p class="empty">No Goal Races yet. Add the races you train for, including past ones.</p>
     } @else {
@@ -100,7 +107,7 @@
               <td class="number">{{ race.targetTime === null ? '–' : formatDuration(race.targetTime) }}</td>
               <td>
                 {{ race.trainingBlockStart | date: 'EEE d MMM y' }} – {{ race.trainingBlockEnd | date: 'EEE d MMM y' }}
-                <span class="weeks">({{ race.trainingBlockWeeks }} weeks)</span>
+                <span class="weeks">({{ race.trainingPlanLength ?? race.trainingBlockWeeks }} weeks{{ race.trainingPlanLength ? ', Training Plan' : '' }})</span>
               </td>
               <td class="number">
                 @if (race.raceResult; as result) {
@@ -123,6 +130,7 @@
                 }
               </td>
               <td class="row-actions">
+                <a class="link" [routerLink]="['/goal-races', race.id, 'training-plan']">Training Plan</a>
                 <button type="button" class="link" (click)="edit(race)">Edit</button>
                 <button type="button" class="link" (click)="remove(race)">Delete</button>
               </td>
@@ -131,7 +139,5 @@
         </tbody>
       </table>
     }
-  } @else if (races.error()) {
-    <p class="error" role="alert">Goal Races could not be loaded.</p>
   }
 </section>

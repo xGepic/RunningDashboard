@@ -41,6 +41,7 @@ app.MapOverviewEndpoints();
 app.MapShoeEndpoints();
 app.MapRecordEndpoints();
 app.MapGoalRaceEndpoints();
+app.MapTrainingPlanEndpoints();
 app.MapTrainingEndpoints();
 
 app.Run();

@@ -6,8 +6,10 @@ export interface GoalRace {
   date: string;
   distance: number;
   targetTime: number | null;
-  /** Training Weeks in the block, including the Race Week. */
+  /** Training Weeks in the block, including the Race Week, as long as the race has no Training Plan. */
   trainingBlockWeeks: number;
+  /** The Training Plan's length, which is then the block's; none without a plan. */
+  trainingPlanLength: number | null;
   /** The Monday the Training Block starts, yyyy-MM-dd. */
   trainingBlockStart: string;
   /** The Sunday of the Race Week, yyyy-MM-dd. */

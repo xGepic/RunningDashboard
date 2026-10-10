@@ -1,6 +1,8 @@
 <h1>Overview</h1>
 
-@if (overview.value(); as overview) {
+@if (overview.error()) {
+  <p class="error" role="alert">The overview could not be loaded.</p>
+} @else if (overview.value(); as overview) {
   @if (overview.totals.runs === 0) {
     <p class="empty">No Runs yet. Connect Strava and sync to import them.</p>
   } @else {
@@ -80,6 +82,4 @@
       </details>
     </section>
   }
-} @else if (overview.error()) {
-  <p class="error" role="alert">The overview could not be loaded.</p>
 }

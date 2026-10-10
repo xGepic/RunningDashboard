@@ -19,10 +19,15 @@ public sealed class GoalRace
     /// <summary>Seconds; the finish time the Athlete wants to beat, if they set one.</summary>
     public int? TargetTime { get; set; }
 
-    /// <summary>Length of the Training Block in Training Weeks, including the Race Week.</summary>
+    /// <summary>
+    /// Length of the Training Block in Training Weeks, including the Race Week, as long as the race has no Training
+    /// Plan; with one, the plan's length counts.
+    /// </summary>
     public int TrainingBlockWeeks { get; set; }
 
-    public TrainingBlock TrainingBlock => TrainingBlock.Ending(Date, TrainingBlockWeeks);
+    public TrainingPlan? TrainingPlan { get; set; }
+
+    public TrainingBlock TrainingBlock => TrainingBlock.Ending(Date, TrainingPlan?.Length ?? TrainingBlockWeeks);
 
     /// <summary>
     /// The Pace needed for the Target Time (Target Time ÷ distance), in whole seconds per km rounded down, so that

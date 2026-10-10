@@ -68,4 +68,13 @@ describe('ConnectionStatus', () => {
     expect(element.textContent).toContain('already connected to a different Strava athlete');
     expect(element.textContent).toContain('Connected as Stefan Simanek');
   });
+
+  it('says so when the backend cannot be reached', async () => {
+    const { fixture, http } = await render();
+
+    http.expectOne('/api/connection').flush('down', { status: 502, statusText: 'Bad Gateway' });
+    await fixture.whenStable();
+
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('The backend is not reachable.');
+  });
 });

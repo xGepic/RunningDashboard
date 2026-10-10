@@ -31,7 +31,7 @@ public static class GoalRaceEndpoints
             var race = await db.GoalRaces.FindAsync([id], cancellationToken);
             if (race is null)
                 return Results.NotFound();
-            if (await RejectAsync(request, id, db, cancellationToken) is { } rejected)
+            if (await RejectAsync(request, race, db, cancellationToken) is { } rejected)
                 return rejected;
 
             request.ApplyTo(race);
@@ -53,26 +53,21 @@ public static class GoalRaceEndpoints
     }
 
     /// <summary>
-    /// Problem details for invalid fields, or for a Training Block overlapping that of a Goal Race other than
-    /// <paramref name="id"/>; null if the race can be saved.
+    /// Problem details for invalid fields, or for a Training Block overlapping that of another Goal Race; null if the
+    /// race can be saved. An <paramref name="existing"/> race with a Training Plan keeps the plan's length.
     /// </summary>
-    private static async Task<IResult?> RejectAsync(GoalRaceRequest request, int? id, AppDbContext db, CancellationToken cancellationToken)
+    private static async Task<IResult?> RejectAsync(GoalRaceRequest request, GoalRace? existing, AppDbContext db, CancellationToken cancellationToken)
     {
         var errors = request.Validate();
         if (errors.Count > 0)
             return Results.ValidationProblem(errors);
 
-        var race = request.ToGoalRace();
-        var otherRaces = await db.GoalRaces.Where(r => r.Id != id).ToListAsync(cancellationToken);
-        if (PlanningRules.OverlappingRace(race, otherRaces) is { } overlapping)
-        {
-            return Results.ValidationProblem(new Dictionary<string, string[]>
-            {
-                ["trainingBlockWeeks"] = [$"The Training Block ({race.TrainingBlock}) overlaps the one of {overlapping.Name} ({overlapping.TrainingBlock})."],
-            });
-        }
-
-        return null;
+        var block = TrainingBlock.Ending(request.Date!.Value, existing?.TrainingPlan?.Length ?? request.TrainingBlockWeeks!.Value);
+        var excludedId = existing?.Id;
+        var otherRaces = await db.GoalRaces.Where(r => r.Id != excludedId).ToListAsync(cancellationToken);
+        return PlanningRules.OverlapError(block, otherRaces) is { } overlap
+            ? Results.ValidationProblem(new Dictionary<string, string[]> { ["trainingBlockWeeks"] = [overlap] })
+            : null;
     }
 
     /// <param name="Distance">Metres.</param>
@@ -133,6 +128,7 @@ public static class GoalRaceEndpoints
     /// <param name="TargetTime">Seconds.</param>
     /// <param name="TrainingBlockStart">The Monday the Training Block starts.</param>
     /// <param name="TrainingBlockEnd">The Sunday of the Race Week, when the Training Block ends.</param>
+    /// <param name="TrainingPlanLength">The Training Plan's length, which is the block's; none without a plan.</param>
     /// <param name="RaceResult">None without a Run on race day.</param>
     private sealed record GoalRaceResponse(
         int Id,
@@ -143,6 +139,7 @@ public static class GoalRaceEndpoints
         int TrainingBlockWeeks,
         DateOnly TrainingBlockStart,
         DateOnly TrainingBlockEnd,
+        int? TrainingPlanLength,
         RaceResultResponse? RaceResult)
     {
         public static GoalRaceResponse From(GoalRace race, RaceResult? result) => new(
@@ -154,6 +151,7 @@ public static class GoalRaceEndpoints
             race.TrainingBlockWeeks,
             race.TrainingBlock.Start,
             race.TrainingBlock.End,
+            race.TrainingPlan?.Length,
             result is null ? null : RaceResultResponse.From(result, race.TargetTime));
     }
 

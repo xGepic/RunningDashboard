@@ -11,6 +11,9 @@ public readonly record struct TrainingWeek(DateOnly Start)
 
     public static TrainingWeek Of(DateTime startLocal) => Of(DateOnly.FromDateTime(startLocal));
 
+    /// <summary>The Sunday.</summary>
+    public DateOnly End => Start.AddDays(6);
+
     public TrainingWeek Next => new(Start.AddDays(7));
 
     /// <summary>The Training Week <paramref name="weeks"/> weeks before this one.</summary>

@@ -68,6 +68,19 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             race.Property(r => r.Name).HasMaxLength(200);
             race.Ignore(r => r.TrainingBlock);
             race.Ignore(r => r.TargetPace);
+            // Owned, so a Goal Race always comes with its plan, and its Training Block with the plan's length.
+            race.OwnsOne(r => r.TrainingPlan, plan =>
+            {
+                plan.ToTable("TrainingPlans");
+                plan.WithOwner().HasForeignKey("GoalRaceId");
+                plan.OwnsMany(p => p.Weeks, week =>
+                {
+                    week.ToTable("TrainingPlanWeeks");
+                    week.WithOwner().HasForeignKey("GoalRaceId");
+                    week.HasKey("GoalRaceId", nameof(TrainingPlanWeek.WeeksToRace));
+                    week.Property(w => w.WeeksToRace).ValueGeneratedNever();
+                });
+            });
         });
     }
 }

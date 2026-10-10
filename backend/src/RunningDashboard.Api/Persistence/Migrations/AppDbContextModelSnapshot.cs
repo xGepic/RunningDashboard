@@ -253,6 +253,49 @@ namespace RunningDashboard.Api.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("RunningDashboard.Api.Persistence.GoalRace", b =>
+                {
+                    b.OwnsOne("RunningDashboard.Api.Persistence.TrainingPlan", "TrainingPlan", b1 =>
+                        {
+                            b1.Property<int>("GoalRaceId")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<int>("Length")
+                                .HasColumnType("INTEGER");
+
+                            b1.PrimitiveCollection<string>("Phases")
+                                .IsRequired()
+                                .HasColumnType("TEXT");
+
+                            b1.HasKey("GoalRaceId");
+
+                            b1.ToTable("TrainingPlans", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("GoalRaceId");
+
+                            b1.OwnsMany("RunningDashboard.Api.Persistence.TrainingPlanWeek", "Weeks", b2 =>
+                                {
+                                    b2.Property<int>("GoalRaceId")
+                                        .HasColumnType("INTEGER");
+
+                                    b2.Property<int>("WeeksToRace")
+                                        .HasColumnType("INTEGER");
+
+                                    b2.HasKey("GoalRaceId", "WeeksToRace");
+
+                                    b2.ToTable("TrainingPlanWeeks", (string)null);
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("GoalRaceId");
+                                });
+
+                            b1.Navigation("Weeks");
+                        });
+
+                    b.Navigation("TrainingPlan");
+                });
+
             modelBuilder.Entity("RunningDashboard.Api.Persistence.Split", b =>
                 {
                     b.HasOne("RunningDashboard.Api.Persistence.Run", null)
