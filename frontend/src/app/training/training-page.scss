@@ -177,3 +177,118 @@ td.compared {
   text-decoration: underline;
   cursor: pointer;
 }
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  margin: 0 0 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+
+  .day {
+    margin-left: 0.5rem;
+  }
+}
+
+/* The Phase bands: one cell per Phase, spanning its weeks. */
+.band-header {
+  width: 1.5rem;
+}
+
+td.band {
+  width: 1.5rem;
+  padding: 0;
+  border-bottom: 2px solid var(--surface);
+  text-align: center;
+
+  span {
+    display: inline-block;
+    color: var(--text);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: capitalize;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+  }
+}
+
+.phase-build {
+  background: color-mix(in srgb, var(--chart-series) 15%, transparent);
+}
+
+.phase-peak {
+  background: color-mix(in srgb, var(--chart-series) 35%, transparent);
+}
+
+.phase-taper {
+  background: color-mix(in srgb, var(--text-muted) 20%, transparent);
+}
+
+tr.recovery-week td:not(.band) {
+  background: repeating-linear-gradient(
+    135deg,
+    transparent 0 6px,
+    color-mix(in srgb, var(--text-muted) 10%, transparent) 6px 12px
+  );
+}
+
+.recovery {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: normal;
+  white-space: nowrap;
+}
+
+.planned {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: normal;
+}
+
+.met {
+  color: var(--met);
+}
+
+.short {
+  color: var(--error);
+}
+
+/* The calendar strip: Monday to Sunday. */
+.strip {
+  display: flex;
+  gap: 0.2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.day {
+  display: inline-block;
+  width: 0.8rem;
+  height: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  box-sizing: border-box;
+
+  &.ran {
+    border-color: var(--met);
+    background: var(--met);
+  }
+
+  &.missed {
+    border: 2px solid var(--error);
+  }
+
+  &.unplanned {
+    border-color: var(--text-muted);
+    background: var(--text-muted);
+  }
+
+  &.planned {
+    border: 2px solid var(--met);
+  }
+}

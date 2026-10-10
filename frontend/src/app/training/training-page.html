@@ -39,13 +39,23 @@
       </select>
     </label>
 
+    @if (block.phases) {
+      <p class="legend" aria-hidden="true">
+        Running Days:
+        <span class="day ran"></span> run as planned
+        <span class="day missed"></span> missed
+        <span class="day unplanned"></span> run on an unplanned day
+        <span class="day planned"></span> still to come
+      </p>
+    }
+
     <div class="table-scroll">
       <table class="data-table weeks">
         <thead>
           @if (block.comparison; as comparison) {
             <tr class="sides">
-              <th></th>
-              <th colspan="6">{{ block.goalRace.name }}</th>
+              <th [attr.colspan]="block.phases ? 2 : 1"></th>
+              <th [attr.colspan]="block.phases ? 7 : 6">{{ block.goalRace.name }}</th>
               <th colspan="4" class="compared">
                 {{ comparison.goalRace.name }}
                 @if (block.targetPace !== null) {
@@ -55,9 +65,15 @@
             </tr>
           }
           <tr>
+            @if (block.phases) {
+              <th class="band-header"><span class="visually-hidden">Phase</span></th>
+            }
             <th class="number">Weeks to Race</th>
             <th>Training Week</th>
             <th class="number">Runs</th>
+            @if (block.phases) {
+              <th>Running Days</th>
+            }
             <ng-container *ngTemplateOutlet="actualHeaders" />
             @if (block.comparison) {
               <ng-container *ngTemplateOutlet="actualHeaders; context: { $implicit: true }" />
@@ -66,9 +82,25 @@
         </thead>
         <tbody>
           @for (row of rows(); track row.weeksToRace) {
-            <tr [class.current]="row.viewed?.status === 'current'" [class.future]="row.viewed?.status === 'future'"
+            <tr [attr.data-weeks-to-race]="row.weeksToRace" [class.current]="row.viewed?.status === 'current'"
+                [class.future]="row.viewed?.status === 'future'" [class.recovery-week]="row.viewed?.plan?.recoveryWeek"
                 [attr.aria-current]="row.viewed?.status === 'current' ? 'date' : null">
-              <td class="number">{{ row.weeksToRace }}@if (row.weeksToRace === 0) { · Race Week }</td>
+              @if (block.phases; as phases) {
+                @if (phaseStartingAt(phases, row.weeksToRace); as phase) {
+                  <td [class]="'band phase-' + phase.type" [attr.rowspan]="phase.lastWeeksToRace - phase.firstWeeksToRace + 1">
+                    <span>{{ phase.type }}</span>
+                  </td>
+                } @else if (!row.viewed) {
+                  <!-- A compared block's week before the plan starts. -->
+                  <td class="band"></td>
+                }
+              }
+              <td class="number">
+                {{ row.weeksToRace }}@if (row.weeksToRace === 0) { · Race Week }
+                @if (row.viewed?.plan?.recoveryWeek) {
+                  <span class="recovery">Recovery Week</span>
+                }
+              </td>
               @if (row.viewed; as week) {
                 <td class="dates">{{ week.start | date: 'd MMM' }} – {{ week.end | date: 'd MMM y' }}</td>
                 <td class="number">{{ week.actual?.runs ?? '–' }}</td>
@@ -76,7 +108,20 @@
                 <td class="dates">–</td>
                 <td class="number">–</td>
               }
-              <ng-container *ngTemplateOutlet="actualCells; context: { $implicit: row.viewed, compared: false }" />
+              @if (block.phases) {
+                <td>
+                  @if (row.viewed?.plan; as plan) {
+                    <ol class="strip" [attr.aria-label]="'Running Days of the week from ' + (row.viewed!.start | date: 'd MMM')">
+                      @for (day of plan.days; track day.date) {
+                        <li [class]="'day ' + day.state" [title]="(day.date | date: 'EEE d MMM') + ': ' + dayStates[day.state]">
+                          <span class="visually-hidden">{{ day.date | date: 'EEEE' }}: {{ dayStates[day.state] }}</span>
+                        </li>
+                      }
+                    </ol>
+                  }
+                </td>
+              }
+              <ng-container *ngTemplateOutlet="actualCells; context: { $implicit: row.viewed, compared: false, plan: row.viewed?.plan }" />
               @if (block.comparison) {
                 <ng-container *ngTemplateOutlet="actualCells; context: { $implicit: row.compared, compared: true }" />
               }
@@ -93,30 +138,48 @@
       <th [class.compared]="compared">Long Run</th>
     </ng-template>
 
-    <!-- A week's actual values; dashes for a future week or one that block does not have. -->
-    <ng-template #actualCells let-week let-compared="compared">
+    <!--
+      A week's actual values, with what was planned for the viewed block's weeks; dashes for a future week or one that
+      block does not have.
+    -->
+    <ng-template #actualCells let-week let-compared="compared" let-plan="plan">
       @if (week?.actual; as actual) {
         <td class="number" [class.compared]="compared" [title]="compared ? 'Week of ' + (week.start | date: 'd MMM y') : ''">
-          {{ formatDistance(actual.distance) }}
+          <span [class]="metClass(plan?.distanceMet)">{{ formatDistance(actual.distance) }}</span>
+          <ng-container *ngTemplateOutlet="planned; context: { $implicit: plan?.plannedDistance }" />
         </td>
         <td class="number" [class.compared]="compared">{{ formatDuration(actual.movingTime) }}</td>
         <td class="number" [class.compared]="compared">{{ actual.relativeEffort === null ? '–' : (actual.relativeEffort | number: '1.0-0') }}</td>
         <td [class.compared]="compared">
           @if (actual.longRun; as longRun) {
-            <a [routerLink]="['/runs', longRun.runId]" [title]="longRun.name">{{ formatDistance(longRun.distance) }}</a>
+            <a [routerLink]="['/runs', longRun.runId]" [title]="longRun.name" [class]="metClass(plan?.longRunMet)">{{ formatDistance(longRun.distance) }}</a>
             at {{ formatPace(longRun.pace) }}
             @if (longRun.paceVsTarget !== null) {
               <span class="vs-target" [class.ahead]="longRun.paceVsTarget <= 0">{{ formatPaceDifference(longRun.paceVsTarget) }}</span>
             }
           } @else {
-            –
+            <span [class]="metClass(plan?.longRunMet)">–</span>
           }
+          <ng-container *ngTemplateOutlet="planned; context: { $implicit: plan?.plannedLongRun }" />
         </td>
       } @else {
+        <td class="number" [class.compared]="compared">
+          –
+          <ng-container *ngTemplateOutlet="planned; context: { $implicit: plan?.plannedDistance }" />
+        </td>
         <td class="number" [class.compared]="compared">–</td>
         <td class="number" [class.compared]="compared">–</td>
-        <td class="number" [class.compared]="compared">–</td>
-        <td [class.compared]="compared">–</td>
+        <td [class.compared]="compared">
+          –
+          <ng-container *ngTemplateOutlet="planned; context: { $implicit: plan?.plannedLongRun }" />
+        </td>
+      }
+    </ng-template>
+
+    <!-- What the plan has: a planned distance or Long Run, if any. -->
+    <ng-template #planned let-distance>
+      @if (distance != null) {
+        <span class="planned">planned {{ formatDistance(distance) }}</span>
       }
     </ng-template>
   } @else if (training.countdown; as countdown) {

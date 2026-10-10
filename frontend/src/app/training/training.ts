@@ -1,3 +1,4 @@
+import { Phase, PhaseType } from '../goal-races/training-plan';
 import { WeekDistance } from '../shared/charts';
 
 /** As returned by GET /api/training. Distances in metres, times in seconds, paces in seconds per km. */
@@ -33,6 +34,8 @@ export interface TrainingBlock {
   goalRace: GoalRaceSummary;
   /** Target Time ÷ Goal Race distance in whole seconds, rounded down so running it beats the Target Time; none without one. */
   targetPace: number | null;
+  /** The Training Plan's Phases, first to last; none without a plan. */
+  phases: Phase[] | null;
   /** First week to Race Week. */
   weeks: TrainingBlockWeek[];
   /** The block this one is compared with; none when the comparison is off. */
@@ -67,7 +70,37 @@ export interface TrainingBlockWeek {
   status: 'past' | 'current' | 'future';
   /** What was run; none for a future week. */
   actual: WeekActual | null;
+  /** What the Training Plan has for the week, against what was run; none without a plan. */
+  plan: WeekPlan | null;
 }
+
+/** A planned Training Week against what was run in it. */
+export interface WeekPlan {
+  phase: PhaseType;
+  recoveryWeek: boolean;
+  /** Metres; none if not planned. */
+  plannedDistance: number | null;
+  /** Metres; none if not planned. */
+  plannedLongRun: number | null;
+  /** Whether the week's distance reached the plan's; none for a future week or nothing planned. */
+  distanceMet: boolean | null;
+  /** Whether the Long Run reached the plan's; none for a future week or nothing planned. */
+  longRunMet: boolean | null;
+  /** Monday to Sunday: the calendar strip. */
+  days: PlannedDay[];
+}
+
+export interface PlannedDay {
+  /** yyyy-MM-dd. */
+  date: string;
+  state: DayState;
+}
+
+/**
+ * "ran": a Running Day with a Run; "missed": a past Running Day without one; "unplanned": a Run on another day;
+ * "planned": a Running Day still to come; "rest": neither.
+ */
+export type DayState = 'ran' | 'missed' | 'unplanned' | 'planned' | 'rest';
 
 export interface WeekActual {
   runs: number;

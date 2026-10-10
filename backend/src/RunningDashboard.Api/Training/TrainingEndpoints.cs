@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using RunningDashboard.Api.Persistence;
 
@@ -55,6 +54,7 @@ public static class TrainingEndpoints
                 new BlockResponse(
                     GoalRaceResponse.From(race),
                     race.TargetPace,
+                    PhaseResponse.Of(race.TrainingPlan),
                     weeks.Select(w => WeekResponse.From(w, race.TargetPace)).ToList(),
                     comparison),
                 null));
@@ -87,7 +87,7 @@ public static class TrainingEndpoints
     {
         var block = race.TrainingBlock;
         var runs = await RunsAsync(block.Start, block.End, db, cancellationToken);
-        return TrainingCalendar.WeeksOf(block, runs, today);
+        return TrainingCalendar.WeeksOf(block, runs, today, race.TrainingPlan);
     }
 
     private static async Task<CountdownResponse> CountdownAsync(GoalRace next, DateOnly today, AppDbContext db, CancellationToken cancellationToken)
@@ -133,9 +133,24 @@ public static class TrainingEndpoints
     /// <param name="TargetPace">
     /// Target Time ÷ Goal Race distance, in whole seconds per km rounded down; none without a Target Time.
     /// </param>
+    /// <param name="Phases">The Training Plan's Phases, first to last; none without a plan.</param>
     /// <param name="Weeks">First week to Race Week.</param>
     /// <param name="Comparison">The Training Block this one is compared with; none when the comparison is off.</param>
-    private sealed record BlockResponse(GoalRaceResponse GoalRace, int? TargetPace, IReadOnlyList<WeekResponse> Weeks, ComparisonResponse? Comparison);
+    private sealed record BlockResponse(
+        GoalRaceResponse GoalRace,
+        int? TargetPace,
+        IReadOnlyList<PhaseResponse>? Phases,
+        IReadOnlyList<WeekResponse> Weeks,
+        ComparisonResponse? Comparison);
+
+    /// <param name="Type">"build", "peak" or "taper".</param>
+    private sealed record PhaseResponse(string Type, int FirstWeeksToRace, int LastWeeksToRace)
+    {
+        public static List<PhaseResponse>? Of(TrainingPlan? plan) =>
+            plan?.PhaseSpans()
+                .Select(p => new PhaseResponse(ApiNames.Of(p.Type), p.FirstWeeksToRace, p.LastWeeksToRace))
+                .ToList();
+    }
 
     /// <summary>Another Goal Race's Training Block, lined up with the viewed one by Weeks to Race.</summary>
     /// <param name="Weeks">
@@ -165,17 +180,52 @@ public static class TrainingEndpoints
     /// <param name="End">The Sunday.</param>
     /// <param name="Status">"past", "current" (today is in it) or "future".</param>
     /// <param name="Actual">What was run; none for a future week.</param>
-    private sealed record WeekResponse(int WeeksToRace, DateOnly Start, DateOnly End, string Status, ActualResponse? Actual)
+    /// <param name="Plan">What the Training Plan has for the week, against what was run; none without a plan.</param>
+    private sealed record WeekResponse(int WeeksToRace, DateOnly Start, DateOnly End, string Status, ActualResponse? Actual, PlanResponse? Plan)
     {
         public static WeekResponse From(TrainingBlockWeek week, int? targetPace) => new(
             week.WeeksToRace,
             week.Week.Start,
             week.Week.End,
-            JsonNamingPolicy.CamelCase.ConvertName(week.Status.ToString()),
+            ApiNames.Of(week.Status),
             week.Actual is { } actual
                 ? new ActualResponse(actual.Runs, actual.Distance, actual.MovingTime, actual.RelativeEffort, LongRunResponse.From(actual.LongRun, targetPace))
+                : null,
+            week.Plan is { } plan
+                ? new PlanResponse(
+                    ApiNames.Of(plan.Phase),
+                    plan.RecoveryWeek,
+                    plan.PlannedDistance,
+                    plan.PlannedLongRun,
+                    plan.DistanceMet,
+                    plan.LongRunMet,
+                    plan.Days.Select(d => new DayResponse(d.Date, ApiNames.Of(d.State))).ToList())
                 : null);
     }
+
+    /// <param name="Phase">"build", "peak" or "taper".</param>
+    /// <param name="PlannedDistance">Metres; none if not planned.</param>
+    /// <param name="PlannedLongRun">Metres; none if not planned.</param>
+    /// <param name="DistanceMet">
+    /// True once the week's distance reached the plan's, false once the week is over without; none while it still runs
+    /// short, for a future week, or with nothing planned.
+    /// </param>
+    /// <param name="LongRunMet">Likewise for the Long Run.</param>
+    /// <param name="Days">Monday to Sunday: the calendar strip.</param>
+    private sealed record PlanResponse(
+        string Phase,
+        bool RecoveryWeek,
+        double? PlannedDistance,
+        double? PlannedLongRun,
+        bool? DistanceMet,
+        bool? LongRunMet,
+        IReadOnlyList<DayResponse> Days);
+
+    /// <param name="State">
+    /// "ran" (a Running Day with a Run), "missed" (a past Running Day without one), "unplanned" (a Run on another day),
+    /// "planned" (a Running Day still to come) or "rest".
+    /// </param>
+    private sealed record DayResponse(DateOnly Date, string State);
 
     /// <param name="Distance">Metres.</param>
     /// <param name="MovingTime">Seconds.</param>

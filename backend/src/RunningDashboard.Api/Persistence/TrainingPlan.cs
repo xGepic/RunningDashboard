@@ -45,12 +45,13 @@ public sealed class TrainingPlan
     /// <summary>The Phase the week <paramref name="weeksToRace"/> falls in; Phases follow each other from the plan's first week.</summary>
     public PhaseType PhaseOf(int weeksToRace) => Phases[(weeksToRace + Length - 1) / PhaseWeeks];
 
-    /// <summary>The first and last Weeks to Race of the Phase at <paramref name="index"/>.</summary>
-    public (int First, int Last) WeeksOfPhase(int index)
-    {
-        var first = 1 - Length + index * PhaseWeeks;
-        return (first, first + PhaseWeeks - 1);
-    }
+    /// <summary>Each Phase, first to last, with its first and last Weeks to Race.</summary>
+    public IEnumerable<(PhaseType Type, int FirstWeeksToRace, int LastWeeksToRace)> PhaseSpans() =>
+        Phases.Select((type, i) =>
+        {
+            var first = 1 - Length + i * PhaseWeeks;
+            return (type, first, first + PhaseWeeks - 1);
+        });
 }
 
 /// <summary>One Training Week of a Training Plan: its Weekly Target, Running Days and whether it is a Recovery Week.</summary>

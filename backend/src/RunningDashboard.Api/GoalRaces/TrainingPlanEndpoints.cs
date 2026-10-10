@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using RunningDashboard.Api.Persistence;
 using RunningDashboard.Api.Training;
@@ -151,9 +150,8 @@ public static class TrainingPlanEndpoints
             return new TrainingPlanResponse(
                 race.Id,
                 plan.Length,
-                plan.Phases
-                    .Select((type, i) => (Type: type, Weeks: plan.WeeksOfPhase(i)))
-                    .Select(p => new PhaseResponse(ApiNames.Of(p.Type), p.Weeks.First, p.Weeks.Last))
+                plan.PhaseSpans()
+                    .Select(p => new PhaseResponse(ApiNames.Of(p.Type), p.FirstWeeksToRace, p.LastWeeksToRace))
                     .ToList(),
                 plan.Weeks
                     .OrderBy(w => w.WeeksToRace)
@@ -189,26 +187,4 @@ public static class TrainingPlanEndpoints
         double? PlannedLongRun,
         IReadOnlyList<string> RunningDays,
         bool RecoveryWeek);
-
-    /// <summary>Enum values as the API names them: "build", "monday".</summary>
-    private static class ApiNames
-    {
-        public static string Of<TEnum>(TEnum value) where TEnum : struct, Enum =>
-            JsonNamingPolicy.CamelCase.ConvertName(value.ToString());
-
-        /// <summary>The values named; null if one name is not a value's.</summary>
-        public static List<TEnum>? Parse<TEnum>(IEnumerable<string> names) where TEnum : struct, Enum
-        {
-            var values = new List<TEnum>();
-            foreach (var name in names)
-            {
-                // Names only: Enum.TryParse would also take "7".
-                if (!Enum.GetNames<TEnum>().Contains(name, StringComparer.OrdinalIgnoreCase))
-                    return null;
-                values.Add(Enum.Parse<TEnum>(name, ignoreCase: true));
-            }
-
-            return values;
-        }
-    }
 }

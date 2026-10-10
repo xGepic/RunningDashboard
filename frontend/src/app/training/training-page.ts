@@ -8,7 +8,17 @@ import { ChartTheme } from '../shared/chart-theme';
 import { weekLabel, weeklyDistanceChart } from '../shared/charts';
 import { formatDistance, formatDuration, formatPace, formatPaceDifference } from '../shared/format';
 import { reloadOnSync } from '../sync/reload-on-sync';
-import { LinedUpWeek, Training } from './training';
+import { Phase } from '../goal-races/training-plan';
+import { DayState, LinedUpWeek, Training } from './training';
+
+/** How the calendar strip names each day's state. */
+const dayStates: Record<DayState, string> = {
+  ran: 'run as planned',
+  missed: 'missed',
+  unplanned: 'run on an unplanned day',
+  planned: 'still to come',
+  rest: 'rest day',
+};
 
 @Component({
   selector: 'app-training-page',
@@ -41,6 +51,7 @@ export class TrainingPage {
   protected readonly formatPace = formatPace;
   protected readonly formatPaceDifference = formatPaceDifference;
   protected readonly weekLabel = weekLabel;
+  protected readonly dayStates = dayStates;
 
   /** The table's rows: lined up with the comparison by the API, or else the viewed block's weeks alone. */
   protected readonly rows = computed((): LinedUpWeek[] => {
@@ -67,6 +78,16 @@ export class TrainingPage {
 
   constructor() {
     reloadOnSync(() => this.training.reload());
+  }
+
+  /** The Phase whose band starts at this row. */
+  protected phaseStartingAt(phases: Phase[], weeksToRace: number): Phase | undefined {
+    return phases.find((p) => p.firstWeeksToRace === weeksToRace);
+  }
+
+  /** Marks an actual value against the plan as the API judged it: met, short, or neither yet. */
+  protected metClass(met: boolean | null | undefined): string {
+    return met === true ? 'met' : met === false ? 'short' : '';
   }
 
   /** Opens another block, compared with its own previous Goal Race. */
