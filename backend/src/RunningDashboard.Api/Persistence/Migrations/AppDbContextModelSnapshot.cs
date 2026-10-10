@@ -44,6 +44,34 @@ namespace RunningDashboard.Api.Persistence.Migrations
                     b.ToTable("BestEffort");
                 });
 
+            modelBuilder.Entity("RunningDashboard.Api.Persistence.GoalRace", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("Distance")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("TargetTime")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TrainingBlockWeeks")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("GoalRaces");
+                });
+
             modelBuilder.Entity("RunningDashboard.Api.Persistence.Run", b =>
                 {
                     b.Property<long>("Id")

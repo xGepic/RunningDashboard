@@ -12,6 +12,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
     public DbSet<Shoe> Shoes => Set<Shoe>();
 
+    public DbSet<GoalRace> GoalRaces => Set<GoalRace>();
+
     public Task<bool> IsStravaConnectedAsync(CancellationToken cancellationToken) =>
         StravaConnections.AnyAsync(cancellationToken);
 
@@ -59,6 +61,12 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         {
             shoe.Property(s => s.Id).HasMaxLength(50);
             shoe.Property(s => s.Name).HasMaxLength(200);
+        });
+
+        model.Entity<GoalRace>(race =>
+        {
+            race.Property(r => r.Name).HasMaxLength(200);
+            race.Ignore(r => r.TrainingBlock);
         });
     }
 }

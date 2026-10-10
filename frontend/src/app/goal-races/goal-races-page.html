@@ -1,0 +1,116 @@
+<h1>Goal Races</h1>
+
+<section>
+  <h2>{{ editing() ? 'Edit ' + editing()!.name : 'New Goal Race' }}</h2>
+  <form class="race-form" [formGroup]="form" (ngSubmit)="save()" novalidate>
+    <label>
+      Name
+      <input formControlName="name" required maxlength="200" [attr.aria-invalid]="!!errors()['name']" />
+      @for (error of errors()['name']; track error) {
+        <span class="field-error">{{ error }}</span>
+      }
+    </label>
+
+    <label>
+      Date
+      <input type="date" formControlName="date" required [attr.aria-invalid]="!!errors()['date']" />
+      @for (error of errors()['date']; track error) {
+        <span class="field-error">{{ error }}</span>
+      }
+    </label>
+
+    <label>
+      Distance
+      <select formControlName="distance">
+        @for (preset of presets; track preset.distance) {
+          <option [value]="preset.distance">{{ preset.name }}</option>
+        }
+        <option [value]="custom">Custom…</option>
+      </select>
+      @for (error of errors()['distance']; track error) {
+        <span class="field-error">{{ error }}</span>
+      }
+    </label>
+
+    @if (form.controls.distance.value === custom) {
+      <label>
+        Custom distance (km)
+        <input formControlName="customKm" inputmode="decimal" placeholder="e.g. 15.5" [attr.aria-invalid]="!!errors()['customKm']" />
+        @for (error of errors()['customKm']; track error) {
+          <span class="field-error">{{ error }}</span>
+        }
+      </label>
+    }
+
+    <label>
+      Target Time <span class="optional">(optional)</span>
+      <input formControlName="targetTime" placeholder="h:mm:ss" [attr.aria-invalid]="!!errors()['targetTime']" />
+      @for (error of errors()['targetTime']; track error) {
+        <span class="field-error">{{ error }}</span>
+      }
+    </label>
+
+    <label>
+      Training Block (weeks)
+      <input type="number" min="1" step="1" formControlName="trainingBlockWeeks" required
+             [attr.aria-invalid]="!!errors()['trainingBlockWeeks']" />
+      <span class="hint">Ends with the Race Week.</span>
+      @for (error of errors()['trainingBlockWeeks']; track error) {
+        <span class="field-error">{{ error }}</span>
+      }
+    </label>
+
+    @for (error of errors()[formError]; track error) {
+      <p class="error" role="alert">{{ error }}</p>
+    }
+
+    <div class="actions">
+      <button type="submit" class="primary" [disabled]="saving()">{{ editing() ? 'Save' : 'Add Goal Race' }}</button>
+      @if (editing()) {
+        <button type="button" (click)="cancel()">Cancel</button>
+      }
+    </div>
+  </form>
+</section>
+
+<section>
+  <h2>All Goal Races</h2>
+  @if (races.value(); as races) {
+    @if (races.length === 0) {
+      <p class="empty">No Goal Races yet. Add the races you train for, including past ones.</p>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Race</th>
+            <th class="number">Date</th>
+            <th>Distance</th>
+            <th class="number">Target Time</th>
+            <th>Training Block</th>
+            <th><span class="visually-hidden">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (race of races; track race.id) {
+            <tr>
+              <td>{{ race.name }}</td>
+              <td class="number">{{ race.date | date: 'd MMM y' }}</td>
+              <td>{{ distanceLabel(race.distance) }}</td>
+              <td class="number">{{ race.targetTime === null ? '–' : formatDuration(race.targetTime) }}</td>
+              <td>
+                {{ race.trainingBlockStart | date: 'EEE d MMM y' }} – {{ race.trainingBlockEnd | date: 'EEE d MMM y' }}
+                <span class="weeks">({{ race.trainingBlockWeeks }} weeks)</span>
+              </td>
+              <td class="row-actions">
+                <button type="button" class="link" (click)="edit(race)">Edit</button>
+                <button type="button" class="link" (click)="remove(race)">Delete</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  } @else if (races.error()) {
+    <p class="error" role="alert">Goal Races could not be loaded.</p>
+  }
+</section>

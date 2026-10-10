@@ -1,4 +1,4 @@
-import { formatDistance, formatDuration, formatHours, formatPace, formatTotalDistance } from './format';
+import { formatDistance, formatDuration, formatHours, formatPace, formatTotalDistance, parseDuration } from './format';
 
 describe('formatDistance', () => {
   it('shows metres as kilometres with two decimals', () => {
@@ -45,5 +45,20 @@ describe('formatHours', () => {
   it('shows whole hours for long totals', () => {
     expect(formatHours(1_843_200)).toBe('512 h');
     expect(formatHours(5_399)).toBe('1 h');
+  });
+});
+
+describe('parseDuration', () => {
+  it('reads h:mm:ss and m:ss as typed for a Target Time', () => {
+    expect(parseDuration('5:00:00')).toBe(18000);
+    expect(parseDuration(' 3:59:30 ')).toBe(14370);
+    expect(parseDuration('24:30')).toBe(1470);
+  });
+
+  it('gives nothing for text that is not a duration', () => {
+    expect(parseDuration('')).toBeNull();
+    expect(parseDuration('5h')).toBeNull();
+    expect(parseDuration('4:75:00')).toBeNull();
+    expect(parseDuration('1:2:3:4')).toBeNull();
   });
 });

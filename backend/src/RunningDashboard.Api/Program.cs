@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using RunningDashboard.Api.GoalRaces;
 using RunningDashboard.Api.Overview;
 using RunningDashboard.Api.Persistence;
 using RunningDashboard.Api.Records;
@@ -38,6 +39,7 @@ app.MapRunEndpoints();
 app.MapOverviewEndpoints();
 app.MapShoeEndpoints();
 app.MapRecordEndpoints();
+app.MapGoalRaceEndpoints();
 
 app.Run();
 

@@ -1,0 +1,124 @@
+h1 {
+  margin: 0 0 1rem;
+  font-size: 1.4rem;
+}
+
+h2 {
+  font-size: 1.1rem;
+}
+
+section {
+  margin-bottom: 2rem;
+}
+
+.race-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+  gap: 1rem;
+  max-width: 48rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+
+  input,
+  select {
+    padding: 0.35rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    font-size: 1rem;
+  }
+
+  [aria-invalid='true'] {
+    border-color: var(--error);
+  }
+
+  .error,
+  .actions {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+}
+
+.optional,
+.hint {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.field-error {
+  color: var(--error);
+  font-size: 0.8rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+
+  button {
+    padding: 0.4rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .primary {
+    border-color: var(--chart-series);
+    background: var(--chart-series);
+    color: #fff;
+    font-weight: 600;
+  }
+
+  button:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.data-table {
+  max-width: 64rem;
+}
+
+.weeks {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.row-actions {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.link {
+  padding: 0;
+  margin-left: 0.75rem;
+  border: 0;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

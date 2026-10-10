@@ -32,6 +32,15 @@ export function formatPace(secondsPerKm: number | null): string {
   return `${Math.floor(total / 60)}:${pad(total % 60)} /km`;
 }
 
+/** Seconds from "h:mm:ss" or "m:ss" as the Athlete types it; null if it is not one. */
+export function parseDuration(text: string): number | null {
+  const match = /^(?:(\d+):)?(\d{1,2}):(\d{2})$/.exec(text.trim());
+  if (!match) return null;
+  const [hours, minutes, seconds] = [match[1] ?? '0', match[2], match[3]].map(Number);
+  if (seconds >= 60 || (match[1] !== undefined && minutes >= 60)) return null;
+  return hours * 3600 + minutes * 60 + seconds;
+}
+
 function pad(value: number): string {
   return value.toString().padStart(2, '0');
 }
