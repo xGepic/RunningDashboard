@@ -35,6 +35,18 @@ public static class TrainingPlanEndpoints
             await db.SaveChangesAsync(cancellationToken);
             return Results.Ok(TrainingPlanResponse.From(race));
         });
+
+        // Deletes the plan with all its weeks; the race's own Training Block length counts again.
+        app.MapDelete("/api/goal-races/{id:int}/training-plan", async (int id, AppDbContext db, CancellationToken cancellationToken) =>
+        {
+            var race = await db.GoalRaces.FindAsync([id], cancellationToken);
+            if (race?.TrainingPlan is null)
+                return Results.NotFound();
+
+            race.TrainingPlan = null;
+            await db.SaveChangesAsync(cancellationToken);
+            return Results.NoContent();
+        });
     }
 
     /// <param name="Length">12, 16 or 20 Training Weeks.</param>

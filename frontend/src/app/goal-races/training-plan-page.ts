@@ -96,6 +96,23 @@ export class TrainingPlanPage {
       },
     });
   }
+
+  /** Deletes the plan with everything planned for its weeks; the race's own Training Block length counts again. */
+  protected remove(): void {
+    const race = this.race();
+    if (!race || !confirm(`Delete the Training Plan of ${race.name}, with everything planned for its weeks?`)) return;
+    this.http.delete(`/api/goal-races/${this.id()}/training-plan`).subscribe({
+      next: () => {
+        this.errors.set({});
+        this.saved.set(false);
+        this.length.set(16);
+        this.phases.set(defaultPhases(16));
+        this.plan.reload();
+        this.goalRaces.reload();
+      },
+      error: () => this.errors.set({ [formError]: ['The Training Plan could not be deleted.'] }),
+    });
+  }
 }
 
 /** Builds, then Peaks for the last two Phases before the Taper where there is room. */

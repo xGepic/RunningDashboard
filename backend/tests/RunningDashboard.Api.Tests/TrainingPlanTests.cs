@@ -143,6 +143,23 @@ public sealed class TrainingPlanTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Deleting_the_plan_gives_the_race_back_its_own_block_length()
+    {
+        var race = await CreateGoalRaceAsync(SecondMarathon);
+        await PutPlanAsync(race, BuildPeakPeakTaper);
+
+        var deleted = await _browser.DeleteAsync(PlanPath(race));
+        var again = await _browser.DeleteAsync(PlanPath(race));
+        var listed = Assert.Single(await ListGoalRacesAsync());
+
+        Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, again.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await _browser.GetAsync(PlanPath(race))).StatusCode);
+        // Its own 10 weeks: from Mon 15 Mar 2027 instead of the plan's Mon 1 Feb.
+        Assert.Equal((new DateOnly(2027, 3, 15), null), (listed.TrainingBlockStart, listed.TrainingPlanLength));
+    }
+
+    [Fact]
     public async Task Deleting_a_goal_race_deletes_its_plan()
     {
         var race = await CreateGoalRaceAsync(SecondMarathon);

@@ -50,6 +50,9 @@
       @if (saved()) {
         <span class="saved" role="status">Saved.</span>
       }
+      @if (hasPlan()) {
+        <button type="button" class="delete" (click)="remove()">Delete Training Plan</button>
+      }
     </div>
     @if (hasPlan()) {
       <p class="hint">Weeks that stay within a new length keep what was planned for them; new weeks start empty.</p>
