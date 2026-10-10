@@ -9,20 +9,26 @@ public static class TrainingEndpoints
     public static void MapTrainingEndpoints(this IEndpointRouteBuilder app)
     {
         // The Training Block of the given Goal Race; without one, the block today falls in, or else a countdown to the
-        // next one.
-        app.MapGet("/api/training", async (int? goalRaceId, AppDbContext db, TimeProvider clock, CancellationToken cancellationToken) =>
+        // next one. A block is compared with that of compareWith (a Goal Race id, or "none"), by default with the
+        // previous Goal Race's.
+        app.MapGet("/api/training", async (
+            int? goalRaceId,
+            string? compareWith,
+            AppDbContext db,
+            TimeProvider clock,
+            CancellationToken cancellationToken) =>
         {
             var today = DateOnly.FromDateTime(clock.GetLocalNow().DateTime);
+            var races = await db.GoalRaces.ToListAsync(cancellationToken);
             GoalRace? race;
             if (goalRaceId is not null)
             {
-                race = await db.GoalRaces.FindAsync([goalRaceId], cancellationToken);
+                race = races.SingleOrDefault(r => r.Id == goalRaceId);
                 if (race is null)
                     return Results.NotFound();
             }
             else
             {
-                var races = await db.GoalRaces.ToListAsync(cancellationToken);
                 race = TrainingCalendar.RaceTrainingFor(races, today);
                 if (race is null)
                 {
@@ -32,10 +38,56 @@ public static class TrainingEndpoints
                 }
             }
 
-            var block = race.TrainingBlock;
-            var runs = await RunsAsync(block.Start, block.End, db, cancellationToken);
-            return Results.Ok(new TrainingResponse("block", BlockResponse.From(race, TrainingCalendar.WeeksOf(block, runs, today)), null));
+            var (compared, rejected) = ComparedRace(compareWith, race, races);
+            if (rejected is not null)
+                return rejected;
+
+            var weeks = await WeeksAsync(race, today, db, cancellationToken);
+            var comparison = compared is null
+                ? null
+                : new ComparisonResponse(
+                    GoalRaceResponse.From(compared),
+                    TrainingCalendar.LineUp(weeks, await WeeksAsync(compared, today, db, cancellationToken))
+                        .Select(w => LinedUpWeekResponse.From(w, race.TargetPace))
+                        .ToList());
+            return Results.Ok(new TrainingResponse(
+                "block",
+                new BlockResponse(
+                    GoalRaceResponse.From(race),
+                    race.TargetPace,
+                    weeks.Select(w => WeekResponse.From(w, race.TargetPace)).ToList(),
+                    comparison),
+                null));
         });
+    }
+
+    /// <summary>
+    /// The Goal Race whose block <paramref name="race"/>'s is compared with: <paramref name="compareWith"/> is absent
+    /// for the previous Goal Race, "none" for no comparison, or another Goal Race's id; otherwise the request is rejected.
+    /// </summary>
+    private static (GoalRace? Compared, IResult? Rejected) ComparedRace(string? compareWith, GoalRace race, IReadOnlyCollection<GoalRace> races)
+    {
+        if (compareWith is null)
+            return (TrainingCalendar.PreviousRace(races, race), null);
+        if (compareWith == "none")
+            return (null, null);
+        if (!int.TryParse(compareWith, out var id) || id == race.Id)
+        {
+            return (null, Results.ValidationProblem(new Dictionary<string, string[]>
+            {
+                [nameof(compareWith)] = ["Compare with another Goal Race's id, or none."],
+            }));
+        }
+
+        return races.SingleOrDefault(r => r.Id == id) is { } compared ? (compared, null) : (null, Results.NotFound());
+    }
+
+    /// <summary>The weeks of <paramref name="race"/>'s Training Block with what was run.</summary>
+    private static async Task<List<TrainingBlockWeek>> WeeksAsync(GoalRace race, DateOnly today, AppDbContext db, CancellationToken cancellationToken)
+    {
+        var block = race.TrainingBlock;
+        var runs = await RunsAsync(block.Start, block.End, db, cancellationToken);
+        return TrainingCalendar.WeeksOf(block, runs, today);
     }
 
     private static async Task<CountdownResponse> CountdownAsync(GoalRace next, DateOnly today, AppDbContext db, CancellationToken cancellationToken)
@@ -82,12 +134,24 @@ public static class TrainingEndpoints
     /// Target Time ÷ Goal Race distance, in whole seconds per km rounded down; none without a Target Time.
     /// </param>
     /// <param name="Weeks">First week to Race Week.</param>
-    private sealed record BlockResponse(GoalRaceResponse GoalRace, int? TargetPace, IReadOnlyList<WeekResponse> Weeks)
+    /// <param name="Comparison">The Training Block this one is compared with; none when the comparison is off.</param>
+    private sealed record BlockResponse(GoalRaceResponse GoalRace, int? TargetPace, IReadOnlyList<WeekResponse> Weeks, ComparisonResponse? Comparison);
+
+    /// <summary>Another Goal Race's Training Block, lined up with the viewed one by Weeks to Race.</summary>
+    /// <param name="Weeks">
+    /// One per Weeks to Race in either block, first to Race Week. Both sides' Long Runs are compared with the viewed
+    /// Goal Race's Target Pace: the Pace needed now.
+    /// </param>
+    private sealed record ComparisonResponse(GoalRaceResponse GoalRace, IReadOnlyList<LinedUpWeekResponse> Weeks);
+
+    /// <param name="Viewed">The viewed block's week; none if that block does not have it.</param>
+    /// <param name="Compared">The compared block's week; none if that block does not have it.</param>
+    private sealed record LinedUpWeekResponse(int WeeksToRace, WeekResponse? Viewed, WeekResponse? Compared)
     {
-        public static BlockResponse From(GoalRace race, IEnumerable<TrainingBlockWeek> weeks) => new(
-            GoalRaceResponse.From(race),
-            race.TargetPace,
-            weeks.Select(w => WeekResponse.From(w, race.TargetPace)).ToList());
+        public static LinedUpWeekResponse From(LinedUpWeek week, int? targetPace) => new(
+            week.WeeksToRace,
+            week.Viewed is null ? null : WeekResponse.From(week.Viewed, targetPace),
+            week.Compared is null ? null : WeekResponse.From(week.Compared, targetPace));
     }
 
     /// <param name="Distance">Metres.</param>

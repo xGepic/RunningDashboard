@@ -35,6 +35,25 @@ export interface TrainingBlock {
   targetPace: number | null;
   /** First week to Race Week. */
   weeks: TrainingBlockWeek[];
+  /** The block this one is compared with; none when the comparison is off. */
+  comparison: Comparison | null;
+}
+
+/** Another Goal Race's Training Block, lined up with the viewed one by Weeks to Race. */
+export interface Comparison {
+  goalRace: GoalRaceSummary;
+  /**
+   * One per Weeks to Race in either block, first to Race Week. Both sides' Long Runs are compared with the viewed
+   * Goal Race's Target Pace.
+   */
+  weeks: LinedUpWeek[];
+}
+
+/** One Weeks to Race in both blocks; a block that does not have that week has nothing on its side. */
+export interface LinedUpWeek {
+  weeksToRace: number;
+  viewed: TrainingBlockWeek | null;
+  compared: TrainingBlockWeek | null;
 }
 
 export interface TrainingBlockWeek {

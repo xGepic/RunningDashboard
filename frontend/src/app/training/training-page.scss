@@ -145,3 +145,35 @@ details {
     margin-top: 0.5rem;
   }
 }
+
+.sides th {
+  border-bottom: 0;
+  color: var(--text);
+}
+
+th.compared,
+td.compared {
+  background: var(--background);
+}
+
+/* A divider before the compared block's first column. */
+:is(th, td):not(.compared) + .compared {
+  border-left: 1px solid var(--border);
+}
+
+.target {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: normal;
+}
+
+.error .link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}

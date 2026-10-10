@@ -22,6 +22,9 @@ public enum WeekStatus
 /// <param name="Actual">None for a future week.</param>
 public sealed record TrainingBlockWeek(int WeeksToRace, TrainingWeek Week, WeekStatus Status, WeekActual? Actual);
 
+/// <summary>One Weeks to Race across two Training Blocks; either block may not have that week.</summary>
+public sealed record LinedUpWeek(int WeeksToRace, TrainingBlockWeek? Viewed, TrainingBlockWeek? Compared);
+
 /// <param name="Distance">Metres.</param>
 /// <param name="MovingTime">Seconds.</param>
 /// <param name="RelativeEffort">Sum over the week's Runs that have one; none if no Run has.</param>
@@ -37,6 +40,10 @@ public static class TrainingCalendar
     /// <summary>The Goal Race whose Training Block <paramref name="date"/> falls in, if any; blocks never overlap.</summary>
     public static GoalRace? RaceTrainingFor(IEnumerable<GoalRace> races, DateOnly date) =>
         races.FirstOrDefault(r => r.TrainingBlock.Contains(date));
+
+    /// <summary>The most recent Goal Race before <paramref name="race"/> by date; none if it is the first.</summary>
+    public static GoalRace? PreviousRace(IEnumerable<GoalRace> races, GoalRace race) =>
+        races.Where(r => r.Date < race.Date).MaxBy(r => r.Date);
 
     /// <summary>The Goal Race whose Training Block starts next after <paramref name="today"/>, if any.</summary>
     public static GoalRace? NextBlockRace(IEnumerable<GoalRace> races, DateOnly today) =>
@@ -72,6 +79,21 @@ public static class TrainingCalendar
                 var actual = status == WeekStatus.Future ? null : ActualOf(byWeek[week].ToList());
                 return new TrainingBlockWeek(block.WeeksToRace(week), week, status, actual);
             })
+            .ToList();
+    }
+
+    /// <summary>
+    /// Two blocks' weeks side by side by Weeks to Race, one per Weeks to Race in either block, first to Race Week.
+    /// A week only one block has is empty on the other side: a 16-week block next to a 14-week one has nothing to
+    /// compare in weeks −15 and −14.
+    /// </summary>
+    public static List<LinedUpWeek> LineUp(IReadOnlyCollection<TrainingBlockWeek> viewed, IReadOnlyCollection<TrainingBlockWeek> compared)
+    {
+        var viewedByWeeksToRace = viewed.ToDictionary(w => w.WeeksToRace);
+        var comparedByWeeksToRace = compared.ToDictionary(w => w.WeeksToRace);
+        var first = viewedByWeeksToRace.Keys.Concat(comparedByWeeksToRace.Keys).Min();
+        return Enumerable.Range(first, 1 - first)
+            .Select(n => new LinedUpWeek(n, viewedByWeeksToRace.GetValueOrDefault(n), comparedByWeeksToRace.GetValueOrDefault(n)))
             .ToList();
     }
 
