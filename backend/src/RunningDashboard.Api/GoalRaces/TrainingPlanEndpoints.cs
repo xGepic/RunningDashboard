@@ -36,6 +36,23 @@ public static class TrainingPlanEndpoints
             return Results.Ok(TrainingPlanResponse.From(race));
         });
 
+        // Plans the weeks in the request; the plan's other weeks keep what they had.
+        app.MapPut("/api/goal-races/{id:int}/training-plan/weeks", async (int id, TrainingPlanWeeksRequest request, AppDbContext db, CancellationToken cancellationToken) =>
+        {
+            var race = await db.GoalRaces.FindAsync([id], cancellationToken);
+            if (race?.TrainingPlan is not { } plan)
+                return Results.NotFound();
+
+            var errors = request.Validate(plan);
+            if (errors.Count > 0)
+                return Results.ValidationProblem(errors);
+
+            foreach (var week in request.Weeks ?? [])
+                week.ApplyTo(plan.Weeks.Single(w => w.WeeksToRace == week.WeeksToRace));
+            await db.SaveChangesAsync(cancellationToken);
+            return Results.Ok(TrainingPlanResponse.From(race));
+        });
+
         // Deletes the plan with all its weeks; the race's own Training Block length counts again.
         app.MapDelete("/api/goal-races/{id:int}/training-plan", async (int id, AppDbContext db, CancellationToken cancellationToken) =>
         {
@@ -62,20 +79,65 @@ public static class TrainingPlanEndpoints
         }
 
         /// <summary>The Phases by name; null if one is not "build", "peak" or "taper".</summary>
-        public List<PhaseType>? PhaseTypes()
+        public List<PhaseType>? PhaseTypes() => Phases is null ? null : ApiNames.Parse<PhaseType>(Phases);
+    }
+
+    /// <param name="Weeks">The weeks to plan, each at most once.</param>
+    private sealed record TrainingPlanWeeksRequest(List<WeekRequest>? Weeks)
+    {
+        /// <summary>Errors keyed "weeks[i].field", as the editor's rows are numbered; empty if the weeks can be saved.</summary>
+        public Dictionary<string, string[]> Validate(TrainingPlan plan)
         {
-            var types = new List<PhaseType>();
-            foreach (var name in Phases ?? [])
+            var errors = new Dictionary<string, string[]>();
+            var seen = new HashSet<int>();
+            foreach (var (week, i) in (Weeks ?? []).Select((w, i) => (w, i)))
             {
-                // Names only: Enum.TryParse would also take "7".
-                if (!Enum.GetNames<PhaseType>().Contains(name, StringComparer.OrdinalIgnoreCase))
-                    return null;
-                types.Add(Enum.Parse<PhaseType>(name, ignoreCase: true));
+                foreach (var (field, error) in week.Errors(plan, seen))
+                    errors[$"weeks[{i}].{field}"] = [error];
+                seen.Add(week.WeeksToRace);
             }
 
-            return Phases is null ? null : types;
+            return errors;
         }
     }
+
+    /// <param name="WeeksToRace">Which week of the plan: 0 for the Race Week.</param>
+    /// <param name="PlannedDistance">Metres, or none.</param>
+    /// <param name="PlannedLongRun">Metres, or none.</param>
+    /// <param name="RunningDays">"monday" to "sunday", in any order.</param>
+    private sealed record WeekRequest(int WeeksToRace, double? PlannedDistance, double? PlannedLongRun, string[]? RunningDays, bool RecoveryWeek)
+    {
+        /// <summary>What is wrong with this week, by field; <paramref name="earlier"/> are the weeks before it in the request.</summary>
+        public IEnumerable<(string Field, string Error)> Errors(TrainingPlan plan, IReadOnlySet<int> earlier)
+        {
+            if (WeeksToRace > 0 || WeeksToRace <= -plan.Length)
+                yield return ("weeksToRace", $"A {plan.Length}-week plan has weeks {1 - plan.Length} to 0.");
+            else if (earlier.Contains(WeeksToRace))
+                yield return ("weeksToRace", $"Week {WeeksToRace} is planned twice.");
+            if (PlannedDistance <= 0)
+                yield return ("plannedDistance", "The planned distance is a positive number of metres, or none.");
+            if (PlannedLongRun <= 0)
+                yield return ("plannedLongRun", "The planned Long Run is a positive number of metres, or none.");
+            if (RunningDays is not null && Days() is null)
+                yield return ("runningDays", "Each Running Day is a day of the week, \"monday\" to \"sunday\".");
+            if (PlanningRules.RecoveryWeekError(WeeksToRace, RecoveryWeek) is { } recovery)
+                yield return ("recoveryWeek", recovery);
+        }
+
+        public void ApplyTo(TrainingPlanWeek week)
+        {
+            week.PlannedDistance = PlannedDistance;
+            week.PlannedLongRun = PlannedLongRun;
+            week.RunningDays = [.. Days()!.Distinct().OrderBy(MondayFirst)];
+            week.RecoveryWeek = RecoveryWeek;
+        }
+
+        /// <summary>The Running Days by name; null if one is not a day of the week.</summary>
+        private List<DayOfWeek>? Days() => ApiNames.Parse<DayOfWeek>(RunningDays ?? []);
+    }
+
+    /// <summary>Orders days Monday to Sunday, as Training Weeks run.</summary>
+    private static int MondayFirst(DayOfWeek day) => ((int)day + 6) % 7;
 
     /// <param name="Length">Training Weeks, including the Race Week.</param>
     /// <param name="Phases">First to last.</param>
@@ -91,17 +153,22 @@ public static class TrainingPlanEndpoints
                 plan.Length,
                 plan.Phases
                     .Select((type, i) => (Type: type, Weeks: plan.WeeksOfPhase(i)))
-                    .Select(p => new PhaseResponse(ApiName(p.Type), p.Weeks.First, p.Weeks.Last))
+                    .Select(p => new PhaseResponse(ApiNames.Of(p.Type), p.Weeks.First, p.Weeks.Last))
                     .ToList(),
                 plan.Weeks
                     .OrderBy(w => w.WeeksToRace)
-                    .Select(w => (w.WeeksToRace, Week: block.WeekAt(w.WeeksToRace)))
-                    .Select(w => new WeekResponse(w.WeeksToRace, w.Week.Start, w.Week.End, ApiName(plan.PhaseOf(w.WeeksToRace))))
+                    .Select(w => (Planned: w, Week: block.WeekAt(w.WeeksToRace)))
+                    .Select(w => new WeekResponse(
+                        w.Planned.WeeksToRace,
+                        w.Week.Start,
+                        w.Week.End,
+                        ApiNames.Of(plan.PhaseOf(w.Planned.WeeksToRace)),
+                        w.Planned.PlannedDistance,
+                        w.Planned.PlannedLongRun,
+                        w.Planned.RunningDays.Select(ApiNames.Of).ToList(),
+                        w.Planned.RecoveryWeek))
                     .ToList());
         }
-
-        /// <summary>"build", "peak" or "taper".</summary>
-        private static string ApiName(PhaseType type) => JsonNamingPolicy.CamelCase.ConvertName(type.ToString());
     }
 
     /// <param name="Type">"build", "peak" or "taper".</param>
@@ -110,5 +177,38 @@ public static class TrainingPlanEndpoints
     /// <param name="Start">The Monday.</param>
     /// <param name="End">The Sunday.</param>
     /// <param name="Phase">The type of the Phase the week is in.</param>
-    private sealed record WeekResponse(int WeeksToRace, DateOnly Start, DateOnly End, string Phase);
+    /// <param name="PlannedDistance">Metres, or none.</param>
+    /// <param name="PlannedLongRun">Metres, or none.</param>
+    /// <param name="RunningDays">"monday" to "sunday", Monday first.</param>
+    private sealed record WeekResponse(
+        int WeeksToRace,
+        DateOnly Start,
+        DateOnly End,
+        string Phase,
+        double? PlannedDistance,
+        double? PlannedLongRun,
+        IReadOnlyList<string> RunningDays,
+        bool RecoveryWeek);
+
+    /// <summary>Enum values as the API names them: "build", "monday".</summary>
+    private static class ApiNames
+    {
+        public static string Of<TEnum>(TEnum value) where TEnum : struct, Enum =>
+            JsonNamingPolicy.CamelCase.ConvertName(value.ToString());
+
+        /// <summary>The values named; null if one name is not a value's.</summary>
+        public static List<TEnum>? Parse<TEnum>(IEnumerable<string> names) where TEnum : struct, Enum
+        {
+            var values = new List<TEnum>();
+            foreach (var name in names)
+            {
+                // Names only: Enum.TryParse would also take "7".
+                if (!Enum.GetNames<TEnum>().Contains(name, StringComparer.OrdinalIgnoreCase))
+                    return null;
+                values.Add(Enum.Parse<TEnum>(name, ignoreCase: true));
+            }
+
+            return values;
+        }
+    }
 }

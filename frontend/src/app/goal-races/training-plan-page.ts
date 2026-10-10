@@ -2,19 +2,15 @@ import { DatePipe } from '@angular/common';
 import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/http';
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { FieldErrors, formError } from '../shared/field-errors';
 import { GoalRace } from './goal-race';
 import { PhaseType, TrainingPlan, TrainingPlanRequest, phaseTypes, phaseWeeks, planLengths } from './training-plan';
-
-/** Field errors as the API reports them in its problem details, keyed by field name. */
-type FieldErrors = Record<string, string[]>;
-
-/** Where errors that belong to no single field go. */
-const formError = 'form';
+import { TrainingPlanWeeksEditor } from './training-plan-weeks-editor';
 
 /** Creates or reshapes a Goal Race's Training Plan: its length and the type of each Phase. */
 @Component({
   selector: 'app-training-plan-page',
-  imports: [DatePipe, RouterLink],
+  imports: [DatePipe, RouterLink, TrainingPlanWeeksEditor],
   templateUrl: './training-plan-page.html',
   styleUrl: './training-plan-page.scss',
 })
@@ -50,14 +46,24 @@ export class TrainingPlanPage {
     }),
   );
 
-  constructor() {
-    // Start the form from the saved plan, once it is in.
-    effect(() => {
-      if (!this.plan.hasValue()) return;
+  /** The saved length and Phases; saving the weeks leaves them, and so the form, as they are. */
+  private readonly savedShape = computed(
+    () => {
+      if (!this.plan.hasValue()) return undefined;
       const plan = this.plan.value();
+      return { length: plan.length, phases: plan.phases.map((p) => p.type) };
+    },
+    { equal: (a, b) => a?.length === b?.length && a?.phases.join() === b?.phases.join() },
+  );
+
+  constructor() {
+    // Start the form from the saved plan, once it is in, and again whenever its shape is saved.
+    effect(() => {
+      const shape = this.savedShape();
+      if (!shape) return;
       untracked(() => {
-        this.length.set(plan.length);
-        this.phases.set(plan.phases.map((p) => p.type));
+        this.length.set(shape.length);
+        this.phases.set(shape.phases);
       });
     });
   }

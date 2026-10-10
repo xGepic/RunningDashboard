@@ -33,4 +33,8 @@ public static class PlanningRules
             return new() { ["phases"] = ["The last Phase must be a Taper."] };
         return [];
     }
+
+    /// <summary>Why the week <paramref name="weeksToRace"/> cannot be a Recovery Week, if it cannot: the Race Week stays its own thing.</summary>
+    public static string? RecoveryWeekError(int weeksToRace, bool recoveryWeek) =>
+        recoveryWeek && weeksToRace == 0 ? "The Race Week can't be a Recovery Week." : null;
 }

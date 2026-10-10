@@ -55,6 +55,12 @@ export function parseDuration(text: string): number | null {
   return hours * 3600 + minutes * 60 + seconds;
 }
 
+/** Metres from kilometres as typed, accepting a decimal comma; null if it is not a positive number. */
+export function kilometresToMetres(text: string): number | null {
+  const km = Number(text.trim().replace(',', '.'));
+  return text.trim() === '' || Number.isNaN(km) || km <= 0 ? null : Math.round(km * 1000 * 10) / 10;
+}
+
 function pad(value: number): string {
   return value.toString().padStart(2, '0');
 }

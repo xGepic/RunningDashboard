@@ -282,6 +282,19 @@ namespace RunningDashboard.Api.Persistence.Migrations
                                     b2.Property<int>("WeeksToRace")
                                         .HasColumnType("INTEGER");
 
+                                    b2.Property<double?>("PlannedDistance")
+                                        .HasColumnType("REAL");
+
+                                    b2.Property<double?>("PlannedLongRun")
+                                        .HasColumnType("REAL");
+
+                                    b2.Property<bool>("RecoveryWeek")
+                                        .HasColumnType("INTEGER");
+
+                                    b2.PrimitiveCollection<string>("RunningDays")
+                                        .IsRequired()
+                                        .HasColumnType("TEXT");
+
                                     b2.HasKey("GoalRaceId", "WeeksToRace");
 
                                     b2.ToTable("TrainingPlanWeeks", (string)null);

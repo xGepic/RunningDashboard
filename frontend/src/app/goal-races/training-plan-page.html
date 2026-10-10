@@ -62,20 +62,7 @@
   @if (plan.hasValue()) {
     <section>
       <h2>Weeks</h2>
-      <table class="data-table">
-        <thead>
-          <tr><th class="number">Weeks to Race</th><th>Training Week</th><th>Phase</th></tr>
-        </thead>
-        <tbody>
-          @for (week of plan.value().weeks; track week.weeksToRace) {
-            <tr [class]="'phase-' + week.phase">
-              <td class="number">{{ week.weeksToRace }}@if (week.weeksToRace === 0) { · Race Week }</td>
-              <td>{{ week.start | date: 'd MMM' }} – {{ week.end | date: 'd MMM y' }}</td>
-              <td class="phase">{{ week.phase }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
+      <app-training-plan-weeks-editor [plan]="plan.value()" (saved)="plan.set($event)" />
     </section>
   }
 } @else if (goalRaces.error()) {

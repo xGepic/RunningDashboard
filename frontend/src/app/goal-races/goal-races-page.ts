@@ -3,18 +3,13 @@ import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/htt
 import { Component, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { formatDifference, formatDistance, formatDuration, parseDuration } from '../shared/format';
+import { formatDifference, formatDistance, formatDuration, kilometresToMetres, parseDuration } from '../shared/format';
 import { reloadOnSync } from '../sync/reload-on-sync';
+import { FieldErrors, formError } from '../shared/field-errors';
 import { GoalRace, GoalRaceRequest, distancePresets } from './goal-race';
-
-/** Field errors as the API reports them in its problem details, keyed by field name. */
-type FieldErrors = Record<string, string[]>;
 
 /** The distance picker's choice for a distance that is not a preset. */
 const custom = 'custom';
-
-/** Where errors that belong to no single field go. */
-const formError = 'form';
 
 @Component({
   selector: 'app-goal-races-page',
@@ -133,10 +128,4 @@ export class GoalRacesPage {
 
 function presetFor(metres: number) {
   return distancePresets.find((preset) => preset.distance === metres);
-}
-
-/** Metres from kilometres as typed, accepting a decimal comma; null if it is not a positive number. */
-function kilometresToMetres(text: string): number | null {
-  const km = Number(text.trim().replace(',', '.'));
-  return text.trim() === '' || Number.isNaN(km) || km <= 0 ? null : Math.round(km * 1000 * 10) / 10;
 }

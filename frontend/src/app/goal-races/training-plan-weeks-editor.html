@@ -1,0 +1,86 @@
+<div class="table-scroll">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th class="number">Weeks to Race</th>
+        <th>Training Week</th>
+        <th>Phase</th>
+        <th>Distance (km)</th>
+        <th>Long Run (km)</th>
+        <th>Running Days</th>
+        <th>Recovery Week</th>
+        <th><span class="visually-hidden">Copy</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of rows(); track row.week.weeksToRace; let i = $index) {
+        <tr [attr.data-weeks-to-race]="row.week.weeksToRace" [class]="'phase-' + row.week.phase" [class.recovery]="row.recoveryWeek">
+          <td class="number">
+            {{ row.week.weeksToRace }}@if (row.week.weeksToRace === 0) { · Race Week }
+            @for (error of fieldErrors(i, 'weeksToRace'); track error) {
+              <span class="field-error">{{ error }}</span>
+            }
+          </td>
+          <td class="dates">{{ row.week.start | date: 'd MMM' }} – {{ row.week.end | date: 'd MMM y' }}</td>
+          <td class="phase">{{ row.week.phase }}</td>
+          <td>
+            <input class="distance" inputmode="decimal" [value]="row.distanceKm"
+                   (input)="edit(i, { distanceKm: $any($event.target).value })"
+                   [attr.aria-label]="'Planned distance in km, week ' + row.week.weeksToRace"
+                   [attr.aria-invalid]="fieldErrors(i, 'plannedDistance').length > 0" />
+            @for (error of fieldErrors(i, 'plannedDistance'); track error) {
+              <span class="field-error">{{ error }}</span>
+            }
+          </td>
+          <td>
+            <input class="long-run" inputmode="decimal" [value]="row.longRunKm"
+                   (input)="edit(i, { longRunKm: $any($event.target).value })"
+                   [attr.aria-label]="'Planned Long Run in km, week ' + row.week.weeksToRace"
+                   [attr.aria-invalid]="fieldErrors(i, 'plannedLongRun').length > 0" />
+            @for (error of fieldErrors(i, 'plannedLongRun'); track error) {
+              <span class="field-error">{{ error }}</span>
+            }
+          </td>
+          <td>
+            <div class="days" role="group" [attr.aria-label]="'Running Days, week ' + row.week.weeksToRace">
+              @for (weekday of weekdays; track weekday.day) {
+                <button type="button" class="day" [attr.aria-label]="weekday.name"
+                        [attr.aria-pressed]="row.runningDays.includes(weekday.day)"
+                        (click)="toggleDay(i, weekday.day)">{{ weekday.initial }}</button>
+              }
+            </div>
+            @for (error of fieldErrors(i, 'runningDays'); track error) {
+              <span class="field-error">{{ error }}</span>
+            }
+          </td>
+          <td>
+            <input type="checkbox" class="recovery" [checked]="row.recoveryWeek"
+                   [disabled]="row.week.weeksToRace === 0"
+                   [attr.title]="row.week.weeksToRace === 0 ? 'The Race Week is never a Recovery Week.' : null"
+                   (change)="edit(i, { recoveryWeek: $any($event.target).checked })"
+                   [attr.aria-label]="'Recovery Week, week ' + row.week.weeksToRace" />
+            @for (error of fieldErrors(i, 'recoveryWeek'); track error) {
+              <span class="field-error">{{ error }}</span>
+            }
+          </td>
+          <td>
+            @if (i > 0) {
+              <button type="button" class="copy" (click)="copyFromPrevious(i)">Copy from previous week</button>
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
+
+@for (error of errors()[formError]; track error) {
+  <p class="error" role="alert">{{ error }}</p>
+}
+
+<div class="actions">
+  <button type="button" class="save primary" [disabled]="saving()" (click)="save()">Save weeks</button>
+  @if (justSaved()) {
+    <span class="saved" role="status">Saved.</span>
+  }
+</div>
