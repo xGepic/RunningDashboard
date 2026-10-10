@@ -4,11 +4,10 @@ import { Component, computed, inject } from '@angular/core';
 import type { EChartsCoreOption } from 'echarts/core';
 import { NgxEchartsDirective } from 'ngx-echarts';
 import { ChartColors, ChartTheme, baseChartOptions } from '../shared/chart-theme';
+import { categoryAxis, monthNames, valueAxis, weekLabel, weeklyDistanceChart } from '../shared/charts';
 import { formatDistance, formatHours, formatPace, formatTotalDistance } from '../shared/format';
 import { reloadOnSync } from '../sync/reload-on-sync';
-import { MonthPace, Overview, WeekDistance } from './overview';
-
-const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+import { MonthPace, Overview } from './overview';
 
 @Component({
   selector: 'app-overview-page',
@@ -42,60 +41,9 @@ export class OverviewPage {
   }
 }
 
-/** "5 Oct 2026" for the Training Week starting Monday 2026-10-05. */
-function weekLabel(start: string): string {
-  const [year, month, day] = start.split('-').map(Number);
-  return `${day} ${monthNames[month - 1]} ${year}`;
-}
-
 /** "Oct 2026". */
 function monthLabel(month: MonthPace): string {
   return `${monthNames[month.month - 1]} ${month.year}`;
-}
-
-function categoryAxis(labels: string[], colors: ChartColors) {
-  return {
-    type: 'category',
-    data: labels,
-    axisLine: { lineStyle: { color: colors.grid } },
-    axisTick: { show: false },
-    axisLabel: { color: colors.muted, hideOverlap: true },
-  };
-}
-
-function valueAxis(colors: ChartColors, formatter: (value: number) => string, fromZero: boolean) {
-  return {
-    type: 'value',
-    scale: !fromZero,
-    axisLabel: { color: colors.muted, formatter },
-    splitLine: { lineStyle: { color: colors.grid, width: 1, type: 'solid' } },
-  };
-}
-
-function weeklyDistanceChart(weeks: WeekDistance[], colors: ChartColors): EChartsCoreOption {
-  return {
-    ...baseChartOptions(colors),
-    tooltip: {
-      ...baseChartOptions(colors).tooltip,
-      axisPointer: { type: 'shadow' },
-      formatter: (params: { dataIndex: number }[]) => {
-        const week = weeks[params[0]?.dataIndex];
-        if (!week) return '';
-        return `Week of ${weekLabel(week.start)}<br><b>${formatDistance(week.distance)}</b>`;
-      },
-    },
-    xAxis: categoryAxis(weeks.map((w) => weekLabel(w.start)), colors),
-    yAxis: valueAxis(colors, (km) => `${km} km`, true),
-    series: [
-      {
-        type: 'bar',
-        data: weeks.map((w) => Math.round(w.distance / 100) / 10),
-        barMaxWidth: 24,
-        barCategoryGap: '20%',
-        itemStyle: { color: colors.series, borderRadius: [4, 4, 0, 0] },
-      },
-    ],
-  };
 }
 
 function monthlyPaceChart(months: MonthPace[], colors: ChartColors): EChartsCoreOption {

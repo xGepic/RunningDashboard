@@ -1,3 +1,5 @@
+import { WeekDistance } from '../shared/charts';
+
 /** As returned by GET /api/overview. Distances in metres, times in seconds, pace in seconds per km. */
 export interface Overview {
   totals: Totals;
@@ -17,12 +19,6 @@ export interface Totals {
 
 export interface YearTotals extends Totals {
   year: number;
-}
-
-export interface WeekDistance {
-  /** The Monday, yyyy-MM-dd. */
-  start: string;
-  distance: number;
 }
 
 export interface MonthPace {

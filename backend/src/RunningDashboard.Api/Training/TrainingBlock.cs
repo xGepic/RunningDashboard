@@ -13,7 +13,7 @@ public readonly record struct TrainingBlock(TrainingWeek FirstWeek, TrainingWeek
     public static TrainingBlock Ending(DateOnly raceDate, int weeks)
     {
         var raceWeek = TrainingWeek.Of(raceDate);
-        return new TrainingBlock(new TrainingWeek(raceWeek.Start.AddDays(-7 * (weeks - 1))), raceWeek);
+        return new TrainingBlock(raceWeek.WeeksBefore(weeks - 1), raceWeek);
     }
 
     /// <summary>The Monday of the first week.</summary>

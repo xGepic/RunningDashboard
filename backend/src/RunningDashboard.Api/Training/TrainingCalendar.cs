@@ -31,9 +31,29 @@ public sealed record WeekActual(int Runs, double Distance, int MovingTime, doubl
 /// <summary>Training Blocks laid out in Training Weeks, with what was actually run.</summary>
 public static class TrainingCalendar
 {
+    /// <summary>How many Training Weeks, up to the current one, count as recent between Training Blocks.</summary>
+    public const int RecentWeekCount = 8;
+
     /// <summary>The Goal Race whose Training Block <paramref name="date"/> falls in, if any; blocks never overlap.</summary>
     public static GoalRace? RaceTrainingFor(IEnumerable<GoalRace> races, DateOnly date) =>
         races.FirstOrDefault(r => r.TrainingBlock.Contains(date));
+
+    /// <summary>The Goal Race whose Training Block starts next after <paramref name="today"/>, if any.</summary>
+    public static GoalRace? NextBlockRace(IEnumerable<GoalRace> races, DateOnly today) =>
+        races.Where(r => r.TrainingBlock.Start > today).MinBy(r => r.TrainingBlock.Start);
+
+    /// <summary>Days from <paramref name="today"/> to the Monday <paramref name="race"/>'s Training Block starts.</summary>
+    public static int DaysUntilBlock(GoalRace race, DateOnly today) => race.TrainingBlock.Start.DayNumber - today.DayNumber;
+
+    /// <summary>The first of the recent Training Weeks, which end with the one <paramref name="today"/> falls in.</summary>
+    public static TrainingWeek FirstRecentWeek(DateOnly today) => TrainingWeek.Of(today).WeeksBefore(RecentWeekCount - 1);
+
+    /// <summary>Distance (metres) of <paramref name="runs"/> in each Training Week from <paramref name="first"/> through <paramref name="last"/>.</summary>
+    public static List<(TrainingWeek Week, double Distance)> DistanceByWeek(TrainingWeek first, TrainingWeek last, IEnumerable<RunSummary> runs)
+    {
+        var byWeek = runs.ToLookup(r => TrainingWeek.Of(r.StartLocal));
+        return TrainingWeek.Range(first, last).Select(w => (w, byWeek[w].Sum(r => r.Distance))).ToList();
+    }
 
     /// <summary>
     /// Every Training Week of <paramref name="block"/>, first to Race Week, with the actual values of

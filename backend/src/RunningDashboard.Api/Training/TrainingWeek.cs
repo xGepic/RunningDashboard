@@ -13,6 +13,9 @@ public readonly record struct TrainingWeek(DateOnly Start)
 
     public TrainingWeek Next => new(Start.AddDays(7));
 
+    /// <summary>The Training Week <paramref name="weeks"/> weeks before this one.</summary>
+    public TrainingWeek WeeksBefore(int weeks) => new(Start.AddDays(-7 * weeks));
+
     /// <summary>Every Training Week from <paramref name="first"/> through <paramref name="last"/>.</summary>
     public static IEnumerable<TrainingWeek> Range(TrainingWeek first, TrainingWeek last)
     {

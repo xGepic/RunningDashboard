@@ -3,7 +3,7 @@
 <label class="selector">
   Training Block
   <select #picker (change)="select(picker.value)">
-    <option value="" [selected]="!goalRace()">Current block</option>
+    <option value="" [selected]="!goalRace()">Today</option>
     @for (race of goalRaces.value() ?? []; track race.id) {
       <option [value]="race.id" [selected]="goalRace() === '' + race.id">{{ race.name }} ({{ race.date | date: 'd MMM y' }})</option>
     }
@@ -69,10 +69,41 @@
         </tbody>
       </table>
     </div>
+  } @else if (training.countdown; as countdown) {
+    <section class="countdown" aria-labelledby="next-block">
+      <h2 id="next-block">Next Training Block</h2>
+      <p class="days">
+        <span class="value">{{ countdown.daysRemaining }}</span>
+        {{ countdown.daysRemaining === 1 ? 'day' : 'days' }} to go
+      </p>
+      <p>
+        <b>{{ countdown.goalRace.name }}</b> ({{ countdown.goalRace.date | date: 'EEE d MMM y' }}): the Training Block starts
+        on {{ countdown.trainingBlockStart | date: 'EEEE d MMMM y' }}.
+      </p>
+    </section>
+
+    <section>
+      <h2>Recent weeks</h2>
+      @if (recentWeeksChart(); as options) {
+        <div class="chart" echarts [options]="options" [autoResize]="true" role="img"
+             aria-label="Column chart of distance in the recent Training Weeks; the table below has the same numbers"></div>
+      }
+      <details>
+        <summary>Show as table</summary>
+        <table class="data-table recent">
+          <thead><tr><th>Week starting</th><th class="number">Distance</th></tr></thead>
+          <tbody>
+            @for (week of countdown.recentWeeks; track week.start) {
+              <tr><td>{{ weekLabel(week.start) }}</td><td class="number">{{ formatDistance(week.distance) }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </details>
+    </section>
   } @else {
     <p class="empty">
-      Today is not in any Training Block. Pick a Goal Race above to look at its block, or
-      <a routerLink="/goal-races">add a Goal Race</a>.
+      No upcoming Goal Race, so there is no Training Block ahead.
+      <a routerLink="/goal-races">Add the race you are training for</a>@if (goalRaces.value()?.length) {, or pick a past one above to look at its block}.
     </p>
   }
 } @else if (training.error()) {

@@ -8,7 +8,8 @@ public static class TrainingEndpoints
 {
     public static void MapTrainingEndpoints(this IEndpointRouteBuilder app)
     {
-        // The Training Block of the given Goal Race, or else the one today falls in.
+        // The Training Block of the given Goal Race; without one, the block today falls in, or else a countdown to the
+        // next one.
         app.MapGet("/api/training", async (int? goalRaceId, AppDbContext db, TimeProvider clock, CancellationToken cancellationToken) =>
         {
             var today = DateOnly.FromDateTime(clock.GetLocalNow().DateTime);
@@ -21,26 +22,61 @@ public static class TrainingEndpoints
             }
             else
             {
-                race = TrainingCalendar.RaceTrainingFor(await db.GoalRaces.ToListAsync(cancellationToken), today);
+                var races = await db.GoalRaces.ToListAsync(cancellationToken);
+                race = TrainingCalendar.RaceTrainingFor(races, today);
+                if (race is null)
+                {
+                    return TrainingCalendar.NextBlockRace(races, today) is { } next
+                        ? Results.Ok(new TrainingResponse("countdown", null, await CountdownAsync(next, today, db, cancellationToken)))
+                        : Results.Ok(new TrainingResponse("none", null, null));
+                }
             }
 
-            if (race is null)
-                return Results.Ok(new TrainingResponse("none", null));
-
             var block = race.TrainingBlock;
-            var from = block.Start.ToDateTime(TimeOnly.MinValue);
-            var until = block.End.AddDays(1).ToDateTime(TimeOnly.MinValue);
-            var runs = await db.Runs
-                .Where(r => r.StartLocal >= from && r.StartLocal < until)
-                .Select(r => new RunSummary(r.Id, r.Name, r.StartLocal, r.Distance, r.MovingTime, r.RelativeEffort))
-                .ToListAsync(cancellationToken);
-
-            return Results.Ok(new TrainingResponse("block", BlockResponse.From(race, TrainingCalendar.WeeksOf(block, runs, today))));
+            var runs = await RunsAsync(block.Start, block.End, db, cancellationToken);
+            return Results.Ok(new TrainingResponse("block", BlockResponse.From(race, TrainingCalendar.WeeksOf(block, runs, today)), null));
         });
     }
 
-    /// <param name="View">"block": a Goal Race's Training Block; "none": today is in no Training Block.</param>
-    private sealed record TrainingResponse(string View, BlockResponse? Block);
+    private static async Task<CountdownResponse> CountdownAsync(GoalRace next, DateOnly today, AppDbContext db, CancellationToken cancellationToken)
+    {
+        var firstWeek = TrainingCalendar.FirstRecentWeek(today);
+        var runs = await RunsAsync(firstWeek.Start, today, db, cancellationToken);
+        return new CountdownResponse(
+            GoalRaceResponse.From(next),
+            next.TrainingBlock.Start,
+            TrainingCalendar.DaysUntilBlock(next, today),
+            TrainingCalendar.DistanceByWeek(firstWeek, TrainingWeek.Of(today), runs)
+                .Select(w => new RecentWeekResponse(w.Week.Start, w.Distance))
+                .ToList());
+    }
+
+    /// <summary>The Runs that started (local time) from <paramref name="firstDay"/> through <paramref name="lastDay"/>.</summary>
+    private static Task<List<RunSummary>> RunsAsync(DateOnly firstDay, DateOnly lastDay, AppDbContext db, CancellationToken cancellationToken)
+    {
+        var from = firstDay.ToDateTime(TimeOnly.MinValue);
+        var until = lastDay.AddDays(1).ToDateTime(TimeOnly.MinValue);
+        return db.Runs
+            .Where(r => r.StartLocal >= from && r.StartLocal < until)
+            .Select(r => new RunSummary(r.Id, r.Name, r.StartLocal, r.Distance, r.MovingTime, r.RelativeEffort))
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <param name="View">
+    /// "block": a Goal Race's Training Block; "countdown": today is in no block, but a Goal Race is ahead; "none":
+    /// neither.
+    /// </param>
+    private sealed record TrainingResponse(string View, BlockResponse? Block, CountdownResponse? Countdown);
+
+    /// <param name="GoalRace">The Goal Race whose Training Block comes next.</param>
+    /// <param name="TrainingBlockStart">The Monday that block starts.</param>
+    /// <param name="DaysRemaining">Days from today to that Monday.</param>
+    /// <param name="RecentWeeks">The last Training Weeks up to the current one, oldest first; weeks without Runs as zero.</param>
+    private sealed record CountdownResponse(GoalRaceResponse GoalRace, DateOnly TrainingBlockStart, int DaysRemaining, IReadOnlyList<RecentWeekResponse> RecentWeeks);
+
+    /// <param name="Start">The Monday.</param>
+    /// <param name="Distance">Metres.</param>
+    private sealed record RecentWeekResponse(DateOnly Start, double Distance);
 
     /// <param name="TargetPace">
     /// Target Time ÷ Goal Race distance, in whole seconds per km rounded down; none without a Target Time.
@@ -49,14 +85,17 @@ public static class TrainingEndpoints
     private sealed record BlockResponse(GoalRaceResponse GoalRace, int? TargetPace, IReadOnlyList<WeekResponse> Weeks)
     {
         public static BlockResponse From(GoalRace race, IEnumerable<TrainingBlockWeek> weeks) => new(
-            new GoalRaceResponse(race.Id, race.Name, race.Date, race.Distance, race.TargetTime),
+            GoalRaceResponse.From(race),
             race.TargetPace,
             weeks.Select(w => WeekResponse.From(w, race.TargetPace)).ToList());
     }
 
     /// <param name="Distance">Metres.</param>
     /// <param name="TargetTime">Seconds.</param>
-    private sealed record GoalRaceResponse(int Id, string Name, DateOnly Date, double Distance, int? TargetTime);
+    private sealed record GoalRaceResponse(int Id, string Name, DateOnly Date, double Distance, int? TargetTime)
+    {
+        public static GoalRaceResponse From(GoalRace race) => new(race.Id, race.Name, race.Date, race.Distance, race.TargetTime);
+    }
 
     /// <param name="Start">The Monday.</param>
     /// <param name="End">The Sunday.</param>

@@ -85,3 +85,63 @@ td a {
 .empty a {
   color: inherit;
 }
+
+h2 {
+  font-size: 1.1rem;
+}
+
+section {
+  margin-bottom: 2rem;
+}
+
+.countdown {
+  max-width: 40rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+
+  h2 {
+    margin: 0 0 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  p {
+    margin: 0.25rem 0 0;
+  }
+
+  .days {
+    color: var(--text-muted);
+  }
+
+  .value {
+    color: var(--text);
+    font-size: 2rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.chart {
+  height: 16rem;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+}
+
+details {
+  margin-top: 0.5rem;
+
+  summary {
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+
+  .recent {
+    max-width: 28rem;
+    margin-top: 0.5rem;
+  }
+}

@@ -102,19 +102,6 @@ public sealed class TrainingBlockTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task Outside_every_training_block_there_is_no_block_to_show()
-    {
-        var browser = _app.CreateBrowser();
-        // Fri 9 Oct 2026 is after the first marathon's block and before the second one's.
-        await CreateGoalRaceAsync(browser, FirstMarathon);
-        await CreateGoalRaceAsync(browser, SecondMarathon);
-
-        var training = await GetTrainingAsync(browser);
-
-        Assert.Equal(("none", null), (training.View, training.Block));
-    }
-
-    [Fact]
     public async Task An_unknown_goal_race_is_not_found()
     {
         var response = await _app.CreateBrowser().GetAsync("/api/training?goalRaceId=999");
@@ -137,7 +124,7 @@ public sealed class TrainingBlockTests : IAsyncLifetime
 
     private sealed record GoalRaceResponse(int Id, string Name);
 
-    /// <param name="View">"block" while a Training Block is shown.</param>
+    /// <param name="View">"block" while a Training Block is shown (TrainingCountdownTests cover the others).</param>
     private sealed record TrainingResponse(string View, BlockResponse? Block);
 
     /// <param name="TargetPace">Whole seconds per km.</param>
