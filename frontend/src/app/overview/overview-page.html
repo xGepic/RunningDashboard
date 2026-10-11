@@ -40,17 +40,27 @@
     </section>
 
     <section>
-      <h2>Distance per Training Week</h2>
+      <div class="section-header">
+        <h2>Distance per Training Week</h2>
+        <label>
+          Year
+          <select #year (change)="selectedYear.set(+year.value)">
+            @for (y of weekYears(); track y) {
+              <option [value]="y" [selected]="y === selectedYear()">{{ y }}</option>
+            }
+          </select>
+        </label>
+      </div>
       @if (weeklyDistance(); as options) {
         <div class="chart" echarts [options]="options" [autoResize]="true" role="img"
-             aria-label="Column chart of distance per Training Week; the table below has the same numbers"></div>
+             [attr.aria-label]="'Column chart of distance per Training Week in ' + selectedYear() + '; the table below has the same numbers'"></div>
       }
       <details>
         <summary>Show as table</summary>
         <table class="data-table">
           <thead><tr><th>Week starting</th><th class="number">Distance</th></tr></thead>
           <tbody>
-            @for (week of overview.weeks; track week.start) {
+            @for (week of selectedWeeks(); track week.start) {
               <tr><td>{{ weekLabel(week.start) }}</td><td class="number">{{ formatDistance(week.distance) }}</td></tr>
             }
           </tbody>

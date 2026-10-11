@@ -1,10 +1,10 @@
 import { DecimalPipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, linkedSignal } from '@angular/core';
 import type { EChartsCoreOption } from 'echarts/core';
 import { NgxEchartsDirective } from 'ngx-echarts';
 import { ChartColors, ChartTheme, baseChartOptions } from '../shared/chart-theme';
-import { categoryAxis, monthNames, valueAxis, weekLabel, weeklyDistanceChart } from '../shared/charts';
+import { WeekDistance, categoryAxis, monthNames, valueAxis, weekLabel, weeklyDistanceChart } from '../shared/charts';
 import { formatDistance, formatHours, formatPace, formatTotalDistance } from '../shared/format';
 import { reloadOnSync } from '../sync/reload-on-sync';
 import { MonthPace, Overview } from './overview';
@@ -26,8 +26,26 @@ export class OverviewPage {
   protected readonly monthLabel = monthLabel;
   protected readonly weekLabel = weekLabel;
 
+  /** Years that have Training Weeks, newest first. A week belongs to the year its Monday falls in. */
+  protected readonly weekYears = computed(() => {
+    const weeks = this.overview.hasValue() ? this.overview.value().weeks : [];
+    return [...new Set(weeks.map(weekYear))].sort((a, b) => b - a);
+  });
+
+  /** Defaults to the newest year, and keeps the chosen year across reloads while it still has weeks. */
+  protected readonly selectedYear = linkedSignal<number[], number | null>({
+    source: this.weekYears,
+    computation: (years, previous) =>
+      previous?.value != null && years.includes(previous.value) ? previous.value : (years[0] ?? null),
+  });
+
+  protected readonly selectedWeeks = computed(() => {
+    const weeks = this.overview.hasValue() ? this.overview.value().weeks : [];
+    return weeks.filter((w) => weekYear(w) === this.selectedYear());
+  });
+
   protected readonly weeklyDistance = computed(() => {
-    const weeks = this.overview.value()?.weeks ?? [];
+    const weeks = this.selectedWeeks();
     return weeks.length ? weeklyDistanceChart(weeks, this.theme.colors()) : null;
   });
 
@@ -39,6 +57,10 @@ export class OverviewPage {
   constructor() {
     reloadOnSync(() => this.overview.reload());
   }
+}
+
+function weekYear(week: WeekDistance): number {
+  return Number(week.start.slice(0, 4));
 }
 
 /** "Oct 2026". */
