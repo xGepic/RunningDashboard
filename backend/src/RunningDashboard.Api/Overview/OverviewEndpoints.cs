@@ -36,7 +36,7 @@ public static class OverviewEndpoints
             var years = runs
                 .GroupBy(r => r.StartLocal.Year)
                 .OrderBy(g => g.Key)
-                .Select(g => YearResponse.Of(g.Key, TotalsResponse.Of(g.ToList())))
+                .Select(g => YearResponse.Of(g.Key, TotalsResponse.Of([.. g])))
                 .ToList();
 
             var distanceByWeek = runs
