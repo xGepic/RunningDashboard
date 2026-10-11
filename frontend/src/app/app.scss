@@ -32,20 +32,8 @@
 }
 
 .logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
-  background: var(--accent);
-
-  span {
-    width: 10px;
-    height: 10px;
-    border: 2px solid var(--background);
-    border-radius: 50%;
-  }
+  display: block;
+  flex-shrink: 0;
 }
 
 .group-label {
