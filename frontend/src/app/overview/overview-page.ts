@@ -109,8 +109,26 @@ export class OverviewPage {
     return weeks.length ? weeklyDistanceChart(weeks, this.theme.colors()) : null;
   });
 
+  /** Years that have months, newest first. */
+  protected readonly monthYears = computed(() => {
+    const months = this.overview.hasValue() ? this.overview.value().months : [];
+    return [...new Set(months.map((m) => m.year))].sort((a, b) => b - a);
+  });
+
+  /** Chosen apart from the weeks' year; defaults to the newest and is kept across reloads like it. */
+  protected readonly selectedMonthYear = linkedSignal<number[], number | null>({
+    source: this.monthYears,
+    computation: (years, previous) =>
+      previous?.value != null && years.includes(previous.value) ? previous.value : (years[0] ?? null),
+  });
+
+  protected readonly selectedMonths = computed(() => {
+    const months = this.overview.hasValue() ? this.overview.value().months : [];
+    return months.filter((m) => m.year === this.selectedMonthYear());
+  });
+
   protected readonly monthlyPace = computed(() => {
-    const months = this.overview.value()?.months ?? [];
+    const months = this.selectedMonths();
     return months.some((m) => m.pace !== null) ? monthlyPaceChart(months, this.theme.colors()) : null;
   });
 
@@ -132,11 +150,6 @@ function monthLabel(month: MonthPace): string {
   return `${monthNames[month.month - 1]} ${month.year}`;
 }
 
-/** "Oct '26". */
-function shortMonthLabel(month: MonthPace): string {
-  return `${monthNames[month.month - 1]} '${String(month.year).slice(2)}`;
-}
-
 /** Faster is up: the y axis runs from the slowest pace at the bottom to the fastest at the top. */
 function monthlyPaceChart(months: MonthPace[], colors: ChartColors): EChartsCoreOption {
   const base = baseChartOptions(colors);
@@ -152,7 +165,7 @@ function monthlyPaceChart(months: MonthPace[], colors: ChartColors): EChartsCore
         return tooltipHtml(colors, monthLabel(month), formatPace(month.pace).replace(' /km', ''), '/km', `over ${formatDistance(month.distance)}`);
       },
     },
-    xAxis: { ...categoryAxis(months.map(shortMonthLabel), colors), boundaryGap: false },
+    xAxis: { ...categoryAxis(months.map((m) => monthNames[m.month - 1]), colors), boundaryGap: false },
     yAxis: { ...valueAxis(colors, (seconds) => formatPace(seconds).replace(' /km', ''), false), inverse: true },
     series: [
       {

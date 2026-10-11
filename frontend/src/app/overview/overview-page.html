@@ -126,11 +126,20 @@
             <h2 class="card-title">Average Pace per month</h2>
             <p class="card-sub">Total Moving Time ÷ total distance of the month, so longer Runs count for more.</p>
           </div>
-          <span class="direction"><span class="mono">↑</span> Faster</span>
+          <div class="header-aside">
+            <span class="direction"><span class="mono">↑</span> Faster</span>
+            <div class="segmented mono" role="group" aria-label="Year">
+              @for (y of monthYears(); track y) {
+                <button type="button" [attr.aria-pressed]="y === selectedMonthYear()" (click)="selectedMonthYear.set(y)">{{ y }}</button>
+              }
+            </div>
+          </div>
         </div>
         @if (monthlyPace(); as options) {
           <div class="chart" echarts [options]="options" [autoResize]="true" role="img"
-               aria-label="Line chart of average Pace per month, faster towards the top; the table below has the same numbers"></div>
+               [attr.aria-label]="'Line chart of average Pace per month in ' + selectedMonthYear() + ', faster towards the top; the table below has the same numbers'"></div>
+        } @else {
+          <p class="empty">No Runs in {{ selectedMonthYear() }}.</p>
         }
         <details class="as-table">
           <summary>Show as table</summary>
@@ -138,7 +147,7 @@
             <table class="data-table">
               <thead><tr><th>Month</th><th class="number">Distance</th><th class="number">Pace</th></tr></thead>
               <tbody>
-                @for (month of overview.months; track month.year * 100 + month.month) {
+                @for (month of selectedMonths(); track month.year * 100 + month.month) {
                   <tr>
                     <td class="muted">{{ monthLabel(month) }}</td>
                     <td class="number">{{ formatDistance(month.distance) }}</td>
