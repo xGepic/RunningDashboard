@@ -1,56 +1,73 @@
 import { DOCUMENT } from '@angular/common';
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, inject } from '@angular/core';
 
-/** Chart colours, read from the CSS tokens in styles.scss so light and dark mode each get their own steps. */
+/** Chart colours, read from the CSS tokens in styles.scss so charts and the page share one palette. */
 export interface ChartColors {
   series: string;
+  seriesDeep: string;
+  seriesLight: string;
   grid: string;
   text: string;
   muted: string;
+  faint: string;
   surface: string;
+  background: string;
+  tooltip: string;
+  tooltipBorder: string;
+  fontMono: string;
 }
 
-/** The current chart colours; they change when the system switches between light and dark mode. */
+/** The chart colours of the app's (dark) theme. */
 @Injectable({ providedIn: 'root' })
 export class ChartTheme {
   private readonly document = inject(DOCUMENT);
-  private readonly scheme = signal(this.prefersDark());
 
   readonly colors = computed<ChartColors>(() => {
-    this.scheme();
     const style = getComputedStyle(this.document.documentElement);
     const token = (name: string) => style.getPropertyValue(name).trim();
     return {
       series: token('--chart-series'),
+      seriesDeep: token('--accent-deep'),
+      seriesLight: token('--accent-light'),
       grid: token('--chart-grid'),
       text: token('--text'),
       muted: token('--text-muted'),
+      faint: token('--text-faint'),
       surface: token('--surface'),
+      background: token('--background'),
+      tooltip: token('--tooltip'),
+      tooltipBorder: token('--border-hover'),
+      fontMono: token('--mono'),
     };
   });
-
-  constructor() {
-    this.document.defaultView
-      ?.matchMedia?.('(prefers-color-scheme: dark)')
-      .addEventListener('change', (event) => this.scheme.set(event.matches));
-  }
-
-  private prefersDark(): boolean {
-    return this.document.defaultView?.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
-  }
 }
 
-/** Styling every chart shares: transparent background, recessive hairline grid, muted text, axis tooltip. */
+/** Styling every chart shares: transparent background, dashed hairline grid, mono axis labels, floating tooltip. */
 export function baseChartOptions(colors: ChartColors) {
   return {
     backgroundColor: 'transparent',
-    textStyle: { color: colors.muted },
-    grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true },
+    textStyle: { color: colors.faint, fontFamily: colors.fontMono, fontSize: 10.5 },
+    // Extra room on the sides: labels are measured before the mono web font has loaded.
+    grid: { left: 18, right: 18, top: 12, bottom: 4, containLabel: true },
     tooltip: {
       trigger: 'axis',
-      backgroundColor: colors.surface,
-      borderColor: colors.grid,
+      backgroundColor: colors.tooltip,
+      borderColor: colors.tooltipBorder,
+      borderWidth: 1,
+      padding: [8, 11],
       textStyle: { color: colors.text },
+      extraCssText: 'border-radius:9px;box-shadow:0 10px 30px rgba(0,0,0,0.45);',
     },
   };
+}
+
+/** The tooltip's content: a small muted title over a large mono value with its unit. */
+export function tooltipHtml(colors: ChartColors, title: string, value: string, unit = '', note = ''): string {
+  const unitHtml = unit ? ` <span style="color:${colors.muted};font-size:12px">${unit}</span>` : '';
+  const noteHtml = note ? `<div style="font-size:11px;color:${colors.muted};margin-top:2px">${note}</div>` : '';
+  return (
+    `<div style="font-size:11px;color:${colors.muted}">${title}</div>` +
+    `<div style="font-size:15px;font-family:${colors.fontMono};font-weight:500;margin-top:2px">${value}${unitHtml}</div>` +
+    noteHtml
+  );
 }

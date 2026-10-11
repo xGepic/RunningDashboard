@@ -1,16 +1,57 @@
-<header class="shell-header">
-  <span class="app-name">Running Dashboard</span>
-  <nav>
-    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Overview</a>
-    <a routerLink="/records" routerLinkActive="active">Records</a>
-    <a routerLink="/training" routerLinkActive="active">Training</a>
-    <a routerLink="/runs" routerLinkActive="active">Runs</a>
-    <a routerLink="/shoes" routerLinkActive="active">Shoes</a>
-    <a routerLink="/goal-races" routerLinkActive="active">Goal Races</a>
+<aside class="sidebar">
+  <a class="brand" routerLink="/">
+    <span class="logo"><span></span></span>
+    Running Dashboard
+  </a>
+  <div class="group-label">Workspace</div>
+  <nav aria-label="Pages">
+    @for (item of nav; track item.path; let i = $index) {
+      <a [routerLink]="item.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: item.path === '/' }"
+         ariaCurrentWhenActive="page">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path [attr.d]="item.icon" /></svg>
+        <span class="label">{{ item.label }}</span>
+        <kbd>{{ i + 1 }}</kbd>
+      </a>
+    }
   </nav>
-  <app-connection-status />
-</header>
+  @if (nextRace(); as next) {
+    <div class="next-up">
+      <div class="group-label">Next up</div>
+      <a routerLink="/goal-races">
+        <span class="name">{{ next.race.name }}</span>
+        <span class="when">{{ next.days }} {{ next.days === 1 ? 'day' : 'days' }} · {{ next.race.date | date: 'd MMM y' }}</span>
+      </a>
+    </div>
+  }
+</aside>
 
-<main class="shell-main">
-  <router-outlet />
-</main>
+<div class="main">
+  <header class="topbar">
+    <div class="crumbs">
+      <span class="app-name">Running Dashboard</span>
+      @if (breadcrumb().section; as section) {
+        <span class="sep">/</span>
+        @if (breadcrumb().sub; as sub) {
+          <a [routerLink]="section.path">{{ section.label }}</a>
+          <span class="sep">/</span>
+          <span class="current">{{ sub }}</span>
+        } @else {
+          <span class="current">{{ section.label }}</span>
+        }
+      }
+    </div>
+    <app-connection-status />
+  </header>
+
+  <nav class="tabs" aria-label="Pages">
+    @for (item of nav; track item.path) {
+      <a [routerLink]="item.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: item.path === '/' }"
+         ariaCurrentWhenActive="page">{{ item.label }}</a>
+    }
+  </nav>
+
+  <main class="content">
+    <router-outlet />
+  </main>
+</div>

@@ -1,12 +1,15 @@
 @if (errorMessage(); as message) {
-  <span class="error" role="alert">{{ message }}</span>
+  <span class="error message" role="alert">{{ message }}</span>
 }
 @if (connection.error()) {
-  <span class="error" role="alert">The backend is not reachable.</span>
+  <span class="pill down" role="alert"><span class="dot"></span>The backend is not reachable.</span>
 } @else if (connection.value(); as current) {
   @if (current.connected && current.athlete; as athlete) {
-    <span class="connected">Connected as {{ athlete.firstName }} {{ athlete.lastName }}</span>
+    <span class="pill" [title]="'Strava: connected as ' + athlete.firstName + ' ' + athlete.lastName">
+      <span class="dot"></span><span class="who">Connected as {{ athlete.firstName }} {{ athlete.lastName }}</span>
+    </span>
     <app-sync-indicator />
+    <span class="avatar" aria-hidden="true">{{ initials(athlete) }}</span>
   } @else {
     <a class="connect" href="/api/strava/connect">Connect Strava</a>
   }

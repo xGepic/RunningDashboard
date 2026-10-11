@@ -12,6 +12,17 @@ type ListParams = Partial<Record<'month' | 'search' | 'sportType' | 'sort' | 'di
 /** All Runs of a month fit on one page; the pager only shows up past this. */
 const pageSize = 200;
 
+/** The Run types the filter offers, as Strava's sport types; an empty one for all. */
+const sportTypes = [
+  { value: '', label: 'All Runs' },
+  { value: 'Run', label: 'Road' },
+  { value: 'TrailRun', label: 'Trail' },
+  { value: 'VirtualRun', label: 'Treadmill' },
+];
+
+/** A Run this long (metres) or longer gets a Long badge. */
+const longRunDistance = 20_000;
+
 @Component({
   selector: 'app-runs-page',
   imports: [DatePipe, RouterLink],
@@ -65,6 +76,26 @@ export class RunsPage {
 
   protected readonly filtered = computed(() => !!(this.search() || this.sportType()));
 
+  protected readonly sportTypes = sportTypes;
+  protected readonly longRunDistance = longRunDistance;
+
+  /** Totals of the Runs listed: count, distance, Moving Time and their average Pace. */
+  protected readonly summary = computed(() => {
+    const items = this.runs.value()?.items ?? [];
+    const distance = items.reduce((sum, r) => sum + r.distance, 0);
+    const movingTime = items.reduce((sum, r) => sum + r.movingTime, 0);
+    return {
+      runs: items.length,
+      distance,
+      hours: Math.floor(movingTime / 3600),
+      minutes: String(Math.floor((movingTime % 3600) / 60)).padStart(2, '0'),
+      pace: distance > 0 ? movingTime / (distance / 1000) : null,
+    };
+  });
+
+  /** The longest Run listed, which fills its distance bar. */
+  protected readonly longest = computed(() => Math.max(1, ...(this.runs.value()?.items ?? []).map((r) => r.distance)));
+
   protected readonly formatDistance = formatDistance;
   protected readonly formatDuration = formatDuration;
   protected readonly formatPace = formatPace;
@@ -93,6 +124,12 @@ export class RunsPage {
   protected sortBy(key: RunSortKey): void {
     const direction = key === this.sortKey() ? (this.ascending() ? 'desc' : 'asc') : key === 'pace' ? 'asc' : 'desc';
     this.navigate({ sort: key === 'date' && direction === 'desc' ? null : key, direction: direction === 'desc' ? null : direction, page: null });
+  }
+
+  /** The whole row opens the Run; its name stays a link of its own. */
+  protected open(runId: number, event: MouseEvent): void {
+    if ((event.target as HTMLElement).closest('a')) return;
+    this.router.navigate(['/runs', runId]);
   }
 
   protected goToPage(page: number): void {

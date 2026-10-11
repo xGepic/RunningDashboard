@@ -4,7 +4,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { map } from 'rxjs';
 import { SyncIndicator } from '../sync/sync-indicator';
-import { ConnectErrorReason, Connection, connectErrorMessages } from './connection';
+import { ConnectErrorReason, ConnectedAthlete, Connection, connectErrorMessages } from './connection';
 
 @Component({
   selector: 'app-connection-status',
@@ -26,4 +26,9 @@ export class ConnectionStatus {
     if (!reason) return null;
     return connectErrorMessages[reason as ConnectErrorReason] ?? 'Connecting to Strava failed. Please try again.';
   });
+
+  /** "SS" for Stefan Simanek. */
+  protected initials(athlete: ConnectedAthlete): string {
+    return `${athlete.firstName.charAt(0)}${athlete.lastName.charAt(0)}`.toUpperCase();
+  }
 }

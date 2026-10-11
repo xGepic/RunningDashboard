@@ -1,36 +1,62 @@
-<h1>Shoes</h1>
+<div class="page">
+  <header class="page-header">
+    <div class="titles">
+      <span class="eyebrow">Shoes</span>
+      <h1>Gear</h1>
+      <p class="subtitle">Distance as Strava counts it, including any distance entered there by hand.</p>
+    </div>
+  </header>
 
-@if (shoes.error()) {
-  <p class="error" role="alert">Shoes could not be loaded.</p>
-} @else if (shoes.value(); as shoes) {
-  @if (shoes.length === 0) {
-    <p class="empty">No Shoes on Strava yet. Add them under Gear in your Strava settings, then sync.</p>
-  } @else {
-    <p class="hint">Distance as Strava counts it, including any distance entered there by hand.</p>
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>Shoe</th>
-          <th class="number">Distance</th>
-          <th class="number">Runs</th>
-          <th class="number">Last Run</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (shoe of shoes; track shoe.id) {
-          <tr [class.retired]="shoe.retired">
-            <td>
-              {{ shoe.name }}
-              @if (shoe.retired) {
-                <span class="badge">Retired</span>
+  @if (shoes.error()) {
+    <p class="error" role="alert">Shoes could not be loaded.</p>
+  } @else if (shoes.value(); as shoes) {
+    @if (shoes.length === 0) {
+      <div class="card empty-card"><p class="empty">No Shoes on Strava yet. Add them under Gear in your Strava settings, then sync.</p></div>
+    } @else {
+      <section class="shoes">
+        @for (card of cards(); track card.shoe.id) {
+          <article class="card shoe" [class.retired]="card.shoe.retired">
+            <div class="head">
+              <h2>{{ card.shoe.name }}</h2>
+              @if (card.shoe.retired) {
+                <span class="badge muted">Retired</span>
+              } @else if (card.latest) {
+                <span class="badge green">Most recent</span>
               }
-            </td>
-            <td class="number">{{ formatTotalDistance(shoe.distance) }}</td>
-            <td class="number">{{ shoe.runs }}</td>
-            <td class="number">{{ shoe.lastRun ? (shoe.lastRun | date: 'd MMM y') : '–' }}</td>
-          </tr>
+            </div>
+            <div class="distance"><span class="value">{{ card.km }}</span><span class="unit">km</span></div>
+            <div class="share">
+              <div class="share-label"><span>Share of Shoe distance</span><span class="mono">{{ card.share }}%</span></div>
+              <div class="track"><span [style.width.%]="card.share" [style.background]="card.color"></span></div>
+            </div>
+            <dl class="foot">
+              <div><dt>Runs</dt><dd>{{ card.shoe.runs }}</dd></div>
+              <div><dt>Avg / Run</dt><dd>{{ card.average }} km</dd></div>
+              <div><dt>Last Run</dt><dd>{{ card.shoe.lastRun ? (card.shoe.lastRun | date: 'd MMM y') : '–' }}</dd></div>
+            </dl>
+          </article>
         }
-      </tbody>
-    </table>
+      </section>
+
+      @if (comparison().length) {
+        <section class="card compare">
+          <h2 class="card-title">Comparison</h2>
+          @for (metric of comparison(); track metric.label) {
+            <div class="metric">
+              <span class="metric-label">{{ metric.label }}</span>
+              <div class="bars">
+                @for (row of metric.rows; track $index) {
+                  <div class="bar-row">
+                    <span class="name" [title]="row.name">{{ row.name }}</span>
+                    <div class="track"><span [style.width.%]="row.width" [style.background]="row.color"></span></div>
+                    <span class="mono value">{{ row.value }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </section>
+      }
+    }
   }
-}
+</div>

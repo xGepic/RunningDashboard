@@ -16,13 +16,13 @@
       @for (row of rows(); track row.week.weeksToRace; let i = $index) {
         <tr [attr.data-weeks-to-race]="row.week.weeksToRace" [class]="'phase-' + row.week.phase" [class.recovery]="row.recoveryWeek">
           <td class="number">
-            {{ row.week.weeksToRace }}@if (row.week.weeksToRace === 0) { · Race Week }
+            {{ row.week.weeksToRace }}@if (row.week.weeksToRace === 0) { <span class="race-week">· Race Week</span> }
             @for (error of fieldErrors(i, 'weeksToRace'); track error) {
               <span class="field-error">{{ error }}</span>
             }
           </td>
           <td class="dates">{{ row.week.start | date: 'd MMM' }} – {{ row.week.end | date: 'd MMM y' }}</td>
-          <td class="phase">{{ row.week.phase }}</td>
+          <td><span class="phase">{{ row.week.phase }}</span></td>
           <td>
             <input class="distance" inputmode="decimal" [value]="row.distanceKm"
                    (input)="edit(i, { distanceKm: $any($event.target).value })"
@@ -65,7 +65,7 @@
           </td>
           <td>
             @if (i > 0) {
-              <button type="button" class="copy" (click)="copyFromPrevious(i)">Copy from previous week</button>
+              <button type="button" class="copy link quiet" (click)="copyFromPrevious(i)">Copy from previous week</button>
             }
           </td>
         </tr>
@@ -74,13 +74,15 @@
   </table>
 </div>
 
-@for (error of errors()[formError]; track error) {
-  <p class="error" role="alert">{{ error }}</p>
-}
-
-<div class="actions">
-  <button type="button" class="save primary" [disabled]="saving()" (click)="save()">Save weeks</button>
-  @if (justSaved()) {
-    <span class="saved" role="status">Saved.</span>
+<div class="footer">
+  @for (error of errors()[formError]; track error) {
+    <p class="error" role="alert">{{ error }}</p>
   }
+
+  <div class="actions">
+    <button type="button" class="save btn btn-primary" [disabled]="saving()" (click)="save()">Save weeks</button>
+    @if (justSaved()) {
+      <span class="saved" role="status">Saved.</span>
+    }
+  </div>
 </div>

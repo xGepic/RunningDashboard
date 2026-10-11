@@ -1,65 +1,120 @@
-<h1>Records</h1>
+<div class="page">
+  <header class="page-header">
+    <div class="titles">
+      <span class="eyebrow">Records</span>
+      <h1>Personal Bests</h1>
+      <p class="subtitle">Fastest Best Effort for each distance, including parts of longer Runs.</p>
+    </div>
+  </header>
 
-@if (records.error()) {
-  <p class="error" role="alert">Records could not be loaded.</p>
-} @else if (records.value(); as records) {
-  @if (records.length === 0) {
-    <p class="empty">No Best Efforts yet. They come in with each Run's details from Strava.</p>
-  } @else {
-    <section>
-      <h2>Personal Bests</h2>
-      <p class="hint">Fastest Best Effort for each distance, including parts of longer Runs.</p>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Distance</th>
-            <th class="number">Time</th>
-            <th class="number">Per km</th>
-            <th class="number">Date</th>
-            <th>Run</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (record of records; track record.distance) {
-            <tr>
-              <td>{{ record.name }}</td>
-              <td class="number">{{ formatDuration(record.personalBest.elapsedTime) }}</td>
-              <td class="number">{{ formatPace(record.personalBest.timePerKm) }}</td>
-              <td class="number">{{ record.personalBest.date | date: 'd MMM y' }}</td>
-              <td><a [routerLink]="['/runs', record.personalBest.runId]">{{ record.personalBest.runName }}</a></td>
-            </tr>
+  @if (records.error()) {
+    <p class="error" role="alert">Records could not be loaded.</p>
+  } @else if (records.value(); as records) {
+    @if (records.length === 0) {
+      <div class="card empty-card"><p class="empty">No Best Efforts yet. They come in with each Run's details from Strava.</p></div>
+    } @else {
+      @if (featured().length) {
+        <section class="featured" aria-label="Main distances">
+          @for (item of featured(); track item.record.distance) {
+            <article class="card pb">
+              <div class="pb-head">
+                <h2>{{ displayName(item.record.name) }}</h2>
+                @if (isNew(item.record.personalBest)) {
+                  <span class="badge green">New PB</span>
+                }
+              </div>
+              <div class="pb-time">{{ formatDuration(item.record.personalBest.elapsedTime) }}</div>
+              <svg class="spark" viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true">
+                <path [attr.d]="item.spark" />
+              </svg>
+              <dl class="pb-facts">
+                <div><dt>Pace</dt><dd class="mono">{{ formatPace(item.record.personalBest.timePerKm) }}</dd></div>
+                <div><dt>Set</dt><dd class="mono">{{ item.record.personalBest.date | date: 'd MMM y' }}</dd></div>
+                <div>
+                  <dt>Run</dt>
+                  <dd><a [routerLink]="['/runs', item.record.personalBest.runId]">{{ item.record.personalBest.runName }}</a></dd>
+                </div>
+                <div><dt>Improvements</dt><dd class="mono">{{ item.improvements }}</dd></div>
+              </dl>
+            </article>
           }
-        </tbody>
-      </table>
-    </section>
+        </section>
+      }
 
-    <section>
-      <h2>How each Personal Best improved</h2>
-      <p class="hint">Each step is a Best Effort strictly faster than every earlier one. Lower is faster.</p>
-      <fieldset class="distances">
-        <legend>Distances</legend>
-        @for (record of records; track record.distance) {
-          <label>
-            <input type="checkbox" [checked]="shown().has(record.distance)" (change)="toggle(record.distance)" />
-            {{ record.name }}
-          </label>
-        }
-      </fieldset>
+      <section class="card flush">
+        <div class="card-header">
+          <h2 class="card-title">All distances</h2>
+          <span class="card-sub">{{ records.length }} distances</span>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table all">
+            <thead>
+              <tr>
+                <th>Distance</th>
+                <th class="number">Time</th>
+                <th class="bar-col"><span class="visually-hidden">Relative pace</span></th>
+                <th>Per km</th>
+                <th class="number">Date</th>
+                <th>Run</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of rows(); track row.record.distance) {
+                <tr>
+                  <td>
+                    <span class="name" [class.main]="featuredNames.includes(row.record.name)">{{ row.record.name }}</span>
+                    @if (isNew(row.record.personalBest)) {
+                      <span class="new-dot" title="Set in the last 60 days"></span>
+                    }
+                  </td>
+                  <td class="number time">{{ formatDuration(row.record.personalBest.elapsedTime) }}</td>
+                  <td class="bar-col"><div class="track thin"><span [style.width.%]="row.share"></span></div></td>
+                  <td class="mono muted">{{ formatPace(row.record.personalBest.timePerKm) }}</td>
+                  <td class="number muted">{{ row.record.personalBest.date | date: 'd MMM y' }}</td>
+                  <td><a [routerLink]="['/runs', row.record.personalBest.runId]">{{ row.record.personalBest.runName }}</a></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-      <div class="charts">
-        @for (chart of charts(); track chart.record.distance) {
-          <figure>
-            <figcaption>
-              <span class="name">{{ chart.record.name }}</span>
-              <span class="best">{{ formatDuration(chart.record.personalBest.elapsedTime) }}</span>
-            </figcaption>
-            <div class="chart" echarts [options]="chart.options" [autoResize]="true" role="img"
-                 [attr.aria-label]="'Step chart of the ' + chart.record.name + ' Personal Best over time; the table above has the current one'"></div>
-          </figure>
-        } @empty {
-          <p class="empty">Pick a distance to see how its Personal Best improved.</p>
-        }
-      </div>
-    </section>
+      <section class="progression">
+        <div class="titles">
+          <h2 class="section-title">How each Personal Best improved</h2>
+          <p class="card-sub">Each step is a Best Effort strictly faster than every earlier one. Higher is faster.</p>
+        </div>
+        <div class="chips" role="group" aria-label="Distances">
+          @for (record of records; track record.distance) {
+            <button type="button" [attr.aria-pressed]="shown().has(record.distance)" (click)="toggle(record.distance)">
+              {{ record.name }}
+            </button>
+          }
+        </div>
+
+        <div class="charts">
+          @for (chart of charts(); track chart.record.distance) {
+            <figure class="card">
+              <figcaption>
+                <span class="name">{{ chart.record.name }}</span>
+                <span class="best">{{ formatDuration(chart.record.personalBest.elapsedTime) }}</span>
+              </figcaption>
+              <div class="chart" echarts [options]="chart.options" [autoResize]="true" role="img"
+                   [attr.aria-label]="'Step chart of the ' + chart.record.name + ' Personal Best over time; the table above has the current one'"></div>
+              <div class="chart-foot">
+                <span>First <span class="mono">{{ formatDuration(chart.first.elapsedTime) }} · {{ chart.first.date | date: 'MMM y' }}</span></span>
+                @if (chart.steps > 0) {
+                  <span class="gain mono">−{{ formatDuration(chart.gain) }} · {{ chart.steps }} {{ chart.steps === 1 ? 'step' : 'steps' }}</span>
+                } @else {
+                  <span class="gain mono">First effort</span>
+                }
+              </div>
+            </figure>
+          } @empty {
+            <p class="empty">Pick a distance to see how its Personal Best improved.</p>
+          }
+        </div>
+      </section>
+    }
   }
-}
+</div>

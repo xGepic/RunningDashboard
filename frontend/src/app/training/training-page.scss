@@ -1,59 +1,58 @@
-h1 {
-  margin: 0 0 1rem;
-  font-size: 1.4rem;
+.selector select {
+  min-width: 260px;
 }
 
-.selector {
-  display: inline-flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  margin-bottom: 1rem;
-  color: var(--text-muted);
-  font-size: 0.85rem;
-
-  select {
-    padding: 0.35rem 0.5rem;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    background: var(--surface);
-    color: var(--text);
-    font: inherit;
-    font-size: 1rem;
-  }
-}
+/* Block view */
 
 .race {
-  margin-bottom: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
 
   h2 {
     margin: 0;
-    font-size: 1.1rem;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.015em;
   }
 
   p {
-    margin: 0.25rem 0 0;
+    margin: 6px 0 0;
     color: var(--text-muted);
+    font-size: 13.5px;
   }
 
   b {
     color: var(--text);
+    font-family: var(--mono);
+    font-weight: 500;
   }
 }
 
-.table-scroll {
-  overflow-x: auto;
-}
-
 .weeks {
-  max-width: 64rem;
+  min-width: 900px;
+
+  td {
+    vertical-align: top;
+  }
 }
 
 .dates {
+  font-family: var(--mono);
+  font-size: 12.5px;
   white-space: nowrap;
 }
 
+.race-week {
+  color: var(--amber);
+  font-family: var(--font);
+  font-size: 11.5px;
+}
+
 tr.current td {
-  background: color-mix(in srgb, var(--chart-series) 10%, transparent);
+  background: rgb(61 214 140 / 7%);
   font-weight: 600;
 }
 
@@ -61,153 +60,76 @@ tr.future td {
   color: var(--text-muted);
 }
 
-td a {
-  color: inherit;
+.long-run a {
   font-weight: 600;
-  text-decoration: none;
-
-  &:hover {
-    text-decoration: underline;
-  }
 }
 
-.vs-target {
+.vs-target,
+.recovery,
+.planned,
+.target {
   display: block;
   color: var(--text-muted);
-  font-size: 0.8rem;
-
-  &.ahead {
-    color: var(--text);
-    font-weight: 600;
-  }
+  font-family: var(--font);
+  font-size: 11.5px;
+  font-weight: 400;
+  white-space: nowrap;
 }
 
-.empty a {
-  color: inherit;
-}
-
-h2 {
-  font-size: 1.1rem;
-}
-
-section {
-  margin-bottom: 2rem;
-}
-
-.countdown {
-  max-width: 40rem;
-  padding: 1rem;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--surface);
-
-  h2 {
-    margin: 0 0 0.5rem;
-    color: var(--text-muted);
-    font-size: 0.85rem;
-    font-weight: 600;
-  }
-
-  p {
-    margin: 0.25rem 0 0;
-  }
-
-  .days {
-    color: var(--text-muted);
-  }
-
-  .value {
-    color: var(--text);
-    font-size: 2rem;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-  }
-}
-
-.chart {
-  height: 16rem;
-  padding: 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--surface);
-}
-
-details {
-  margin-top: 0.5rem;
-
-  summary {
-    color: var(--text-muted);
-    cursor: pointer;
-  }
-
-  .recent {
-    max-width: 28rem;
-    margin-top: 0.5rem;
-  }
+.vs-target.ahead {
+  color: var(--met);
+  font-weight: 600;
 }
 
 .sides th {
-  border-bottom: 0;
   color: var(--text);
+  font-size: 12.5px;
+  text-transform: none;
 }
 
 th.compared,
 td.compared {
-  background: var(--background);
+  background: rgb(15 21 31 / 70%);
 }
 
 /* A divider before the compared block's first column. */
 :is(th, td):not(.compared) + .compared {
-  border-left: 1px solid var(--border);
-}
-
-.target {
-  display: block;
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  font-weight: normal;
-}
-
-.error .link {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-decoration: underline;
-  cursor: pointer;
+  border-left: 1px solid var(--divider);
 }
 
 .legend {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.35rem 0.5rem;
-  margin: 0 0 0.75rem;
+  gap: 6px 8px;
+  margin: 0;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--divider);
   color: var(--text-muted);
-  font-size: 0.8rem;
+  font-size: 12px;
 
   .day {
-    margin-left: 0.5rem;
+    margin-left: 10px;
   }
 }
 
 /* The Phase bands: one cell per Phase, spanning its weeks. */
-.band-header {
-  width: 1.5rem;
+.band-header,
+td.band {
+  width: 28px;
 }
 
-td.band {
-  width: 1.5rem;
+.data-table td.band {
   padding: 0;
   border-bottom: 2px solid var(--surface);
   text-align: center;
+  vertical-align: middle;
 
   span {
     display: inline-block;
-    color: var(--text);
-    font-size: 0.75rem;
+    font-size: 11px;
     font-weight: 600;
+    letter-spacing: 0.04em;
     text-transform: capitalize;
     writing-mode: vertical-rl;
     transform: rotate(180deg);
@@ -215,38 +137,22 @@ td.band {
 }
 
 .phase-build {
-  background: color-mix(in srgb, var(--chart-series) 15%, transparent);
+  background: rgb(74 158 255 / 12%);
+  color: var(--accent-light);
 }
 
 .phase-peak {
-  background: color-mix(in srgb, var(--chart-series) 35%, transparent);
+  background: rgb(74 158 255 / 28%);
+  color: var(--accent-pale);
 }
 
 .phase-taper {
-  background: color-mix(in srgb, var(--text-muted) 20%, transparent);
+  background: rgb(242 196 109 / 12%);
+  color: var(--amber);
 }
 
 tr.recovery-week td:not(.band) {
-  background: repeating-linear-gradient(
-    135deg,
-    transparent 0 6px,
-    color-mix(in srgb, var(--text-muted) 10%, transparent) 6px 12px
-  );
-}
-
-.recovery {
-  display: block;
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  font-weight: normal;
-  white-space: nowrap;
-}
-
-.planned {
-  display: block;
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  font-weight: normal;
+  background: repeating-linear-gradient(135deg, transparent 0 6px, rgb(124 136 155 / 8%) 6px 12px);
 }
 
 .met {
@@ -260,7 +166,7 @@ tr.recovery-week td:not(.band) {
 /* The calendar strip: Monday to Sunday. */
 .strip {
   display: flex;
-  gap: 0.2rem;
+  gap: 3px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -268,11 +174,10 @@ tr.recovery-week td:not(.band) {
 
 .day {
   display: inline-block;
-  width: 0.8rem;
-  height: 0.8rem;
-  border: 1px solid var(--border);
-  border-radius: 2px;
-  box-sizing: border-box;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
 
   &.ran {
     border-color: var(--met);
@@ -291,4 +196,147 @@ tr.recovery-week td:not(.band) {
   &.planned {
     border: 2px solid var(--met);
   }
+}
+
+/* Countdown view */
+
+.hero {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 28px;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgb(74 158 255 / 13%), rgb(74 158 255 / 0%) 55%),
+    var(--surface);
+}
+
+.hero-main,
+.hero-side,
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.hero-side {
+  justify-content: space-between;
+  gap: 20px;
+
+  .facts {
+    margin: 0;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  dd {
+    margin: 0;
+  }
+}
+
+.hero-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 400;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.days {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 18px;
+
+  .value {
+    color: var(--text);
+    font-size: clamp(64px, 10vw, 96px);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.05em;
+    line-height: 0.9;
+  }
+}
+
+.lede {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.55;
+
+  b {
+    color: var(--text);
+  }
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.timeline {
+  gap: 10px;
+}
+
+.ends {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-muted);
+  font-size: 11.5px;
+
+  &.mono {
+    color: var(--text-secondary);
+  }
+}
+
+.line {
+  position: relative;
+  height: 10px;
+  border: 1px solid var(--divider);
+  border-radius: 5px;
+  background: var(--inset);
+}
+
+.block-weeks {
+  position: absolute;
+  inset: 0 0 0 auto;
+  display: flex;
+  gap: 2px;
+  padding: 1px;
+
+  span {
+    flex: 1;
+    border-radius: 2px;
+    background: rgb(74 158 255 / var(--alpha));
+
+    &.race {
+      background: var(--amber);
+    }
+  }
+}
+
+.today {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  left: 0;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--text);
+}
+
+.chart {
+  height: 220px;
 }

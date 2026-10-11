@@ -1,108 +1,182 @@
-h1 {
-  margin: 0 0 1rem;
-  font-size: 1.4rem;
+.summary .value {
+  font-size: 15px;
 }
 
-.date {
-  white-space: nowrap;
-  color: var(--text-muted);
-}
-
-td a {
-  color: inherit;
-  font-weight: 600;
-  text-decoration: none;
-
-  &:hover {
-    text-decoration: underline;
-  }
-}
-
-.filters {
+.toolbar {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 0.75rem 1rem;
-  margin-bottom: 1rem;
-
-  label {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    color: var(--text-muted);
-    font-size: 0.85rem;
-  }
-
-  input,
-  select {
-    padding: 0.35rem 0.5rem;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    background: var(--surface);
-    color: var(--text);
-    font: inherit;
-  }
-}
-
-th button {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-
-.link {
-  padding: 0.35rem 0;
-  border: 0;
-  background: none;
-  color: var(--text-muted);
-  font: inherit;
-  text-decoration: underline;
-  cursor: pointer;
+  align-items: center;
+  gap: 8px 16px;
+  margin-bottom: -8px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
 }
 
 .month-nav {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: 6px;
 
   h2 {
-    min-width: 10rem;
+    min-width: 9.5rem;
     margin: 0;
-    font-size: 1.1rem;
+    font-size: 14px;
+    font-weight: 600;
     text-align: center;
+  }
+}
+
+.step {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--divider);
+  border-radius: 8px;
+  background: var(--inset);
+  color: var(--text-secondary);
+  font-family: var(--mono);
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    color: var(--text);
+    background: #1a2332;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+}
+
+.filters {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--divider);
+  border-radius: 8px;
+  background: var(--inset);
+  color: var(--text-muted);
+  font-size: 12px;
+
+  &:focus-within {
+    border-color: var(--accent);
+  }
+
+  input {
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 12.5px;
+
+    &:focus {
+      box-shadow: none;
+    }
+  }
+}
+
+.search {
+  flex: 1 1 220px;
+
+  input {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+  }
+}
+
+.runs {
+  min-width: 880px;
+
+  tbody tr {
+    cursor: pointer;
+
+    &:hover {
+      background: #182131;
+    }
+  }
+
+  .date {
+    white-space: nowrap;
+  }
+
+  .time {
+    margin-left: 6px;
+    color: var(--text-faint);
+    font-family: var(--mono);
+    font-size: 11.5px;
+  }
+
+  .name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 360px;
+
+    a {
+      overflow: hidden;
+      color: var(--text);
+      font-weight: 500;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+
+      &:hover {
+        color: var(--accent-pale);
+      }
+    }
+  }
+
+  .shoe {
+    max-width: 220px;
+    overflow: hidden;
+    color: var(--text-secondary);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.dist {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.track.mini {
+  display: inline-block;
+  width: 36px;
+  height: 3px;
+
+  span {
+    background: var(--accent);
   }
 }
 
 .pager {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 1rem;
-  margin-top: 1rem;
-  color: var(--text-muted);
-}
+  gap: 8px 16px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--divider);
+  color: var(--text-faint);
+  font-size: 12px;
 
-.month-nav,
-.pager {
-  button {
-    padding: 0.35rem 0.8rem;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    background: var(--surface);
-    color: var(--text);
-    font: inherit;
-    cursor: pointer;
+  .btn {
+    height: 30px;
   }
 
-  button:disabled {
-    color: var(--text-muted);
-    cursor: default;
+  .note {
+    margin-left: auto;
   }
-}
-
-.shoe {
-  color: var(--text-muted);
 }

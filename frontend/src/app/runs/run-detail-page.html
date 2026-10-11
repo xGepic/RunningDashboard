@@ -1,84 +1,93 @@
-<a class="back" routerLink="/runs">← Runs</a>
+<div class="page">
+  <a class="back" routerLink="/runs">← Runs</a>
 
-@if (run.error()) {
-  <p class="error" role="alert">This Run could not be loaded.</p>
-} @else if (run.value(); as run) {
-  <header>
-    <h1>{{ run.name }}</h1>
-    <p class="when">{{ run.startLocal | date: 'EEEE d MMMM y, HH:mm' }}</p>
-    <a class="strava" [href]="run.stravaUrl" target="_blank" rel="noopener">View on Strava</a>
-  </header>
+  @if (run.error()) {
+    <p class="error" role="alert">This Run could not be loaded.</p>
+  } @else if (run.value(); as run) {
+    <header class="page-header">
+      <div class="titles">
+        <span class="eyebrow">Run</span>
+        <h1>{{ run.name }}</h1>
+        <p class="subtitle">{{ run.startLocal | date: 'EEEE d MMMM y, HH:mm' }}</p>
+      </div>
+      <a class="btn strava" [href]="run.stravaUrl" target="_blank" rel="noopener">View on Strava ↗</a>
+    </header>
 
-  <dl class="summary">
-    <div><dt>Distance</dt><dd>{{ formatDistance(run.distance) }}</dd></div>
-    <div><dt>Moving Time</dt><dd>{{ formatDuration(run.movingTime) }}</dd></div>
-    <div><dt>Elapsed time</dt><dd>{{ formatDuration(run.elapsedTime) }}</dd></div>
-    <div><dt>Pace</dt><dd>{{ formatPace(run.pace) }}</dd></div>
-    <div><dt>Elevation gain</dt><dd>{{ run.elevationGain | number: '1.0-0' }} m</dd></div>
-    <div><dt>Relative Effort</dt><dd>{{ run.relativeEffort ?? '–' }}</dd></div>
-    <div><dt>Shoe</dt><dd>{{ run.shoeName ?? '–' }}</dd></div>
-  </dl>
+    <dl class="facts summary">
+      <div><dt class="label">Distance</dt><dd class="value">{{ formatDistance(run.distance) }}</dd></div>
+      <div><dt class="label">Moving Time</dt><dd class="value">{{ formatDuration(run.movingTime) }}</dd></div>
+      <div><dt class="label">Elapsed time</dt><dd class="value">{{ formatDuration(run.elapsedTime) }}</dd></div>
+      <div><dt class="label">Pace</dt><dd class="value">{{ formatPace(run.pace) }}</dd></div>
+      <div><dt class="label">Elevation gain</dt><dd class="value">{{ run.elevationGain | number: '1.0-0' }} m</dd></div>
+      <div><dt class="label">Relative Effort</dt><dd class="value">{{ run.relativeEffort ?? '–' }}</dd></div>
+      <div><dt class="label">Shoe</dt><dd class="value shoe">{{ run.shoeName ?? '–' }}</dd></div>
+    </dl>
 
-  @if (run.detail === 'pending') {
-    <p class="empty">Best Efforts and Splits are still being loaded from Strava.</p>
-  } @else if (run.detail === 'unavailable') {
-    <p class="empty">Strava no longer has the details of this Run, so there are no Best Efforts or Splits.</p>
-  } @else {
-    <section>
-      <h2>Best Efforts</h2>
-      @if (run.bestEfforts.length === 0) {
-        <p class="empty">No Best Efforts for this Run.</p>
-      } @else {
-        <table class="data-table">
-          <thead>
-            <tr><th>Distance</th><th class="number">Time</th><th class="number">Per km</th></tr>
-          </thead>
-          <tbody>
-            @for (effort of run.bestEfforts; track effort.name) {
-              <tr>
-                <td>
-                  {{ effort.name }}
-                  @if (effort.personalBest) {
-                    <span class="badge" title="Faster than every earlier Best Effort over this distance">Personal Best</span>
+    @if (run.detail === 'pending') {
+      <div class="card empty-card"><p class="empty">Best Efforts and Splits are still being loaded from Strava.</p></div>
+    } @else if (run.detail === 'unavailable') {
+      <div class="card empty-card"><p class="empty">Strava no longer has the details of this Run, so there are no Best Efforts or Splits.</p></div>
+    } @else {
+      <div class="details">
+        <section class="card flush">
+          <div class="card-header"><h2 class="card-title">Best Efforts</h2></div>
+          @if (run.bestEfforts.length === 0) {
+            <p class="empty pad">No Best Efforts for this Run.</p>
+          } @else {
+            <table class="data-table">
+              <thead>
+                <tr><th>Distance</th><th class="number">Time</th><th class="number">Per km</th></tr>
+              </thead>
+              <tbody>
+                @for (effort of run.bestEfforts; track effort.name) {
+                  <tr>
+                    <td>
+                      {{ effort.name }}
+                      @if (effort.personalBest) {
+                        <span class="badge green" title="Faster than every earlier Best Effort over this distance">Personal Best</span>
+                      }
+                    </td>
+                    <td class="number">{{ formatDuration(effort.elapsedTime) }}</td>
+                    <td class="number muted">{{ formatPace(effort.timePerKm) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </section>
+
+        <section class="card flush">
+          <div class="card-header"><h2 class="card-title">Splits</h2></div>
+          @if (run.splits.length === 0) {
+            <p class="empty pad">No Splits for this Run.</p>
+          } @else {
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>km</th>
+                    <th class="number">Distance</th>
+                    <th class="number">Moving Time</th>
+                    <th class="number">Pace</th>
+                    <th class="number">Elevation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (split of run.splits; track split.index) {
+                    <tr>
+                      <td class="mono muted">{{ split.index }}</td>
+                      <td class="number">{{ formatDistance(split.distance) }}</td>
+                      <td class="number">{{ formatDuration(split.movingTime) }}</td>
+                      <td class="number">{{ formatPace(split.pace) }}</td>
+                      <td class="number muted">{{ split.elevationDifference | number: '1.0-1' }} m</td>
+                    </tr>
                   }
-                </td>
-                <td class="number">{{ formatDuration(effort.elapsedTime) }}</td>
-                <td class="number">{{ formatPace(effort.timePerKm) }}</td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      }
-    </section>
-
-    <section>
-      <h2>Splits</h2>
-      @if (run.splits.length === 0) {
-        <p class="empty">No Splits for this Run.</p>
-      } @else {
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>km</th>
-              <th class="number">Distance</th>
-              <th class="number">Moving Time</th>
-              <th class="number">Pace</th>
-              <th class="number">Elevation</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (split of run.splits; track split.index) {
-              <tr>
-                <td>{{ split.index }}</td>
-                <td class="number">{{ formatDistance(split.distance) }}</td>
-                <td class="number">{{ formatDuration(split.movingTime) }}</td>
-                <td class="number">{{ formatPace(split.pace) }}</td>
-                <td class="number">{{ split.elevationDifference | number: '1.0-1' }} m</td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      }
-    </section>
+                </tbody>
+              </table>
+            </div>
+          }
+        </section>
+      </div>
+    }
   }
-}
+</div>

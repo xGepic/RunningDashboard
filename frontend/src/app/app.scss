@@ -1,40 +1,238 @@
 :host {
-  display: block;
+  display: flex;
   min-height: 100vh;
 }
 
-.shell-header {
+.sidebar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: 232px;
+  height: 100vh;
+  padding: 18px 12px;
+  border-right: 1px solid var(--shell-border);
+  background: var(--sidebar);
+}
+
+.brand {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.75rem 1.5rem;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
+  gap: 10px;
+  padding: 4px 10px 22px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+
+  &:hover {
+    color: var(--text);
+  }
 }
 
-.app-name {
-  font-weight: 700;
-  font-size: 1.1rem;
-}
-
-nav {
+.logo {
   display: flex;
-  gap: 1rem;
-  margin-right: auto;
-  margin-left: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: var(--accent);
+
+  span {
+    width: 10px;
+    height: 10px;
+    border: 2px solid var(--background);
+    border-radius: 50%;
+  }
+}
+
+.group-label {
+  padding: 0 10px 8px;
+  color: var(--text-faint);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 
   a {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    height: 34px;
+    padding: 0 10px;
+    border-radius: 8px;
     color: var(--text-muted);
-    text-decoration: none;
+    font-size: 13.5px;
+    font-weight: 500;
+    transition:
+      background 0.15s,
+      color 0.15s;
+
+    &:hover {
+      background: var(--surface-raised);
+      color: var(--text);
+    }
 
     &.active {
+      background: var(--selected);
       color: var(--text);
-      font-weight: 600;
+    }
+  }
+
+  .label {
+    flex: 1;
+  }
+
+  kbd {
+    color: var(--text-faint);
+    font-family: var(--mono);
+    font-size: 10.5px;
+  }
+}
+
+.next-up {
+  display: flex;
+  flex-direction: column;
+  margin-top: auto;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--shell-border);
+
+  a {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 0 10px;
+  }
+
+  .name {
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .when {
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+}
+
+.main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 56px;
+  padding: 8px 28px;
+  border-bottom: 1px solid var(--shell-border);
+  background: rgb(9 13 20 / 86%);
+  backdrop-filter: blur(10px);
+}
+
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 13px;
+  white-space: nowrap;
+
+  .app-name,
+  a {
+    color: var(--text-muted);
+  }
+
+  a:hover {
+    color: var(--text);
+  }
+
+  .sep {
+    color: #334055;
+  }
+
+  /* The sidebar shows the app's name on wide screens. */
+  .app-name,
+  .app-name + .sep {
+    display: none;
+  }
+
+  .current {
+    color: var(--text);
+    font-weight: 500;
+  }
+}
+
+app-connection-status {
+  margin-left: auto;
+}
+
+.tabs {
+  display: none;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--shell-border);
+
+  a {
+    flex-shrink: 0;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 32px;
+
+    &.active {
+      background: var(--selected);
+      color: var(--text);
     }
   }
 }
 
-.shell-main {
-  padding: 1.5rem;
+.content {
+  flex: 1;
+  width: 100%;
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 32px 32px 80px;
+}
+
+@media (width < 1000px) {
+  .sidebar {
+    display: none;
+  }
+
+  .tabs {
+    display: flex;
+  }
+
+  .topbar {
+    padding: 8px 16px;
+  }
+
+  .crumbs .app-name,
+  .crumbs .app-name + .sep {
+    display: inline;
+  }
+
+  .content {
+    padding: 24px 16px 64px;
+  }
 }

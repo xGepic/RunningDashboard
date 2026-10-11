@@ -4,10 +4,17 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import type { EChartsCoreOption } from 'echarts/core';
 import { NgxEchartsDirective } from 'ngx-echarts';
-import { ChartColors, ChartTheme, baseChartOptions } from '../shared/chart-theme';
+import { ChartColors, ChartTheme, baseChartOptions, tooltipHtml } from '../shared/chart-theme';
+import { daysBetween, localDate, today } from '../shared/dates';
 import { formatDuration, formatPace } from '../shared/format';
 import { reloadOnSync } from '../sync/reload-on-sync';
 import { PersonalBest, RecordDistance } from './record';
+
+/** The distances that get a card of their own, as Strava names them. */
+const featuredNames = ['5K', '10K', 'Half-Marathon', 'Marathon'];
+
+/** A Personal Best set this many days ago or less is new. */
+const newDays = 60;
 
 @Component({
   selector: 'app-records-page',
@@ -21,6 +28,7 @@ export class RecordsPage {
   protected readonly records = httpResource<RecordDistance[]>(() => '/api/records');
   protected readonly formatDuration = formatDuration;
   protected readonly formatPace = formatPace;
+  protected readonly featuredNames = featuredNames;
 
   /** Distances (metres) the Athlete picked; until they pick, the ones shown by default. */
   private readonly picked = signal<ReadonlySet<number> | null>(null);
@@ -29,12 +37,36 @@ export class RecordsPage {
     () => this.picked() ?? new Set((this.records.value() ?? []).filter((r) => r.shownByDefault).map((r) => r.distance)),
   );
 
+  protected readonly featured = computed(() => {
+    const records = this.records.value() ?? [];
+    return featuredNames
+      .map((name) => records.find((r) => r.name === name))
+      .filter((r): r is RecordDistance => !!r)
+      .map((record) => ({ record, spark: sparkline(record), improvements: record.progression.length - 1 }));
+  });
+
+  /** Every distance, with the width of its pace bar: the fastest pace fills it, the slowest a third. */
+  protected readonly rows = computed(() => {
+    const records = this.records.value() ?? [];
+    const paces = records.map((r) => r.personalBest.timePerKm).filter((p): p is number => p !== null);
+    const [fastest, slowest] = [Math.min(...paces), Math.max(...paces)];
+    return records.map((record) => {
+      const pace = record.personalBest.timePerKm;
+      const share = pace === null ? 0 : slowest === fastest ? 100 : 30 + 70 * (1 - (pace - fastest) / (slowest - fastest));
+      return { record, share };
+    });
+  });
+
   protected readonly charts = computed(() => {
     const colors = this.theme.colors();
-    const today = new Date();
+    const now = new Date();
     return (this.records.value() ?? [])
       .filter((record) => this.shown().has(record.distance))
-      .map((record) => ({ record, options: progressionChart(record, colors, today) }));
+      .map((record) => {
+        const first = record.progression[0];
+        const gain = first.elapsedTime - record.personalBest.elapsedTime;
+        return { record, first, gain, steps: record.progression.length - 1, options: progressionChart(record, colors, now) };
+      });
   });
 
   constructor() {
@@ -46,6 +78,31 @@ export class RecordsPage {
     if (!shown.delete(distance)) shown.add(distance);
     this.picked.set(shown);
   }
+
+  protected isNew(best: PersonalBest): boolean {
+    return daysBetween(localDate(best.date), today()) <= newDays;
+  }
+
+  /** "Half Marathon" for Strava's "Half-Marathon". */
+  protected displayName(name: string): string {
+    return name.replace('-', ' ');
+  }
+}
+
+/** A step line of the progression in a 200×46 box, faster towards the top, carried on to today. */
+function sparkline(record: RecordDistance): string {
+  const points = record.progression.map((p) => ({ t: localDate(p.date).getTime(), s: p.elapsedTime }));
+  const start = points[0].t;
+  const end = Math.max(today().getTime(), start + 1);
+  const times = points.map((p) => p.s);
+  let [low, high] = [Math.min(...times), Math.max(...times)];
+  const padding = Math.max((high - low) * 0.12, low * 0.04);
+  [low, high] = [low - padding, high + padding];
+  const x = (t: number) => ((t - start) / (end - start)) * 200;
+  const y = (s: number) => ((s - low) / (high - low)) * 46;
+  let path = `M${x(points[0].t).toFixed(1)} ${y(points[0].s).toFixed(1)}`;
+  for (const point of points.slice(1)) path += ` H${x(point.t).toFixed(1)} V${y(point.s).toFixed(1)}`;
+  return `${path} H200`;
 }
 
 interface ChartPoint {
@@ -57,16 +114,17 @@ interface ChartPoint {
 
 /**
  * Step chart of how the Personal Best improved: each step holds until the next improvement, the last one up to
- * today. Lower is faster.
+ * today. Faster is up.
  */
-function progressionChart(record: RecordDistance, colors: ChartColors, today: Date): EChartsCoreOption {
+function progressionChart(record: RecordDistance, colors: ChartColors, now: Date): EChartsCoreOption {
   const points: ChartPoint[] = [
     ...record.progression.map((personalBest): ChartPoint => ({ value: [personalBest.date, personalBest.elapsedTime], personalBest })),
-    { value: [today.toISOString(), record.personalBest.elapsedTime], personalBest: null, symbol: 'none' },
+    { value: [now.toISOString(), record.personalBest.elapsedTime], personalBest: null, symbol: 'none' },
   ];
   const base = baseChartOptions(colors);
   return {
     ...base,
+    grid: { ...base.grid, top: 8 },
     tooltip: {
       ...base.tooltip,
       trigger: 'item',
@@ -74,20 +132,23 @@ function progressionChart(record: RecordDistance, colors: ChartColors, today: Da
         const best = params.data.personalBest;
         if (!best) return '';
         const date = new Date(best.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-        return `${date}<br><b>${formatDuration(best.elapsedTime)}</b> (${formatPace(best.timePerKm)})<br>${escapeHtml(best.runName)}`;
+        return tooltipHtml(colors, date, formatDuration(best.elapsedTime), '', `${formatPace(best.timePerKm)} · ${escapeHtml(best.runName)}`);
       },
     },
     xAxis: {
       type: 'time',
-      axisLine: { lineStyle: { color: colors.grid } },
-      axisLabel: { color: colors.muted, hideOverlap: true },
-      splitLine: { show: false },
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: { color: colors.faint, hideOverlap: true },
+      splitLine: { show: true, lineStyle: { color: colors.grid } },
     },
     yAxis: {
       type: 'value',
       scale: true,
-      axisLabel: { color: colors.muted, formatter: formatDuration },
-      splitLine: { lineStyle: { color: colors.grid, width: 1, type: 'solid' } },
+      inverse: true,
+      splitNumber: 3,
+      axisLabel: { color: colors.faint, formatter: formatDuration },
+      splitLine: { lineStyle: { color: colors.grid, width: 1, type: 'dashed' } },
     },
     series: [
       {
@@ -95,9 +156,9 @@ function progressionChart(record: RecordDistance, colors: ChartColors, today: Da
         step: 'end',
         data: points,
         lineStyle: { width: 2, color: colors.series },
-        itemStyle: { color: colors.series },
+        itemStyle: { color: colors.background, borderColor: colors.series, borderWidth: 2 },
         symbol: 'circle',
-        symbolSize: 8,
+        symbolSize: 9,
       },
     ],
   };

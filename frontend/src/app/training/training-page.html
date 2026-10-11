@@ -1,222 +1,286 @@
-<h1>Training</h1>
-
-<label class="selector">
-  Training Block
-  <select #picker (change)="select(picker.value)">
-    <option value="" [selected]="!goalRace()">Today</option>
-    @for (race of goalRaces.hasValue() ? goalRaces.value() : []; track race.id) {
-      <option [value]="race.id" [selected]="goalRace() === '' + race.id">{{ race.name }} ({{ race.date | date: 'd MMM y' }})</option>
-    }
-  </select>
-</label>
-
-@if (training.error()) {
-  <p class="error" role="alert">
-    The Training Block could not be loaded.
-    @if (compareWith()) {
-      <button type="button" class="link" (click)="compare(null)">Show it without that comparison</button>
-    }
-  </p>
-} @else if (training.value(); as training) {
-  @if (training.block; as block) {
-    <header class="race">
-      <h2>{{ block.goalRace.name }}</h2>
-      <p>
-        {{ block.goalRace.date | date: 'EEEE d MMMM y' }} · {{ formatDistance(block.goalRace.distance) }}
-        @if (block.goalRace.targetTime !== null && block.targetPace !== null) {
-          · Target Time <b>{{ formatDuration(block.goalRace.targetTime) }}</b>, Target Pace <b>{{ formatPace(block.targetPace) }}</b>
-        }
-      </p>
-    </header>
-
-    <label class="selector">
-      Compare with
-      <select #comparePicker (change)="compare(comparePicker.value)">
-        <option value="none" [selected]="comparisonChoice() === 'none'">No comparison</option>
-        @for (race of comparableRaces(); track race.id) {
-          <option [value]="race.id" [selected]="comparisonChoice() === '' + race.id">{{ race.name }} ({{ race.date | date: 'd MMM y' }})</option>
+<div class="page">
+  <header class="page-header">
+    <div class="titles">
+      <span class="eyebrow">Training</span>
+      <h1>{{ training.hasValue() && training.value().block ? training.value().block!.goalRace.name + ' block' : 'Training' }}</h1>
+    </div>
+    <label class="field selector">
+      Training Block
+      <select #picker (change)="select(picker.value)">
+        <option value="" [selected]="!goalRace()">Today</option>
+        @for (race of goalRaces.hasValue() ? goalRaces.value() : []; track race.id) {
+          <option [value]="race.id" [selected]="goalRace() === '' + race.id">{{ race.name }} ({{ race.date | date: 'd MMM y' }})</option>
         }
       </select>
     </label>
+  </header>
 
-    @if (block.phases) {
-      <p class="legend" aria-hidden="true">
-        Running Days:
-        <span class="day ran"></span> run as planned
-        <span class="day missed"></span> missed
-        <span class="day unplanned"></span> run on an unplanned day
-        <span class="day planned"></span> still to come
-      </p>
-    }
-
-    <div class="table-scroll">
-      <table class="data-table weeks">
-        <thead>
-          @if (block.comparison; as comparison) {
-            <tr class="sides">
-              <th [attr.colspan]="block.phases ? 2 : 1"></th>
-              <th [attr.colspan]="block.phases ? 7 : 6">{{ block.goalRace.name }}</th>
-              <th colspan="4" class="compared">
-                {{ comparison.goalRace.name }}
-                @if (block.targetPace !== null) {
-                  <span class="target">Long Runs against today's Target Pace</span>
-                }
-              </th>
-            </tr>
-          }
-          <tr>
-            @if (block.phases) {
-              <th class="band-header"><span class="visually-hidden">Phase</span></th>
-            }
-            <th class="number">Weeks to Race</th>
-            <th>Training Week</th>
-            <th class="number">Runs</th>
-            @if (block.phases) {
-              <th>Running Days</th>
-            }
-            <ng-container *ngTemplateOutlet="actualHeaders" />
-            @if (block.comparison) {
-              <ng-container *ngTemplateOutlet="actualHeaders; context: { $implicit: true }" />
-            }
-          </tr>
-        </thead>
-        <tbody>
-          @for (row of rows(); track row.weeksToRace) {
-            <tr [attr.data-weeks-to-race]="row.weeksToRace" [class.current]="row.viewed?.status === 'current'"
-                [class.future]="row.viewed?.status === 'future'" [class.recovery-week]="row.viewed?.plan?.recoveryWeek"
-                [attr.aria-current]="row.viewed?.status === 'current' ? 'date' : null">
-              @if (block.phases; as phases) {
-                @if (phaseStartingAt(phases, row.weeksToRace); as phase) {
-                  <td [class]="'band phase-' + phase.type" [attr.rowspan]="phase.lastWeeksToRace - phase.firstWeeksToRace + 1">
-                    <span>{{ phase.type }}</span>
-                  </td>
-                } @else if (!row.viewed) {
-                  <!-- A compared block's week before the plan starts. -->
-                  <td class="band"></td>
-                }
-              }
-              <td class="number">
-                {{ row.weeksToRace }}@if (row.weeksToRace === 0) { · Race Week }
-                @if (row.viewed?.plan?.recoveryWeek) {
-                  <span class="recovery">Recovery Week</span>
-                }
-              </td>
-              @if (row.viewed; as week) {
-                <td class="dates">{{ week.start | date: 'd MMM' }} – {{ week.end | date: 'd MMM y' }}</td>
-                <td class="number">{{ week.actual?.runs ?? '–' }}</td>
-              } @else {
-                <td class="dates">–</td>
-                <td class="number">–</td>
-              }
-              @if (block.phases) {
-                <td>
-                  @if (row.viewed?.plan; as plan) {
-                    <ol class="strip" [attr.aria-label]="'Running Days of the week from ' + (row.viewed!.start | date: 'd MMM')">
-                      @for (day of plan.days; track day.date) {
-                        <li [class]="'day ' + day.state" [title]="(day.date | date: 'EEE d MMM') + ': ' + dayStates[day.state]">
-                          <span class="visually-hidden">{{ day.date | date: 'EEEE' }}: {{ dayStates[day.state] }}</span>
-                        </li>
-                      }
-                    </ol>
-                  }
-                </td>
-              }
-              <ng-container *ngTemplateOutlet="actualCells; context: { $implicit: row.viewed, compared: false, plan: row.viewed?.plan }" />
-              @if (block.comparison) {
-                <ng-container *ngTemplateOutlet="actualCells; context: { $implicit: row.compared, compared: true }" />
-              }
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-
-    <ng-template #actualHeaders let-compared>
-      <th class="number" [class.compared]="compared">Distance</th>
-      <th class="number" [class.compared]="compared">Moving Time</th>
-      <th class="number" [class.compared]="compared">Relative Effort</th>
-      <th [class.compared]="compared">Long Run</th>
-    </ng-template>
-
-    <!--
-      A week's actual values, with what was planned for the viewed block's weeks; dashes for a future week or one that
-      block does not have.
-    -->
-    <ng-template #actualCells let-week let-compared="compared" let-plan="plan">
-      @if (week?.actual; as actual) {
-        <td class="number" [class.compared]="compared" [title]="compared ? 'Week of ' + (week.start | date: 'd MMM y') : ''">
-          <span [class]="metClass(plan?.distanceMet)">{{ formatDistance(actual.distance) }}</span>
-          <ng-container *ngTemplateOutlet="planned; context: { $implicit: plan?.plannedDistance }" />
-        </td>
-        <td class="number" [class.compared]="compared">{{ formatDuration(actual.movingTime) }}</td>
-        <td class="number" [class.compared]="compared">{{ actual.relativeEffort === null ? '–' : (actual.relativeEffort | number: '1.0-0') }}</td>
-        <td [class.compared]="compared">
-          @if (actual.longRun; as longRun) {
-            <a [routerLink]="['/runs', longRun.runId]" [title]="longRun.name" [class]="metClass(plan?.longRunMet)">{{ formatDistance(longRun.distance) }}</a>
-            at {{ formatPace(longRun.pace) }}
-            @if (longRun.paceVsTarget !== null) {
-              <span class="vs-target" [class.ahead]="longRun.paceVsTarget <= 0">{{ formatPaceDifference(longRun.paceVsTarget) }}</span>
-            }
-          } @else {
-            <span [class]="metClass(plan?.longRunMet)">–</span>
-          }
-          <ng-container *ngTemplateOutlet="planned; context: { $implicit: plan?.plannedLongRun }" />
-        </td>
-      } @else {
-        <td class="number" [class.compared]="compared">
-          –
-          <ng-container *ngTemplateOutlet="planned; context: { $implicit: plan?.plannedDistance }" />
-        </td>
-        <td class="number" [class.compared]="compared">–</td>
-        <td class="number" [class.compared]="compared">–</td>
-        <td [class.compared]="compared">
-          –
-          <ng-container *ngTemplateOutlet="planned; context: { $implicit: plan?.plannedLongRun }" />
-        </td>
+  @if (training.error()) {
+    <p class="error" role="alert">
+      The Training Block could not be loaded.
+      @if (compareWith()) {
+        <button type="button" class="link" (click)="compare(null)">Show it without that comparison</button>
       }
-    </ng-template>
-
-    <!-- What the plan has: a planned distance or Long Run, if any. -->
-    <ng-template #planned let-distance>
-      @if (distance != null) {
-        <span class="planned">planned {{ formatDistance(distance) }}</span>
-      }
-    </ng-template>
-  } @else if (training.countdown; as countdown) {
-    <section class="countdown" aria-labelledby="next-block">
-      <h2 id="next-block">Next Training Block</h2>
-      <p class="days">
-        <span class="value">{{ countdown.daysRemaining }}</span>
-        {{ countdown.daysRemaining === 1 ? 'day' : 'days' }} to go
-      </p>
-      <p>
-        <b>{{ countdown.goalRace.name }}</b> ({{ countdown.goalRace.date | date: 'EEE d MMM y' }}): the Training Block starts
-        on {{ countdown.trainingBlockStart | date: 'EEEE d MMMM y' }}.
-      </p>
-    </section>
-
-    <section>
-      <h2>Recent weeks</h2>
-      @if (recentWeeksChart(); as options) {
-        <div class="chart" echarts [options]="options" [autoResize]="true" role="img"
-             aria-label="Column chart of distance in the recent Training Weeks; the table below has the same numbers"></div>
-      }
-      <details>
-        <summary>Show as table</summary>
-        <table class="data-table recent">
-          <thead><tr><th>Week starting</th><th class="number">Distance</th></tr></thead>
-          <tbody>
-            @for (week of countdown.recentWeeks; track week.start) {
-              <tr><td>{{ weekLabel(week.start) }}</td><td class="number">{{ formatDistance(week.distance) }}</td></tr>
-            }
-          </tbody>
-        </table>
-      </details>
-    </section>
-  } @else {
-    <p class="empty">
-      No upcoming Goal Race, so there is no Training Block ahead.
-      <a routerLink="/goal-races">Add the race you are training for</a>@if (goalRaces.hasValue() && goalRaces.value().length) {, or pick a past one above to look at its block}.
     </p>
+  } @else if (training.value(); as training) {
+    @if (training.block; as block) {
+      <section class="card race">
+        <div class="race-info">
+          <h2>{{ block.goalRace.name }}</h2>
+          <p>
+            {{ block.goalRace.date | date: 'EEEE d MMMM y' }} · {{ formatDistance(block.goalRace.distance) }}
+            @if (block.goalRace.targetTime !== null && block.targetPace !== null) {
+              · Target Time <b>{{ formatDuration(block.goalRace.targetTime) }}</b>, Target Pace <b>{{ formatPace(block.targetPace) }}</b>
+            }
+          </p>
+        </div>
+        <label class="field selector">
+          Compare with
+          <select #comparePicker (change)="compare(comparePicker.value)">
+            <option value="none" [selected]="comparisonChoice() === 'none'">No comparison</option>
+            @for (race of comparableRaces(); track race.id) {
+              <option [value]="race.id" [selected]="comparisonChoice() === '' + race.id">{{ race.name }} ({{ race.date | date: 'd MMM y' }})</option>
+            }
+          </select>
+        </label>
+      </section>
+
+      <section class="card flush">
+        @if (block.phases) {
+          <p class="legend" aria-hidden="true">
+            Running Days:
+            <span class="day ran"></span> run as planned
+            <span class="day missed"></span> missed
+            <span class="day unplanned"></span> run on an unplanned day
+            <span class="day planned"></span> still to come
+          </p>
+        }
+
+        <div class="table-scroll">
+          <table class="data-table weeks">
+            <thead>
+              @if (block.comparison; as comparison) {
+                <tr class="sides">
+                  <th [attr.colspan]="block.phases ? 2 : 1"></th>
+                  <th [attr.colspan]="block.phases ? 7 : 6">{{ block.goalRace.name }}</th>
+                  <th colspan="4" class="compared">
+                    {{ comparison.goalRace.name }}
+                    @if (block.targetPace !== null) {
+                      <span class="target">Long Runs against today's Target Pace</span>
+                    }
+                  </th>
+                </tr>
+              }
+              <tr>
+                @if (block.phases) {
+                  <th class="band-header"><span class="visually-hidden">Phase</span></th>
+                }
+                <th class="number">Weeks to Race</th>
+                <th>Training Week</th>
+                <th class="number">Runs</th>
+                @if (block.phases) {
+                  <th>Running Days</th>
+                }
+                <ng-container *ngTemplateOutlet="actualHeaders" />
+                @if (block.comparison) {
+                  <ng-container *ngTemplateOutlet="actualHeaders; context: { $implicit: true }" />
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of rows(); track row.weeksToRace) {
+                <tr [attr.data-weeks-to-race]="row.weeksToRace" [class.current]="row.viewed?.status === 'current'"
+                    [class.future]="row.viewed?.status === 'future'" [class.recovery-week]="row.viewed?.plan?.recoveryWeek"
+                    [attr.aria-current]="row.viewed?.status === 'current' ? 'date' : null">
+                  @if (block.phases; as phases) {
+                    @if (phaseStartingAt(phases, row.weeksToRace); as phase) {
+                      <td [class]="'band phase-' + phase.type" [attr.rowspan]="phase.lastWeeksToRace - phase.firstWeeksToRace + 1">
+                        <span>{{ phase.type }}</span>
+                      </td>
+                    } @else if (!row.viewed) {
+                      <!-- A compared block's week before the plan starts. -->
+                      <td class="band"></td>
+                    }
+                  }
+                  <td class="number">
+                    {{ row.weeksToRace }}@if (row.weeksToRace === 0) { <span class="race-week">· Race Week</span> }
+                    @if (row.viewed?.plan?.recoveryWeek) {
+                      <span class="recovery">Recovery Week</span>
+                    }
+                  </td>
+                  @if (row.viewed; as week) {
+                    <td class="dates">{{ week.start | date: 'd MMM' }} – {{ week.end | date: 'd MMM y' }}</td>
+                    <td class="number">{{ week.actual?.runs ?? '–' }}</td>
+                  } @else {
+                    <td class="dates">–</td>
+                    <td class="number">–</td>
+                  }
+                  @if (block.phases) {
+                    <td>
+                      @if (row.viewed?.plan; as plan) {
+                        <ol class="strip" [attr.aria-label]="'Running Days of the week from ' + (row.viewed!.start | date: 'd MMM')">
+                          @for (day of plan.days; track day.date) {
+                            <li [class]="'day ' + day.state" [title]="(day.date | date: 'EEE d MMM') + ': ' + dayStates[day.state]">
+                              <span class="visually-hidden">{{ day.date | date: 'EEEE' }}: {{ dayStates[day.state] }}</span>
+                            </li>
+                          }
+                        </ol>
+                      }
+                    </td>
+                  }
+                  <ng-container *ngTemplateOutlet="actualCells; context: { $implicit: row.viewed, compared: false, plan: row.viewed?.plan }" />
+                  @if (block.comparison) {
+                    <ng-container *ngTemplateOutlet="actualCells; context: { $implicit: row.compared, compared: true }" />
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <ng-template #actualHeaders let-compared>
+        <th class="number" [class.compared]="compared">Distance</th>
+        <th class="number" [class.compared]="compared">Moving Time</th>
+        <th class="number" [class.compared]="compared">Relative Effort</th>
+        <th [class.compared]="compared">Long Run</th>
+      </ng-template>
+
+      <!--
+        A week's actual values, with what was planned for the viewed block's weeks; dashes for a future week or one that
+        block does not have.
+      -->
+      <ng-template #actualCells let-week let-compared="compared" let-plan="plan">
+        @if (week?.actual; as actual) {
+          <td class="number" [class.compared]="compared" [title]="compared ? 'Week of ' + (week.start | date: 'd MMM y') : ''">
+            <span [class]="metClass(plan?.distanceMet)">{{ formatDistance(actual.distance) }}</span>
+            <ng-container *ngTemplateOutlet="planned; context: { $implicit: plan?.plannedDistance }" />
+          </td>
+          <td class="number" [class.compared]="compared">{{ formatDuration(actual.movingTime) }}</td>
+          <td class="number" [class.compared]="compared">{{ actual.relativeEffort === null ? '–' : (actual.relativeEffort | number: '1.0-0') }}</td>
+          <td class="long-run" [class.compared]="compared">
+            @if (actual.longRun; as longRun) {
+              <a [routerLink]="['/runs', longRun.runId]" [title]="longRun.name" [class]="metClass(plan?.longRunMet)">{{ formatDistance(longRun.distance) }}</a>
+              at {{ formatPace(longRun.pace) }}
+              @if (longRun.paceVsTarget !== null) {
+                <span class="vs-target" [class.ahead]="longRun.paceVsTarget <= 0">{{ formatPaceDifference(longRun.paceVsTarget) }}</span>
+              }
+            } @else {
+              <span [class]="metClass(plan?.longRunMet)">–</span>
+            }
+            <ng-container *ngTemplateOutlet="planned; context: { $implicit: plan?.plannedLongRun }" />
+          </td>
+        } @else {
+          <td class="number" [class.compared]="compared">
+            –
+            <ng-container *ngTemplateOutlet="planned; context: { $implicit: plan?.plannedDistance }" />
+          </td>
+          <td class="number" [class.compared]="compared">–</td>
+          <td class="number" [class.compared]="compared">–</td>
+          <td class="long-run" [class.compared]="compared">
+            –
+            <ng-container *ngTemplateOutlet="planned; context: { $implicit: plan?.plannedLongRun }" />
+          </td>
+        }
+      </ng-template>
+
+      <!-- What the plan has: a planned distance or Long Run, if any. -->
+      <ng-template #planned let-distance>
+        @if (distance != null) {
+          <span class="planned">planned {{ formatDistance(distance) }}</span>
+        }
+      </ng-template>
+    } @else if (training.countdown; as countdown) {
+      <section class="hero" aria-labelledby="next-block">
+        <div class="hero-main">
+          <h2 id="next-block" class="hero-eyebrow"><span class="dot"></span>Next Training Block</h2>
+          <p class="days">
+            <span class="value">{{ countdown.daysRemaining }}</span>
+            {{ countdown.daysRemaining === 1 ? 'day' : 'days' }} to go
+          </p>
+          <div class="clock-wrap">
+            <span class="clock-note">Exact time until block start, Monday 00:00</span>
+            <div class="clock mono" aria-hidden="true">
+              @for (part of clock(); track part.unit) {
+                <div><span class="v">{{ part.value }}</span><span class="u">{{ part.unit }}</span></div>
+              }
+            </div>
+          </div>
+          <p class="lede">
+            <b>{{ countdown.goalRace.name }}</b> ({{ countdown.goalRace.date | date: 'EEE d MMM y' }}): the Training Block starts
+            on {{ countdown.trainingBlockStart | date: 'EEEE d MMMM y' }}.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" [routerLink]="['/goal-races', countdown.goalRace.id, 'training-plan']">Open Training Plan</a>
+            <a class="btn" routerLink="/goal-races">View Goal Race</a>
+          </div>
+        </div>
+        @if (figures(); as fig) {
+          <div class="hero-side">
+            <dl class="facts">
+              <div><dt class="label">Block length</dt><dd class="value">{{ fig.weekCount }} weeks</dd></div>
+              <div><dt class="label">Race distance</dt><dd class="value">{{ formatDistance(countdown.goalRace.distance) }}</dd></div>
+              <div><dt class="label">Target Time</dt><dd class="value">{{ countdown.goalRace.targetTime === null ? '–' : formatDuration(countdown.goalRace.targetTime) }}</dd></div>
+              <div><dt class="label">Target Pace</dt><dd class="value">{{ fig.targetPace === null ? '–' : formatPace(fig.targetPace) }}</dd></div>
+            </dl>
+            <div class="timeline" aria-hidden="true">
+              <div class="ends"><span>Today</span><span>Block start</span><span>Race day</span></div>
+              <div class="line">
+                <div class="block-weeks" [style.left.%]="fig.blockLeft">
+                  @for (week of fig.weeks; track $index) {
+                    <span [class.race]="week.race" [style.--alpha]="week.alpha"></span>
+                  }
+                </div>
+                <span class="today"></span>
+              </div>
+              <div class="ends mono">
+                <span>{{ todayDate | date: 'd MMM' }}</span>
+                <span>{{ countdown.trainingBlockStart | date: 'd MMM y' }}</span>
+                <span>{{ countdown.goalRace.date | date: 'd MMM y' }}</span>
+              </div>
+            </div>
+          </div>
+        }
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <div class="titles">
+            <h2 class="card-title">Recent weeks</h2>
+            <p class="card-sub">The last {{ countdown.recentWeeks.length }} Training Weeks</p>
+          </div>
+          @if (figures(); as fig) {
+            <div class="stats">
+              <div class="stat"><span class="label">Total</span><span class="value">{{ km(fig.recentTotal) }} km</span></div>
+              <div class="stat"><span class="label">Avg / week</span><span class="value">{{ km(fig.recentAverage) }} km</span></div>
+            </div>
+          }
+        </div>
+        @if (recentWeeksChart(); as options) {
+          <div class="chart" echarts [options]="options" [autoResize]="true" role="img"
+               aria-label="Column chart of distance in the recent Training Weeks; the table below has the same numbers"></div>
+        }
+        <details class="as-table">
+          <summary>Show as table</summary>
+          <div class="table-box">
+            <table class="data-table recent">
+              <thead><tr><th>Week starting</th><th class="number">Distance</th></tr></thead>
+              <tbody>
+                @for (week of countdown.recentWeeks; track week.start) {
+                  <tr><td class="muted">{{ weekLabel(week.start) }}</td><td class="number">{{ formatDistance(week.distance) }}</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </details>
+      </section>
+    } @else {
+      <div class="card empty-card">
+        <p class="empty">
+          No upcoming Goal Race, so there is no Training Block ahead.
+          <a routerLink="/goal-races">Add the race you are training for</a>@if (goalRaces.hasValue() && goalRaces.value().length) {, or pick a past one above to look at its block}.
+        </p>
+      </div>
+    }
   }
-}
+</div>

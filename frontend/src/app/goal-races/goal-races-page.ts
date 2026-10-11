@@ -1,10 +1,12 @@
 import { DatePipe } from '@angular/common';
 import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
+import { Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { formatDifference, formatDistance, formatDuration, kilometresToMetres, parseDuration } from '../shared/format';
+import { formatDifference, formatDistance, formatDuration, formatPace, kilometresToMetres, parseDuration } from '../shared/format';
 import { reloadOnSync } from '../sync/reload-on-sync';
+import { daysBetween, localDate, today } from '../shared/dates';
 import { FieldErrors, formError } from '../shared/field-errors';
 import { GoalRace, GoalRaceRequest, distancePresets } from './goal-race';
 
@@ -26,6 +28,8 @@ export class GoalRacesPage {
   protected readonly formError = formError;
   protected readonly formatDuration = formatDuration;
   protected readonly formatDifference = formatDifference;
+  protected readonly formatDistance = formatDistance;
+  protected readonly formatPace = formatPace;
 
   /** The race being edited; null while the form creates a new one. */
   protected readonly editing = signal<GoalRace | null>(null);
@@ -44,6 +48,42 @@ export class GoalRacesPage {
     targetTime: '',
     /** From a number input: null while it is empty or not a number. */
     trainingBlockWeeks: this.formBuilder.control<number | null>(16),
+  });
+
+  private readonly formCard = viewChild<ElementRef<HTMLElement>>('formCard');
+  private readonly formValue = toSignal(this.form.valueChanges, { initialValue: this.form.getRawValue() });
+
+  /** The nearest Goal Race from today on, with its countdown and the weeks of its Training Block. */
+  protected readonly next = computed(() => {
+    const races = this.races.hasValue() ? this.races.value() : [];
+    const now = today();
+    const race = races.filter((r) => localDate(r.date) >= now).sort((a, b) => a.date.localeCompare(b.date))[0];
+    if (!race) return null;
+    const start = localDate(race.trainingBlockStart);
+    const weekCount = race.trainingPlanLength ?? race.trainingBlockWeeks;
+    const weeks = Array.from({ length: weekCount }, (_, i) => {
+      const monday = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i * 7);
+      const days = daysBetween(monday, now);
+      const state = i === weekCount - 1 ? 'race' : days >= 7 ? 'done' : days >= 0 ? 'current' : 'upcoming';
+      return { number: i + 1, monday, state, opacity: 0.18 + (0.5 * i) / weekCount };
+    });
+    return {
+      race,
+      daysToRace: daysBetween(now, localDate(race.date)),
+      daysToStart: daysBetween(now, start),
+      currentWeek: weeks.find((w) => w.state === 'current')?.number ?? null,
+      weeks,
+      targetPace: race.targetTime === null ? null : race.targetTime / (race.distance / 1000),
+    };
+  });
+
+  /** Where the Training Block of the race being entered would start, as the form stands. */
+  protected readonly blockPreview = computed(() => {
+    const { date, trainingBlockWeeks } = this.formValue();
+    if (!date || !trainingBlockWeeks || trainingBlockWeeks < 1 || !Number.isInteger(trainingBlockWeeks)) return null;
+    const race = localDate(date);
+    const monday = new Date(race.getFullYear(), race.getMonth(), race.getDate() - ((race.getDay() + 6) % 7));
+    return { start: new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() - (trainingBlockWeeks - 1) * 7), race };
   });
 
   constructor() {
@@ -67,6 +107,7 @@ export class GoalRacesPage {
     });
     this.errors.set({});
     this.editing.set(race);
+    this.formCard()?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   protected cancel(): void {

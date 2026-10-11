@@ -1,72 +1,93 @@
-<a class="back" routerLink="/goal-races">← Goal Races</a>
+<div class="page">
+  <a class="back" routerLink="/goal-races">← Goal Races</a>
 
-@if (race(); as race) {
-  <h1>Training Plan: {{ race.name }}</h1>
-  <p class="when">
-    {{ race.date | date: 'EEEE d MMMM y' }}
-    @if (!hasPlan() && !plan.isLoading()) {
-      · no plan yet; its Training Block is {{ race.trainingBlockWeeks }} weeks long
-    }
-  </p>
+  @if (race(); as race) {
+    <header class="page-header">
+      <div class="titles">
+        <span class="eyebrow">Training Plan</span>
+        <h1>{{ race.name }}</h1>
+        <p class="subtitle">
+          {{ race.date | date: 'EEEE d MMMM y' }}
+          @if (!hasPlan() && !plan.isLoading()) {
+            · no plan yet; its Training Block is {{ race.trainingBlockWeeks }} weeks long
+          }
+        </p>
+      </div>
+    </header>
 
-  <section class="shape">
-    <label>
-      Length
-      <select #lengthPicker (change)="setLength(+lengthPicker.value)" [attr.aria-invalid]="!!errors()['length']">
-        @for (weeks of planLengths; track weeks) {
-          <option [value]="weeks" [selected]="weeks === length()">{{ weeks }} weeks</option>
-        }
-      </select>
-      @for (error of errors()['length']; track error) {
-        <span class="field-error">{{ error }}</span>
-      }
-    </label>
+    <section class="card shape" aria-label="Length and Phases">
+      <div class="card-header">
+        <div class="titles">
+          <h2 class="card-title">Shape</h2>
+          <p class="card-sub">The plan's length and the type of each Phase of 4 weeks.</p>
+        </div>
+      </div>
 
-    <fieldset class="phases" [attr.aria-invalid]="!!errors()['phases']">
-      <legend>Phases of 4 weeks</legend>
-      @for (phase of phases(); track $index) {
-        <label>
-          Weeks to Race {{ phaseRanges()[$index].first }} to {{ phaseRanges()[$index].last }}
-          <select #phasePicker (change)="setPhase($index, $any(phasePicker.value))">
-            @for (option of phaseTypes; track option.type) {
-              <option [value]="option.type" [selected]="option.type === phase">{{ option.name }}</option>
+      <div class="shape-grid">
+        <label class="field length">
+          Length
+          <select #lengthPicker (change)="setLength(+lengthPicker.value)" [attr.aria-invalid]="!!errors()['length']">
+            @for (weeks of planLengths; track weeks) {
+              <option [value]="weeks" [selected]="weeks === length()">{{ weeks }} weeks</option>
             }
           </select>
+          @for (error of errors()['length']; track error) {
+            <span class="field-error">{{ error }}</span>
+          }
         </label>
-      }
-      @for (error of errors()['phases']; track error) {
-        <span class="field-error">{{ error }}</span>
-      }
-    </fieldset>
 
-    @for (error of errors()[formError]; track error) {
-      <p class="error" role="alert">{{ error }}</p>
-    }
+        <fieldset class="phases" [attr.aria-invalid]="!!errors()['phases']">
+          <legend>Phases of 4 weeks</legend>
+          @for (phase of phases(); track $index) {
+            <label class="field" [class]="'phase-' + phase">
+              <span>Weeks to Race <span class="mono">{{ phaseRanges()[$index].first }} to {{ phaseRanges()[$index].last }}</span></span>
+              <select #phasePicker (change)="setPhase($index, $any(phasePicker.value))">
+                @for (option of phaseTypes; track option.type) {
+                  <option [value]="option.type" [selected]="option.type === phase">{{ option.name }}</option>
+                }
+              </select>
+            </label>
+          }
+          @for (error of errors()['phases']; track error) {
+            <span class="field-error">{{ error }}</span>
+          }
+        </fieldset>
+      </div>
 
-    <div class="actions">
-      <button type="button" class="primary" [disabled]="saving()" (click)="save()">
-        {{ hasPlan() ? 'Save Training Plan' : 'Create Training Plan' }}
-      </button>
-      @if (saved()) {
-        <span class="saved" role="status">Saved.</span>
+      @for (error of errors()[formError]; track error) {
+        <p class="error" role="alert">{{ error }}</p>
       }
+
+      <div class="actions">
+        <button type="button" class="btn btn-primary" [disabled]="saving()" (click)="save()">
+          {{ hasPlan() ? 'Save Training Plan' : 'Create Training Plan' }}
+        </button>
+        @if (saved()) {
+          <span class="saved" role="status">Saved.</span>
+        }
+        @if (hasPlan()) {
+          <button type="button" class="btn btn-danger delete" (click)="remove()">Delete Training Plan</button>
+        }
+      </div>
       @if (hasPlan()) {
-        <button type="button" class="delete" (click)="remove()">Delete Training Plan</button>
+        <p class="hint">Weeks that stay within a new length keep what was planned for them; new weeks start empty.</p>
       }
-    </div>
-    @if (hasPlan()) {
-      <p class="hint">Weeks that stay within a new length keep what was planned for them; new weeks start empty.</p>
-    }
-  </section>
-
-  @if (plan.hasValue()) {
-    <section>
-      <h2>Weeks</h2>
-      <app-training-plan-weeks-editor [plan]="plan.value()" (saved)="plan.set($event)" />
     </section>
+
+    @if (plan.hasValue()) {
+      <section class="card flush">
+        <div class="card-header">
+          <div class="titles">
+            <h2 class="card-title">Weeks</h2>
+            <p class="card-sub">Weekly distance, Long Run, Running Days and Recovery Weeks.</p>
+          </div>
+        </div>
+        <app-training-plan-weeks-editor [plan]="plan.value()" (saved)="plan.set($event)" />
+      </section>
+    }
+  } @else if (goalRaces.error()) {
+    <p class="error" role="alert">The Goal Race could not be loaded.</p>
+  } @else if (goalRaces.hasValue()) {
+    <p class="error" role="alert">There is no such Goal Race.</p>
   }
-} @else if (goalRaces.error()) {
-  <p class="error" role="alert">The Goal Race could not be loaded.</p>
-} @else if (goalRaces.hasValue()) {
-  <p class="error" role="alert">There is no such Goal Race.</p>
-}
+</div>

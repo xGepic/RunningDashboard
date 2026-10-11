@@ -1,95 +1,155 @@
-<h1>Overview</h1>
+<div class="page">
+  <header class="page-header">
+    <div class="titles">
+      <span class="eyebrow">Overview</span>
+      <h1>All-time performance</h1>
+      <p class="subtitle">Every Run synced from Strava.</p>
+    </div>
+  </header>
 
-@if (overview.error()) {
-  <p class="error" role="alert">The overview could not be loaded.</p>
-} @else if (overview.value(); as overview) {
-  @if (overview.totals.runs === 0) {
-    <p class="empty">No Runs yet. Connect Strava and sync to import them.</p>
-  } @else {
-    <section class="tiles" aria-label="All-time totals">
-      <div class="tile"><span class="label">Runs</span><span class="value">{{ overview.totals.runs | number }}</span></div>
-      <div class="tile"><span class="label">Distance</span><span class="value">{{ formatTotalDistance(overview.totals.distance) }}</span></div>
-      <div class="tile"><span class="label">Moving Time</span><span class="value">{{ formatHours(overview.totals.movingTime) }}</span></div>
-      <div class="tile"><span class="label">Elevation gain</span><span class="value">{{ overview.totals.elevationGain | number: '1.0-0' }} m</span></div>
-    </section>
+  @if (overview.error()) {
+    <p class="error" role="alert">The overview could not be loaded.</p>
+  } @else if (overview.value(); as overview) {
+    @if (overview.totals.runs === 0) {
+      <div class="card empty-card"><p class="empty">No Runs yet. Connect Strava and sync to import them.</p></div>
+    } @else {
+      <section class="kpis" aria-label="All-time totals">
+        @for (kpi of kpis(); track kpi.label) {
+          <div class="card kpi">
+            <div class="kpi-label">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path [attr.d]="kpi.icon" /></svg>
+              <span>{{ kpi.label }}</span>
+            </div>
+            <div class="kpi-main">
+              <div class="kpi-value"><span class="value">{{ kpi.value }}</span><span class="unit">{{ kpi.unit }}</span></div>
+              <div class="mini" aria-hidden="true">
+                @for (year of kpi.years; track year.year) {
+                  <span [class.current]="year.current" [style.height.%]="year.height" [title]="year.year + ': ' + year.value"></span>
+                }
+              </div>
+            </div>
+            <div class="kpi-years">
+              @for (year of kpi.years; track year.year) {
+                <div><span class="year">{{ year.year }}</span><span class="v">{{ year.value }}</span></div>
+              }
+            </div>
+          </div>
+        }
+      </section>
 
-    <section>
-      <h2>Per year</h2>
-      <table class="data-table years">
-        <thead>
-          <tr>
-            <th>Year</th>
-            <th class="number">Runs</th>
-            <th class="number">Distance</th>
-            <th class="number">Moving Time</th>
-            <th class="number">Elevation gain</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (year of overview.years; track year.year) {
-            <tr>
-              <td>{{ year.year }}</td>
-              <td class="number">{{ year.runs }}</td>
-              <td class="number">{{ formatTotalDistance(year.distance) }}</td>
-              <td class="number">{{ formatHours(year.movingTime) }}</td>
-              <td class="number">{{ year.elevationGain | number: '1.0-0' }} m</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </section>
-
-    <section>
-      <div class="section-header">
-        <h2>Distance per Training Week</h2>
-        <label>
-          Year
-          <select #year (change)="selectedYear.set(+year.value)">
-            @for (y of weekYears(); track y) {
-              <option [value]="y" [selected]="y === selectedYear()">{{ y }}</option>
-            }
-          </select>
-        </label>
-      </div>
-      @if (weeklyDistance(); as options) {
-        <div class="chart" echarts [options]="options" [autoResize]="true" role="img"
-             [attr.aria-label]="'Column chart of distance per Training Week in ' + selectedYear() + '; the table below has the same numbers'"></div>
-      }
-      <details>
-        <summary>Show as table</summary>
-        <table class="data-table">
-          <thead><tr><th>Week starting</th><th class="number">Distance</th></tr></thead>
-          <tbody>
-            @for (week of selectedWeeks(); track week.start) {
-              <tr><td>{{ weekLabel(week.start) }}</td><td class="number">{{ formatDistance(week.distance) }}</td></tr>
-            }
-          </tbody>
-        </table>
-      </details>
-    </section>
-
-    <section>
-      <h2>Average Pace per month</h2>
-      <p class="hint">Total Moving Time ÷ total distance of the month, so longer Runs count for more. Lower is faster.</p>
-      @if (monthlyPace(); as options) {
-        <div class="chart" echarts [options]="options" [autoResize]="true" role="img"
-             aria-label="Line chart of average Pace per month; the table below has the same numbers"></div>
-      }
-      <details>
-        <summary>Show as table</summary>
-        <table class="data-table">
-          <thead><tr><th>Month</th><th class="number">Distance</th><th class="number">Pace</th></tr></thead>
-          <tbody>
-            @for (month of overview.months; track month.year * 100 + month.month) {
+      <section class="card flush">
+        <div class="card-header">
+          <h2 class="card-title">By year</h2>
+          <span class="card-sub">Bar shows distance</span>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table years">
+            <thead>
               <tr>
-                <td>{{ monthLabel(month) }}</td>
-                <td class="number">{{ formatDistance(month.distance) }}</td>
-                <td class="number">{{ formatPace(month.pace) }}</td>
+                <th>Year</th>
+                <th class="bar-col"><span class="visually-hidden">Share of distance</span></th>
+                <th class="number">Runs</th>
+                <th class="number">Distance</th>
+                <th class="number">Moving Time</th>
+                <th class="number">Elevation gain</th>
               </tr>
+            </thead>
+            <tbody>
+              @for (year of yearRows(); track year.year) {
+                <tr>
+                  <td class="year">
+                    {{ year.year }}
+                    @if (year.year === thisYear) {
+                      <span class="ytd">Year to date</span>
+                    }
+                  </td>
+                  <td class="bar-col">
+                    <div class="track" [class.past]="year.year !== thisYear"><span [style.width.%]="year.share"></span></div>
+                  </td>
+                  <td class="number">{{ year.runs | number }}</td>
+                  <td class="number">{{ formatWhole(year.distance / 1000) }} <span class="unit">km</span></td>
+                  <td class="number">{{ formatWhole(year.movingTime / 3600) }} <span class="unit">h</span></td>
+                  <td class="number">{{ year.elevationGain | number: '1.0-0' }} <span class="unit">m</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <div class="titles">
+            <h2 class="card-title">Distance per Training Week</h2>
+            <p class="card-sub">Monday – Sunday weeks</p>
+          </div>
+          <div class="header-aside">
+            @if (weekStats(); as stats) {
+              <div class="stats">
+                <div class="stat">
+                  <span class="label">Peak week</span>
+                  <span class="value">{{ km(stats.peak.distance) }} km <span class="unit">· {{ stats.peakLabel }}</span></span>
+                </div>
+                <div class="stat"><span class="label">Avg / week</span><span class="value">{{ km(stats.average) }} km</span></div>
+              </div>
             }
-          </tbody>
-        </table>
-      </details>
-    </section>
+            <div class="segmented mono" role="group" aria-label="Year">
+              @for (y of weekYears(); track y) {
+                <button type="button" [attr.aria-pressed]="y === selectedYear()" (click)="selectedYear.set(y)">{{ y }}</button>
+              }
+            </div>
+          </div>
+        </div>
+        @if (weeklyDistance(); as options) {
+          <div class="chart" echarts [options]="options" [autoResize]="true" role="img"
+               [attr.aria-label]="'Column chart of distance per Training Week in ' + selectedYear() + '; the table below has the same numbers'"></div>
+        }
+        <details class="as-table">
+          <summary>Show as table</summary>
+          <div class="table-box">
+            <table class="data-table">
+              <thead><tr><th>Week starting</th><th class="number">Distance</th></tr></thead>
+              <tbody>
+                @for (week of selectedWeeks(); track week.start) {
+                  <tr><td class="muted">{{ weekLabel(week.start) }}</td><td class="number">{{ formatDistance(week.distance) }}</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </details>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <div class="titles">
+            <h2 class="card-title">Average Pace per month</h2>
+            <p class="card-sub">Total Moving Time ÷ total distance of the month, so longer Runs count for more.</p>
+          </div>
+          <span class="direction"><span class="mono">↑</span> Faster</span>
+        </div>
+        @if (monthlyPace(); as options) {
+          <div class="chart" echarts [options]="options" [autoResize]="true" role="img"
+               aria-label="Line chart of average Pace per month, faster towards the top; the table below has the same numbers"></div>
+        }
+        <details class="as-table">
+          <summary>Show as table</summary>
+          <div class="table-box">
+            <table class="data-table">
+              <thead><tr><th>Month</th><th class="number">Distance</th><th class="number">Pace</th></tr></thead>
+              <tbody>
+                @for (month of overview.months; track month.year * 100 + month.month) {
+                  <tr>
+                    <td class="muted">{{ monthLabel(month) }}</td>
+                    <td class="number">{{ formatDistance(month.distance) }}</td>
+                    <td class="number">{{ formatPace(month.pace) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </details>
+      </section>
+    }
   }
-}
+</div>
