@@ -202,7 +202,7 @@ public static class TrainingCalendar
     /// <summary>To the 10 m of km with two decimals, rounding halves up as the frontend shows them.</summary>
     private static double TensOfMetres(double metres) => Math.Round(metres / 10, MidpointRounding.AwayFromZero);
 
-    private static WeekActual ActualOf(IReadOnlyCollection<RunSummary> runs)
+    private static WeekActual ActualOf(List<RunSummary> runs)
     {
         var efforts = runs.Where(r => r.RelativeEffort is not null).Select(r => r.RelativeEffort!.Value).ToList();
         return new WeekActual(

@@ -102,7 +102,7 @@ public static class RunEndpoints
         IReadOnlyList<SplitResponse> Splits)
     {
         /// <param name="personalBestDistances">Distances at which the Run's Best Effort was a Personal Best at the time.</param>
-        public static RunDetailResponse From(Run run, string? shoeName, IReadOnlySet<double> personalBestDistances) => new(
+        public static RunDetailResponse From(Run run, string? shoeName, HashSet<double> personalBestDistances) => new(
             run.Id,
             run.Name,
             run.SportType,

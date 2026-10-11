@@ -107,7 +107,7 @@ public static class TrainingPlanEndpoints
     private sealed record WeekRequest(int WeeksToRace, double? PlannedDistance, double? PlannedLongRun, string[]? RunningDays, bool RecoveryWeek)
     {
         /// <summary>What is wrong with this week, by field; <paramref name="earlier"/> are the weeks before it in the request.</summary>
-        public IEnumerable<(string Field, string Error)> Errors(TrainingPlan plan, IReadOnlySet<int> earlier)
+        public IEnumerable<(string Field, string Error)> Errors(TrainingPlan plan, HashSet<int> earlier)
         {
             if (WeeksToRace > 0 || WeeksToRace <= -plan.Length)
                 yield return ("weeksToRace", $"A {plan.Length}-week plan has weeks {1 - plan.Length} to 0.");

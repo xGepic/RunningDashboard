@@ -45,5 +45,3 @@ app.MapTrainingPlanEndpoints();
 app.MapTrainingEndpoints();
 
 app.Run();
-
-public partial class Program;

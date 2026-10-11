@@ -15,6 +15,7 @@ public sealed class TrainingPlanVsActualTests : IAsyncLifetime
     private static readonly GoalRaceRequest SecondMarathon = new("Second marathon", new DateOnly(2027, 5, 23), Marathon, 5 * 3600, 10);
 
     private static readonly string[] TuesdayThursdaySunday = ["tuesday", "thursday", "sunday"];
+    private static readonly string[] BuildPeakPeakTaper = ["build", "peak", "peak", "taper"];
 
     private readonly TestApp _app = new();
 
@@ -133,7 +134,7 @@ public sealed class TrainingPlanVsActualTests : IAsyncLifetime
     {
         var browser = await _app.ConnectWithActivitiesAsync(runs);
         var race = await CreateGoalRaceAsync(browser, SecondMarathon);
-        (await browser.PutAsJsonAsync($"/api/goal-races/{race.Id}/training-plan", new { length = 16, phases = new[] { "build", "peak", "peak", "taper" } }))
+        (await browser.PutAsJsonAsync($"/api/goal-races/{race.Id}/training-plan", new { length = 16, phases = BuildPeakPeakTaper }))
             .EnsureSuccessStatusCode();
         (await browser.PutAsJsonAsync($"/api/goal-races/{race.Id}/training-plan/weeks", new { weeks }))
             .EnsureSuccessStatusCode();
