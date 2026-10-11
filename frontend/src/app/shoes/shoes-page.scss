@@ -70,6 +70,29 @@
   font-size: 11.5px;
 }
 
+.max {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 22px 22px;
+
+  .track.near > span {
+    background: var(--amber);
+  }
+
+  .track.over > span {
+    background: var(--error);
+  }
+
+  .note.near {
+    color: var(--amber);
+  }
+
+  .note.over {
+    color: var(--error);
+  }
+}
+
 .foot {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

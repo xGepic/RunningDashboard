@@ -20,7 +20,7 @@ A local web app (Angular frontend, .NET backend) that runs on the Athlete's PC. 
 - **Overview:** all-time and per-year totals, weekly distance across the full history, and monthly average Pace
 - **Records:** how each Personal Best developed over time, as a step chart for each standard distance
 - **Training:** the current Training Block, with planned vs. actual for each Training Week, Long Run Pace against the Pace needed for the Target Time, and a comparison with a previous Training Block lined up by Weeks to Race. Outside a Training Block, it shows a countdown to the next one and recent weekly volume.
-- **Shoes:** each Shoe with its total distance from Strava, with retired Shoes greyed out
+- **Shoes:** each Shoe with its total distance from Strava and how far it is from the 700 km Maximum Distance, with retired Shoes greyed out
 - **Runs:** a searchable, sortable list of Runs with a detail view
 
 The Athlete enters Goal Races and Training Plans (Phases, Weekly Targets, Running Days, Recovery Weeks) in forms in the UI. A small sync status indicator shows import progress, the time of the last sync, and any problem with the Strava connection.
@@ -130,6 +130,7 @@ The Athlete enters Goal Races and Training Plans (Phases, Weekly Targets, Runnin
 78. As the Athlete, I want a list of my Shoes with name and total distance as Strava reports it, so that I can track wear.
 79. As the Athlete, I want retired Shoes shown greyed out, so that my current Shoes stand out.
 80. As the Athlete, I want to see the number of Runs and the date of the last Run for each Shoe, so that I know which pairs I actually use.
+80a. As the Athlete, I want each active Shoe to show how far it is from the Maximum Distance of 700 km, turning amber in the last 10 % and red once past it, so that I know when to replace it.
 
 ### Runs
 
@@ -251,7 +252,7 @@ The modules are listed from the outside in. Each should keep a small interface a
 - A fitness/fatigue model (CTL/ATL/TSB) and predicted race times (for example the Riegel formula)
 - Daily planned workouts, matching Runs to planned workouts, and generating plans from Phase rules
 - History of changes to a Training Plan
-- Retirement thresholds or wear warnings for Shoes
+- A Maximum Distance per Shoe or one the Athlete can change (it is fixed at 700 km), and retiring Shoes from the dashboard
 - Handling races differently from other Runs, and tune-up races as Goal Races
 - More than one Athlete, and showing data to anyone other than the Athlete
 - Activities other than Runs

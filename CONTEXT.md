@@ -33,6 +33,10 @@ _Avoid_: Speed (except when talking about Strava's raw data)
 A pair of running shoes registered on Strava. Each Run is logged with at most one Shoe.
 _Avoid_: Gear (when only shoes are meant), sneaker
 
+**Maximum Distance**:
+The distance after which a Shoe is due to be retired: 700 km, the same for every Shoe. It is fixed in the dashboard; Strava does not know it.
+_Avoid_: Lifespan, mileage limit, retirement threshold
+
 ### Records
 
 **Best Effort**:

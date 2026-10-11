@@ -10,6 +10,12 @@ const shoeColors = ['var(--accent)', 'var(--teal)', 'var(--amber)', 'var(--met)'
 
 const wholeNumber = new Intl.NumberFormat('en', { maximumFractionDigits: 0 });
 
+/** The Maximum Distance, in metres: the same for every Shoe. */
+const maxDistance = 700_000;
+
+/** From this share of its Maximum Distance on, a Shoe is close to it. */
+const nearMaxShare = 0.9;
+
 @Component({
   selector: 'app-shoes-page',
   imports: [DatePipe],
@@ -32,6 +38,7 @@ export class ShoesPage {
       average: shoe.runs ? (shoe.distance / shoe.runs / 1000).toFixed(1) : '–',
       latest: shoe === latest,
       color: shoeColors[i % shoeColors.length],
+      wear: shoe.retired ? null : wear(shoe),
     }));
   });
 
@@ -56,4 +63,16 @@ export class ShoesPage {
   constructor() {
     reloadOnSync(() => this.shoes.reload());
   }
+}
+
+/** How far a Shoe is towards the Maximum Distance. */
+function wear(shoe: Shoe) {
+  const share = shoe.distance / maxDistance;
+  const left = maxDistance - shoe.distance;
+  return {
+    maxKm: maxDistance / 1000,
+    percent: Math.min(100, share * 100),
+    status: left < 0 ? 'over' : share >= nearMaxShare ? 'near' : 'ok',
+    note: left < 0 ? `${wholeNumber.format(-left / 1000)} km over` : `${wholeNumber.format(left / 1000)} km left`,
+  };
 }
