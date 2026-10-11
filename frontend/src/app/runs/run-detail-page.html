@@ -26,7 +26,7 @@
     @if (run.route; as route) {
       <section class="card flush route">
         <div class="card-header"><h2 class="card-title">Route</h2></div>
-        <app-run-map [route]="route" />
+        <app-run-map [route]="route" [stretches]="replayStretches()" />
       </section>
     }
 

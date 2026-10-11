@@ -1,0 +1,26 @@
+<div #map class="map" role="img" aria-label="Map of the route, from the green start to the red finish"></div>
+
+@if (replay().duration > 0) {
+  <div class="replay">
+    <button type="button" class="btn play" (click)="toggle()" [attr.aria-label]="playing() ? 'Pause the replay' : 'Replay the Run'">
+      {{ playing() ? '❚❚' : '▶' }}
+    </button>
+    <input type="range" min="0" [max]="replay().duration" step="1" [value]="time()"
+           (input)="seek($any($event.target).valueAsNumber)" aria-label="Moment in the Run" />
+    <select (change)="speed.set(+$any($event.target).value)" aria-label="Replay speed">
+      @for (s of speeds; track s) {
+        <option [value]="s" [selected]="s === speed()">{{ s }}×</option>
+      }
+    </select>
+    @if (frame(); as frame) {
+      <dl class="readout">
+        @if (stretches().length > 1) {
+          <div><dt>km</dt><dd>{{ frame.stretch }}</dd></div>
+        }
+        <div><dt>Pace</dt><dd>{{ formatPace(frame.pace) }}</dd></div>
+        <div><dt>Time</dt><dd>{{ formatDuration(frame.time) }}</dd></div>
+        <div><dt>Distance</dt><dd>{{ formatDistance(frame.distance) }}</dd></div>
+      </dl>
+    }
+  </div>
+}

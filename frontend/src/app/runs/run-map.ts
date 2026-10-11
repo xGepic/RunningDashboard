@@ -1,7 +1,21 @@
 import { DOCUMENT } from '@angular/common';
-import { Component, DestroyRef, ElementRef, afterNextRender, effect, inject, input, signal, viewChild } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  ElementRef,
+  afterNextRender,
+  computed,
+  effect,
+  inject,
+  input,
+  linkedSignal,
+  signal,
+  viewChild,
+} from '@angular/core';
 import * as L from 'leaflet';
+import { formatDistance, formatDuration, formatPace } from '../shared/format';
 import { decodePolyline } from '../shared/polyline';
+import { Replay, ReplayStretch } from './replay';
 
 const osm = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
@@ -27,20 +41,37 @@ const mapViews: Record<string, () => L.TileLayer> = {
 /** Where the browser remembers the last map view picked; a convenience, so failing to read or write it is fine. */
 const viewKey = 'runMap.view';
 
-/** A Run's route on a map, with its start (green) and finish (red). */
+/** How many times faster than real time the replay can run. */
+const speeds = [30, 60, 120, 300, 600];
+
+/** A Run's route on a map, with its start (green) and finish (red), and a replay of the Run along it. */
 @Component({
   selector: 'app-run-map',
-  template: '<div #map class="map" role="img" aria-label="Map of the route, from the green start to the red finish"></div>',
-  styles: `
-    .map {
-      height: 380px;
-      border-radius: inherit;
-    }
-  `,
+  templateUrl: './run-map.html',
+  styleUrl: './run-map.scss',
 })
 export class RunMap {
   /** Google's encoded polyline, as the API gives it. */
   readonly route = input.required<string>();
+
+  /** The Run's Splits, or the whole Run as one stretch without them: the replay keeps each one's pace. */
+  readonly stretches = input.required<ReplayStretch[]>();
+
+  protected readonly speeds = speeds;
+  protected readonly formatDistance = formatDistance;
+  protected readonly formatDuration = formatDuration;
+  protected readonly formatPace = formatPace;
+
+  private readonly points = computed(() => decodePolyline(this.route()));
+  protected readonly replay = computed(() => new Replay(this.points(), this.stretches()));
+
+  /** Seconds of Moving Time into the replay; back to the start for another route. */
+  protected readonly time = linkedSignal({ source: this.route, computation: () => 0 });
+  protected readonly playing = linkedSignal({ source: this.route, computation: () => false });
+  protected readonly speed = signal(120);
+  protected readonly frame = computed(() => this.replay().at(this.time()));
+  /** The dot and its trail show once the replay has been started or moved. */
+  private readonly replaying = computed(() => this.playing() || this.time() > 0);
 
   private readonly element = viewChild.required<ElementRef<HTMLElement>>('map');
   private readonly map = signal<L.Map | null>(null);
@@ -60,19 +91,72 @@ export class RunMap {
     });
 
     let drawn: L.LayerGroup | null = null;
+    const line = signal<L.Polyline | null>(null);
     effect(() => {
       const map = this.map();
-      const points = decodePolyline(this.route());
+      const points = this.points();
       if (!map || points.length === 0) return;
       drawn?.remove();
-      const line = L.polyline(points, { color: token('--accent'), weight: 4, opacity: 0.95 });
+      const route = L.polyline(points, { color: token('--accent'), weight: 4, opacity: 0.95 });
       const end = (at: L.LatLngExpression, color: string) =>
         L.circleMarker(at, { radius: 6, color: token('--background'), weight: 2, fillColor: color, fillOpacity: 1 });
-      drawn = L.layerGroup([line, end(points[0], token('--met')), end(points[points.length - 1], token('--error'))]).addTo(map);
-      map.fitBounds(line.getBounds(), { padding: [24, 24] });
+      drawn = L.layerGroup([route, end(points[0], token('--met')), end(points[points.length - 1], token('--error'))]).addTo(map);
+      map.fitBounds(route.getBounds(), { padding: [24, 24] });
+      line.set(route);
+    });
+
+    // The replay: the route fades, and a bright trail follows the dot.
+    let trail: L.Polyline | null = null;
+    let dot: L.CircleMarker | null = null;
+    effect(() => {
+      const map = this.map();
+      const route = line();
+      if (!map || !route) return;
+      const replaying = this.replaying();
+      route.setStyle({ opacity: replaying ? 0.35 : 0.95 });
+      if (!replaying) {
+        trail?.remove();
+        dot?.remove();
+        [trail, dot] = [null, null];
+        return;
+      }
+      const frame = this.frame();
+      trail ??= L.polyline([], { color: token('--accent-light'), weight: 5, opacity: 1 }).addTo(map);
+      dot ??= L.circleMarker(frame.position, { radius: 8, color: token('--text'), weight: 3, fillColor: token('--accent'), fillOpacity: 1 }).addTo(map);
+      trail.setLatLngs(frame.trail);
+      dot.setLatLng(frame.position).bringToFront();
+    });
+
+    // While playing, move on every animation frame by the time passed, times the speed; stop at the finish.
+    effect((onCleanup) => {
+      if (!this.playing()) return;
+      let last = performance.now();
+      const tick = (now: number) => {
+        const next = this.time() + ((now - last) / 1000) * this.speed();
+        last = now;
+        if (next >= this.replay().duration) {
+          this.time.set(this.replay().duration);
+          this.playing.set(false);
+          return;
+        }
+        this.time.set(next);
+        request = requestAnimationFrame(tick);
+      };
+      let request = requestAnimationFrame(tick);
+      onCleanup(() => cancelAnimationFrame(request));
     });
 
     inject(DestroyRef).onDestroy(() => this.map()?.remove());
+  }
+
+  /** Plays or pauses; at the finish, plays again from the start. */
+  protected toggle(): void {
+    if (!this.playing() && this.time() >= this.replay().duration) this.time.set(0);
+    this.playing.update((playing) => !playing);
+  }
+
+  protected seek(seconds: number): void {
+    this.time.set(seconds);
   }
 }
 

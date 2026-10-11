@@ -9,6 +9,7 @@ import { categoryAxis, valueAxis } from '../shared/charts';
 import { formatDistance, formatDuration, formatPace } from '../shared/format';
 import { RunDetail, Split } from './run';
 import { RunMap } from './run-map';
+import { ReplayStretch } from './replay';
 
 @Component({
   selector: 'app-run-detail-page',
@@ -26,6 +27,13 @@ export class RunDetailPage {
   protected readonly formatDistance = formatDistance;
   protected readonly formatDuration = formatDuration;
   protected readonly formatPace = formatPace;
+
+  /** What the map's replay moves at: each Split's pace, or the Run's average while it has no Splits. */
+  protected readonly replayStretches = computed<ReplayStretch[]>(() => {
+    if (!this.run.hasValue()) return [];
+    const run = this.run.value();
+    return run.splits.length ? run.splits : [run];
+  });
 
   protected readonly splitPace = computed(() => {
     if (!this.run.hasValue()) return null;
