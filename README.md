@@ -1,6 +1,6 @@
 # Running Dashboard
 
-A local dashboard for one Athlete's Strava running history and marathon training. See [CONTEXT.md](CONTEXT.md) for the domain language, [docs/specs](docs/specs) for the spec and tickets, and [docs/adr](docs/adr) for decisions.
+A local dashboard for one Athlete's Strava running history and marathon training. See [CONTEXT.md](CONTEXT.md) for the domain language, [docs/specs](docs/specs) for the spec and tickets, [docs/adr](docs/adr) for decisions, and [docs/database-schema.png](docs/database-schema.png) for the database tables.
 
 ## One-time setup
 
@@ -29,6 +29,8 @@ npm start --prefix frontend
 ```
 
 Open http://localhost:4200 and click **Connect Strava**.
+
+Everything runs locally, except that the Run map loads its tiles from OpenStreetMap, Esri and OpenTopoMap, so it needs an internet connection. None of them needs an account or API key.
 
 ## Test
 

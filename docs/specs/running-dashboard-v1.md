@@ -17,11 +17,11 @@ None of these are available in one place, and the Athlete's own Training Plan (P
 
 A local web app (Angular frontend, .NET backend) that runs on the Athlete's PC. It connects once to the Athlete's Strava account, imports every Run from the full history, and keeps them up to date. It has five pages:
 
-- **Overview:** all-time and per-year totals, weekly distance across the full history, and monthly average Pace
+- **Overview:** all-time and per-year totals, weekly distance and monthly average Pace, each for a chosen year
+- **Training:** the current Training Block, with planned vs. actual for each Training Week, Long Run Pace against the Pace needed for the Target Time, and a comparison with the previous Training Block lined up by Weeks to Race. Outside a Training Block, it shows a countdown to the next one and recent weekly volume. The Goal Races are managed here too.
+- **Runs:** a searchable, sortable list of Runs with a detail view (summary, Pace per km, route map with a replay, Best Efforts and Splits)
 - **Records:** how each Personal Best developed over time, as a step chart for each standard distance
-- **Training:** the current Training Block, with planned vs. actual for each Training Week, Long Run Pace against the Pace needed for the Target Time, and a comparison with a previous Training Block lined up by Weeks to Race. Outside a Training Block, it shows a countdown to the next one and recent weekly volume.
 - **Shoes:** each Shoe with its total distance from Strava and how far it is from the 700 km Maximum Distance, with retired Shoes greyed out
-- **Runs:** a searchable, sortable list of Runs with a detail view
 
 The Athlete enters Goal Races and Training Plans (Phases, Weekly Targets, Running Days, Recovery Weeks) in forms in the UI. A small sync status indicator shows import progress, the time of the last sync, and any problem with the Strava connection.
 
@@ -58,8 +58,8 @@ The Athlete enters Goal Races and Training Plans (Phases, Weekly Targets, Runnin
 
 22. As the Athlete, I want all-time totals (number of Runs, distance, Moving Time, elevation gain), so that I can see the size of my whole running history.
 23. As the Athlete, I want the same totals for each calendar year, so that I can compare my years of running.
-24. As the Athlete, I want a chart of distance per Training Week across my full history, so that I can see how my volume has built up, fallen off and peaked over the 3 years.
-25. As the Athlete, I want a chart of average Pace per month, calculated as total Moving Time divided by total distance, so that I can see how my Pace has developed, with longer Runs counting for more.
+24. As the Athlete, I want a chart of distance per Training Week for a year I pick (the newest by default), so that I can see how my volume has built up, fallen off and peaked over the 3 years.
+25. As the Athlete, I want a chart of average Pace per month for a year I pick (the newest by default), calculated as total Moving Time divided by total distance, so that I can see how my Pace has developed, with longer Runs counting for more.
 26. As the Athlete, I want Pace shown as min:ss/km and distances in kilometres, so that the numbers match how I think about running.
 27. As the Athlete, I want Training Weeks to run from Monday to Sunday, and each Run to belong to the week of its local start time, so that a late Sunday Run counts toward that Sunday's week even when I'm travelling.
 
@@ -109,7 +109,7 @@ The Athlete enters Goal Races and Training Plans (Phases, Weekly Targets, Runnin
 
 60. As the Athlete, I want the Training page to show the current Training Block whenever today falls inside one, so that I see my progress without looking for it.
 61. As the Athlete, I want each Training Week of the block labelled with its Weeks to Race (−15 … 0) and its calendar dates, so that I know where I am in the block.
-62. As the Athlete, I want Phases and Recovery Weeks shown visually, for example as coloured bands, so that I can see the structure of the plan.
+62. As the Athlete, I want Phases shown as coloured bands (Build blue, Peak red, Taper green, the same in the Training Plan editor) and Recovery Weeks marked, so that I can see the structure of the plan.
 63. As the Athlete, I want the actual distance for each week next to the planned distance, so that I can see whether I hit my Weekly Target.
 64. As the Athlete, I want the actual Long Run distance for each week next to the planned Long Run, so that I can follow my Long Run progression.
 65. As the Athlete, I want each week's Long Run Pace compared with the Pace needed for my Target Time (7:06/km for 5:00:00 over a marathon), so that I can judge whether my goal is realistic.
@@ -117,12 +117,13 @@ The Athlete enters Goal Races and Training Plans (Phases, Weekly Targets, Runnin
 67. As the Athlete, I want the weekly Moving Time for each week, so that I can see time on my feet.
 68. As the Athlete, I want a calendar strip for each week showing planned Running Days with a Run, planned Running Days without a Run, and Runs on unplanned days, so that I can see how well I stuck to the plan.
 69. As the Athlete, I want future weeks of the block to show only the plan, so that I can see what's coming.
-70. As the Athlete, I want to compare the current block with a previous Goal Race's block, lined up by Weeks to Race, so that week −5 now sits next to week −5 last time.
-71. As the Athlete, I want the comparison to default to the most recent previous Goal Race, so that the comparison is there without extra clicks.
+70. As the Athlete, I want the current block compared with a previous Goal Race's block, lined up by Weeks to Race, so that week −5 now sits next to week −5 last time.
+71. As the Athlete, I want the comparison to be with the most recent previous Goal Race, so that the comparison is there without extra clicks.
 72. As the Athlete, I want weeks with nothing to compare against (for example weeks −15 and −14 against a 14-week block) shown as empty, so that blocks of different lengths still line up.
-73. As the Athlete, I want to look at any past Training Block in the same view, so that I can review how my first marathon block went.
+73. As the Athlete, I want the previous Goal Race's block shown next to the current one, so that I can review how my first marathon block went.
 74. As the Athlete, I want a countdown to the start of the next Training Block when today is outside a block, so that I know how long until training starts.
-75. As the Athlete, I want my recent weekly volume shown under the countdown, so that I can keep an eye on my base before the block.
+74a. As the Athlete, I want to open the upcoming Training Block and its Training Plan from the countdown, so that I can see the plan before the block starts.
+75. As the Athlete, I want my weekly volume of the last 5 Training Weeks shown under the countdown, so that I can keep an eye on my base before the block.
 76. As the Athlete, I want a clear empty state when there is no upcoming Goal Race, so that the page still makes sense with nothing planned.
 77. As the Athlete, I want a Training Block without a Training Plan to show actual values only, so that past blocks without a plan are still useful.
 
@@ -143,8 +144,10 @@ The Athlete enters Goal Races and Training Plans (Phases, Weekly Targets, Runnin
 86. As the Athlete, I want a detail view for each Run with its summary (distance, Moving Time, elapsed time, Pace, elevation gain, Relative Effort, Shoe), so that I can check one Run in depth.
 87. As the Athlete, I want the detail view to list the Run's Best Efforts and mark any that were a Personal Best at the time, so that I can see which records a Run set.
 88. As the Athlete, I want the detail view to show per-km splits with Pace, so that I can see how I paced the Run.
+88a. As the Athlete, I want a chart of the Pace of each Split, faster towards the top and with the Run's own Pace as a line, so that I can see at a glance how my Pace changed during the Run.
 89. As the Athlete, I want a link from the detail view to the Run on Strava, so that I can jump to the original.
-89a. As the Athlete, I want the detail view to show the Run's route on a map with its start and finish, drawn from the route Strava already gives with each Activity, so that I can see where I ran.
+89a. As the Athlete, I want the detail view to show the Run's route on a map with its start and finish, drawn from the route Strava already gives with each Activity, in a street, satellite or topographic view that needs no API key, so that I can see where I ran.
+89b. As the Athlete, I want to replay the Run along its route, with a dot moving at the Pace of each Split and play, speed and position controls, so that I can relive how I ran it.
 
 ## Implementation Decisions
 
@@ -255,6 +258,8 @@ The modules are listed from the outside in. Each should keep a small interface a
 - A fitness/fatigue model (CTL/ATL/TSB) and predicted race times (for example the Riegel formula)
 - Daily planned workouts, matching Runs to planned workouts, and generating plans from Phase rules
 - A list of all Goal Races with their Race Results, and editing or deleting past Goal Races, in the UI (the API still provides both)
+- Opening a past Training Block on its own, or choosing which block to compare with, in the UI (the API still provides both)
+- A 3D flyover of a Run, and replaying it second by second (that needs the per-second streams)
 - History of changes to a Training Plan
 - A Maximum Distance per Shoe or one the Athlete can change (it is fixed at 700 km), and retiring Shoes from the dashboard
 - Handling races differently from other Runs, and tune-up races as Goal Races
