@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/http';
-import { Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, Injector, afterNextRender, computed, inject, signal, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -21,6 +21,7 @@ const custom = 'custom';
 })
 export class GoalRacesPage {
   private readonly http = inject(HttpClient);
+  private readonly injector = inject(Injector);
 
   protected readonly races = httpResource<GoalRace[]>(() => '/api/goal-races');
   protected readonly presets = distancePresets;
@@ -77,6 +78,9 @@ export class GoalRacesPage {
     };
   });
 
+  /** While a Goal Race is upcoming no other can be added, so the form is there only to edit a race. */
+  protected readonly formShown = computed(() => this.editing() !== null || (this.races.hasValue() && this.next() === null));
+
   /** Where the Training Block of the race being entered would start, as the form stands. */
   protected readonly blockPreview = computed(() => {
     const { date, trainingBlockWeeks } = this.formValue();
@@ -107,7 +111,10 @@ export class GoalRacesPage {
     });
     this.errors.set({});
     this.editing.set(race);
-    this.formCard()?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // The form may only appear once editing starts.
+    afterNextRender(() => this.formCard()?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' }), {
+      injector: this.injector,
+    });
   }
 
   protected cancel(): void {
