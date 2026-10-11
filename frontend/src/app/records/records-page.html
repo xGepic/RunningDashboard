@@ -24,9 +24,6 @@
                 }
               </div>
               <div class="pb-time">{{ formatDuration(item.record.personalBest.elapsedTime) }}</div>
-              <svg class="spark" viewBox="0 0 200 46" preserveAspectRatio="none" aria-hidden="true">
-                <path [attr.d]="item.spark" />
-              </svg>
               <dl class="pb-facts">
                 <div><dt>Pace</dt><dd class="mono">{{ formatPace(item.record.personalBest.timePerKm) }}</dd></div>
                 <div><dt>Set</dt><dd class="mono">{{ item.record.personalBest.date | date: 'd MMM y' }}</dd></div>

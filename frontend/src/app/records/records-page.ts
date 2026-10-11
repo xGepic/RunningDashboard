@@ -42,7 +42,7 @@ export class RecordsPage {
     return featuredNames
       .map((name) => records.find((r) => r.name === name))
       .filter((r): r is RecordDistance => !!r)
-      .map((record) => ({ record, spark: sparkline(record), improvements: record.progression.length - 1 }));
+      .map((record) => ({ record, improvements: record.progression.length - 1 }));
   });
 
   /** Every distance, with the width of its pace bar: the fastest pace fills it, the slowest a third. */
@@ -87,22 +87,6 @@ export class RecordsPage {
   protected displayName(name: string): string {
     return name.replace('-', ' ');
   }
-}
-
-/** A step line of the progression in a 200×46 box, faster towards the top, carried on to today. */
-function sparkline(record: RecordDistance): string {
-  const points = record.progression.map((p) => ({ t: localDate(p.date).getTime(), s: p.elapsedTime }));
-  const start = points[0].t;
-  const end = Math.max(today().getTime(), start + 1);
-  const times = points.map((p) => p.s);
-  let [low, high] = [Math.min(...times), Math.max(...times)];
-  const padding = Math.max((high - low) * 0.12, low * 0.04);
-  [low, high] = [low - padding, high + padding];
-  const x = (t: number) => ((t - start) / (end - start)) * 200;
-  const y = (s: number) => ((s - low) / (high - low)) * 46;
-  let path = `M${x(points[0].t).toFixed(1)} ${y(points[0].s).toFixed(1)}`;
-  for (const point of points.slice(1)) path += ` H${x(point.t).toFixed(1)} V${y(point.s).toFixed(1)}`;
-  return `${path} H200`;
 }
 
 interface ChartPoint {

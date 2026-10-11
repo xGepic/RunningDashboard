@@ -39,19 +39,6 @@
   line-height: 1;
 }
 
-.spark {
-  width: 100%;
-  height: 46px;
-  overflow: visible;
-
-  path {
-    fill: none;
-    stroke: var(--accent);
-    stroke-width: 1.6;
-    vector-effect: non-scaling-stroke;
-  }
-}
-
 .pb-facts {
   display: flex;
   flex-direction: column;
