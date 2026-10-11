@@ -16,6 +16,9 @@ public sealed class GoalRacesTests : IAsyncLifetime
 
     private static readonly GoalRaceRequest SecondMarathon = new("Second marathon", new DateOnly(2027, 5, 23), Marathon, 5 * 3600, 16);
 
+    /// <summary>Sun 10 Oct 2027, 12 weeks: Mon 19 Jul to Sun 10 Oct 2027.</summary>
+    private static readonly GoalRaceRequest AutumnHalf = new("Autumn half", new DateOnly(2027, 10, 10), 21097, null, 12);
+
     private readonly TestApp _app = new();
     private HttpClient _browser = null!;
 
@@ -92,6 +95,59 @@ public sealed class GoalRacesTests : IAsyncLifetime
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Equal(16, (await ListAsync()).Single(r => r.Id == second.Id).TrainingBlockWeeks);
+    }
+
+    [Fact]
+    public async Task A_second_upcoming_goal_race_is_rejected()
+    {
+        await CreateAsync(SecondMarathon);
+
+        // Sun 10 Oct 2027, 12 weeks: from Mon 19 Jul, well clear of the second marathon's block.
+        var response = await _browser.PostAsJsonAsync("/api/goal-races", AutumnHalf);
+        var problem = await response.Content.ReadFromJsonAsync<ValidationProblem>();
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(
+            "Second marathon on 23 May 2027 is still to come, and only one Goal Race can be upcoming at a time.",
+            Assert.Single(problem!.Errors["date"]));
+        Assert.Single(await ListAsync());
+    }
+
+    [Fact]
+    public async Task Past_goal_races_can_be_added_while_one_is_upcoming()
+    {
+        await CreateAsync(SecondMarathon);
+        await CreateAsync(FirstMarathon);
+
+        Assert.Equal(["Second marathon", "Vienna Marathon"], (await ListAsync()).Select(r => r.Name));
+    }
+
+    [Fact]
+    public async Task The_next_goal_race_can_be_added_once_race_day_of_the_upcoming_one_is_over()
+    {
+        await CreateAsync(SecondMarathon);
+
+        _app.Clock.SetUtcNow(new DateTimeOffset(2027, 5, 23, 18, 0, 0, TimeSpan.Zero));
+        var onRaceDay = await _browser.PostAsJsonAsync("/api/goal-races", AutumnHalf);
+        _app.Clock.SetUtcNow(new DateTimeOffset(2027, 5, 24, 8, 0, 0, TimeSpan.Zero));
+        var dayAfter = await _browser.PostAsJsonAsync("/api/goal-races", AutumnHalf);
+
+        Assert.Equal(HttpStatusCode.BadRequest, onRaceDay.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, dayAfter.StatusCode);
+    }
+
+    [Fact]
+    public async Task Moving_a_past_goal_race_into_the_future_is_rejected_while_another_is_upcoming()
+    {
+        var first = await CreateAsync(FirstMarathon);
+        await CreateAsync(SecondMarathon);
+
+        var response = await _browser.PutAsJsonAsync($"/api/goal-races/{first.Id}", FirstMarathon with { Date = new DateOnly(2027, 10, 10) });
+        var problem = await response.Content.ReadFromJsonAsync<ValidationProblem>();
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(["date"], problem!.Errors.Keys);
+        Assert.Equal(new DateOnly(2026, 9, 27), (await ListAsync()).Single(r => r.Id == first.Id).Date);
     }
 
     [Fact]

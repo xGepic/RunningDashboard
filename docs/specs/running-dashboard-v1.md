@@ -82,6 +82,7 @@ The Athlete enters Goal Races and Training Plans (Phases, Weekly Targets, Runnin
 39. As the Athlete, I want to set the Training Block length directly on a Goal Race without a Training Plan, to any number of weeks, so that past blocks like my 14-week one are stored correctly.
 40. As the Athlete, I want to edit and delete Goal Races, so that I can fix mistakes and handle date changes.
 41. As the Athlete, I want the app to reject a Goal Race whose Training Block would overlap another Goal Race's block, so that "the current Training Block" is never ambiguous.
+41a. As the Athlete, I want the app to reject a second upcoming Goal Race until race day of the upcoming one is over, while still accepting past ones, so that I only ever train for one Goal Race with one active Training Plan.
 42. As the Athlete, I want a list of all my Goal Races with their date, Target Time and Race Result, so that I can see my racing history at a glance.
 43. As the Athlete, I want the Race Result calculated automatically from the longest Run on race day, using the Best Effort over the race distance, so that it comes close to my official finish time without typing it in.
 44. As the Athlete, I want the Race Result to use the Run's elapsed time when the race distance has no Strava Best Effort, so that unusual distances still get a result.
@@ -193,6 +194,7 @@ The modules are listed from the outside in. Each should keep a small interface a
    - Monthly average Pace (sum of Moving Time ÷ sum of distance)
 5. **Planning rules (part of the domain).** Validates Goal Races and Training Plans:
    - Training Blocks must not overlap
+   - Only one Goal Race can be upcoming (race day today or later) at a time; past Goal Races are not limited. As a Goal Race has at most one Training Plan, there is only ever one active Training Plan
    - A plan's length must be 12, 16 or 20, made of 4-week Phases, with the last Phase a Taper
    - Plan weeks cover Weeks to Race −(length−1) to 0
    - The Race Week (Weeks to Race 0) can't be a Recovery Week

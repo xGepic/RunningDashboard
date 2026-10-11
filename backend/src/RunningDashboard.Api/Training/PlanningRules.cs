@@ -1,3 +1,4 @@
+using System.Globalization;
 using RunningDashboard.Api.Persistence;
 
 namespace RunningDashboard.Api.Training;
@@ -14,6 +15,16 @@ public static class PlanningRules
     public static string? OverlapError(TrainingBlock block, IEnumerable<GoalRace> otherRaces) =>
         otherRaces.FirstOrDefault(other => other.TrainingBlock.Overlaps(block)) is { } overlapping
             ? $"The Training Block ({block}) overlaps the one of {overlapping.Name} ({overlapping.TrainingBlock})."
+            : null;
+
+    /// <summary>
+    /// Why a Goal Race on <paramref name="date"/> cannot be added next to <paramref name="otherRaces"/>, if it cannot:
+    /// only one Goal Race is upcoming (race day today or later) at a time, so there is only ever one active Training
+    /// Plan. Past Goal Races are not limited.
+    /// </summary>
+    public static string? UpcomingRaceError(DateOnly date, IEnumerable<GoalRace> otherRaces, DateOnly today) =>
+        date >= today && otherRaces.Where(r => r.Date >= today).MinBy(r => r.Date) is { } upcoming
+            ? $"{upcoming.Name} on {upcoming.Date.ToString("d MMM yyyy", CultureInfo.InvariantCulture)} is still to come, and only one Goal Race can be upcoming at a time."
             : null;
 
     /// <summary>

@@ -148,6 +148,11 @@
       <label class="field">
         Date
         <input type="date" formControlName="date" required [attr.aria-invalid]="!!errors()['date']" />
+        @if (next(); as next) {
+          @if (editing()?.id !== next.race.id && !errors()['date']) {
+            <span class="hint">{{ next.race.name }} is still to come, so any other Goal Race has to be in the past until it's over.</span>
+          }
+        }
         @for (error of errors()['date']; track error) {
           <span class="field-error">{{ error }}</span>
         }

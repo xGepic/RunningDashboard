@@ -15,9 +15,9 @@ public static class GoalRaceEndpoints
             return await ResponsesAsync(races.OrderByDescending(r => r.Date).ToList(), db, cancellationToken);
         });
 
-        app.MapPost("/api/goal-races", async (GoalRaceRequest request, AppDbContext db, CancellationToken cancellationToken) =>
+        app.MapPost("/api/goal-races", async (GoalRaceRequest request, AppDbContext db, TimeProvider clock, CancellationToken cancellationToken) =>
         {
-            if (await RejectAsync(request, null, db, cancellationToken) is { } rejected)
+            if (await RejectAsync(request, null, db, clock, cancellationToken) is { } rejected)
                 return rejected;
 
             var race = request.ToGoalRace();
@@ -26,12 +26,12 @@ public static class GoalRaceEndpoints
             return Results.Created($"/api/goal-races/{race.Id}", (await ResponsesAsync([race], db, cancellationToken)).Single());
         });
 
-        app.MapPut("/api/goal-races/{id:int}", async (int id, GoalRaceRequest request, AppDbContext db, CancellationToken cancellationToken) =>
+        app.MapPut("/api/goal-races/{id:int}", async (int id, GoalRaceRequest request, AppDbContext db, TimeProvider clock, CancellationToken cancellationToken) =>
         {
             var race = await db.GoalRaces.FindAsync([id], cancellationToken);
             if (race is null)
                 return Results.NotFound();
-            if (await RejectAsync(request, race, db, cancellationToken) is { } rejected)
+            if (await RejectAsync(request, race, db, clock, cancellationToken) is { } rejected)
                 return rejected;
 
             request.ApplyTo(race);
@@ -53,10 +53,11 @@ public static class GoalRaceEndpoints
     }
 
     /// <summary>
-    /// Problem details for invalid fields, or for a Training Block overlapping that of another Goal Race; null if the
-    /// race can be saved. An <paramref name="existing"/> race with a Training Plan keeps the plan's length.
+    /// Problem details for invalid fields, for a second upcoming Goal Race, or for a Training Block overlapping that of
+    /// another Goal Race; null if the race can be saved. An <paramref name="existing"/> race with a Training Plan keeps
+    /// the plan's length.
     /// </summary>
-    private static async Task<IResult?> RejectAsync(GoalRaceRequest request, GoalRace? existing, AppDbContext db, CancellationToken cancellationToken)
+    private static async Task<IResult?> RejectAsync(GoalRaceRequest request, GoalRace? existing, AppDbContext db, TimeProvider clock, CancellationToken cancellationToken)
     {
         var errors = request.Validate();
         if (errors.Count > 0)
@@ -65,6 +66,10 @@ public static class GoalRaceEndpoints
         var block = TrainingBlock.Ending(request.Date!.Value, existing?.TrainingPlan?.Length ?? request.TrainingBlockWeeks!.Value);
         var excludedId = existing?.Id;
         var otherRaces = await db.GoalRaces.Where(r => r.Id != excludedId).ToListAsync(cancellationToken);
+        var today = DateOnly.FromDateTime(clock.GetLocalNow().DateTime);
+        if (PlanningRules.UpcomingRaceError(request.Date!.Value, otherRaces, today) is { } upcoming)
+            return Results.ValidationProblem(new Dictionary<string, string[]> { ["date"] = [upcoming] });
+
         return PlanningRules.OverlapError(block, otherRaces) is { } overlap
             ? Results.ValidationProblem(new Dictionary<string, string[]> { ["trainingBlockWeeks"] = [overlap] })
             : null;

@@ -62,7 +62,7 @@ Strava's heart-rate-based score for how hard a Run was. Summing it over a week g
 _Avoid_: Suffer score, load (on its own)
 
 **Goal Race**:
-A race the Athlete is training for, with a name, a date, a distance and an optional Target Time.
+A race the Athlete is training for, with a name, a date, a distance and an optional Target Time. Only one Goal Race is upcoming (race day today or later) at a time; past Goal Races are kept for Race Results and comparisons.
 _Avoid_: Event, target race
 
 **Target Time**:
@@ -88,7 +88,7 @@ _Avoid_: Block week, week number
 ### Planning
 
 **Training Plan**:
-What the Athlete intends to do during a Training Block: its Phases, plus a Weekly Target and Running Days for each Training Week. Plan weeks are tied to Weeks to Race, not to calendar dates. A Training Block may have no Training Plan.
+What the Athlete intends to do during a Training Block: its Phases, plus a Weekly Target and Running Days for each Training Week. Plan weeks are tied to Weeks to Race, not to calendar dates. A Training Block may have no Training Plan. A Goal Race has at most one Training Plan, so the upcoming Goal Race's plan is the only active one.
 _Avoid_: Schedule, program, block (on its own)
 
 **Phase**:
