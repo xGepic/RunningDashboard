@@ -100,7 +100,7 @@ public static class TrainingCalendar
     public static List<(TrainingWeek Week, double Distance)> DistanceByWeek(TrainingWeek first, TrainingWeek last, IEnumerable<RunSummary> runs)
     {
         var byWeek = runs.ToLookup(r => TrainingWeek.Of(r.StartLocal));
-        return TrainingWeek.Range(first, last).Select(w => (w, byWeek[w].Sum(r => r.Distance))).ToList();
+        return [.. TrainingWeek.Range(first, last).Select(w => (w, byWeek[w].Sum(r => r.Distance)))];
     }
 
     /// <summary>
@@ -112,7 +112,7 @@ public static class TrainingCalendar
     {
         var byWeek = runs.ToLookup(r => TrainingWeek.Of(r.StartLocal));
         var currentWeek = TrainingWeek.Of(today);
-        return block.Weeks
+        return [.. block.Weeks
             .Select(week =>
             {
                 var weeksToRace = block.WeeksToRace(week);
@@ -123,8 +123,7 @@ public static class TrainingCalendar
                 var actual = status == WeekStatus.Future ? null : ActualOf(runsOfWeek);
                 var weekPlan = plan is null ? null : PlanOf(plan, weeksToRace, week, status, runsOfWeek, actual, today);
                 return new TrainingBlockWeek(weeksToRace, week, status, actual, weekPlan);
-            })
-            .ToList();
+            })];
     }
 
     /// <summary>
@@ -137,9 +136,7 @@ public static class TrainingCalendar
         var viewedByWeeksToRace = viewed.ToDictionary(w => w.WeeksToRace);
         var comparedByWeeksToRace = compared.ToDictionary(w => w.WeeksToRace);
         var first = viewedByWeeksToRace.Keys.Concat(comparedByWeeksToRace.Keys).Min();
-        return Enumerable.Range(first, 1 - first)
-            .Select(n => new LinedUpWeek(n, viewedByWeeksToRace.GetValueOrDefault(n), comparedByWeeksToRace.GetValueOrDefault(n)))
-            .ToList();
+        return [.. Enumerable.Range(first, 1 - first).Select(n => new LinedUpWeek(n, viewedByWeeksToRace.GetValueOrDefault(n), comparedByWeeksToRace.GetValueOrDefault(n)))];
     }
 
     /// <summary>The Long Run: the longest Run; of equally long ones, the one that took longer.</summary>

@@ -369,7 +369,7 @@ public sealed class TrainingPlanTests : IAsyncLifetime
             return (week.WeeksToRace, week.PlannedDistance, week.PlannedLongRun, string.Join(' ', week.RunningDays), week.RecoveryWeek);
         }
 
-        public List<(int, double?, double?, string, bool)> Rows() => Weeks.Select(w => Row(w.WeeksToRace)).ToList();
+        public List<(int, double?, double?, string, bool)> Rows() => [.. Weeks.Select(w => Row(w.WeeksToRace))];
     }
 
     private sealed record PlannedWeekResponse(int WeeksToRace, double? PlannedDistance, double? PlannedLongRun, List<string> RunningDays, bool RecoveryWeek);

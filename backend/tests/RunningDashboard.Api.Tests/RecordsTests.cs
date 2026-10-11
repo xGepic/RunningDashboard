@@ -103,7 +103,7 @@ public sealed class RecordsTests : IAsyncLifetime
     private async Task<List<(string, bool)>> PersonalBestMarksAsync(TestActivity activity)
     {
         var run = (await _browser.GetFromJsonAsync<RunWithBestEfforts>($"/api/runs/{activity.Id}"))!;
-        return run.BestEfforts.Select(e => (e.Name, e.PersonalBest)).ToList();
+        return [.. run.BestEfforts.Select(e => (e.Name, e.PersonalBest))];
     }
 
     private async Task<List<RecordDistanceResponse>> GetRecordsAsync() =>

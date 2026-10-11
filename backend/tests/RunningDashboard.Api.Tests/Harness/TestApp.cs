@@ -12,23 +12,17 @@ namespace RunningDashboard.Api.Tests.Harness;
 /// <summary>
 /// The real app in an in-memory host with its own SQLite file. Only Strava (HTTP) and the clock are fake.
 /// </summary>
-public sealed class TestApp : WebApplicationFactory<Program>
+/// <param name="databasePath">Reuse another TestApp's database to simulate a backend restart.</param>
+public sealed class TestApp(string? databasePath = null) : WebApplicationFactory<Program>
 {
     public const string ClientId = "12345";
     public const string ClientSecret = "test-client-secret";
     public const string RedirectUri = "http://localhost:4200/api/strava/callback";
     public const string AllScopes = "read,activity:read_all,profile:read_all";
 
-    private readonly bool _ownsDatabase;
+    private readonly bool _ownsDatabase = databasePath is null;
 
-    /// <param name="databasePath">Reuse another TestApp's database to simulate a backend restart.</param>
-    public TestApp(string? databasePath = null)
-    {
-        _ownsDatabase = databasePath is null;
-        DatabasePath = databasePath ?? Path.Combine(Path.GetTempPath(), $"running-dashboard-test-{Guid.NewGuid():N}.db");
-    }
-
-    public string DatabasePath { get; }
+    public string DatabasePath { get; } = databasePath ?? Path.Combine(Path.GetTempPath(), $"running-dashboard-test-{Guid.NewGuid():N}.db");
 
     public FakeStrava Strava { get; } = new();
 

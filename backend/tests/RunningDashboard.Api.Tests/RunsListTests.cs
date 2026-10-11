@@ -118,7 +118,7 @@ public sealed class RunsListTests(RunsListTests.FiveRuns runs) : IClassFixture<R
 
     private sealed record RunPage(List<RunItem> Items, int Page, int PageSize, int TotalCount)
     {
-        public List<string> Names => Items.Select(i => i.Name).ToList();
+        public List<string> Names => [.. Items.Select(i => i.Name)];
     }
 
     private sealed record RunItem(long Id, string Name);

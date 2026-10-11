@@ -48,10 +48,9 @@ public static class PersonalBests
         var distances = run.BestEfforts.Select(e => e.Distance).ToList();
         var efforts = await BestEfforts(db, distances).ToListAsync(cancellationToken);
 
-        return efforts
+        return [.. efforts
             .GroupBy(e => e.Distance)
             .Where(g => Progression(g).Any(e => e.RunId == run.Id))
-            .Select(g => g.Key)
-            .ToHashSet();
+            .Select(g => g.Key)];
     }
 }

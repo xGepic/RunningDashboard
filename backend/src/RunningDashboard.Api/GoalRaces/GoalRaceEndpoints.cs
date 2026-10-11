@@ -12,7 +12,7 @@ public static class GoalRaceEndpoints
         app.MapGet("/api/goal-races", async (AppDbContext db, CancellationToken cancellationToken) =>
         {
             var races = await db.GoalRaces.ToListAsync(cancellationToken);
-            return await ResponsesAsync(races.OrderByDescending(r => r.Date).ToList(), db, cancellationToken);
+            return await ResponsesAsync([.. races.OrderByDescending(r => r.Date)], db, cancellationToken);
         });
 
         app.MapPost("/api/goal-races", async (GoalRaceRequest request, AppDbContext db, TimeProvider clock, CancellationToken cancellationToken) =>
@@ -49,7 +49,7 @@ public static class GoalRaceEndpoints
     private static async Task<List<GoalRaceResponse>> ResponsesAsync(IReadOnlyCollection<GoalRace> races, AppDbContext db, CancellationToken cancellationToken)
     {
         var results = await RaceResults.OfAsync(races, db, cancellationToken);
-        return races.Select(r => GoalRaceResponse.From(r, results.GetValueOrDefault(r.Id))).ToList();
+        return [.. races.Select(r => GoalRaceResponse.From(r, results.GetValueOrDefault(r.Id)))];
     }
 
     /// <summary>

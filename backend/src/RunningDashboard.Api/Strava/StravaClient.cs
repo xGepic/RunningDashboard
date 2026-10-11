@@ -63,7 +63,7 @@ public sealed class StravaClient(
         using var response = await SendApiRequestAsync(url, cancellationToken);
 
         using var json = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(cancellationToken), cancellationToken: cancellationToken);
-        return json.RootElement.EnumerateArray().Select(element =>
+        return [.. json.RootElement.EnumerateArray().Select(element =>
         {
             var activity = element.Deserialize<ActivityResponse>(SnakeCaseJson)!;
             return new StravaActivity(
@@ -80,7 +80,7 @@ public sealed class StravaClient(
                 activity.SufferScore,
                 activity.GearId,
                 element.GetRawText());
-        }).ToList();
+        })];
     }
 
     /// <summary>
@@ -94,11 +94,11 @@ public sealed class StravaClient(
         if (!json.RootElement.TryGetProperty("shoes", out var shoes) || shoes.ValueKind != JsonValueKind.Array)
             return null;
 
-        return shoes.EnumerateArray().Select(element =>
+        return [.. shoes.EnumerateArray().Select(element =>
         {
             var shoe = element.Deserialize<ShoeResponse>(SnakeCaseJson)!;
             return new StravaShoe(shoe.Id, shoe.Name, shoe.Distance, shoe.Retired, element.GetRawText());
-        }).ToList();
+        })];
     }
 
     /// <summary>
@@ -122,8 +122,8 @@ public sealed class StravaClient(
             var detail = JsonSerializer.Deserialize<ActivityDetailResponse>(json, SnakeCaseJson)!;
             return new StravaActivityDetail(
                 detail.Id,
-                (detail.BestEfforts ?? []).Select(e => new StravaBestEffort(e.Name, e.Distance, e.ElapsedTime)).ToList(),
-                (detail.SplitsMetric ?? []).Select(s => new StravaSplit(s.Split, s.Distance, s.MovingTime, s.ElapsedTime, s.ElevationDifference ?? 0)).ToList(),
+                [.. (detail.BestEfforts ?? []).Select(e => new StravaBestEffort(e.Name, e.Distance, e.ElapsedTime))],
+                [.. (detail.SplitsMetric ?? []).Select(s => new StravaSplit(s.Split, s.Distance, s.MovingTime, s.ElapsedTime, s.ElevationDifference ?? 0))],
                 json);
         }
     }

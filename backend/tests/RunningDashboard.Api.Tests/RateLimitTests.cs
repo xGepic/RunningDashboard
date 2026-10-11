@@ -79,7 +79,7 @@ public sealed class RateLimitTests : IAsyncLifetime
     }
 
     private List<RecordedRequest> ListRequests() =>
-        _app.Strava.Requests.Where(r => r.Uri.AbsolutePath == ActivitiesPath).ToList();
+        [.. _app.Strava.Requests.Where(r => r.Uri.AbsolutePath == ActivitiesPath)];
 
     private void StravaHasTwoPagesOfActivities()
     {

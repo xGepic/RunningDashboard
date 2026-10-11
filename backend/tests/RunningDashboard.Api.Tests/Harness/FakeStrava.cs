@@ -19,7 +19,7 @@ public sealed class FakeStrava : HttpMessageHandler
     /// <summary>Queue responses here for the sync's one request for the 20 most recent Activities.</summary>
     public const string RecentActivitiesPath = ActivityListPath + "#recent";
 
-    private readonly Dictionary<(HttpMethod, string), Queue<Func<Task<HttpResponseMessage>>>> _responses = new();
+    private readonly Dictionary<(HttpMethod, string), Queue<Func<Task<HttpResponseMessage>>>> _responses = [];
 
     public List<RecordedRequest> Requests { get; } = [];
 

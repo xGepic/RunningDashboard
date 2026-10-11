@@ -117,15 +117,13 @@ public static class RunEndpoints
             shoeName,
             run.DetailStatus.ToString().ToLowerInvariant(),
             run.Route,
-            run.BestEfforts
+            [.. run.BestEfforts
                 .OrderBy(e => e.Distance)
                 .Select(e => new BestEffortResponse(
-                    e.Name, e.Distance, e.ElapsedTime, Run.PerKilometre(e.ElapsedTime, e.Distance), personalBestDistances.Contains(e.Distance)))
-                .ToList(),
-            run.Splits
+                    e.Name, e.Distance, e.ElapsedTime, Run.PerKilometre(e.ElapsedTime, e.Distance), personalBestDistances.Contains(e.Distance)))],
+            [.. run.Splits
                 .OrderBy(s => s.Index)
-                .Select(s => new SplitResponse(s.Index, s.Distance, s.MovingTime, Run.PaceOf(s.MovingTime, s.Distance), s.ElevationDifference))
-                .ToList());
+                .Select(s => new SplitResponse(s.Index, s.Distance, s.MovingTime, Run.PaceOf(s.MovingTime, s.Distance), s.ElevationDifference))]);
     }
 
     /// <param name="TimePerKm">Elapsed time per kilometre, in seconds. Not Pace, which is Moving Time based.</param>

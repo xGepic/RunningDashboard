@@ -150,10 +150,8 @@ public static class TrainingPlanEndpoints
             return new TrainingPlanResponse(
                 race.Id,
                 plan.Length,
-                plan.PhaseSpans()
-                    .Select(p => new PhaseResponse(ApiNames.Of(p.Type), p.FirstWeeksToRace, p.LastWeeksToRace))
-                    .ToList(),
-                plan.Weeks
+                [.. plan.PhaseSpans().Select(p => new PhaseResponse(ApiNames.Of(p.Type), p.FirstWeeksToRace, p.LastWeeksToRace))],
+                [.. plan.Weeks
                     .OrderBy(w => w.WeeksToRace)
                     .Select(w => (Planned: w, Week: block.WeekAt(w.WeeksToRace)))
                     .Select(w => new WeekResponse(
@@ -163,9 +161,8 @@ public static class TrainingPlanEndpoints
                         ApiNames.Of(plan.PhaseOf(w.Planned.WeeksToRace)),
                         w.Planned.PlannedDistance,
                         w.Planned.PlannedLongRun,
-                        w.Planned.RunningDays.Select(ApiNames.Of).ToList(),
-                        w.Planned.RecoveryWeek))
-                    .ToList());
+                        [.. w.Planned.RunningDays.Select(ApiNames.Of)],
+                        w.Planned.RecoveryWeek))]);
         }
     }
 

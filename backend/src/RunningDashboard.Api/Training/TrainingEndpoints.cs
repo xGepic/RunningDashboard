@@ -46,16 +46,14 @@ public static class TrainingEndpoints
                 ? null
                 : new ComparisonResponse(
                     GoalRaceResponse.From(compared),
-                    TrainingCalendar.LineUp(weeks, await WeeksAsync(compared, today, db, cancellationToken))
-                        .Select(w => LinedUpWeekResponse.From(w, race.TargetPace))
-                        .ToList());
+                    [.. TrainingCalendar.LineUp(weeks, await WeeksAsync(compared, today, db, cancellationToken)).Select(w => LinedUpWeekResponse.From(w, race.TargetPace))]);
             return Results.Ok(new TrainingResponse(
                 "block",
                 new BlockResponse(
                     GoalRaceResponse.From(race),
                     race.TargetPace,
                     PhaseResponse.Of(race.TrainingPlan),
-                    weeks.Select(w => WeekResponse.From(w, race.TargetPace)).ToList(),
+                    [.. weeks.Select(w => WeekResponse.From(w, race.TargetPace))],
                     comparison),
                 null));
         });
@@ -98,9 +96,7 @@ public static class TrainingEndpoints
             GoalRaceResponse.From(next),
             next.TrainingBlock.Start,
             TrainingCalendar.DaysUntilBlock(next, today),
-            TrainingCalendar.DistanceByWeek(firstWeek, TrainingWeek.Of(today), runs)
-                .Select(w => new RecentWeekResponse(w.Week.Start, w.Distance))
-                .ToList());
+            [.. TrainingCalendar.DistanceByWeek(firstWeek, TrainingWeek.Of(today), runs).Select(w => new RecentWeekResponse(w.Week.Start, w.Distance))]);
     }
 
     /// <summary>The Runs that started (local time) from <paramref name="firstDay"/> through <paramref name="lastDay"/>.</summary>
@@ -199,7 +195,7 @@ public static class TrainingEndpoints
                     plan.PlannedLongRun,
                     plan.DistanceMet,
                     plan.LongRunMet,
-                    plan.Days.Select(d => new DayResponse(d.Date, ApiNames.Of(d.State))).ToList())
+                    [.. plan.Days.Select(d => new DayResponse(d.Date, ApiNames.Of(d.State)))])
                 : null);
     }
 
