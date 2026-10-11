@@ -1,18 +1,20 @@
 <h1>Runs</h1>
 
+<nav class="month-nav" aria-label="Month">
+  <button type="button" (click)="shiftMonth(-1)">← {{ previousMonthStart() | date: 'MMM y' }}</button>
+  <h2>{{ monthStart() | date: 'MMMM y' }}</h2>
+  <button type="button" (click)="shiftMonth(1)" [disabled]="isCurrentMonth()">{{ nextMonthStart() | date: 'MMM y' }} →</button>
+</nav>
+
 <form class="filters" role="search" (submit)="$event.preventDefault()">
+  <label>
+    Month
+    <input #monthPicker type="month" [value]="selectedMonth()" (change)="showMonth(monthPicker.value)" />
+  </label>
   <label>
     Name
     <input #searchBox type="search" placeholder="e.g. Lauf" [value]="search() ?? ''"
            (change)="filter({ search: searchBox.value.trim() })" />
-  </label>
-  <label>
-    From
-    <input #fromDate type="date" [value]="from() ?? ''" (change)="filter({ from: fromDate.value })" />
-  </label>
-  <label>
-    To
-    <input #toDate type="date" [value]="to() ?? ''" (change)="filter({ to: toDate.value })" />
   </label>
   <label>
     Type
@@ -31,7 +33,7 @@
 @if (runs.error()) {
   <p class="error" role="alert">
     Runs could not be loaded with these options.
-    <a routerLink="/runs">Show all Runs</a>
+    <a routerLink="/runs">Show this month's Runs</a>
   </p>
 } @else if (runs.value(); as page) {
   @if (page.totalCount === 0) {
@@ -40,9 +42,9 @@
         There are no Runs on page {{ page.page }}.
         <button type="button" class="link" (click)="goToPage(1)">Go to the first page</button>
       } @else if (filtered()) {
-        No Runs match these filters.
+        No Runs in {{ monthStart() | date: 'MMMM y' }} match these filters.
       } @else {
-        No Runs yet. Connect Strava and sync to import them.
+        No Runs in {{ monthStart() | date: 'MMMM y' }}.
       }
     </p>
   } @else if (page.items.length === 0) {
@@ -77,9 +79,13 @@
     </table>
 
     <nav class="pager" aria-label="Pages">
-      <button type="button" (click)="goToPage(page.page - 1)" [disabled]="page.page <= 1">← Previous</button>
-      <span>Page {{ page.page }} of {{ pageCount() }} · {{ page.totalCount }} Runs</span>
-      <button type="button" (click)="goToPage(page.page + 1)" [disabled]="page.page >= pageCount()">Next →</button>
+      @if (pageCount() > 1) {
+        <button type="button" (click)="goToPage(page.page - 1)" [disabled]="page.page <= 1">← Previous</button>
+        <span>Page {{ page.page }} of {{ pageCount() }} · {{ page.totalCount }} Runs</span>
+        <button type="button" (click)="goToPage(page.page + 1)" [disabled]="page.page >= pageCount()">Next →</button>
+      } @else {
+        <span>{{ page.totalCount }} {{ page.totalCount === 1 ? 'Run' : 'Runs' }}</span>
+      }
     </nav>
   }
 }

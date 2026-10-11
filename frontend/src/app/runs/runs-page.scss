@@ -63,13 +63,30 @@ th button {
   cursor: pointer;
 }
 
+.month-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+
+  h2 {
+    min-width: 10rem;
+    margin: 0;
+    font-size: 1.1rem;
+    text-align: center;
+  }
+}
+
 .pager {
   display: flex;
   align-items: center;
   gap: 1rem;
   margin-top: 1rem;
   color: var(--text-muted);
+}
 
+.month-nav,
+.pager {
   button {
     padding: 0.35rem 0.8rem;
     border: 1px solid var(--border);
