@@ -17,7 +17,7 @@ import { TrainingPlanWeeksEditor } from './training-plan-weeks-editor';
 export class TrainingPlanPage {
   private readonly http = inject(HttpClient);
 
-  /** From the route, goal-races/:id/training-plan. */
+  /** From the route, training/plan/:id. */
   readonly id = input.required<string>();
 
   protected readonly goalRaces = httpResource<GoalRace[]>(() => '/api/goal-races');

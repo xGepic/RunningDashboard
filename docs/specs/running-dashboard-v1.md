@@ -66,7 +66,7 @@ The Athlete enters Goal Races and Training Plans (Phases, Weekly Targets, Runnin
 ### Records
 
 28. As the Athlete, I want a step chart for each standard distance showing every time my Personal Best improved, so that I can see how my records developed over 3 years.
-29. As the Athlete, I want 1k, 5k, 10k, half marathon and marathon shown by default, so that the most relevant distances come first.
+29. As the Athlete, I want 5k, half marathon and marathon shown by default, so that the most relevant distances come first.
 30. As the Athlete, I want to show any other distance Strava provides (400 m, ½ mile, 1 mile, 2 miles, 15k, 10 miles, 20k, 30k, 50k), so that nothing is hidden.
 31. As the Athlete, I want a table of my current Personal Best for each distance, with its date and the Run it came from, so that I can look records up quickly.
 32. As the Athlete, I want to open the Run a Personal Best came from, so that I can see the context of that effort.
@@ -82,8 +82,8 @@ The Athlete enters Goal Races and Training Plans (Phases, Weekly Targets, Runnin
 39. As the Athlete, I want to set the Training Block length directly on a Goal Race without a Training Plan, to any number of weeks, so that past blocks like my 14-week one are stored correctly.
 40. As the Athlete, I want to edit and delete Goal Races, so that I can fix mistakes and handle date changes.
 41. As the Athlete, I want the app to reject a Goal Race whose Training Block would overlap another Goal Race's block, so that "the current Training Block" is never ambiguous.
-41a. As the Athlete, I want the app to reject a second upcoming Goal Race until race day of the upcoming one is over, while still accepting past ones, so that I only ever train for one Goal Race with one active Training Plan.
-42. As the Athlete, I want a list of all my Goal Races with their date, Target Time and Race Result, so that I can see my racing history at a glance.
+41a. As the Athlete, I want the app to reject a second upcoming Goal Race until race day of the upcoming one is over, so that I only ever train for one Goal Race with one active Training Plan. The API still accepts past ones; the page offers the form to add a race only while none is upcoming.
+42. As the Athlete, I want my Goal Races on the Training page, with the upcoming race's details and actions on its block or countdown and a form to add or edit a race below, so that planning and training are in one place.
 43. As the Athlete, I want the Race Result calculated automatically from the longest Run on race day, using the Best Effort over the race distance, so that it comes close to my official finish time without typing it in.
 44. As the Athlete, I want the Race Result to use the Run's elapsed time when the race distance has no Strava Best Effort, so that unusual distances still get a result.
 45. As the Athlete, I want no Race Result shown when there's no Run on race day, so that a future or missed race doesn't show a wrong number.
@@ -213,7 +213,7 @@ The modules are listed from the outside in. Each should keep a small interface a
    - Runs: paged list with search, filters and sort, and a detail view
    
    The API uses metres and seconds. The frontend formats km, min:ss/km and h:mm:ss. Validation failures return problem details with messages the UI can show.
-7. **Frontend.** One Angular route per page (Overview, Records, Training, Shoes, Runs and Run detail), plus forms for Goal Races and the Training Plan editor (a table with one row per week, Phase type pickers, Running Day toggles, Recovery Week checkbox and "copy from previous week"). The sync status indicator lives in the app shell and polls the sync status endpoint while a sync is running.
+7. **Frontend.** One Angular route per page (Overview, Records, Training, Shoes, Runs and Run detail), with the Goal Race form on the Training page, plus the Training Plan editor (a table with one row per week, Phase type pickers, Running Day toggles, Recovery Week checkbox and "copy from previous week"). The sync status indicator lives in the app shell and polls the sync status endpoint while a sync is running.
 
 ### Strava specifics
 
@@ -253,6 +253,7 @@ The modules are listed from the outside in. Each should keep a small interface a
 - Per-second streams: heart rate zones, route maps and heatmaps
 - A fitness/fatigue model (CTL/ATL/TSB) and predicted race times (for example the Riegel formula)
 - Daily planned workouts, matching Runs to planned workouts, and generating plans from Phase rules
+- A list of all Goal Races with their Race Results, and editing or deleting past Goal Races, in the UI (the API still provides both)
 - History of changes to a Training Plan
 - A Maximum Distance per Shoe or one the Athlete can change (it is fixed at 700 km), and retiring Shoes from the dashboard
 - Handling races differently from other Runs, and tune-up races as Goal Races

@@ -6,10 +6,10 @@ namespace RunningDashboard.Api.Records;
 public static class RecordEndpoints
 {
     /// <summary>
-    /// 1k, 5k, 10k, half marathon and marathon, in metres as Strava has them (its half marathon is 21,097 m, not 21,097.5);
-    /// the other distances can be picked on the page.
+    /// 5k, half marathon and marathon, in metres as Strava has them (its half marathon is 21,097 m, not 21,097.5); the
+    /// other distances can be picked on the page.
     /// </summary>
-    private static readonly HashSet<double> ShownByDefault = [1000, 5000, 10000, 21097, 42195];
+    private static readonly HashSet<double> ShownByDefault = [5000, 21097, 42195];
 
     public static void MapRecordEndpoints(this IEndpointRouteBuilder app)
     {

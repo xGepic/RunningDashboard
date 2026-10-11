@@ -1,0 +1,153 @@
+@if (showNext() && next(); as next) {
+  <section class="hero" aria-label="Next Goal Race">
+    <div class="hero-top">
+      <div class="hero-titles">
+        <div class="tags"><span class="tag">Next Goal Race</span><span>{{ distanceLabel(next.race.distance) }}</span></div>
+        <h2>{{ next.race.name }}</h2>
+        <p>{{ next.race.date | date: 'EEEE d MMMM y' }}</p>
+      </div>
+      <div class="countdown">
+        <span class="value">{{ next.daysToRace }}</span>
+        <span class="label">{{ next.daysToRace === 1 ? 'day' : 'days' }} until race day</span>
+      </div>
+    </div>
+
+    <dl class="facts">
+      <div><dt class="label">Target Time</dt><dd class="value">{{ next.race.targetTime === null ? '–' : formatDuration(next.race.targetTime) }}</dd></div>
+      <div><dt class="label">Target Pace</dt><dd class="value">{{ next.targetPace === null ? '–' : formatPace(next.targetPace) }}</dd></div>
+      <div><dt class="label">Distance</dt><dd class="value">{{ formatDistance(next.race.distance) }}</dd></div>
+      <div><dt class="label">Block starts</dt><dd class="value">{{ next.race.trainingBlockStart | date: 'd MMM' }}</dd></div>
+    </dl>
+
+    <div class="block">
+      <div class="block-head">
+        <span>Training Block · {{ next.weeks.length }} weeks{{ next.race.trainingPlanLength ? ', Training Plan' : '' }}</span>
+        <span class="mono">{{ next.race.trainingBlockStart | date: 'd MMM y' }} → {{ next.race.trainingBlockEnd | date: 'd MMM y' }}</span>
+      </div>
+      <ol class="segments">
+        @for (week of next.weeks; track week.number) {
+          <li [class]="week.state" [title]="'Week ' + week.number + ' · ' + (week.monday | date: 'd MMM')">
+            <span class="bar" [style.--alpha]="week.opacity"></span>
+            <span class="n">W{{ week.number }}</span>
+          </li>
+        }
+      </ol>
+      <p class="block-note">
+        @if (next.currentWeek; as week) {
+          Week <span class="mono">{{ week }}</span> of {{ next.weeks.length }} of the Training Block.
+        } @else if (next.daysToStart > 0) {
+          Block starts in <span class="mono">{{ next.daysToStart }}</span> {{ next.daysToStart === 1 ? 'day' : 'days' }} — {{ next.race.trainingBlockStart | date: 'EEEE d MMMM y' }}.
+        } @else {
+          Race Week.
+        }
+      </p>
+    </div>
+
+    <div class="hero-actions">
+      <a class="btn btn-primary" [routerLink]="['/training/plan', next.race.id]">Training Plan</a>
+      <button type="button" class="btn" (click)="edit(next.race)">Edit race</button>
+    </div>
+  </section>
+}
+
+@if (newFormShown()) {
+  <ng-container *ngTemplateOutlet="raceForm" />
+}
+
+<!-- Editing happens in a modal; Esc or Cancel closes it without saving. -->
+<dialog #editDialog class="edit-dialog" aria-labelledby="edit-race-title" (close)="dialogClosed()">
+  @if (editing()) {
+    <ng-container *ngTemplateOutlet="raceForm" />
+  }
+</dialog>
+
+<ng-template #raceForm>
+  <section class="card form-card">
+    <div class="card-header">
+      <div class="titles">
+        <h2 class="card-title" [id]="editing() ? 'edit-race-title' : null">{{ editing() ? 'Edit ' + editing()!.name : 'New Goal Race' }}</h2>
+        <p class="card-sub">The Training Block ends with the Race Week.</p>
+      </div>
+    </div>
+    <form class="race-form" [formGroup]="form" (ngSubmit)="save()" novalidate>
+      <label class="field">
+        Name
+        <input formControlName="name" required maxlength="200" placeholder="e.g. Vienna City Marathon" [attr.aria-invalid]="!!errors()['name']" />
+        @for (error of errors()['name']; track error) {
+          <span class="field-error">{{ error }}</span>
+        }
+      </label>
+
+      <label class="field">
+        Date
+        <input type="date" formControlName="date" required [attr.aria-invalid]="!!errors()['date']" />
+        @if (next(); as next) {
+          @if (editing()?.id !== next.race.id && !errors()['date']) {
+            <span class="hint">{{ next.race.name }} is still to come, so any other Goal Race has to be in the past until it's over.</span>
+          }
+        }
+        @for (error of errors()['date']; track error) {
+          <span class="field-error">{{ error }}</span>
+        }
+      </label>
+
+      <label class="field">
+        Distance
+        <select formControlName="distance">
+          @for (preset of presets; track preset.distance) {
+            <option [value]="preset.distance">{{ preset.name }}</option>
+          }
+          <option [value]="custom">Custom…</option>
+        </select>
+        @for (error of errors()['distance']; track error) {
+          <span class="field-error">{{ error }}</span>
+        }
+      </label>
+
+      @if (form.controls.distance.value === custom) {
+        <label class="field">
+          Custom distance (km)
+          <input formControlName="customKm" inputmode="decimal" placeholder="e.g. 15.5" [attr.aria-invalid]="!!errors()['customKm']" />
+          @for (error of errors()['customKm']; track error) {
+            <span class="field-error">{{ error }}</span>
+          }
+        </label>
+      }
+
+      <label class="field">
+        <span>Target Time <span class="optional">(optional)</span></span>
+        <input class="mono" formControlName="targetTime" placeholder="h:mm:ss" [attr.aria-invalid]="!!errors()['targetTime']" />
+        @for (error of errors()['targetTime']; track error) {
+          <span class="field-error">{{ error }}</span>
+        }
+      </label>
+
+      <label class="field">
+        Training Block (weeks)
+        <input type="number" min="1" step="1" formControlName="trainingBlockWeeks" required
+               [attr.aria-invalid]="!!errors()['trainingBlockWeeks']" />
+        @if (editing()?.trainingPlanLength; as planWeeks) {
+          <span class="hint">While the race has its Training Plan, the plan's {{ planWeeks }} weeks count instead.</span>
+        }
+        @for (error of errors()['trainingBlockWeeks']; track error) {
+          <span class="field-error">{{ error }}</span>
+        }
+      </label>
+
+      @for (error of errors()[formError]; track error) {
+        <p class="error" role="alert">{{ error }}</p>
+      }
+
+      <div class="actions">
+        <button type="submit" class="btn btn-primary" [disabled]="saving()">{{ editing() ? 'Save' : 'Add Goal Race' }}</button>
+        @if (editing(); as race) {
+          <button type="button" class="btn" (click)="cancel()">Cancel</button>
+          <button type="button" class="link danger" (click)="remove(race)">Delete race</button>
+        }
+        @if (blockPreview(); as preview) {
+          <span class="preview mono">Block: {{ preview.start | date: 'EEE d MMM y' }} → {{ preview.race | date: 'EEE d MMM y' }}</span>
+        }
+      </div>
+    </form>
+  </section>
+</ng-template>

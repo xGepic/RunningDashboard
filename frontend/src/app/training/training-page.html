@@ -4,24 +4,10 @@
       <span class="eyebrow">Training</span>
       <h1>{{ training.hasValue() && training.value().block ? training.value().block!.goalRace.name + ' block' : 'Training' }}</h1>
     </div>
-    <label class="field selector">
-      Training Block
-      <select #picker (change)="select(picker.value)">
-        <option value="" [selected]="!goalRace()">Today</option>
-        @for (race of goalRaces.hasValue() ? goalRaces.value() : []; track race.id) {
-          <option [value]="race.id" [selected]="goalRace() === '' + race.id">{{ race.name }} ({{ race.date | date: 'd MMM y' }})</option>
-        }
-      </select>
-    </label>
   </header>
 
   @if (training.error()) {
-    <p class="error" role="alert">
-      The Training Block could not be loaded.
-      @if (compareWith()) {
-        <button type="button" class="link" (click)="compare(null)">Show it without that comparison</button>
-      }
-    </p>
+    <p class="error" role="alert">The Training Block could not be loaded.</p>
   } @else if (training.value(); as training) {
     @if (training.block; as block) {
       <section class="card race">
@@ -33,22 +19,26 @@
               · Target Time <b>{{ formatDuration(block.goalRace.targetTime) }}</b>, Target Pace <b>{{ formatPace(block.targetPace) }}</b>
             }
           </p>
-        </div>
-        <label class="field selector">
-          Compare with
-          <select #comparePicker (change)="compare(comparePicker.value)">
-            <option value="none" [selected]="comparisonChoice() === 'none'">No comparison</option>
-            @for (race of comparableRaces(); track race.id) {
-              <option [value]="race.id" [selected]="comparisonChoice() === '' + race.id">{{ race.name }} ({{ race.date | date: 'd MMM y' }})</option>
+          <div class="race-actions">
+            @if (goalRace()) {
+              <a class="link quiet" routerLink="/training">← Back to today</a>
             }
-          </select>
-        </label>
+            <a class="link" [routerLink]="['/training/plan', block.goalRace.id]">Training Plan</a>
+            @if (upcomingRaceShown()) {
+              <button type="button" class="link quiet" (click)="editRace(block.goalRace.id)">Edit race</button>
+            }
+          </div>
+        </div>
       </section>
 
       <section class="card flush">
         @if (block.phases) {
           <p class="legend" aria-hidden="true">
-            Running Days:
+            Phases:
+            <span class="swatch phase-build"></span> Build
+            <span class="swatch phase-peak"></span> Peak
+            <span class="swatch phase-taper"></span> Taper
+            <span class="running-days">Running Days:</span>
             <span class="day ran"></span> run as planned
             <span class="day missed"></span> missed
             <span class="day unplanned"></span> run on an unplanned day
@@ -207,12 +197,14 @@
             </div>
           </div>
           <p class="lede">
-            <b>{{ countdown.goalRace.name }}</b> ({{ countdown.goalRace.date | date: 'EEE d MMM y' }}): the Training Block starts
-            on {{ countdown.trainingBlockStart | date: 'EEEE d MMMM y' }}.
+            <b>{{ countdown.goalRace.name }}</b> ({{ countdown.goalRace.date | date: 'EEE d MMM y' }}@if (figures(); as fig) {, in
+            {{ fig.daysToRace }} {{ fig.daysToRace === 1 ? 'day' : 'days' }}}): the Training Block starts on
+            {{ countdown.trainingBlockStart | date: 'EEEE d MMMM y' }}.
           </p>
           <div class="hero-actions">
-            <a class="btn btn-primary" [routerLink]="['/goal-races', countdown.goalRace.id, 'training-plan']">Open Training Plan</a>
-            <a class="btn" routerLink="/goal-races">View Goal Race</a>
+            <a class="btn btn-primary" [routerLink]="['/training/plan', countdown.goalRace.id]">Open Training Plan</a>
+            <a class="btn" routerLink="/training" [queryParams]="{ goalRace: countdown.goalRace.id }">View Training Block</a>
+            <button type="button" class="btn" (click)="editRace(countdown.goalRace.id)">Edit race</button>
           </div>
         </div>
         @if (figures(); as fig) {
@@ -278,9 +270,15 @@
       <div class="card empty-card">
         <p class="empty">
           No upcoming Goal Race, so there is no Training Block ahead.
-          <a routerLink="/goal-races">Add the race you are training for</a>@if (goalRaces.hasValue() && goalRaces.value().length) {, or pick a past one above to look at its block}.
+          Add the race you are training for below.
         </p>
       </div>
     }
+  }
+
+  @if (goalRaces.hasValue()) {
+    <app-goal-race-panel [races]="goalRaces.value()" [showNext]="!upcomingRaceShown()" (changed)="goalRacesChanged()" />
+  } @else if (goalRaces.error()) {
+    <p class="error" role="alert">Goal Races could not be loaded.</p>
   }
 </div>

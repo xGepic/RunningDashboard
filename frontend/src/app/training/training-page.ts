@@ -1,9 +1,10 @@
 import { DatePipe, DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import { httpResource } from '@angular/common/http';
-import { Component, computed, effect, inject, input, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Component, computed, effect, inject, input, signal, viewChild } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { NgxEchartsDirective } from 'ngx-echarts';
 import { GoalRace } from '../goal-races/goal-race';
+import { GoalRacePanel } from '../goal-races/goal-race-panel';
 import { ChartTheme } from '../shared/chart-theme';
 import { km, weekLabel, weeklyDistanceChart } from '../shared/charts';
 import { daysBetween, localDate, today } from '../shared/dates';
@@ -23,27 +24,20 @@ const dayStates: Record<DayState, string> = {
 
 @Component({
   selector: 'app-training-page',
-  imports: [DatePipe, DecimalPipe, NgTemplateOutlet, NgxEchartsDirective, RouterLink],
+  imports: [DatePipe, DecimalPipe, GoalRacePanel, NgTemplateOutlet, NgxEchartsDirective, RouterLink],
   templateUrl: './training-page.html',
   styleUrl: './training-page.scss',
 })
 export class TrainingPage {
-  private readonly router = inject(Router);
   private readonly theme = inject(ChartTheme);
 
   /** From the query string: the Goal Race whose block to show; without it, the block today falls in. */
   readonly goalRace = input<string>();
 
-  /** From the query string: the Goal Race whose block to compare with, or "none"; without it, the previous one. */
-  readonly compareWith = input<string>();
-
+  /** Compared, as the API does by default, with the previous Goal Race's block. */
   protected readonly training = httpResource<Training>(() => {
-    const params = Object.fromEntries(
-      Object.entries({ goalRaceId: this.goalRace(), compareWith: this.compareWith() }).filter(
-        (entry): entry is [string, string] => !!entry[1],
-      ),
-    );
-    return { url: '/api/training', params };
+    const goalRaceId = this.goalRace();
+    return goalRaceId ? { url: '/api/training', params: { goalRaceId } } : { url: '/api/training' };
   });
   protected readonly goalRaces = httpResource<GoalRace[]>(() => '/api/goal-races');
 
@@ -56,6 +50,18 @@ export class TrainingPage {
   protected readonly km = km;
   protected readonly todayDate = today();
 
+  private readonly goalRacePanel = viewChild(GoalRacePanel);
+
+  /**
+   * Whether the block or countdown shown is that of the upcoming Goal Race, which then shows its details and actions,
+   * so the Goal Race panel below leaves them out.
+   */
+  protected readonly upcomingRaceShown = computed(() => {
+    const training = this.training.hasValue() ? this.training.value() : null;
+    const race = training?.countdown?.goalRace ?? training?.block?.goalRace;
+    return !!race && localDate(race.date) >= today();
+  });
+
   /** Ticks every second while the countdown is shown. */
   private readonly now = signal(Date.now());
 
@@ -65,17 +71,6 @@ export class TrainingPage {
     if (!block) return [];
     return block.comparison?.weeks ?? block.weeks.map((week) => ({ weeksToRace: week.weeksToRace, viewed: week, compared: null }));
   });
-
-  /** The Goal Races the viewed block can be compared with. */
-  protected readonly comparableRaces = computed(() => {
-    const viewed = this.training.value()?.block?.goalRace.id;
-    return this.goalRaces.hasValue() ? this.goalRaces.value().filter((r) => r.id !== viewed) : [];
-  });
-
-  /** What the comparison picker shows: the choice in the URL, or else the default the API picked. */
-  protected readonly comparisonChoice = computed(
-    () => this.compareWith() ?? String(this.training.value()?.block?.comparison?.goalRace.id ?? 'none'),
-  );
 
   /** The countdown's figures: the block's weeks on a timeline from today to race day, and its facts. */
   protected readonly figures = computed(() => {
@@ -91,6 +86,7 @@ export class TrainingPage {
     const total = recent.reduce((sum, w) => sum + w.distance, 0);
     return {
       weekCount,
+      daysToRace: daysBetween(now, race),
       blockLeft: Math.min(100, Math.max(0, (daysBetween(now, start) / span) * 100)),
       weeks: Array.from({ length: weekCount }, (_, i) => ({ race: i === weekCount - 1, alpha: 0.18 + (0.5 * i) / weekCount })),
       targetPace: goalRace.targetTime === null ? null : goalRace.targetTime / (goalRace.distance / 1000),
@@ -128,6 +124,18 @@ export class TrainingPage {
     });
   }
 
+  /** Opens the Goal Race form below on the race with this id. */
+  protected editRace(id: number): void {
+    const race = this.goalRaces.hasValue() ? this.goalRaces.value().find((r) => r.id === id) : undefined;
+    if (race) this.goalRacePanel()?.edit(race);
+  }
+
+  /** A Goal Race was added, changed or deleted: the block, its comparison or the countdown may change. */
+  protected goalRacesChanged(): void {
+    this.goalRaces.reload();
+    this.training.reload();
+  }
+
   /** The Phase whose band starts at this row. */
   protected phaseStartingAt(phases: Phase[], weeksToRace: number): Phase | undefined {
     return phases.find((p) => p.firstWeeksToRace === weeksToRace);
@@ -136,15 +144,5 @@ export class TrainingPage {
   /** Marks an actual value against the plan as the API judged it: met, short, or neither yet. */
   protected metClass(met: boolean | null | undefined): string {
     return met === true ? 'met' : met === false ? 'short' : '';
-  }
-
-  /** Opens another block, compared with its own previous Goal Race. */
-  protected select(goalRaceId: string): void {
-    this.router.navigate([], { queryParams: { goalRace: goalRaceId || null, compareWith: null } });
-  }
-
-  /** Compares with another Goal Race's block, "none", or (null) the default previous one. */
-  protected compare(compareWith: string | null): void {
-    this.router.navigate([], { queryParams: { compareWith }, queryParamsHandling: 'merge' });
   }
 }

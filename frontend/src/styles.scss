@@ -35,6 +35,11 @@
   --met: #3dd68c;
   --strava: #fc4c02;
 
+  /* Phase colours, the same wherever a Training Plan's Phases show. */
+  --phase-build: #4a9eff;
+  --phase-peak: #f2706b;
+  --phase-taper: #3dd68c;
+
   /* Chart tokens, read by ChartTheme. */
   --chart-series: #4a9eff;
   --chart-grid: #1c2431;
@@ -91,6 +96,28 @@ select {
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* Sets --phase for a Phase's element and everything in it. */
+.phase-build {
+  --phase: var(--phase-build);
+}
+
+.phase-peak {
+  --phase: var(--phase-peak);
+}
+
+.phase-taper {
+  --phase: var(--phase-taper);
+}
+
+/* A Phase's colour as a small square, e.g. in a legend. */
+.swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: var(--phase);
 }
 
 .mono {

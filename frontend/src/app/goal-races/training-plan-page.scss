@@ -40,16 +40,8 @@
     background: var(--inset);
   }
 
-  .phase-build {
-    border-left-color: rgb(74 158 255 / 45%);
-  }
-
-  .phase-peak {
-    border-left-color: var(--accent);
-  }
-
-  .phase-taper {
-    border-left-color: var(--amber);
+  .field[class*='phase-'] {
+    border-left-color: var(--phase);
   }
 
   select {

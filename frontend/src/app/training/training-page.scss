@@ -1,7 +1,3 @@
-.selector select {
-  min-width: 260px;
-}
-
 /* Block view */
 
 .race {
@@ -29,6 +25,12 @@
     font-family: var(--mono);
     font-weight: 500;
   }
+}
+
+.race-actions {
+  display: flex;
+  gap: 14px;
+  margin-top: 10px;
 }
 
 .weeks {
@@ -108,20 +110,28 @@ td.compared {
   color: var(--text-muted);
   font-size: 12px;
 
-  .day {
+  .day,
+  .swatch {
     margin-left: 10px;
+  }
+
+  .running-days {
+    margin-left: 18px;
   }
 }
 
-/* The Phase bands: one cell per Phase, spanning its weeks. */
+/* The Phase bands: one cell per Phase, spanning its weeks, in the Phase's colour. */
 .band-header,
 td.band {
-  width: 28px;
+  width: 34px;
 }
 
 .data-table td.band {
   padding: 0;
   border-bottom: 2px solid var(--surface);
+  border-left: 3px solid var(--phase);
+  background: color-mix(in srgb, var(--phase) 22%, transparent);
+  color: var(--phase);
   text-align: center;
   vertical-align: middle;
 
@@ -136,20 +146,6 @@ td.band {
   }
 }
 
-.phase-build {
-  background: rgb(74 158 255 / 12%);
-  color: var(--accent-light);
-}
-
-.phase-peak {
-  background: rgb(74 158 255 / 28%);
-  color: var(--accent-pale);
-}
-
-.phase-taper {
-  background: rgb(242 196 109 / 12%);
-  color: var(--amber);
-}
 
 tr.recovery-week td:not(.band) {
   background: repeating-linear-gradient(135deg, transparent 0 6px, rgb(124 136 155 / 8%) 6px 12px);

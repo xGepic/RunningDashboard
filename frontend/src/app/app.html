@@ -18,7 +18,7 @@
   @if (nextRace(); as next) {
     <div class="next-up">
       <div class="group-label">Next up</div>
-      <a routerLink="/goal-races">
+      <a routerLink="/training">
         <span class="name">{{ next.race.name }}</span>
         <span class="when">{{ next.days }} {{ next.days === 1 ? 'day' : 'days' }} · {{ next.race.date | date: 'd MMM y' }}</span>
       </a>

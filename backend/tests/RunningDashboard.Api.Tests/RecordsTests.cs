@@ -65,7 +65,7 @@ public sealed class RecordsTests : IAsyncLifetime
         var records = await GetRecordsAsync();
 
         Assert.Equal(
-            [("400m", false), ("1K", true), ("5K", true), ("10K", true), ("Half-Marathon", true)],
+            [("400m", false), ("1K", false), ("5K", true), ("10K", false), ("Half-Marathon", true)],
             records.Select(r => (r.Name, r.ShownByDefault)));
         Assert.Equal(HalfMarathon, records[^1].Distance);
     }
