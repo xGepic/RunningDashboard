@@ -41,12 +41,9 @@ public sealed class TrainingCountdownTests : IAsyncLifetime
         Assert.Equal((second.Id, "Second marathon"), (countdown.GoalRace.Id, countdown.GoalRace.Name));
         Assert.Equal(new DateOnly(2027, 2, 1), countdown.TrainingBlockStart);
         Assert.Equal(115, countdown.DaysRemaining);
-        // The last 8 Training Weeks up to the current one, oldest first; weeks without Runs as zero.
+        // The last 5 Training Weeks up to the current one, oldest first; weeks without Runs as zero.
         Assert.Equal(
             [
-                new RecentWeekResponse(new DateOnly(2026, 8, 17), 0),
-                new RecentWeekResponse(new DateOnly(2026, 8, 24), 0),
-                new RecentWeekResponse(new DateOnly(2026, 8, 31), 0),
                 new RecentWeekResponse(new DateOnly(2026, 9, 7), 0),
                 new RecentWeekResponse(new DateOnly(2026, 9, 14), 0),
                 new RecentWeekResponse(new DateOnly(2026, 9, 21), 0),

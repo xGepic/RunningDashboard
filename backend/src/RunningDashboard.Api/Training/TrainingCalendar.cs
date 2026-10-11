@@ -76,7 +76,7 @@ public sealed record WeekActual(int Runs, double Distance, int MovingTime, doubl
 public static class TrainingCalendar
 {
     /// <summary>How many Training Weeks, up to the current one, count as recent between Training Blocks.</summary>
-    public const int RecentWeekCount = 8;
+    public const int RecentWeekCount = 5;
 
     /// <summary>The Goal Race whose Training Block <paramref name="date"/> falls in, if any; blocks never overlap.</summary>
     public static GoalRace? RaceTrainingFor(IEnumerable<GoalRace> races, DateOnly date) =>
