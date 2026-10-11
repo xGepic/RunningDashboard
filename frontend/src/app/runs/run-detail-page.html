@@ -28,6 +28,20 @@
     } @else if (run.detail === 'unavailable') {
       <div class="card empty-card"><p class="empty">Strava no longer has the details of this Run, so there are no Best Efforts or Splits.</p></div>
     } @else {
+      @if (splitPace(); as options) {
+        <section class="card">
+          <div class="card-header">
+            <div class="titles">
+              <h2 class="card-title">Pace per km</h2>
+              <p class="card-sub">Pace of each Split; the dashed line is the Pace of the whole Run.</p>
+            </div>
+            <span class="direction"><span class="mono">↑</span> Faster</span>
+          </div>
+          <div class="chart" echarts [options]="options" [autoResize]="true" role="img"
+               aria-label="Line chart of the Pace of each Split, faster towards the top; the Splits table has the same numbers"></div>
+        </section>
+      }
+
       <div class="details">
         <section class="card flush">
           <div class="card-header"><h2 class="card-title">Best Efforts</h2></div>
