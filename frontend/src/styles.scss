@@ -764,3 +764,40 @@ p.error {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* Leaflet maps, in the dark theme. */
+.leaflet-container {
+  background: var(--inset);
+  font-family: var(--font);
+}
+
+/* Light map tiles turned dark: inverted, with the hues turned back so water stays blue and parks green. */
+.leaflet-layer.dark-tiles {
+  filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9) saturate(0.6);
+}
+
+.leaflet-bar a {
+  border-color: var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+
+  &:hover {
+    background: var(--hover);
+  }
+}
+
+.leaflet-control-layers.leaflet-control {
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.leaflet-control-attribution.leaflet-control {
+  background: rgb(9 13 20 / 75%);
+  color: var(--text-muted);
+
+  a {
+    color: var(--text-secondary);
+  }
+}

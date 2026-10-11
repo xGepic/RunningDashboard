@@ -8,10 +8,11 @@ import { ChartColors, ChartTheme, baseChartOptions, tooltipHtml } from '../share
 import { categoryAxis, valueAxis } from '../shared/charts';
 import { formatDistance, formatDuration, formatPace } from '../shared/format';
 import { RunDetail, Split } from './run';
+import { RunMap } from './run-map';
 
 @Component({
   selector: 'app-run-detail-page',
-  imports: [DatePipe, DecimalPipe, RouterLink, NgxEchartsDirective],
+  imports: [DatePipe, DecimalPipe, RouterLink, NgxEchartsDirective, RunMap],
   templateUrl: './run-detail-page.html',
   styleUrl: './run-detail-page.scss',
 })

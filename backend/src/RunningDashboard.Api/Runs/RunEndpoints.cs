@@ -82,6 +82,7 @@ public static class RunEndpoints
     private sealed record RunResponse(long Id, string Name, string SportType, DateTime StartLocal, double Distance, int MovingTime, double? Pace, string? ShoeName);
 
     /// <param name="Detail">"pending", "loaded" or "unavailable": whether Best Efforts and splits are in.</param>
+    /// <param name="Route">Google's encoded polyline of the route; none for a Run without GPS.</param>
     private sealed record RunDetailResponse(
         long Id,
         string Name,
@@ -96,6 +97,7 @@ public static class RunEndpoints
         string StravaUrl,
         string? ShoeName,
         string Detail,
+        string? Route,
         IReadOnlyList<BestEffortResponse> BestEfforts,
         IReadOnlyList<SplitResponse> Splits)
     {
@@ -114,6 +116,7 @@ public static class RunEndpoints
             $"https://www.strava.com/activities/{run.Id}",
             shoeName,
             run.DetailStatus.ToString().ToLowerInvariant(),
+            run.Route,
             run.BestEfforts
                 .OrderBy(e => e.Distance)
                 .Select(e => new BestEffortResponse(

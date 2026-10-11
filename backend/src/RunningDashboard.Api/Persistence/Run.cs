@@ -1,3 +1,4 @@
+using System.Text.Json;
 using RunningDashboard.Api.Strava;
 
 namespace RunningDashboard.Api.Persistence;
@@ -59,6 +60,27 @@ public sealed class Run
 
     /// <summary>Seconds per kilometre for <paramref name="seconds"/> over <paramref name="distance"/> metres.</summary>
     public static double? PerKilometre(int seconds, double distance) => distance > 0 ? seconds / (distance / 1000) : null;
+
+    /// <summary>
+    /// The route as Strava encodes it (Google's encoded polyline): the detailed Activity's full one, or else the
+    /// simplified one from the summary while the detail is still to come. None for a Run without GPS, e.g. on a
+    /// treadmill.
+    /// </summary>
+    public string? Route =>
+        PolylineIn(RawDetailJson, "polyline") ?? PolylineIn(RawDetailJson, "summary_polyline") ?? PolylineIn(RawSummaryJson, "summary_polyline");
+
+    private static string? PolylineIn(string? activityJson, string property)
+    {
+        if (activityJson is null)
+            return null;
+        using var activity = JsonDocument.Parse(activityJson);
+        return activity.RootElement.TryGetProperty("map", out var map)
+            && map.ValueKind == JsonValueKind.Object
+            && map.TryGetProperty(property, out var polyline)
+            && polyline.GetString() is { Length: > 0 } route
+                ? route
+                : null;
+    }
 
     public RunDetailStatus DetailStatus => (DetailFetchedAt, RawDetailJson) switch
     {

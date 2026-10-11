@@ -10,6 +10,11 @@ public sealed class RunDetailsTests : IAsyncLifetime
     private const long EveningRun = 20479305419;
     private const long LaufAmNachmittag = 20436100848;
 
+    /// <summary>The Evening Run's routes: Google's polyline example, standing in for a real one.</summary>
+    private const string FullRoute = "_p~iF~ps|U_ulLnnqC_mqNvxq`@";
+
+    private const string SummaryRoute = "_p~iF~ps|U_ulLnnqC";
+
     private readonly TestApp _app = new();
 
     public Task InitializeAsync() => Task.CompletedTask;
@@ -160,6 +165,42 @@ public sealed class RunDetailsTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task A_run_has_the_full_route_of_its_detail_and_one_without_gps_has_none()
+    {
+        StravaHasTheFirstPageOfActivities(_app);
+        _app.Strava.RespondWithFixture(HttpMethod.Get, DetailPath(EveningRun), $"activity-{EveningRun}.json");
+        _app.Strava.RespondWithFixture(HttpMethod.Get, DetailPath(LaufAmNachmittag), $"activity-{LaufAmNachmittag}.json");
+        var browser = _app.CreateBrowser();
+
+        await _app.ConnectStravaAsync(browser);
+        await TestApp.WaitForSyncAsync(browser);
+        var withRoute = (await browser.GetFromJsonAsync<RunDetailResponse>($"/api/runs/{EveningRun}"))!;
+        var withoutRoute = (await browser.GetFromJsonAsync<RunDetailResponse>($"/api/runs/{LaufAmNachmittag}"))!;
+
+        Assert.Equal(FullRoute, withRoute.Route);
+        Assert.Null(withoutRoute.Route);
+    }
+
+    [Fact]
+    public async Task While_its_detail_is_still_to_come_a_run_has_the_simplified_route_of_its_summary()
+    {
+        var releaseDetail = new TaskCompletionSource();
+        StravaHasTheFirstPageOfActivities(_app);
+        _app.Strava.RespondWithFixtureAfter(releaseDetail.Task, HttpMethod.Get, DetailPath(EveningRun), $"activity-{EveningRun}.json");
+        _app.Strava.RespondWithFixture(HttpMethod.Get, DetailPath(LaufAmNachmittag), $"activity-{LaufAmNachmittag}.json");
+        var browser = _app.CreateBrowser();
+
+        await _app.ConnectStravaAsync(browser);
+        await TestApp.WaitForStatusAsync(browser, s => s.Phase == "importing-details");
+        var pending = (await browser.GetFromJsonAsync<RunDetailResponse>($"/api/runs/{EveningRun}"))!;
+        releaseDetail.SetResult();
+        await TestApp.WaitForSyncAsync(browser);
+
+        Assert.Equal("pending", pending.Detail);
+        Assert.Equal(SummaryRoute, pending.Route);
+    }
+
+    [Fact]
     public async Task An_unknown_run_is_not_found()
     {
         var browser = _app.CreateBrowser();
@@ -189,6 +230,7 @@ public sealed class RunDetailsTests : IAsyncLifetime
         double? RelativeEffort,
         string StravaUrl,
         string Detail,
+        string? Route,
         List<BestEffortResponse> BestEfforts,
         List<SplitResponse> Splits);
 

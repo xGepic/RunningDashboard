@@ -23,6 +23,13 @@
       <div><dt class="label">Shoe</dt><dd class="value shoe">{{ run.shoeName ?? '–' }}</dd></div>
     </dl>
 
+    @if (run.route; as route) {
+      <section class="card flush route">
+        <div class="card-header"><h2 class="card-title">Route</h2></div>
+        <app-run-map [route]="route" />
+      </section>
+    }
+
     @if (run.detail === 'pending') {
       <div class="card empty-card"><p class="empty">Best Efforts and Splits are still being loaded from Strava.</p></div>
     } @else if (run.detail === 'unavailable') {

@@ -31,6 +31,8 @@ export interface RunDetail extends Run {
   stravaUrl: string;
   /** Whether Best Efforts and Splits are in: still to be fetched, stored, or no longer on Strava. */
   detail: 'pending' | 'loaded' | 'unavailable';
+  /** Google's encoded polyline of the route; none for a Run without GPS, e.g. on a treadmill. */
+  route: string | null;
   bestEfforts: BestEffort[];
   splits: Split[];
 }

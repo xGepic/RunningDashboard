@@ -144,6 +144,7 @@ The Athlete enters Goal Races and Training Plans (Phases, Weekly Targets, Runnin
 87. As the Athlete, I want the detail view to list the Run's Best Efforts and mark any that were a Personal Best at the time, so that I can see which records a Run set.
 88. As the Athlete, I want the detail view to show per-km splits with Pace, so that I can see how I paced the Run.
 89. As the Athlete, I want a link from the detail view to the Run on Strava, so that I can jump to the original.
+89a. As the Athlete, I want the detail view to show the Run's route on a map with its start and finish, drawn from the route Strava already gives with each Activity, so that I can see where I ran.
 
 ## Implementation Decisions
 
@@ -250,7 +251,7 @@ The modules are listed from the outside in. Each should keep a small interface a
 - Garmin data of any kind (HRV, sleep, Training Readiness, VO2max, Body Battery). See ADR 0001.
 - Deployment, hosting, user authentication, and viewing on a phone
 - Strava webhooks (only possible when hosted), and noticing edits or deletions older than the 20 most recent Activities
-- Per-second streams: heart rate zones, route maps and heatmaps
+- Per-second streams: heart rate zones and heatmaps
 - A fitness/fatigue model (CTL/ATL/TSB) and predicted race times (for example the Riegel formula)
 - Daily planned workouts, matching Runs to planned workouts, and generating plans from Phase rules
 - A list of all Goal Races with their Race Results, and editing or deleting past Goal Races, in the UI (the API still provides both)
