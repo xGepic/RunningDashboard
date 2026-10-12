@@ -15,7 +15,8 @@ public static class OverviewEndpoints
                 .ToListAsync(cancellationToken);
             var today = DateOnly.FromDateTime(clock.GetLocalNow().DateTime);
             var goal = await db.GetYearlyGoalAsync(today.Year, cancellationToken);
-            return OverviewResponse.From(runs, goal is null ? null : YearlyGoalResponse.From(goal), today);
+            var recoveryWeeks = TrainingCalendar.RecoveryWeeks(await db.GoalRaces.ToListAsync(cancellationToken));
+            return OverviewResponse.From(runs, goal is null ? null : YearlyGoalResponse.From(goal), recoveryWeeks, today);
         });
     }
 
@@ -31,7 +32,11 @@ public static class OverviewEndpoints
         IReadOnlyList<MonthResponse> Months,
         YearlyGoalResponse? YearlyGoal)
     {
-        public static OverviewResponse From(IReadOnlyList<RunFigures> runs, YearlyGoalResponse? yearlyGoal, DateOnly today)
+        public static OverviewResponse From(
+            IReadOnlyList<RunFigures> runs,
+            YearlyGoalResponse? yearlyGoal,
+            IReadOnlySet<TrainingWeek> recoveryWeeks,
+            DateOnly today)
         {
             var totals = TotalsResponse.Of(runs);
             if (runs.Count == 0)
@@ -48,8 +53,11 @@ public static class OverviewEndpoints
                 .ToDictionary(g => g.Key, g => g.Sum(r => r.Distance));
             var firstWeek = distanceByWeek.Keys.Min(w => w.Start);
             var lastWeek = Max(distanceByWeek.Keys.Max(w => w.Start), TrainingWeek.Of(today).Start);
-            var weeks = TrainingWeek.Range(new TrainingWeek(firstWeek), new TrainingWeek(lastWeek))
-                .Select(w => new WeekResponse(w.Start, distanceByWeek.GetValueOrDefault(w)))
+            var distanceWeeks = TrainingWeek.Range(new TrainingWeek(firstWeek), new TrainingWeek(lastWeek))
+                .Select(w => new DistanceWeek(w, distanceByWeek.TryGetValue(w, out var distance) ? distance : null, recoveryWeeks.Contains(w)))
+                .ToList();
+            var weeks = distanceWeeks
+                .Zip(TrainingCalendar.DistanceJumps(distanceWeeks), (w, jump) => new WeekResponse(w.Week.Start, w.Distance ?? 0, DistanceJumpResponse.From(jump)))
                 .ToList();
 
             var byMonth = runs.ToLookup(r => new DateOnly(r.StartLocal.Year, r.StartLocal.Month, 1));
@@ -87,7 +95,8 @@ public static class OverviewEndpoints
     }
 
     /// <param name="Start">The Monday of the Training Week.</param>
-    private sealed record WeekResponse(DateOnly Start, double Distance);
+    /// <param name="DistanceJump">None unless the week is one.</param>
+    private sealed record WeekResponse(DateOnly Start, double Distance, DistanceJumpResponse? DistanceJump);
 
     /// <param name="Pace">Seconds per kilometre over all of the month's Runs; none without Runs.</param>
     private sealed record MonthResponse(int Year, int Month, double Distance, double? Pace);

@@ -247,3 +247,10 @@ public static class TrainingEndpoints
         }
     }
 }
+
+/// <param name="ComparedWith">The Monday of the week compared with.</param>
+/// <param name="Increase">The ratio of the distances minus one: 0.2 for 20% up.</param>
+internal sealed record DistanceJumpResponse(DateOnly ComparedWith, double Increase)
+{
+    public static DistanceJumpResponse? From(DistanceJump? jump) => jump is null ? null : new(jump.ComparedWith.Start, jump.Increase);
+}

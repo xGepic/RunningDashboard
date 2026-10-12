@@ -111,10 +111,14 @@
           <summary>Show as table</summary>
           <div class="table-box">
             <table class="data-table">
-              <thead><tr><th>Week starting</th><th class="number">Distance</th></tr></thead>
+              <thead><tr><th>Week starting</th><th class="number">Distance</th><th>Distance Jump</th></tr></thead>
               <tbody>
                 @for (week of selectedWeeks(); track week.start) {
-                  <tr><td class="muted">{{ weekLabel(week.start) }}</td><td class="number">{{ formatDistance(week.distance) }}</td></tr>
+                  <tr>
+                    <td class="muted">{{ weekLabel(week.start) }}</td>
+                    <td class="number">{{ formatDistance(week.distance) }}</td>
+                    <td class="jump">{{ distanceJumpNote(week.distanceJump) }}</td>
+                  </tr>
                 }
               </tbody>
             </table>

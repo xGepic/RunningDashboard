@@ -73,6 +73,15 @@ public sealed record LinedUpWeek(int WeeksToRace, TrainingBlockWeek? Viewed, Tra
 /// <param name="LongRun">The longest Run of the week; none in a week without Runs.</param>
 public sealed record WeekActual(int Runs, double Distance, int MovingTime, double? RelativeEffort, RunSummary? LongRun);
 
+/// <summary>One of consecutive Training Weeks, as the Distance Jump rule sees it.</summary>
+/// <param name="Distance">Metres run, or planned; none for a week without Runs, or without a planned distance.</param>
+public sealed record DistanceWeek(TrainingWeek Week, double? Distance, bool RecoveryWeek);
+
+/// <summary>A Training Week more than 10% above the week it is compared with.</summary>
+/// <param name="ComparedWith">The week before it, or, past Recovery Weeks, the last one before them.</param>
+/// <param name="Increase">The ratio of the distances minus one: 0.2 for 20% up.</param>
+public sealed record DistanceJump(TrainingWeek ComparedWith, double Increase);
+
 /// <summary>Training Blocks laid out in Training Weeks, with what was actually run.</summary>
 public static class TrainingCalendar
 {
@@ -138,6 +147,40 @@ public static class TrainingCalendar
         var comparedByWeeksToRace = compared.ToDictionary(w => w.WeeksToRace);
         var first = viewedByWeeksToRace.Keys.Concat(comparedByWeeksToRace.Keys).Min();
         return [.. Enumerable.Range(first, 1 - first).Select(n => new LinedUpWeek(n, viewedByWeeksToRace.GetValueOrDefault(n), comparedByWeeksToRace.GetValueOrDefault(n)))];
+    }
+
+    /// <summary>
+    /// The Training Weeks that are Recovery Weeks: those in a Goal Race's Training Block whose Training Plan marks
+    /// that Weeks to Race as one. Weeks outside a block, or in one without a plan, never are.
+    /// </summary>
+    public static HashSet<TrainingWeek> RecoveryWeeks(IEnumerable<GoalRace> races) =>
+        [.. races
+            .Where(r => r.TrainingPlan is not null)
+            .SelectMany(r => r.TrainingPlan!.Weeks.Where(w => w.RecoveryWeek).Select(w => r.TrainingBlock.WeekAt(w.WeeksToRace)))];
+
+    /// <summary>
+    /// The Distance Jump of each of <paramref name="weeks"/>, which follow each other; none for a week that is not
+    /// one. A week is one if its distance is more than 1.10 times that of the week it is compared with: the week
+    /// before, skipping back past Recovery Weeks. There is none without such a week, if that week has no distance, or
+    /// if the week itself has none. Weeks are only compared with weeks in the list, so to judge the first week shown,
+    /// start the list earlier.
+    /// </summary>
+    public static List<DistanceJump?> DistanceJumps(IReadOnlyList<DistanceWeek> weeks)
+    {
+        var jumps = new List<DistanceJump?>(weeks.Count);
+        for (var i = 0; i < weeks.Count; i++)
+        {
+            var compared = i - 1;
+            while (compared >= 0 && weeks[compared].RecoveryWeek)
+                compared--;
+            var before = compared >= 0 ? weeks[compared].Distance : null;
+            // Multiplied out, so that exactly 10% up is not a jump: 1.10 has no exact binary fraction.
+            jumps.Add(before > 0 && weeks[i].Distance is { } distance && distance * 10 > before * 11
+                ? new DistanceJump(weeks[compared].Week, distance / before.Value - 1)
+                : null);
+        }
+
+        return jumps;
     }
 
     /// <summary>The Long Run: the longest Run; of equally long ones, the one that took longer.</summary>

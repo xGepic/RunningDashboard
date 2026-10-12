@@ -4,7 +4,10 @@ import { WeekDistance } from '../shared/charts';
 export interface Overview {
   totals: Totals;
   years: YearTotals[];
-  /** Every Training Week from the first Run's up to the current one; weeks without Runs have distance 0. */
+  /**
+   * Every Training Week from the first Run's up to the current one; weeks without Runs have distance 0. Each says
+   * whether it is a Distance Jump.
+   */
   weeks: WeekDistance[];
   /** Every month from the first Run's up to the current one; months without Runs have no pace. */
   months: MonthPace[];

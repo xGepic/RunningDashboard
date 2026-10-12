@@ -4,7 +4,17 @@ import { Component, computed, inject, linkedSignal } from '@angular/core';
 import type { EChartsCoreOption } from 'echarts/core';
 import { NgxEchartsDirective } from 'ngx-echarts';
 import { ChartColors, ChartTheme, baseChartOptions, tooltipHtml } from '../shared/chart-theme';
-import { WeekDistance, categoryAxis, km, monthNames, shortWeekLabel, valueAxis, weekLabel, weeklyDistanceChart } from '../shared/charts';
+import {
+  WeekDistance,
+  categoryAxis,
+  distanceJumpNote,
+  km,
+  monthNames,
+  shortWeekLabel,
+  valueAxis,
+  weekLabel,
+  weeklyDistanceChart,
+} from '../shared/charts';
 import { formatDistance, formatPace } from '../shared/format';
 import { reloadOnSync } from '../sync/reload-on-sync';
 import { MonthPace, Overview, Totals, YearTotals } from './overview';
@@ -42,6 +52,7 @@ export class OverviewPage {
   protected readonly formatPace = formatPace;
   protected readonly monthLabel = monthLabel;
   protected readonly weekLabel = weekLabel;
+  protected readonly distanceJumpNote = distanceJumpNote;
   protected readonly km = km;
   protected readonly thisYear = new Date().getFullYear();
 
