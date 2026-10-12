@@ -1,0 +1,246 @@
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
+import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
+import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
+import { MonthTotals, Run, RunMonths, RunPage } from '../runs/run';
+import { calendarRoutes } from './calendar-routes';
+
+const empty = (month: number): MonthTotals => ({ month, runs: 0, distance: 0, movingTime: 0, pace: null });
+
+/** 2026 up to Mon 12 Oct: three Runs in September, two in October. */
+const year2026: RunMonths = {
+  year: 2026,
+  firstYear: 2024,
+  months: Array.from({ length: 12 }, (_, i) => empty(i + 1)).map((m) =>
+    m.month === 9
+      ? { month: 9, runs: 3, distance: 60688.2, movingTime: 26263, pace: 432.75 }
+      : m.month === 10
+        ? { month: 10, runs: 2, distance: 9594.9, movingTime: 3981, pace: 414.9 }
+        : m,
+  ),
+};
+
+const run = (id: number, name: string, startLocal: string, distance: number): Run => ({
+  id, name, sportType: 'Run', startLocal, distance, movingTime: distance * 0.36, pace: 360, shoeName: null,
+});
+
+/** The Training Weeks around September 2026, Mon 31 Aug to Sun 4 Oct. */
+const septemberWeeks: Run[] = [
+  run(1, 'Late August jog', '2026-08-31T07:00:00', 5000),
+  run(2, 'Tempo Tuesday', '2026-09-08T18:00:00', 10000),
+  run(3, 'Evening shakeout', '2026-09-08T21:00:00', 3000),
+  run(4, 'Sunday long run with a very long name', '2026-09-13T08:00:00', 21000),
+  run(5, 'October opener', '2026-10-03T09:00:00', 8000),
+];
+
+/** The text of an element's parts, one space between them: "September 60.7 km 7h 17m". */
+const text = (element: Element) =>
+  [...element.children].map((part) => part.textContent!.replace(/\s+/g, ' ').trim()).filter(Boolean).join(' ');
+
+describe('CalendarPage', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 9, 12, 9));
+    // The chart resizes with its card; jsdom has no ResizeObserver.
+    vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter(calendarRoutes, withComponentInputBinding()),
+        // jsdom cannot draw; the tests read the chart's options instead.
+        provideEchartsCore({ echarts: { init: () => new Proxy({}, { get: () => () => undefined }) } }),
+      ],
+    });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  /** Opens `url`, answering the monthly totals with `months`; they must be asked for `sportType` only, if given. */
+  async function open(url: string, months: RunMonths = year2026, sportType: string | null = null) {
+    const harness = await RouterTestingHarness.create();
+    const http = TestBed.inject(HttpTestingController);
+    /** Lets a navigation or a response take effect; requests it sets off stay open. */
+    const settle = async () => {
+      await new Promise((resolve) => setTimeout(resolve));
+      harness.detectChanges();
+    };
+    await harness.navigateByUrl(url);
+    for (const sync of http.match('/api/sync')) sync.flush({ running: false, importedRuns: 0, lastSyncedAt: null });
+    harness.detectChanges();
+    http
+      .expectOne((r) => r.url === '/api/runs/months' && r.params.get('year') === String(months.year) && r.params.get('sportType') === sportType)
+      .flush(months);
+    await settle();
+    const element = harness.routeNativeElement!;
+    return { harness, http, element, settle, boxes: () => [...element.querySelectorAll('.month-box')] };
+  }
+
+  /** Opens a month's `url`, answering its Training Weeks' Runs with `runs` from `from` to `to`. */
+  async function openMonth(url: string, from: string, to: string, runs: Run[] = septemberWeeks, sportType: string | null = null) {
+    const page = await open(url, year2026, sportType);
+    const request = page.http.expectOne((r) => r.url === '/api/runs');
+    expect(Object.fromEntries(request.request.params.keys().map((key) => [key, request.request.params.get(key)]))).toEqual({
+      from, to, pageSize: '200', sort: 'date', direction: 'asc', ...(sportType ? { sportType } : {}),
+    });
+    request.flush({ items: runs, page: 1, pageSize: 200, totalCount: runs.length } satisfies RunPage);
+    await page.settle();
+    const days = () => [...page.harness.routeNativeElement!.querySelectorAll('.week .day')];
+    return { ...page, days };
+  }
+
+  /** A day as "8: Tempo Tuesday, Evening shakeout", with "(other month)" for the faded days around the month. */
+  const day = (cell: Element) => {
+    const names = [...cell.querySelectorAll('a')].map((a) => a.textContent!.trim());
+    const date = cell.querySelector('.date-number')!.textContent!.trim();
+    return `${date}${cell.classList.contains('other-month') ? ' (other month)' : ''}${names.length ? ': ' + names.join(', ') : ''}`;
+  };
+
+  describe('year view', () => {
+    it('shows a box per month with its distance and Moving Time', async () => {
+      const { boxes } = await open('/calendar');
+
+      expect(boxes().map(text)).toEqual([
+        'January –', 'February –', 'March –', 'April –', 'May –', 'June –', 'July –', 'August –',
+        'September 60.7 km 7h 17m', 'October 9.6 km 1h 06m', 'November', 'December',
+      ]);
+    });
+
+    it('opens a month from its box, even one without Runs, but not one still ahead', async () => {
+      const { boxes } = await open('/calendar');
+
+      expect(boxes().map((box) => box.getAttribute('href'))).toEqual([
+        '/calendar#Jan', '/calendar#Feb', '/calendar#Mar', '/calendar#Apr', '/calendar#May', '/calendar#Jun',
+        '/calendar#Jul', '/calendar#Aug', '/calendar#Sep', '/calendar#Oct', null, null,
+      ]);
+    });
+
+    it('puts any other year in the path of its months', async () => {
+      const { boxes } = await open('/calendar/2025', { ...year2026, year: 2025 });
+
+      expect(boxes()[11].getAttribute('href')).toBe('/calendar/2025#Dec');
+    });
+
+    it('steps through the years from the first with Runs to the current one, keeping the filters', async () => {
+      const { harness, http, settle } = await open('/calendar?unit=mi&sportType=TrailRun', year2026, 'TrailRun');
+      // /calendar and /calendar/2025 are different routes: the page is rendered anew.
+      const step = (label: string) => harness.routeNativeElement!.querySelector<HTMLButtonElement>(`button[aria-label^="${label}"]`)!;
+      const answer = async (year: number) => {
+        await settle();
+        http.expectOne((r) => r.url === '/api/runs/months' && r.params.get('year') === String(year)).flush({ ...year2026, year });
+        await settle();
+      };
+
+      expect(step('Next year').disabled).toBe(true);
+      step('Previous year').click();
+      await settle();
+      expect(TestBed.inject(Router).url).toBe('/calendar/2025?unit=mi&sportType=TrailRun');
+
+      await answer(2025);
+      step('Previous year').click();
+      await settle();
+      await answer(2024);
+      expect(step('Previous year').disabled).toBe(true);
+
+      step('Next year').click();
+      await settle();
+      expect(TestBed.inject(Router).url).toBe('/calendar/2025?unit=mi&sportType=TrailRun');
+    });
+
+    it('shows one sport type only, in miles, when asked', async () => {
+      const { boxes } = await open('/calendar?unit=mi&sportType=TrailRun', year2026, 'TrailRun');
+
+      expect(text(boxes()[8])).toBe('September 37.7 mi 7h 17m');
+    });
+
+    it('charts the distance of each month so far and opens a month from its point', async () => {
+      const { harness, settle } = await open('/calendar?unit=mi');
+      const chart = harness.fixture.debugElement.query(By.directive(NgxEchartsDirective));
+      const options = chart.injector.get(NgxEchartsDirective).options() as { xAxis: { data: string[] }; series: { data: number[] }[] };
+
+      expect(options.xAxis.data).toEqual(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct']);
+      expect(options.series[0].data.slice(8)).toEqual([37.7, 6]);
+
+      chart.triggerEventHandler('chartClick', { dataIndex: 8 });
+      await settle();
+      expect(TestBed.inject(Router).url).toBe('/calendar?unit=mi#Sep');
+    });
+  });
+
+  describe('month view', () => {
+    it("shows the month's Training Weeks Monday to Sunday with each day's Runs, linking to them", async () => {
+      const { days, harness } = await openMonth('/calendar#Sep', '2026-08-31', '2026-10-04');
+
+      const all = days();
+      expect(all.length).toBe(35);
+      expect(all.slice(0, 7).map(day)).toEqual([
+        '31 (other month): Late August jog', '1', '2', '3', '4', '5', '6',
+      ]);
+      expect(day(all[8])).toBe('8: Tempo Tuesday, Evening shakeout');
+      expect(day(all[13])).toBe('13: Sunday long run with a very long name');
+      expect(all.slice(28).map(day)).toEqual([
+        '28', '29', '30', '1 (other month)', '2 (other month)', '3 (other month): October opener', '4 (other month)',
+      ]);
+      expect(all[8].querySelector('a')!.getAttribute('href')).toBe('/runs/2');
+      // The full name shows on hover, as long ones are cut short.
+      expect(all[13].querySelector('a')!.getAttribute('title')).toBe('Sunday long run with a very long name');
+      expect(harness.routeNativeElement!.querySelector('.month-box')).toBeNull();
+    });
+
+    it("adds up each whole Training Week next to its Sunday, and shows the month's own totals at the top", async () => {
+      const { element } = await openMonth('/calendar#Sep', '2026-08-31', '2026-10-04');
+
+      // Mon 31 Aug and Sat 3 Oct count for their weeks, as Training Weeks run Monday to Sunday.
+      expect([...element.querySelectorAll('.week .week-total')].map((total) => total.textContent!.trim())).toEqual([
+        '5.0 km', '34.0 km', '–', '–', '8.0 km',
+      ]);
+      const summary = [...element.querySelectorAll('.summary .stat')].map(text);
+      expect(summary).toEqual(['Runs 3', 'Distance 60.7 km', 'Moving Time 7h 17m', 'Avg Pace 7:13 /km']);
+      expect(element.querySelector('h1')!.textContent!.trim()).toBe('September 2026');
+    });
+
+    it('shows the totals in miles when asked', async () => {
+      const { element } = await openMonth('/calendar?unit=mi#Sep', '2026-08-31', '2026-10-04');
+
+      expect(element.querySelectorAll('.week .week-total')[1].textContent!.trim()).toBe('21.1 mi');
+      expect(text(element.querySelectorAll('.summary .stat')[3])).toBe('Avg Pace 11:36 /mi');
+    });
+
+    it('steps month by month across the turn of the year, keeping the filters', async () => {
+      const router = () => TestBed.inject(Router);
+      const page = await open('/calendar/2025?unit=mi#Jan', { ...year2026, year: 2025 });
+      const step = (label: string) => page.harness.routeNativeElement!.querySelector<HTMLButtonElement>(`button[aria-label^="${label}"]`)!;
+
+      expect(page.element.querySelector('.period-nav h2')!.textContent!.trim()).toBe('January 2025');
+      step('Previous month').click();
+      await page.settle();
+      expect(router().url).toBe('/calendar/2024?unit=mi#Dec');
+    });
+
+    it('steps from December into January of the current year', async () => {
+      const page = await open('/calendar/2025#Dec', { ...year2026, year: 2025 });
+
+      page.element.querySelector<HTMLButtonElement>('button[aria-label^="Next month"]')!.click();
+      await page.settle();
+      expect(TestBed.inject(Router).url).toBe('/calendar#Jan');
+    });
+
+    it('goes back no further than January of the first year with Runs, and no further ahead than this month', async () => {
+      const first = await open('/calendar/2024#Jan', { ...year2026, year: 2024 });
+      expect(first.element.querySelector<HTMLButtonElement>('button[aria-label^="Previous month"]')!.disabled).toBe(true);
+
+      await first.harness.navigateByUrl('/calendar#Oct');
+      first.http.expectOne((r) => r.url === '/api/runs/months' && r.params.get('year') === '2026').flush(year2026);
+      await first.settle();
+      const element = first.harness.routeNativeElement!;
+      expect(element.querySelector<HTMLButtonElement>('button[aria-label^="Next month"]')!.disabled).toBe(true);
+      expect(element.querySelector<HTMLButtonElement>('button[aria-label^="Previous month"]')!.disabled).toBe(false);
+    });
+  });
+});

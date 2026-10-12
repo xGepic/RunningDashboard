@@ -5,53 +5,36 @@
       <h1>Run history</h1>
     </div>
     @if (summary().runs > 0) {
-      <div class="stats summary" [attr.aria-label]="monthsView() ? 'Totals of ' + selectedYear() : 'Totals of the listed Runs'">
+      <div class="stats summary" aria-label="Totals of the listed Runs">
         <div class="stat"><span class="label">Runs</span><span class="value">{{ summary().runs }}</span></div>
         <div class="stat"><span class="label">Distance</span><span class="value">{{ formatDistance(summary().distance, distanceUnit(), 1) }}</span></div>
-        <div class="stat"><span class="label">Moving Time</span><span class="value">{{ summary().hours }}h {{ summary().minutes }}m</span></div>
+        <div class="stat"><span class="label">Moving Time</span><span class="value">{{ formatHoursMinutes(summary().movingTime) }}</span></div>
         <div class="stat"><span class="label">Avg Pace</span><span class="value">{{ formatPace(summary().pace, distanceUnit()) }}</span></div>
       </div>
     }
   </header>
 
   <div class="toolbar">
-    <div class="segmented" role="group" aria-label="View">
-      <button type="button" [attr.aria-pressed]="!monthsView()" (click)="showView(false)">Runs</button>
-      <button type="button" [attr.aria-pressed]="monthsView()" (click)="showView(true)">Months</button>
-    </div>
-
-    @if (monthsView()) {
-      <nav class="month-nav" aria-label="Year">
-        <button type="button" class="step" (click)="shiftYear(-1)" [disabled]="!hasPreviousYear()"
-                [attr.aria-label]="'Previous year: ' + (selectedYear() - 1)" [title]="selectedYear() - 1">←</button>
-        <h2>{{ selectedYear() }}</h2>
-        <button type="button" class="step" (click)="shiftYear(1)" [disabled]="isCurrentYear()"
-                [attr.aria-label]="'Next year: ' + (selectedYear() + 1)" [title]="selectedYear() + 1">→</button>
-      </nav>
-    } @else {
-      <nav class="month-nav" aria-label="Month">
-        <button type="button" class="step" (click)="shiftMonth(-1)" [attr.aria-label]="'Previous month: ' + (previousMonthStart() | date: 'MMMM y')"
-                [title]="previousMonthStart() | date: 'MMM y'">←</button>
-        <h2>{{ monthStart() | date: 'MMMM y' }}</h2>
-        <button type="button" class="step" (click)="shiftMonth(1)" [disabled]="isCurrentMonth()"
-                [attr.aria-label]="'Next month: ' + (nextMonthStart() | date: 'MMMM y')" [title]="nextMonthStart() | date: 'MMM y'">→</button>
-      </nav>
-    }
+    <nav class="period-nav" aria-label="Month">
+      <button type="button" class="step" (click)="shiftMonth(-1)" [attr.aria-label]="'Previous month: ' + (previousMonthStart() | date: 'MMMM y')"
+              [title]="previousMonthStart() | date: 'MMM y'">←</button>
+      <h2>{{ monthStart() | date: 'MMMM y' }}</h2>
+      <button type="button" class="step" (click)="shiftMonth(1)" [disabled]="isCurrentMonth()"
+              [attr.aria-label]="'Next month: ' + (nextMonthStart() | date: 'MMMM y')" [title]="nextMonthStart() | date: 'MMM y'">→</button>
+    </nav>
 
     <form class="filters" role="search" (submit)="$event.preventDefault()">
-      @if (!monthsView()) {
-        <label class="inline month">
-          <span>Month</span>
-          <input #monthPicker type="month" [value]="selectedMonth()" (change)="showMonth(monthPicker.value)" />
-        </label>
-        <label class="inline search">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-               aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4" /></svg>
-          <span class="visually-hidden">Name</span>
-          <input #searchBox type="search" placeholder="Search by name, e.g. Lauf" [value]="search() ?? ''"
-                 (change)="filter({ search: searchBox.value.trim() })" />
-        </label>
-      }
+      <label class="inline month">
+        <span>Month</span>
+        <input #monthPicker type="month" [value]="selectedMonth()" (change)="showMonth(monthPicker.value)" />
+      </label>
+      <label class="inline search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+             aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4" /></svg>
+        <span class="visually-hidden">Name</span>
+        <input #searchBox type="search" placeholder="Search by name, e.g. Lauf" [value]="search() ?? ''"
+               (change)="filter({ search: searchBox.value.trim() })" />
+      </label>
       <div class="segmented" role="group" aria-label="Type">
         @for (type of sportTypes; track type.value) {
           <button type="button" [attr.aria-pressed]="(sportType() ?? '') === type.value" (click)="filter({ sportType: type.value })">
@@ -70,69 +53,7 @@
     </div>
   </div>
 
-  @if (monthsView()) {
-    @if (months.error()) {
-      <p class="error" role="alert">The monthly totals could not be loaded.</p>
-    } @else if (months.hasValue()) {
-      @if (summary().runs === 0) {
-        <div class="card empty-card">
-          <p class="empty">No Runs in {{ selectedYear() }}{{ filtered() ? ' match this filter' : '' }}.</p>
-        </div>
-      } @else {
-        <section class="card flush">
-          <div class="table-scroll">
-            <table class="data-table months">
-              <thead>
-                <tr>
-                  <th>Month</th>
-                  <th class="number">Runs</th>
-                  <th class="number">Distance</th>
-                  <th class="number">Moving Time</th>
-                  <th class="number">Avg Pace</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (row of monthRows(); track row.month) {
-                  <tr [class.without-runs]="row.runs === 0" (click)="openMonth(row.monthParam, $event)">
-                    <td>
-                      <a routerLink="/runs" [queryParams]="{ view: null, year: null, month: row.monthParam, page: null }"
-                         queryParamsHandling="merge">{{ row.start | date: 'MMMM' }}</a>
-                    </td>
-                    <td class="number">{{ row.runs || '–' }}</td>
-                    <td class="number">
-                      <span class="dist">
-                        <span class="track mini" aria-hidden="true"><span [style.width.%]="row.share"></span></span>
-                        {{ row.runs ? formatDistance(row.distance, distanceUnit()) : '–' }}
-                      </span>
-                    </td>
-                    <td class="number">{{ row.runs ? formatHours(row.movingTime) : '–' }}</td>
-                    <td class="number muted">{{ formatPace(row.pace, distanceUnit()) }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-
-          <nav class="pager" aria-label="Year">
-            <span>{{ summary().runs }} {{ summary().runs === 1 ? 'Run' : 'Runs' }} in {{ selectedYear() }}</span>
-            <span class="note">Avg Pace = the month's Moving Time ÷ its distance</span>
-          </nav>
-        </section>
-
-        <section class="card monthly-chart">
-          <div class="card-header">
-            <div class="titles">
-              <h2 class="card-title">Distance per month</h2>
-              <p class="card-sub">{{ selectedYear() }}, in {{ distanceUnit() }}. Click a point to see its Runs.</p>
-            </div>
-          </div>
-          <div class="chart" echarts [options]="monthlyDistance()" [autoResize]="true" role="img"
-               (chartClick)="openChartMonth($event.dataIndex)"
-               [attr.aria-label]="'Line chart of distance per month in ' + selectedYear() + '; the table above has the same numbers'"></div>
-        </section>
-      }
-    }
-  } @else if (runs.error()) {
+  @if (runs.error()) {
     <p class="error" role="alert">
       Runs could not be loaded with these options.
       <a routerLink="/runs">Show this month's Runs</a>

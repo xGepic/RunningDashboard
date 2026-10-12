@@ -21,6 +21,11 @@ export function formatTotalDistance(metres: number): string {
   return `${wholeNumber.format(metres / 1000)} km`;
 }
 
+/** Hours and minutes, e.g. "7h 17m" or "1h 06m". */
+export function formatHoursMinutes(seconds: number): string {
+  return `${Math.floor(seconds / 3600)}h ${String(Math.floor((seconds % 3600) / 60)).padStart(2, '0')}m`;
+}
+
 /** Totals: whole hours, e.g. "512 h". */
 export function formatHours(seconds: number): string {
   return `${wholeNumber.format(seconds / 3600)} h`;

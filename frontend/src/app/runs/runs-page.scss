@@ -2,53 +2,6 @@
   font-size: 15px;
 }
 
-.toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 16px;
-  margin-bottom: -8px;
-  padding: 8px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface);
-}
-
-.month-nav {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-
-  h2 {
-    min-width: 9.5rem;
-    margin: 0;
-    font-size: 14px;
-    font-weight: 600;
-    text-align: center;
-  }
-}
-
-.step {
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--divider);
-  border-radius: 8px;
-  background: var(--inset);
-  color: var(--text-secondary);
-  font-family: var(--mono);
-  cursor: pointer;
-
-  &:hover:not(:disabled) {
-    color: var(--text);
-    background: #1a2332;
-  }
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: default;
-  }
-}
-
 .filters {
   display: flex;
   flex: 1;
@@ -178,30 +131,5 @@
 
   .note {
     margin-left: auto;
-  }
-}
-
-.months {
-  min-width: 560px;
-
-  tbody tr {
-    cursor: pointer;
-
-    &:hover {
-      background: #182131;
-    }
-  }
-
-  a {
-    color: var(--text);
-    font-weight: 500;
-
-    &:hover {
-      color: var(--accent-pale);
-    }
-  }
-
-  .without-runs td {
-    color: var(--text-faint);
   }
 }

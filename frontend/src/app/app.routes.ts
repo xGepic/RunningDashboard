@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { calendarRoutes } from './calendar/calendar-routes';
 import { TrainingPlanPage } from './goal-races/training-plan-page';
 import { OverviewPage } from './overview/overview-page';
 import { RecordsPage } from './records/records-page';
@@ -15,6 +16,7 @@ export const routes: Routes = [
   { path: 'runs', component: RunsPage, title: 'Runs · Running Dashboard' },
   // Loaded when first opened: the Run's map brings in Leaflet.
   { path: 'runs/:id', loadComponent: () => import('./runs/run-detail-page').then((m) => m.RunDetailPage), title: 'Run · Running Dashboard' },
+  ...calendarRoutes,
   { path: 'shoes', component: ShoesPage, title: 'Shoes · Running Dashboard' },
   { path: 'training', component: TrainingPage, title: 'Training · Running Dashboard' },
   { path: 'training/plan/:id', component: TrainingPlanPage, title: 'Training Plan · Running Dashboard' },

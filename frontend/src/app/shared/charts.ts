@@ -1,5 +1,6 @@
 import type { EChartsCoreOption } from 'echarts/core';
 import { ChartColors, baseChartOptions, tooltipHtml } from './chart-theme';
+import { fullMonthNames } from './dates';
 import { DistanceUnit, distanceIn } from './format';
 
 export const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -97,7 +98,6 @@ export interface MonthDistance {
 /** Line chart of distance per calendar month of `year`, in kilometres or miles; months without Runs sit at zero. */
 export function monthlyDistanceChart(year: number, months: MonthDistance[], unit: DistanceUnit, colors: ChartColors): EChartsCoreOption {
   const base = baseChartOptions(colors);
-  const fullNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   return {
     ...base,
     tooltip: {
@@ -106,7 +106,7 @@ export function monthlyDistanceChart(year: number, months: MonthDistance[], unit
       formatter: (params: { dataIndex: number }[]) => {
         const month = months[params[0]?.dataIndex];
         if (!month) return '';
-        const title = `${fullNames[month.month - 1]} ${year}`;
+        const title = `${fullMonthNames[month.month - 1]} ${year}`;
         if (month.runs === 0) return tooltipHtml(colors, title, 'no Runs');
         return tooltipHtml(colors, title, distanceIn(month.distance, unit).toFixed(1), unit, `${month.runs} ${month.runs === 1 ? 'Run' : 'Runs'}`);
       },

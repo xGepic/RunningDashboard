@@ -1,0 +1,124 @@
+<div class="page">
+  <header class="page-header">
+    <div class="titles">
+      <span class="eyebrow">Calendar</span>
+      <h1>{{ monthTitle() ?? selectedYear() }}</h1>
+    </div>
+    @if (monthTotals(); as totals) {
+      @if (totals.runs > 0) {
+        <div class="stats summary" [attr.aria-label]="'Totals of ' + monthTitle()">
+          <div class="stat"><span class="label">Runs</span><span class="value">{{ totals.runs }}</span></div>
+          <div class="stat"><span class="label">Distance</span><span class="value">{{ formatDistance(totals.distance, distanceUnit(), 1) }}</span></div>
+          <div class="stat"><span class="label">Moving Time</span><span class="value">{{ formatHoursMinutes(totals.movingTime) }}</span></div>
+          <div class="stat"><span class="label">Avg Pace</span><span class="value">{{ formatPace(totals.pace, distanceUnit()) }}</span></div>
+        </div>
+      }
+    }
+  </header>
+
+  <div class="toolbar">
+    @if (monthTitle(); as title) {
+      <nav class="period-nav" aria-label="Month">
+        <button type="button" class="step" (click)="shiftMonth(-1)" [disabled]="!hasPreviousMonth()"
+                [attr.aria-label]="'Previous month: ' + neighbourMonths().previous" [title]="neighbourMonths().previous">←</button>
+        <h2>{{ title }}</h2>
+        <button type="button" class="step" (click)="shiftMonth(1)" [disabled]="isCurrentMonth()"
+                [attr.aria-label]="'Next month: ' + neighbourMonths().next" [title]="neighbourMonths().next">→</button>
+      </nav>
+    } @else {
+      <nav class="period-nav" aria-label="Year">
+        <button type="button" class="step" (click)="shiftYear(-1)" [disabled]="!hasPreviousYear()"
+                [attr.aria-label]="'Previous year: ' + (selectedYear() - 1)" [title]="selectedYear() - 1">←</button>
+        <h2>{{ selectedYear() }}</h2>
+        <button type="button" class="step" (click)="shiftYear(1)" [disabled]="isCurrentYear()"
+                [attr.aria-label]="'Next year: ' + (selectedYear() + 1)" [title]="selectedYear() + 1">→</button>
+      </nav>
+    }
+
+    <div class="segmented" role="group" aria-label="Type">
+      @for (type of sportTypes; track type.value) {
+        <button type="button" [attr.aria-pressed]="(sportType() ?? '') === type.value" (click)="filter(type.value)">{{ type.label }}</button>
+      }
+    </div>
+
+    <div class="segmented units" role="group" aria-label="Units">
+      <button type="button" [attr.aria-pressed]="distanceUnit() === 'km'" (click)="showUnit('km')">km</button>
+      <button type="button" [attr.aria-pressed]="distanceUnit() === 'mi'" (click)="showUnit('mi')">mi</button>
+    </div>
+  </div>
+
+  @if (months.error()) {
+    <p class="error" role="alert">The monthly totals could not be loaded.</p>
+  } @else if (selectedMonth()) {
+    @if (runs.error()) {
+      <p class="error" role="alert">The month's Runs could not be loaded.</p>
+    } @else {
+      <section class="card flush month-grid" aria-label="Training Weeks of the month">
+        <div class="weekdays" aria-hidden="true">
+          @for (name of weekdayNames; track name) {
+            <span>{{ name }}</span>
+          }
+          <span class="week-total-head">Week</span>
+        </div>
+        @for (week of weeks(); track week.start.getTime()) {
+          <div class="week">
+            @for (calendarDay of week.days; track calendarDay.date.getTime()) {
+              <div class="day" [class.other-month]="calendarDay.otherMonth" [class.today]="calendarDay.isToday"
+                   [class.without-runs]="calendarDay.runs.length === 0">
+                <span class="date"><span class="weekday">{{ calendarDay.date | date: 'EEE' }}</span>
+                  <span class="date-number">{{ calendarDay.date.getDate() }}</span></span>
+                @if (calendarDay.runs.length) {
+                  <ul class="day-runs">
+                    @for (run of calendarDay.runs; track run.id) {
+                      <li><a [routerLink]="['/runs', run.id]" [title]="run.name">{{ run.name }}</a></li>
+                    }
+                  </ul>
+                }
+              </div>
+            }
+            <div class="week-total" [attr.aria-label]="'Week of ' + (week.start | date: 'd MMM') + ': distance'">
+              {{ week.distance > 0 ? formatDistance(week.distance, distanceUnit(), 1) : '–' }}
+            </div>
+          </div>
+        }
+      </section>
+    }
+  } @else {
+    <ol class="year-grid">
+      @for (box of boxes(); track box.month) {
+        <li>
+          @if (box.future) {
+            <div class="month-box future">
+              <span class="name">{{ box.name }}</span>
+            </div>
+          } @else {
+            <a class="month-box" [class.without-runs]="box.runs === 0" [routerLink]="yearPath()" [fragment]="box.fragment"
+               queryParamsHandling="preserve">
+              <span class="name">{{ box.name }}</span>
+              @if (box.runs > 0) {
+                <span class="distance">{{ formatDistance(box.distance, distanceUnit(), 1) }}</span>
+                <span class="time">{{ formatHoursMinutes(box.movingTime) }}</span>
+              } @else {
+                <span class="distance">–</span>
+              }
+            </a>
+          }
+        </li>
+      }
+    </ol>
+
+    @if (months.hasValue()) {
+      <section class="card">
+        <div class="card-header">
+          <div class="titles">
+            <h2 class="card-title">Distance per month</h2>
+            <p class="card-sub">{{ selectedYear() }}, in {{ distanceUnit() }}. Click a point to open its month.</p>
+          </div>
+        </div>
+        <div class="chart" echarts [options]="monthlyDistance()" [autoResize]="true" role="img"
+             (chartClick)="openChartMonth($event.dataIndex)"
+             [attr.aria-label]="'Line chart of distance per month in ' + selectedYear() + '; the boxes above have the same numbers'"></div>
+      </section>
+    }
+  }
+</div>

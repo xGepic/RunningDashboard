@@ -40,6 +40,14 @@ export interface MonthTotals {
   pace: number | null;
 }
 
+/** The kinds of Run the filters offer, as Strava's sport types; an empty one for all. */
+export const sportTypes = [
+  { value: '', label: 'All Runs' },
+  { value: 'Run', label: 'Road' },
+  { value: 'TrailRun', label: 'Trail' },
+  { value: 'VirtualRun', label: 'Treadmill' },
+];
+
 export type RunSortKey = 'date' | 'distance' | 'movingTime' | 'pace';
 
 /** A Run with its detail, as returned by GET /api/runs/{id}. */

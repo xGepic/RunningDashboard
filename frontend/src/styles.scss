@@ -493,6 +493,54 @@ a.link {
   align-items: center;
 }
 
+/* A page's toolbar: ← period → steps, filters and toggles, as on the Runs and Calendar pages. */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-bottom: -8px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.period-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  h2 {
+    min-width: 9.5rem;
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+  }
+}
+
+.step {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--divider);
+  border-radius: 8px;
+  background: var(--inset);
+  color: var(--text-secondary);
+  font-family: var(--mono);
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    color: var(--text);
+    background: #1a2332;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+}
+
 /* Segmented control: buttons with aria-pressed. */
 .segmented {
   display: inline-flex;
