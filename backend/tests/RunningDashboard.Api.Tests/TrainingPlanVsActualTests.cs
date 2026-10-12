@@ -5,8 +5,8 @@ namespace RunningDashboard.Api.Tests;
 
 /// <summary>
 /// The Training page's block view against the Training Plan. The second marathon (Sun 23 May 2027) has a 16-week
-/// Build–Peak–Peak–Taper plan from Mon 1 Feb; most planned weeks run on Tuesday, Thursday and Sunday. The clock
-/// stands at Wednesday 10 Mar 2027, in week −10 (Mon 8 to Sun 14 Mar).
+/// Build–Peak–Peak–Taper plan from Mon 1 Feb; most planned weeks run easy on Tuesday, a tempo on Thursday and long on
+/// Sunday. The clock stands at Wednesday 10 Mar 2027, in week −10 (Mon 8 to Sun 14 Mar).
 /// </summary>
 public sealed class TrainingPlanVsActualTests
 {
@@ -40,6 +40,7 @@ public sealed class TrainingPlanVsActualTests
         (plan.Phase, plan.RecoveryWeek, plan.PlannedDistance, plan.PlannedLongRun).ShouldBe(("peak", false, 30000.0, 16000.0));
         (plan.DistanceMet, plan.LongRunMet).ShouldBe((true, true));
         plan.Days.Select(d => d.State).ShouldBe(["rest", "ran", "rest", "ran", "rest", "rest", "ran"]);
+        plan.Days.Select(d => d.RunType).ShouldBe([null, "easy", null, "tempo", null, null, "long"]);
         plan.Days[0].Date.ShouldBe(new DateOnly(2027, 3, 1));
         plan.Days[^1].Date.ShouldBe(new DateOnly(2027, 3, 7));
         Week(block, -11).Actual!.Distance.ShouldBe(32000);
@@ -59,7 +60,49 @@ public sealed class TrainingPlanVsActualTests
         var plan = Week(block, -12).Plan!;
 
         plan.Days.Select(d => d.State).ShouldBe(["rest", "ran", "rest", "missed", "rest", "unplanned", "missed"]);
+        // A missed day keeps its Run Type, so the missed Long day shows; the Run on Saturday has none.
+        plan.Days.Select(d => d.RunType).ShouldBe([null, "easy", null, "tempo", null, null, "long"]);
         (plan.DistanceMet, plan.LongRunMet).ShouldBe((false, false));
+    }
+
+    [Test]
+    public async Task A_double_on_a_running_day_counts_once_for_that_day()
+    {
+        // Week −11, Mon 1 to Sun 7 Mar 2027: two Runs on the Tuesday, and the other Running Days run as planned.
+        var block = await PlannedBlockAsync(
+            [
+                Run(1, "Tuesday morning", new DateTime(2027, 3, 2, 7, 0, 0), 6000),
+                Run(2, "Tuesday evening", new DateTime(2027, 3, 2, 18, 0, 0), 5000),
+                Run(3, "Thursday tempo", new DateTime(2027, 3, 4, 18, 0, 0), 8000),
+                Run(4, "Sunday long run", new DateTime(2027, 3, 7, 8, 0, 0), 16000),
+            ],
+            new WeekRequest(-11, 30000, 16000, TuesdayThursdaySunday, false));
+
+        var week = Week(block, -11);
+
+        week.Plan!.Days.Select(d => (d.State, d.RunType)).ShouldBe(
+            [("rest", null), ("ran", "easy"), ("rest", null), ("ran", "tempo"), ("rest", null), ("rest", null), ("ran", "long")]);
+        week.Actual!.Runs.ShouldBe(4);
+    }
+
+    [Test]
+    public async Task The_long_run_is_the_longest_run_of_the_week_whichever_day_was_planned_as_long()
+    {
+        // Week −12, Mon 22 to Sun 28 Feb 2027: Sunday was planned as Long but run as 18 km, Thursday was 20 km.
+        var block = await PlannedBlockAsync(
+            [
+                Run(1, "Tuesday easy", new DateTime(2027, 2, 23, 18, 0, 0), 8000),
+                Run(2, "Thursday, longer than planned", new DateTime(2027, 2, 25, 18, 0, 0), 20000),
+                Run(3, "Sunday long run", new DateTime(2027, 2, 28, 8, 0, 0), 18000),
+            ],
+            new WeekRequest(-12, 40000, 19000, TuesdayThursdaySunday, false));
+
+        var week = Week(block, -12);
+
+        week.Actual!.LongRun!.RunId.ShouldBe(2);
+        // 20 km on Thursday meets the planned 19 km Long Run, though Sunday was the Long day.
+        week.Plan!.LongRunMet.ShouldBe(true);
+        week.Plan.Days[6].ShouldBe(new DayResponse(new DateOnly(2027, 2, 28), "ran", "long"));
     }
 
     [Test]
@@ -74,6 +117,7 @@ public sealed class TrainingPlanVsActualTests
 
         week.Status.ShouldBe("current");
         week.Plan!.Days.Select(d => d.State).ShouldBe(["rest", "ran", "rest", "planned", "rest", "rest", "planned"]);
+        week.Plan.Days.Select(d => d.RunType).ShouldBe([null, "easy", null, "tempo", null, null, "long"]);
         // 8 of 30 km so far: not short yet, the week is still running.
         (week.Plan.DistanceMet, week.Plan.LongRunMet).ShouldBe(((bool?)null, (bool?)null));
     }
@@ -101,6 +145,27 @@ public sealed class TrainingPlanVsActualTests
 
         (plan.PlannedDistance, plan.PlannedLongRun, plan.DistanceMet, plan.LongRunMet).ShouldBe(((double?)null, (double?)null, (bool?)null, (bool?)null));
         plan.Days.Select(d => d.State).ShouldBe(["rest", "unplanned", "rest", "rest", "rest", "rest", "rest"]);
+        plan.Days.ShouldAllBe(d => d.RunType == null);
+    }
+
+    [Test]
+    public async Task A_past_block_shows_its_run_types_on_its_own_and_in_the_comparison()
+    {
+        // The first marathon (Sun 27 Sep 2026) had a 12-week plan; its first week, −11, is Mon 6 to Sun 12 Jul.
+        var browser = await _app.ConnectWithActivitiesAsync(Run(1, "Summer tempo", new DateTime(2026, 7, 9, 18, 0, 0), 9000));
+        var first = await CreateGoalRaceAsync(browser, new GoalRaceRequest("Vienna Marathon", new DateOnly(2026, 9, 27), Marathon, null, 14));
+        await PlanAsync(browser, first, 12, ["build", "peak", "taper"], new WeekRequest(-11, 30000, 14000, [new("thursday", "tempo"), new("saturday", "intervals")], false));
+        var second = await CreateGoalRaceAsync(browser, SecondMarathon);
+        await PlanAsync(browser, second, 16, BuildPeakPeakTaper);
+        _app.Clock.SetUtcNow(new DateTimeOffset(2027, 3, 10, 12, 0, 0, TimeSpan.Zero));
+
+        var own = (await browser.GetFromJsonAsync<TrainingResponse>($"/api/training?goalRaceId={first.Id}"))!.Block!;
+        var compared = (await browser.GetFromJsonAsync<TrainingResponse>("/api/training"))!.Block!.Comparison!.Weeks
+            .Single(w => w.WeeksToRace == -11).Compared!;
+
+        var expected = new (string, string?)[] { ("rest", null), ("rest", null), ("rest", null), ("ran", "tempo"), ("rest", null), ("missed", "intervals"), ("rest", null) };
+        Week(own, -11).Plan!.Days.Select(d => (d.State, d.RunType)).ShouldBe(expected);
+        compared.Plan!.Days.Select(d => (d.State, d.RunType)).ShouldBe(expected);
     }
 
     [Test]
@@ -133,13 +198,19 @@ public sealed class TrainingPlanVsActualTests
     {
         var browser = await _app.ConnectWithActivitiesAsync(runs);
         var race = await CreateGoalRaceAsync(browser, SecondMarathon);
-        (await browser.PutAsJsonAsync($"/api/goal-races/{race.Id}/training-plan", new { length = 16, phases = BuildPeakPeakTaper }))
-            .EnsureSuccessStatusCode();
-        (await browser.PutAsJsonAsync($"/api/goal-races/{race.Id}/training-plan/weeks", new { weeks }))
-            .EnsureSuccessStatusCode();
+        await PlanAsync(browser, race, 16, BuildPeakPeakTaper, weeks);
         _app.Clock.SetUtcNow(new DateTimeOffset(2027, 3, 10, 12, 0, 0, TimeSpan.Zero));
 
         return (await browser.GetFromJsonAsync<TrainingResponse>("/api/training"))!.Block!;
+    }
+
+    /// <summary>Gives <paramref name="race"/> a Training Plan with <paramref name="weeks"/> planned.</summary>
+    private static async Task PlanAsync(HttpClient browser, GoalRaceResponse race, int length, string[] phases, params WeekRequest[] weeks)
+    {
+        (await browser.PutAsJsonAsync($"/api/goal-races/{race.Id}/training-plan", new { length, phases }))
+            .EnsureSuccessStatusCode();
+        (await browser.PutAsJsonAsync($"/api/goal-races/{race.Id}/training-plan/weeks", new { weeks }))
+            .EnsureSuccessStatusCode();
     }
 
     /// <summary>A Run in Vienna in winter, at an easy 6:00 /km.</summary>
@@ -171,7 +242,11 @@ public sealed class TrainingPlanVsActualTests
     private sealed record TrainingResponse(BlockResponse? Block);
 
     /// <param name="Phases">None without a Training Plan.</param>
-    private sealed record BlockResponse(List<PhaseResponse>? Phases, List<WeekResponse> Weeks);
+    private sealed record BlockResponse(List<PhaseResponse>? Phases, List<WeekResponse> Weeks, ComparisonResponse? Comparison);
+
+    private sealed record ComparisonResponse(List<LinedUpWeekResponse> Weeks);
+
+    private sealed record LinedUpWeekResponse(int WeeksToRace, WeekResponse? Compared);
 
     private sealed record PhaseResponse(string Type, int FirstWeeksToRace, int LastWeeksToRace);
 
@@ -179,7 +254,9 @@ public sealed class TrainingPlanVsActualTests
     private sealed record WeekResponse(int WeeksToRace, string Status, ActualResponse? Actual, PlanResponse? Plan);
 
     /// <param name="Distance">Metres.</param>
-    private sealed record ActualResponse(double Distance);
+    private sealed record ActualResponse(int Runs, double Distance, LongRunResponse? LongRun);
+
+    private sealed record LongRunResponse(long RunId);
 
     /// <param name="DistanceMet">None while the week runs short of it, for a future week, or without a planned distance.</param>
     /// <param name="Days">Monday to Sunday.</param>
@@ -193,5 +270,6 @@ public sealed class TrainingPlanVsActualTests
         List<DayResponse> Days);
 
     /// <param name="State">"ran", "missed", "unplanned", "planned" (still to come) or "rest".</param>
-    private sealed record DayResponse(DateOnly Date, string State);
+    /// <param name="RunType">The Running Day's; none for a rest day or a Run on an unplanned day.</param>
+    private sealed record DayResponse(DateOnly Date, string State, string? RunType);
 }

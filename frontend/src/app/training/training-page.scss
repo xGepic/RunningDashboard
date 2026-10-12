@@ -115,8 +115,15 @@ td.compared {
     margin-left: 10px;
   }
 
-  .running-days {
+  .legend-group {
     margin-left: 18px;
+  }
+
+  .run-type-key {
+    margin-left: 10px;
+    color: var(--text-secondary);
+    font-family: var(--mono);
+    font-weight: 600;
   }
 }
 
@@ -147,15 +154,23 @@ tr.recovery-week td {
 }
 
 .day {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
   border: 1px solid var(--border-strong);
   border-radius: 3px;
+  color: var(--text-secondary);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 1;
 
   &.ran {
     border-color: var(--met);
     background: var(--met);
+    color: var(--on-accent);
   }
 
   &.missed {

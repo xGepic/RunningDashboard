@@ -195,7 +195,7 @@ public static class TrainingEndpoints
                     plan.PlannedLongRun,
                     plan.DistanceMet,
                     plan.LongRunMet,
-                    [.. plan.Days.Select(d => new DayResponse(d.Date, ApiNames.Of(d.State)))])
+                    [.. plan.Days.Select(d => new DayResponse(d.Date, ApiNames.Of(d.State), d.RunType is { } runType ? ApiNames.Of(runType) : null))])
                 : null);
     }
 
@@ -221,7 +221,10 @@ public static class TrainingEndpoints
     /// "ran" (a Running Day with a Run), "missed" (a past Running Day without one), "unplanned" (a Run on another day),
     /// "planned" (a Running Day still to come) or "rest".
     /// </param>
-    private sealed record DayResponse(DateOnly Date, string State);
+    /// <param name="RunType">
+    /// The Running Day's: "easy", "long", "tempo", "intervals" or "race"; none for a rest day or a Run on an unplanned day.
+    /// </param>
+    private sealed record DayResponse(DateOnly Date, string State, string? RunType);
 
     /// <param name="Distance">Metres.</param>
     /// <param name="MovingTime">Seconds.</param>

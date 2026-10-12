@@ -43,7 +43,8 @@ public enum DayState
 }
 
 /// <summary>One day of a planned Training Week on the calendar strip.</summary>
-public sealed record PlanDay(DateOnly Date, DayState State);
+/// <param name="RunType">The Running Day's; none for a rest day or a Run on an unplanned day.</param>
+public sealed record PlanDay(DateOnly Date, DayState State, RunType? RunType);
 
 /// <summary>A planned Training Week against what was run in it.</summary>
 /// <param name="PlannedDistance">Metres; none if not planned.</param>
@@ -164,7 +165,8 @@ public static class TrainingCalendar
         var runDays = runs.Select(r => DateOnly.FromDateTime(r.StartLocal)).ToHashSet();
         var days = Enumerable.Range(0, 7)
             .Select(i => week.Start.AddDays(i))
-            .Select(date => new PlanDay(date, DayOf(date, planned.RunningDays.Any(d => d.Day == date.DayOfWeek), runDays.Contains(date), today)))
+            .Select(date => (Date: date, planned.RunningDays.SingleOrDefault(d => d.Day == date.DayOfWeek)?.RunType))
+            .Select(day => new PlanDay(day.Date, DayOf(day.Date, day.RunType is not null, runDays.Contains(day.Date), today), day.RunType))
             .ToList();
         return new WeekPlan(
             plan.PhaseOf(weeksToRace),

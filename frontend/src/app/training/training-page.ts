@@ -10,8 +10,14 @@ import { km, weekLabel, weeklyDistanceChart } from '../shared/charts';
 import { daysBetween, localDate, today } from '../shared/dates';
 import { formatDistance, formatDuration, formatPace, formatPaceDifference } from '../shared/format';
 import { reloadOnSync } from '../sync/reload-on-sync';
-import { Phase } from '../goal-races/training-plan';
+import { Phase, RunType, runTypes } from '../goal-races/training-plan';
 import { DayState, GoalRaceSummary, LinedUpWeek, Training } from './training';
+
+/** The Run Types by type, for the calendar strip's labels. */
+const runTypeByType = Object.fromEntries(runTypes.map((runType) => [runType.type, runType])) as Record<
+  RunType,
+  (typeof runTypes)[number]
+>;
 
 /** How the calendar strip names each day's state. */
 const dayStates: Record<DayState, string> = {
@@ -68,6 +74,8 @@ export class TrainingPage {
   protected readonly formatPaceDifference = formatPaceDifference;
   protected readonly weekLabel = weekLabel;
   protected readonly dayStates = dayStates;
+  protected readonly runTypes = runTypes;
+  protected readonly runTypeByType = runTypeByType;
   protected readonly km = km;
   protected readonly todayDate = today();
 

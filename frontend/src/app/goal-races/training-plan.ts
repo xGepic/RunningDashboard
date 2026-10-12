@@ -48,13 +48,13 @@ export type RunType = 'easy' | 'long' | 'tempo' | 'intervals' | 'race';
 /** What a day of a plan week is planned for: a Run Type, or rest. */
 export type DayPlan = RunType | 'rest';
 
-/** The Run Types, in the order the editor offers them. */
-export const runTypes: { type: RunType; name: string }[] = [
-  { type: 'easy', name: 'Easy' },
-  { type: 'long', name: 'Long' },
-  { type: 'tempo', name: 'Tempo' },
-  { type: 'intervals', name: 'Intervals' },
-  { type: 'race', name: 'Race' },
+/** The Run Types, in the order the editor offers them; `letter` labels a day on the calendar strip. */
+export const runTypes: { type: RunType; name: string; letter: string }[] = [
+  { type: 'easy', name: 'Easy', letter: 'E' },
+  { type: 'long', name: 'Long', letter: 'L' },
+  { type: 'tempo', name: 'Tempo', letter: 'T' },
+  { type: 'intervals', name: 'Intervals', letter: 'I' },
+  { type: 'race', name: 'Race', letter: 'R' },
 ];
 
 /** What PUT /api/goal-races/{id}/training-plan takes. */

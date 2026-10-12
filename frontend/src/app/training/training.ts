@@ -1,4 +1,4 @@
-import { Phase, PhaseType } from '../goal-races/training-plan';
+import { Phase, PhaseType, RunType } from '../goal-races/training-plan';
 import { WeekDistance } from '../shared/charts';
 
 /** As returned by GET /api/training. Distances in metres, times in seconds, paces in seconds per km. */
@@ -94,6 +94,8 @@ export interface PlannedDay {
   /** yyyy-MM-dd. */
   date: string;
   state: DayState;
+  /** The Running Day's; none for a rest day or a Run on an unplanned day. */
+  runType: RunType | null;
 }
 
 /**
