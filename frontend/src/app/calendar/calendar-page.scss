@@ -2,41 +2,64 @@
   margin-left: auto;
 }
 
+:host {
+  display: block;
+  container-type: inline-size;
+}
+
+/* A quarter per row: 4 months side by side, 2 or 1 where the page is narrow. */
 .year-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+@container (width < 760px) {
+  .year-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (width < 380px) {
+  .year-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .month-box {
   display: flex;
   height: 100%;
+  min-height: 150px;
   flex-direction: column;
-  gap: 4px;
-  padding: 16px 18px;
+  gap: 6px;
+  padding: 22px 24px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--surface);
   color: var(--text);
 
   .name {
     color: var(--text-secondary);
-    font-size: 12.5px;
+    font-size: 14px;
+    font-weight: 500;
   }
 
+  /* The totals sit at the bottom, level across a row. */
   .distance {
+    margin-top: auto;
     font-family: var(--mono);
-    font-size: 20px;
+    font-size: 30px;
     font-weight: 500;
+    letter-spacing: -0.02em;
   }
 
   .time {
     color: var(--text-muted);
     font-family: var(--mono);
-    font-size: 12.5px;
+    font-size: 14px;
   }
 
   &.without-runs .distance {
