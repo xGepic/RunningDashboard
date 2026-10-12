@@ -85,6 +85,13 @@ public sealed record DistanceWeek(TrainingWeek Week, double? Distance, bool Reco
 /// <param name="Increase">The ratio of the distances minus one: 0.2 for 20% up.</param>
 public sealed record DistanceJump(TrainingWeek ComparedWith, double Increase);
 
+/// <summary>Consecutive Training Weeks with at least one Run each, from <paramref name="First"/> to <paramref name="Last"/>.</summary>
+public sealed record Streak(TrainingWeek First, TrainingWeek Last)
+{
+    /// <summary>How many Training Weeks it lasted.</summary>
+    public int Weeks => (Last.Start.DayNumber - First.Start.DayNumber) / 7 + 1;
+}
+
 /// <summary>Training Blocks laid out in Training Weeks, with what was actually run.</summary>
 public static class TrainingCalendar
 {
@@ -244,6 +251,40 @@ public static class TrainingCalendar
         }
 
         return jumps;
+    }
+
+    /// <summary>
+    /// The current Streak in Training Weeks, counted back from <paramref name="currentWeek"/>. The current week adds to
+    /// it once it has a Run, and only breaks it once its Sunday has passed without one; any earlier week without a Run
+    /// ends it.
+    /// </summary>
+    public static int CurrentStreak(IReadOnlySet<TrainingWeek> weeksWithRuns, TrainingWeek currentWeek)
+    {
+        var week = weeksWithRuns.Contains(currentWeek) ? currentWeek : currentWeek.WeeksBefore(1);
+        var weeks = 0;
+        while (weeksWithRuns.Contains(week))
+        {
+            weeks++;
+            week = week.WeeksBefore(1);
+        }
+
+        return weeks;
+    }
+
+    /// <summary>The longest Streak in <paramref name="weeksWithRuns"/>; of equally long ones, the most recent; none without Runs.</summary>
+    public static Streak? LongestStreak(IEnumerable<TrainingWeek> weeksWithRuns)
+    {
+        Streak? longest = null;
+        Streak? streak = null;
+        foreach (var week in weeksWithRuns.OrderBy(w => w.Start))
+        {
+            streak = streak is not null && streak.Last.Next == week ? streak with { Last = week } : new Streak(week, week);
+            // Later Streaks come last, so a tie goes to the most recent.
+            if (longest is null || streak.Weeks >= longest.Weeks)
+                longest = streak;
+        }
+
+        return longest;
     }
 
     /// <summary>The Long Run: the longest Run; of equally long ones, the one that took longer.</summary>

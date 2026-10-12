@@ -1,8 +1,8 @@
 import { Component, computed, input, linkedSignal } from '@angular/core';
-import { addDays, daysBetween, isoDate, today } from '../shared/dates';
+import { addDays, daysBetween, isoDate, localDate, today } from '../shared/dates';
 import { monthNames } from '../shared/charts';
 import { formatDistance } from '../shared/format';
-import { DayDistance } from './overview';
+import { DayDistance, Streak } from './overview';
 
 const weekdayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -24,8 +24,9 @@ interface Cell {
 }
 
 /**
- * How regularly the Athlete runs: a calendar heatmap of one year, a cell per day shaded by its distance, Monday-first
- * rows and a column per Training Week. The year picker starts at the current year and needs no new request.
+ * How regularly the Athlete runs: the current and the longest Streak, and a calendar heatmap of one year, a cell per
+ * day shaded by its distance, Monday-first rows and a column per Training Week. The year picker starts at the current
+ * year, needs no new request and leaves the Streaks, which cover the whole history, as they are.
  */
 @Component({
   selector: 'app-consistency-card',
@@ -35,6 +36,26 @@ interface Cell {
 export class ConsistencyCard {
   /** Every local date with Runs and its distance in metres. */
   readonly days = input.required<DayDistance[]>();
+
+  /** The current and the longest Streak; they cover the whole history, whichever year is shown. */
+  readonly streak = input.required<Streak>();
+
+  protected readonly formatWeeks = formatWeeks;
+
+  /**
+   * "6 weeks · 3 Mar – 13 Apr 2025": from the first Monday to the last Sunday, or to today while it is the current
+   * Streak; none without Runs.
+   */
+  protected readonly longestStreak = computed(() => {
+    const longest = this.streak().longest;
+    if (!longest) return null;
+    const first = localDate(longest.first);
+    const lastSunday = addDays(localDate(longest.last), 6);
+    const now = today();
+    const last = lastSunday > now ? now : lastSunday;
+    const from = first.getFullYear() === last.getFullYear() ? dayAndMonth(first) : `${dayAndMonth(first)} ${first.getFullYear()}`;
+    return `${formatWeeks(longest.weeks)} · ${from} – ${dayAndMonth(last)} ${last.getFullYear()}`;
+  });
 
   protected readonly levels = Array.from({ length: levels + 1 }, (_, level) => level);
 
@@ -88,6 +109,16 @@ export class ConsistencyCard {
     }
     return { cells, months, columns: cells.length / 7, daysWithRuns: distances.size };
   });
+}
+
+/** "1 week", "3 weeks". */
+function formatWeeks(count: number): string {
+  return `${count} ${count === 1 ? 'week' : 'weeks'}`;
+}
+
+/** "3 Mar". */
+function dayAndMonth(day: Date): string {
+  return `${day.getDate()} ${monthNames[day.getMonth()]}`;
 }
 
 /** 0 for Monday to 6 for Sunday. */

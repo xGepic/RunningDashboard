@@ -15,6 +15,26 @@ export interface Overview {
   yearlyGoal: YearlyGoal | null;
   /** Every local date with Runs, oldest first. */
   days: DayDistance[];
+  /** The current and the longest Streak, over the whole history. */
+  streak: Streak;
+}
+
+/** Consecutive Training Weeks with at least one Run. */
+export interface Streak {
+  /** Training Weeks; 0 without Runs. */
+  current: number;
+  /** None without Runs. */
+  longest: LongestStreak | null;
+}
+
+/** The longest Streak over the whole history; of equally long ones, the most recent. */
+export interface LongestStreak {
+  /** Training Weeks. */
+  weeks: number;
+  /** The Monday of its first Training Week, yyyy-MM-dd. */
+  first: string;
+  /** The Monday of its last Training Week, yyyy-MM-dd. */
+  last: string;
 }
 
 /** Metres run on one local date, all its Runs together. */

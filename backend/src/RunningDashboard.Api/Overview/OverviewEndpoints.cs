@@ -26,13 +26,15 @@ public static class OverviewEndpoints
     /// <param name="Months">Every month from the first Run's up to the current one.</param>
     /// <param name="YearlyGoal">The current year's; none without one.</param>
     /// <param name="Days">Every local date with Runs, oldest first.</param>
+    /// <param name="Streak">The current and the longest Streak, over the whole history.</param>
     private sealed record OverviewResponse(
         TotalsResponse Totals,
         IReadOnlyList<YearResponse> Years,
         IReadOnlyList<WeekResponse> Weeks,
         IReadOnlyList<MonthResponse> Months,
         YearlyGoalResponse? YearlyGoal,
-        IReadOnlyList<DayResponse> Days)
+        IReadOnlyList<DayResponse> Days,
+        StreakResponse Streak)
     {
         public static OverviewResponse From(
             IReadOnlyList<RunFigures> runs,
@@ -42,7 +44,7 @@ public static class OverviewEndpoints
         {
             var totals = TotalsResponse.Of(runs);
             if (runs.Count == 0)
-                return new OverviewResponse(totals, [], [], [], yearlyGoal, []);
+                return new OverviewResponse(totals, [], [], [], yearlyGoal, [], new StreakResponse(0, null));
 
             var years = runs
                 .GroupBy(r => r.StartLocal.Year)
@@ -79,7 +81,14 @@ public static class OverviewEndpoints
                 .Select(g => new DayResponse(g.Key, g.Sum(r => r.Distance)))
                 .ToList();
 
-            return new OverviewResponse(totals, years, weeks, months, yearlyGoal, days);
+            // Up to the current week, so both Streaks look at the same weeks.
+            var currentWeek = TrainingWeek.Of(today);
+            var weeksWithRuns = distanceByWeek.Keys.Where(w => w.Start <= currentWeek.Start).ToHashSet();
+            var streak = new StreakResponse(
+                TrainingCalendar.CurrentStreak(weeksWithRuns, currentWeek),
+                LongestStreakResponse.From(TrainingCalendar.LongestStreak(weeksWithRuns)));
+
+            return new OverviewResponse(totals, years, weeks, months, yearlyGoal, days, streak);
         }
 
         private static DateOnly Max(DateOnly a, DateOnly b) => a > b ? a : b;
@@ -110,4 +119,17 @@ public static class OverviewEndpoints
 
     /// <param name="Distance">Metres run that day, all its Runs together.</param>
     private sealed record DayResponse(DateOnly Date, double Distance);
+
+    /// <param name="Current">Training Weeks; 0 without Runs.</param>
+    /// <param name="Longest">None without Runs.</param>
+    private sealed record StreakResponse(int Current, LongestStreakResponse? Longest);
+
+    /// <param name="Weeks">Training Weeks.</param>
+    /// <param name="First">The Monday of its first Training Week.</param>
+    /// <param name="Last">The Monday of its last Training Week.</param>
+    private sealed record LongestStreakResponse(int Weeks, DateOnly First, DateOnly Last)
+    {
+        public static LongestStreakResponse? From(Streak? streak) =>
+            streak is null ? null : new(streak.Weeks, streak.First.Start, streak.Last.Start);
+    }
 }

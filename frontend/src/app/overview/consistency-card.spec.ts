@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ConsistencyCard } from './consistency-card';
-import { DayDistance } from './overview';
+import { DayDistance, Streak } from './overview';
 
 /** On Fri 9 Oct 2026. 2026 starts on a Thursday, so its heatmap runs from Mon 29 Dec 2025 to Sun 3 Jan 2027. */
 describe('ConsistencyCard', () => {
@@ -19,10 +19,13 @@ describe('ConsistencyCard', () => {
     { date: '2026-09-20', distance: 20000 },
   ];
 
-  async function render(given: DayDistance[]) {
+  const streak: Streak = { current: 3, longest: { weeks: 6, first: '2025-03-03', last: '2025-04-07' } };
+
+  async function render(given: DayDistance[], givenStreak: Streak = streak) {
     TestBed.configureTestingModule({ imports: [ConsistencyCard] });
     const fixture = TestBed.createComponent(ConsistencyCard);
     fixture.componentRef.setInput('days', given);
+    fixture.componentRef.setInput('streak', givenStreak);
     await fixture.whenStable();
     const element = fixture.nativeElement as HTMLElement;
     const cell = (date: string) => element.querySelector(`.cell[data-date="${date}"]`) as HTMLElement | null;
@@ -32,7 +35,12 @@ describe('ConsistencyCard', () => {
       ([...element.querySelectorAll('.segmented button')].find((b) => b.textContent!.trim() === year) as HTMLElement).click();
       await fixture.whenStable();
     };
-    return { element, cell, years, pressed, pick };
+    /** Each stat as "label: value". */
+    const stats = () =>
+      [...element.querySelectorAll('.stat')].map(
+        (stat) => `${stat.querySelector('.label')!.textContent!.trim()}: ${stat.querySelector('.value')!.textContent!.replace(/\s+/g, ' ').trim()}`,
+      );
+    return { element, cell, years, pressed, pick, stats };
   }
 
   it('starts at the current year, a column per Training Week and a row per weekday', async () => {
@@ -70,8 +78,31 @@ describe('ConsistencyCard', () => {
     expect(cell('2026-09-20')).toBeNull();
   });
 
-  it('shows an empty current year without Runs', async () => {
-    const { element, years } = await render([]);
+  it('shows the current and the longest Streak, from its first Monday to its last Sunday', async () => {
+    const { stats } = await render(days);
+
+    expect(stats()).toEqual(['Current Streak: 3 weeks', 'Longest Streak: 6 weeks · 3 Mar – 13 Apr 2025']);
+  });
+
+  it('ends the longest Streak today while it is the current one', async () => {
+    const { stats } = await render(days, { current: 3, longest: { weeks: 3, first: '2026-09-21', last: '2026-10-05' } });
+
+    expect(stats()[1]).toBe('Longest Streak: 3 weeks · 21 Sep – 9 Oct 2026');
+  });
+
+  it('keeps the Streaks when another year is picked', async () => {
+    const { stats, pick } = await render(days);
+    const before = stats();
+
+    await pick('2024');
+
+    expect(stats()).toEqual(before);
+  });
+
+  it('shows an empty current year and no Streak without Runs', async () => {
+    const { element, years, stats } = await render([], { current: 0, longest: null });
+
+    expect(stats()).toEqual(['Current Streak: 0 weeks', 'Longest Streak: –']);
 
     expect(years()).toEqual(['2026']);
     expect(element.querySelectorAll('.cells .cell[data-date]').length).toBe(365);
