@@ -113,6 +113,65 @@ public sealed class RunsListTests(RunsListTests.FiveRuns runs) : IClassFixture<R
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Months_add_up_a_years_runs_per_calendar_month()
+    {
+        var year = await MonthsAsync("year=2026");
+
+        Assert.Equal((2026, 2026), (year.Year, year.FirstYear));
+        Assert.Equal(Enumerable.Range(1, 12), year.Months.Select(m => m.Month));
+        var september = year.Months[8];
+        Assert.Equal((3, 26263), (september.Runs, september.MovingTime));
+        Assert.Equal(60688.2, september.Distance, 1);
+        // 26,263 s over 60.6882 km.
+        Assert.Equal(432.75, september.Pace!.Value, 2);
+        var october = year.Months[9];
+        Assert.Equal((2, 3981), (october.Runs, october.MovingTime));
+        Assert.Equal(9594.9, october.Distance, 1);
+        Assert.Equal(new MonthTotals(1, 0, 0, 0, null), year.Months[0]);
+    }
+
+    [Fact]
+    public async Task Months_are_for_the_current_year_by_default()
+    {
+        Assert.Equal(2026, (await MonthsAsync("")).Year);
+    }
+
+    [Fact]
+    public async Task Months_count_only_the_sport_type_filtered_for()
+    {
+        var year = await MonthsAsync("year=2026&sportType=TrailRun");
+
+        Assert.Equal((1, 12105.4), (year.Months[8].Runs, year.Months[8].Distance));
+        Assert.Equal(0, year.Months[9].Runs);
+    }
+
+    [Fact]
+    public async Task A_year_without_runs_has_twelve_empty_months_and_still_names_the_first_year()
+    {
+        var year = await MonthsAsync("year=2025");
+
+        Assert.All(year.Months, m => Assert.Equal((0, 0.0), (m.Runs, m.Distance)));
+        Assert.Equal(2026, year.FirstYear);
+    }
+
+    [Theory]
+    [InlineData("year=1899")]
+    [InlineData("sportType=Ride")]
+    public async Task Invalid_month_options_are_refused(string query)
+    {
+        var response = await _browser.GetAsync($"/api/runs/months?{query}");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    private async Task<RunMonths> MonthsAsync(string query) =>
+        (await _browser.GetFromJsonAsync<RunMonths>($"/api/runs/months?{query}"))!;
+
+    private sealed record RunMonths(int Year, int? FirstYear, List<MonthTotals> Months);
+
+    private sealed record MonthTotals(int Month, int Runs, double Distance, int MovingTime, double? Pace);
+
     private async Task<RunPage> ListAsync(string query) =>
         (await _browser.GetFromJsonAsync<RunPage>($"/api/runs?{query}"))!;
 

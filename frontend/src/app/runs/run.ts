@@ -21,6 +21,25 @@ export interface RunPage {
   totalCount: number;
 }
 
+/** GET /api/runs/months: one year's Runs added up per calendar month. Distance in metres, times in seconds. */
+export interface RunMonths {
+  year: number;
+  /** The year of the first Run of any type; none without Runs. */
+  firstYear: number | null;
+  /** January to December; months without Runs as zero. */
+  months: MonthTotals[];
+}
+
+export interface MonthTotals {
+  /** 1 for January. */
+  month: number;
+  runs: number;
+  distance: number;
+  movingTime: number;
+  /** Seconds per km over all of the month's Runs; none without Runs. */
+  pace: number | null;
+}
+
 export type RunSortKey = 'date' | 'distance' | 'movingTime' | 'pace';
 
 /** A Run with its detail, as returned by GET /api/runs/{id}. */

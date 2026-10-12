@@ -40,6 +40,38 @@ public static class RunEndpoints
             return Results.Ok(new RunPageResponse(page, query.PageOrDefault, query.PageSizeOrDefault, matching.Count));
         });
 
+        // One year's Runs added up per calendar month, by local start; all twelve months, empty ones as zero.
+        app.MapGet("/api/runs/months", async (int? year, string? sportType, AppDbContext db, TimeProvider clock, CancellationToken cancellationToken) =>
+        {
+            if (year is < 1900 or > 2099)
+                return Results.ValidationProblem(new Dictionary<string, string[]> { ["year"] = ["The year is between 1900 and 2099."] });
+            if (sportType is not null && !Run.IsRunningSportType(sportType))
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["sportType"] = ["Only running sport types are listed: Run, TrailRun, VirtualRun."],
+                });
+
+            var selectedYear = year ?? clock.GetLocalNow().Year;
+            var runs = await db.Runs
+                .Select(r => new { r.SportType, r.StartLocal, r.Distance, r.MovingTime })
+                .ToListAsync(cancellationToken);
+            var byMonth = runs
+                .Where(r => r.StartLocal.Year == selectedYear && (sportType is null || r.SportType == sportType))
+                .ToLookup(r => r.StartLocal.Month);
+            var months = Enumerable.Range(1, 12)
+                .Select(month =>
+                {
+                    var inMonth = byMonth[month].ToList();
+                    var distance = inMonth.Sum(r => r.Distance);
+                    var movingTime = inMonth.Sum(r => r.MovingTime);
+                    return new MonthTotalsResponse(month, inMonth.Count, distance, movingTime, Run.PaceOf(movingTime, distance));
+                })
+                .ToList();
+            // Of any type, so the years to step through stay the same whatever the filter.
+            int? firstYear = runs.Count == 0 ? null : runs.Min(r => r.StartLocal.Year);
+            return Results.Ok(new RunMonthsResponse(selectedYear, firstYear, months));
+        });
+
         app.MapGet("/api/runs/{id:long}", async (long id, AppDbContext db, CancellationToken cancellationToken) =>
         {
             var run = await db.Runs
@@ -72,6 +104,15 @@ public static class RunEndpoints
         };
         return sorted.ThenByDescending(r => r.StartLocal);
     }
+
+    /// <param name="FirstYear">The year of the first Run; none without Runs.</param>
+    private sealed record RunMonthsResponse(int Year, int? FirstYear, IReadOnlyList<MonthTotalsResponse> Months);
+
+    /// <param name="Month">1 for January.</param>
+    /// <param name="Distance">Metres.</param>
+    /// <param name="MovingTime">Seconds.</param>
+    /// <param name="Pace">Seconds per kilometre over all of the month's Runs; none without Runs.</param>
+    private sealed record MonthTotalsResponse(int Month, int Runs, double Distance, int MovingTime, double? Pace);
 
     private sealed record RunPageResponse(IReadOnlyList<RunResponse> Items, int Page, int PageSize, int TotalCount);
 

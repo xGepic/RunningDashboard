@@ -180,3 +180,28 @@
     margin-left: auto;
   }
 }
+
+.months {
+  min-width: 560px;
+
+  tbody tr {
+    cursor: pointer;
+
+    &:hover {
+      background: #182131;
+    }
+  }
+
+  a {
+    color: var(--text);
+    font-weight: 500;
+
+    &:hover {
+      color: var(--accent-pale);
+    }
+  }
+
+  .without-runs td {
+    color: var(--text-faint);
+  }
+}
