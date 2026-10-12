@@ -3,7 +3,16 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, input, linkedSignal, output, signal } from '@angular/core';
 import { FieldErrors, formError } from '../shared/field-errors';
 import { kilometresToMetres } from '../shared/format';
-import { TrainingPlan, TrainingPlanWeek, TrainingPlanWeekRequest, Weekday, weekdays } from './training-plan';
+import {
+  DayPlan,
+  RunningDay,
+  runTypes,
+  TrainingPlan,
+  TrainingPlanWeek,
+  TrainingPlanWeekRequest,
+  Weekday,
+  weekdays,
+} from './training-plan';
 
 /** One row of the editor: a week of the plan with what the Athlete has entered for it. */
 interface WeekRow {
@@ -13,14 +22,14 @@ interface WeekRow {
   /** The planned Long Run as typed. */
   longRunKm: string;
   /** Monday first. */
-  runningDays: Weekday[];
+  runningDays: RunningDay[];
   recoveryWeek: boolean;
 }
 
 /** The fields of a week the API reports errors for, as "weeks[i].field" with rows numbered as sent. */
 type WeekField = 'weeksToRace' | 'plannedDistance' | 'plannedLongRun' | 'runningDays' | 'recoveryWeek';
 
-/** The plan's weeks in a table: planned distance, planned Long Run, Running Days and Recovery Week for each. */
+/** The plan's weeks in a table: planned distance, planned Long Run, a Run Type or rest per day, and Recovery Week for each. */
 @Component({
   selector: 'app-training-plan-weeks-editor',
   imports: [DatePipe],
@@ -35,6 +44,7 @@ export class TrainingPlanWeeksEditor {
   readonly saved = output<TrainingPlan>();
 
   protected readonly weekdays = weekdays;
+  protected readonly runTypes = runTypes;
   protected readonly formError = formError;
 
   /**
@@ -64,10 +74,20 @@ export class TrainingPlanWeeksEditor {
     this.justSaved.set(false);
   }
 
-  protected toggleDay(index: number, day: Weekday): void {
-    const days = this.rows()[index].runningDays;
-    const toggled = days.includes(day) ? days.filter((d) => d !== day) : [...days, day];
-    this.edit(index, { runningDays: weekdays.map((d) => d.day).filter((d) => toggled.includes(d)) });
+  /** What a day shows in its cell: the Run Type's short name, or rest. */
+  protected shortName(plan: DayPlan): string {
+    return runTypes.find((t) => t.type === plan)?.short ?? 'Rest';
+  }
+
+  protected runTypeOn(row: WeekRow, day: Weekday): DayPlan {
+    return row.runningDays.find((d) => d.day === day)?.runType ?? 'rest';
+  }
+
+  /** Makes `day` a Running Day of that Run Type, or a rest day. */
+  protected pickRunType(index: number, day: Weekday, runType: DayPlan): void {
+    const others = this.rows()[index].runningDays.filter((d) => d.day !== day);
+    const picked = runType === 'rest' ? others : [...others, { day, runType }];
+    this.edit(index, { runningDays: weekdays.flatMap((weekday) => picked.filter((d) => d.day === weekday.day)) });
   }
 
   /** The Weekly Target and Running Days of the week above; whether it is a Recovery Week stays the Athlete's call. */

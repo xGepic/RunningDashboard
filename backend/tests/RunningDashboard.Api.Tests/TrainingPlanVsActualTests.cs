@@ -14,7 +14,7 @@ public sealed class TrainingPlanVsActualTests
 
     private static readonly GoalRaceRequest SecondMarathon = new("Second marathon", new DateOnly(2027, 5, 23), Marathon, 5 * 3600, 10);
 
-    private static readonly string[] TuesdayThursdaySunday = ["tuesday", "thursday", "sunday"];
+    private static readonly RunningDayRequest[] TuesdayThursdaySunday = [new("tuesday", "easy"), new("thursday", "tempo"), new("sunday", "long")];
     private static readonly string[] BuildPeakPeakTaper = ["build", "peak", "peak", "taper"];
 
     private readonly TestApp _app = new();
@@ -82,7 +82,7 @@ public sealed class TrainingPlanVsActualTests
     public async Task A_future_week_shows_only_the_plan()
     {
         // Week −9, Mon 15 to Sun 21 Mar 2027: a Recovery Week.
-        var block = await PlannedBlockAsync([], new WeekRequest(-9, 24000, 12000, ["tuesday", "sunday"], true));
+        var block = await PlannedBlockAsync([], new WeekRequest(-9, 24000, 12000, [new("tuesday", "easy"), new("sunday", "long")], true));
 
         var week = Week(block, -9);
 
@@ -162,7 +162,11 @@ public sealed class TrainingPlanVsActualTests
 
     /// <param name="PlannedDistance">Metres.</param>
     /// <param name="PlannedLongRun">Metres.</param>
-    private sealed record WeekRequest(int WeeksToRace, double? PlannedDistance, double? PlannedLongRun, string[] RunningDays, bool RecoveryWeek);
+    private sealed record WeekRequest(int WeeksToRace, double? PlannedDistance, double? PlannedLongRun, RunningDayRequest[] RunningDays, bool RecoveryWeek);
+
+    /// <param name="Day">"monday" to "sunday".</param>
+    /// <param name="RunType">"easy", "long", "tempo", "intervals" or "race".</param>
+    private sealed record RunningDayRequest(string Day, string RunType);
 
     private sealed record TrainingResponse(BlockResponse? Block);
 

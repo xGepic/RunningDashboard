@@ -96,7 +96,7 @@ A stretch of 4 consecutive Training Weeks in a Training Plan with one purpose: B
 _Avoid_: Cycle, mesocycle, stage
 
 **Recovery Week**:
-A Training Week within a Phase with deliberately lower load, marked as such by the Athlete in the Training Plan.
+A Training Week within a Phase with deliberately lower load, marked as such by the Athlete in the Training Plan. When a plan's length divides into 4-week stretches, every 4th week from the plan's first starts out marked, except the Race Week; the Athlete can change that.
 _Avoid_: Rest week, deload, cutback week
 
 **Weekly Target**:
@@ -104,8 +104,12 @@ The planned distance and planned Long Run for one Training Week.
 _Avoid_: Goal (for weeks), quota
 
 **Running Days**:
-The days of a Training Week on which the Training Plan schedules Runs.
+The days of a Training Week on which the Training Plan schedules Runs. Each Running Day has a Run Type; a day without one is a rest day.
 _Avoid_: Training days, run days
+
+**Run Type**:
+What a Running Day is planned for: Easy, Tempo, Intervals, Race or Long. The list is fixed. It only says what was intended: actual Runs are never given a Run Type, and the Long Run of a week is still its longest Run, whichever day was planned as Long.
+_Avoid_: Workout, session, workout type
 
 **Yearly Goal**:
 The distance the Athlete wants to run in the current calendar year. There is at most one; once its year is over, it no longer counts. Progress is measured against the goal spread evenly over the days of the year.

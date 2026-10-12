@@ -16,9 +16,9 @@
   align-items: start;
 }
 
-.phases {
+/* Length and Phases: a legend over boxes of a label and a select. */
+.boxes {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr));
   gap: 10px;
   min-width: 0;
   margin: 0;
@@ -50,6 +50,15 @@
 
   .field-error {
     grid-column: 1 / -1;
+  }
+}
+
+/* Wide enough that no label wraps, so every box in a row is as tall and the selects line up. */
+.phases {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+
+  .field > span {
+    white-space: nowrap;
   }
 }
 

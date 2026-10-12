@@ -103,8 +103,8 @@ public static class TrainingPlanEndpoints
     /// <param name="WeeksToRace">Which week of the plan: 0 for the Race Week.</param>
     /// <param name="PlannedDistance">Metres, or none.</param>
     /// <param name="PlannedLongRun">Metres, or none.</param>
-    /// <param name="RunningDays">"monday" to "sunday", in any order.</param>
-    private sealed record WeekRequest(int WeeksToRace, double? PlannedDistance, double? PlannedLongRun, string[]? RunningDays, bool RecoveryWeek)
+    /// <param name="RunningDays">In any order; the days left out are rest days.</param>
+    private sealed record WeekRequest(int WeeksToRace, double? PlannedDistance, double? PlannedLongRun, RunningDayRequest[]? RunningDays, bool RecoveryWeek)
     {
         /// <summary>What is wrong with this week, by field; <paramref name="earlier"/> are the weeks before it in the request.</summary>
         public IEnumerable<(string Field, string Error)> Errors(TrainingPlan plan, HashSet<int> earlier)
@@ -117,8 +117,10 @@ public static class TrainingPlanEndpoints
                 yield return ("plannedDistance", "The planned distance is a positive number of metres, or none.");
             if (PlannedLongRun <= 0)
                 yield return ("plannedLongRun", "The planned Long Run is a positive number of metres, or none.");
-            if (RunningDays is not null && Days() is null)
-                yield return ("runningDays", "Each Running Day is a day of the week, \"monday\" to \"sunday\".");
+            if (Days() is not { } days)
+                yield return ("runningDays", "Each Running Day is a day of the week, \"monday\" to \"sunday\", with a Run Type: \"easy\", \"long\", \"tempo\", \"intervals\" or \"race\".");
+            else if (days.DistinctBy(d => d.Day).Count() < days.Count)
+                yield return ("runningDays", "Each day of the week can have only one Run Type.");
             if (PlanningRules.RecoveryWeekError(WeeksToRace, RecoveryWeek) is { } recovery)
                 yield return ("recoveryWeek", recovery);
         }
@@ -127,13 +129,28 @@ public static class TrainingPlanEndpoints
         {
             week.PlannedDistance = PlannedDistance;
             week.PlannedLongRun = PlannedLongRun;
-            week.RunningDays = [.. Days()!.Distinct().OrderBy(MondayFirst)];
+            week.RunningDays = [.. Days()!.OrderBy(d => MondayFirst(d.Day))];
             week.RecoveryWeek = RecoveryWeek;
         }
 
-        /// <summary>The Running Days by name; null if one is not a day of the week.</summary>
-        private List<DayOfWeek>? Days() => ApiNames.Parse<DayOfWeek>(RunningDays ?? []);
+        /// <summary>The Running Days by name; null if one is not a day of the week with a Run Type.</summary>
+        private List<RunningDay>? Days()
+        {
+            var days = new List<RunningDay>();
+            foreach (var day in RunningDays ?? [])
+            {
+                if (ApiNames.Parse<DayOfWeek>(day?.Day) is not { } weekday || ApiNames.Parse<RunType>(day?.RunType) is not { } runType)
+                    return null;
+                days.Add(new RunningDay(weekday, runType));
+            }
+
+            return days;
+        }
     }
+
+    /// <param name="Day">"monday" to "sunday".</param>
+    /// <param name="RunType">"easy", "long", "tempo", "intervals" or "race".</param>
+    private sealed record RunningDayRequest(string? Day, string? RunType);
 
     /// <summary>Orders days Monday to Sunday, as Training Weeks run.</summary>
     private static int MondayFirst(DayOfWeek day) => ((int)day + 6) % 7;
@@ -161,7 +178,7 @@ public static class TrainingPlanEndpoints
                         ApiNames.Of(plan.PhaseOf(w.Planned.WeeksToRace)),
                         w.Planned.PlannedDistance,
                         w.Planned.PlannedLongRun,
-                        [.. w.Planned.RunningDays.Select(ApiNames.Of)],
+                        [.. w.Planned.RunningDays.Select(d => new RunningDayResponse(ApiNames.Of(d.Day), ApiNames.Of(d.RunType)))],
                         w.Planned.RecoveryWeek))]);
         }
     }
@@ -174,7 +191,7 @@ public static class TrainingPlanEndpoints
     /// <param name="Phase">The type of the Phase the week is in.</param>
     /// <param name="PlannedDistance">Metres, or none.</param>
     /// <param name="PlannedLongRun">Metres, or none.</param>
-    /// <param name="RunningDays">"monday" to "sunday", Monday first.</param>
+    /// <param name="RunningDays">Monday first; the days left out are rest days.</param>
     private sealed record WeekResponse(
         int WeeksToRace,
         DateOnly Start,
@@ -182,6 +199,10 @@ public static class TrainingPlanEndpoints
         string Phase,
         double? PlannedDistance,
         double? PlannedLongRun,
-        IReadOnlyList<string> RunningDays,
+        IReadOnlyList<RunningDayResponse> RunningDays,
         bool RecoveryWeek);
+
+    /// <param name="Day">"monday" to "sunday".</param>
+    /// <param name="RunType">"easy", "long", "tempo", "intervals" or "race".</param>
+    private sealed record RunningDayResponse(string Day, string RunType);
 }

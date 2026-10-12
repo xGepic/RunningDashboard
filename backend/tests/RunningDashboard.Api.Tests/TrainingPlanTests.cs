@@ -84,6 +84,7 @@ public sealed class TrainingPlanTests
     {
         var race = await CreateGoalRaceAsync(SecondMarathon);
         await PutPlanAsync(race, BuildPeakPeakTaper);
+        await PutWeeksAsync(race, new WeekRequest(-15, 30000, 12000, Days("tuesday easy, thursday tempo, sunday long"), false));
 
         var moved = await _browser.PutAsJsonAsync($"/api/goal-races/{race.Id}", SecondMarathon with { Date = new DateOnly(2027, 5, 30) });
         var plan = await GetPlanAsync(race);
@@ -92,6 +93,8 @@ public sealed class TrainingPlanTests
         plan.Weeks[0].ShouldBe(new WeekResponse(-15, new DateOnly(2027, 2, 8), new DateOnly(2027, 2, 14), "build"));
         plan.Weeks[^1].ShouldBe(new WeekResponse(0, new DateOnly(2027, 5, 24), new DateOnly(2027, 5, 30), "taper"));
         (await ListGoalRacesAsync()).ShouldHaveSingleItem().TrainingBlockStart.ShouldBe(new DateOnly(2027, 2, 8));
+        // The Run Types stay with week −15, now Mon 8 to Sun 14 Feb.
+        (await GetPlannedWeeksAsync(race)).Row(-15).ShouldBe((-15, 30000.0, 12000.0, "tuesday easy, thursday tempo, sunday long", false));
     }
 
     [Test]
@@ -99,7 +102,7 @@ public sealed class TrainingPlanTests
     {
         var race = await CreateGoalRaceAsync(SecondMarathon);
         await PutPlanAsync(race, BuildPeakPeakTaper);
-        await PutWeeksAsync(race, new WeekRequest(-15, 30000, 12000, ["sunday"], false), new WeekRequest(-11, 35000, 14000, ["tuesday", "sunday"], true));
+        await PutWeeksAsync(race, new WeekRequest(-15, 30000, 12000, Days("sunday long"), false), new WeekRequest(-11, 35000, 14000, Days("tuesday tempo, sunday long"), true));
 
         var shorter = await PutPlanAsync(race, new TrainingPlanRequest(12, ["build", "peak", "taper"]));
         var longer = await PutPlanAsync(race, new TrainingPlanRequest(20, ["build", "build", "peak", "peak", "taper"]));
@@ -111,8 +114,34 @@ public sealed class TrainingPlanTests
         longer.Weeks[0].Start.ShouldBe(new DateOnly(2027, 1, 4));
         (await ListGoalRacesAsync()).ShouldHaveSingleItem().TrainingBlockStart.ShouldBe(new DateOnly(2027, 1, 4));
         // Week −11 stayed in range throughout; week −15 was dropped by the 12-week plan and came back empty.
-        weeks.Row(-11).ShouldBe((-11, 35000.0, 14000.0, "tuesday sunday", true));
+        weeks.Row(-11).ShouldBe((-11, 35000.0, 14000.0, "tuesday tempo, sunday long", true));
         weeks.Row(-15).ShouldBe((-15, null, null, "", false));
+    }
+
+    [Test]
+    public async Task Every_4th_week_starts_as_a_recovery_week_except_the_race_week()
+    {
+        var race = await CreateGoalRaceAsync(SecondMarathon);
+
+        await PutPlanAsync(race, BuildPeakPeakTaper);
+        var weeks = await GetPlannedWeeksAsync(race);
+
+        // Weeks 4, 8 and 12 of 16; week 16 is the Race Week.
+        weeks.Weeks.Where(w => w.RecoveryWeek).Select(w => w.WeeksToRace).ShouldBe([-12, -8, -4]);
+    }
+
+    [Test]
+    public async Task A_longer_plan_pre_marks_only_its_new_weeks_as_recovery_weeks()
+    {
+        var race = await CreateGoalRaceAsync(SecondMarathon);
+        await PutPlanAsync(race, BuildPeakPeakTaper);
+        await PutWeeksAsync(race, new WeekRequest(-8, 40000, 18000, Days("sunday long"), false), new WeekRequest(-6, 25000, 10000, Days("sunday long"), true));
+
+        await PutPlanAsync(race, new TrainingPlanRequest(20, ["build", "build", "peak", "peak", "taper"]));
+        var weeks = await GetPlannedWeeksAsync(race);
+
+        // Week −16 is new and the 4th of 20; the Athlete's own choices for weeks −8 and −6 stay.
+        weeks.Weeks.Where(w => w.RecoveryWeek).Select(w => w.WeeksToRace).ShouldBe([-16, -12, -6, -4]);
     }
 
     [Test]
@@ -123,9 +152,9 @@ public sealed class TrainingPlanTests
 
         var response = await _browser.PutAsJsonAsync(WeeksPath(race), new TrainingPlanWeeksRequest(
         [
-            new WeekRequest(-15, 30000, 12000, ["tuesday", "thursday", "saturday", "sunday"], false),
-            new WeekRequest(-12, 25000, 10000, ["sunday", "tuesday"], true),
-            new WeekRequest(0, 55000, 42195, ["tuesday", "thursday", "sunday"], false),
+            new WeekRequest(-15, 30000, 12000, Days("tuesday easy, thursday tempo, saturday easy, sunday long"), false),
+            new WeekRequest(-12, 25000, 10000, Days("sunday long, tuesday intervals"), true),
+            new WeekRequest(0, 55000, 42195, Days("tuesday easy, thursday easy, sunday race"), false),
         ]));
         var saved = await response.Content.ReadFromJsonAsync<PlannedWeeksResponse>();
         var read = await GetPlannedWeeksAsync(race);
@@ -133,12 +162,25 @@ public sealed class TrainingPlanTests
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         read.Rows().ShouldBe(saved!.Rows());
         read.Weeks.Count.ShouldBe(16);
-        read.Row(-15).ShouldBe((-15, 30000.0, 12000.0, "tuesday thursday saturday sunday", false));
+        read.Row(-15).ShouldBe((-15, 30000.0, 12000.0, "tuesday easy, thursday tempo, saturday easy, sunday long", false));
         // Running Days come back Monday first.
-        read.Row(-12).ShouldBe((-12, 25000.0, 10000.0, "tuesday sunday", true));
-        read.Row(0).ShouldBe((0, 55000.0, 42195.0, "tuesday thursday sunday", false));
+        read.Row(-12).ShouldBe((-12, 25000.0, 10000.0, "tuesday intervals, sunday long", true));
+        read.Row(0).ShouldBe((0, 55000.0, 42195.0, "tuesday easy, thursday easy, sunday race", false));
         // Weeks left out keep what they had: nothing yet.
         read.Row(-14).ShouldBe((-14, null, null, "", false));
+    }
+
+    [Test]
+    public async Task Days_left_out_are_rest_days_and_several_days_can_have_the_same_run_type()
+    {
+        var race = await CreateGoalRaceAsync(SecondMarathon);
+        await PutPlanAsync(race, BuildPeakPeakTaper);
+
+        // Two Long days and no planned Long Run: Run Types are not checked against the Weekly Target.
+        await PutWeeksAsync(race, new WeekRequest(-14, 32000, null, Days("sunday long, saturday long, wednesday easy"), false));
+
+        var week = (await GetPlannedWeeksAsync(race)).Weeks.Single(w => w.WeeksToRace == -14);
+        week.RunningDays.ShouldBe([new RunningDayResponse("wednesday", "easy"), new RunningDayResponse("saturday", "long"), new RunningDayResponse("sunday", "long")]);
     }
 
     [Test]
@@ -146,7 +188,7 @@ public sealed class TrainingPlanTests
     {
         var race = await CreateGoalRaceAsync(SecondMarathon);
         await PutPlanAsync(race, BuildPeakPeakTaper);
-        await PutWeeksAsync(race, new WeekRequest(-15, 30000, 12000, ["tuesday", "sunday"], true));
+        await PutWeeksAsync(race, new WeekRequest(-15, 30000, 12000, Days("tuesday easy, sunday long"), true));
 
         await PutWeeksAsync(race, new WeekRequest(-15, null, null, [], false));
 
@@ -161,8 +203,8 @@ public sealed class TrainingPlanTests
 
         var response = await _browser.PutAsJsonAsync(WeeksPath(race), new TrainingPlanWeeksRequest(
         [
-            new WeekRequest(-1, 40000, 16000, ["tuesday", "sunday"], false),
-            new WeekRequest(0, 55000, 42195, ["sunday"], true),
+            new WeekRequest(-1, 40000, 16000, Days("tuesday easy, sunday long"), false),
+            new WeekRequest(0, 55000, 42195, Days("sunday race"), true),
         ]));
         var problem = await response.Content.ReadFromJsonAsync<ValidationProblem>();
 
@@ -172,18 +214,23 @@ public sealed class TrainingPlanTests
         (await GetPlannedWeeksAsync(race)).Row(-1).ShouldBe((-1, null, null, "", false));
     }
 
-    [TestCase(-16, 30000.0, 12000.0, "tuesday", "weeks[0].weeksToRace")]
-    [TestCase(1, 30000.0, 12000.0, "tuesday", "weeks[0].weeksToRace")]
-    [TestCase(-15, 0.0, 12000.0, "tuesday", "weeks[0].plannedDistance")]
-    [TestCase(-15, 30000.0, -1.0, "tuesday", "weeks[0].plannedLongRun")]
-    [TestCase(-15, 30000.0, 12000.0, "funday", "weeks[0].runningDays")]
-    [TestCase(-15, 30000.0, 12000.0, "3", "weeks[0].runningDays")]
-    public async Task A_week_must_be_in_the_plan_with_positive_distances_and_real_days(int weeksToRace, double distance, double longRun, string day, string field)
+    [TestCase(-16, 30000.0, 12000.0, "tuesday easy", "weeks[0].weeksToRace")]
+    [TestCase(1, 30000.0, 12000.0, "tuesday easy", "weeks[0].weeksToRace")]
+    [TestCase(-15, 0.0, 12000.0, "tuesday easy", "weeks[0].plannedDistance")]
+    [TestCase(-15, 30000.0, -1.0, "tuesday easy", "weeks[0].plannedLongRun")]
+    [TestCase(-15, 30000.0, 12000.0, "funday easy", "weeks[0].runningDays")]
+    [TestCase(-15, 30000.0, 12000.0, "3 easy", "weeks[0].runningDays")]
+    [TestCase(-15, 30000.0, 12000.0, "tuesday jog", "weeks[0].runningDays")]
+    [TestCase(-15, 30000.0, 12000.0, "tuesday 0", "weeks[0].runningDays")]
+    [TestCase(-15, 30000.0, 12000.0, "tuesday", "weeks[0].runningDays")]
+    [TestCase(-15, 30000.0, 12000.0, "tuesday easy, sunday long, tuesday tempo", "weeks[0].runningDays")]
+    public async Task A_week_must_be_in_the_plan_with_positive_distances_and_one_known_run_type_per_real_day(
+        int weeksToRace, double distance, double longRun, string runningDays, string field)
     {
         var race = await CreateGoalRaceAsync(SecondMarathon);
         await PutPlanAsync(race, BuildPeakPeakTaper);
 
-        var response = await _browser.PutAsJsonAsync(WeeksPath(race), new TrainingPlanWeeksRequest([new WeekRequest(weeksToRace, distance, longRun, [day], false)]));
+        var response = await _browser.PutAsJsonAsync(WeeksPath(race), new TrainingPlanWeeksRequest([new WeekRequest(weeksToRace, distance, longRun, Days(runningDays), false)]));
         var problem = await response.Content.ReadFromJsonAsync<ValidationProblem>();
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
@@ -249,7 +296,7 @@ public sealed class TrainingPlanTests
     {
         var race = await CreateGoalRaceAsync(SecondMarathon);
         await PutPlanAsync(race, BuildPeakPeakTaper);
-        await PutWeeksAsync(race, new WeekRequest(0, 55000, 42195, ["sunday"], false));
+        await PutWeeksAsync(race, new WeekRequest(0, 55000, 42195, Days("sunday race"), false));
 
         var deleted = await _browser.DeleteAsync(PlanPath(race));
         var again = await _browser.DeleteAsync(PlanPath(race));
@@ -354,20 +401,34 @@ public sealed class TrainingPlanTests
 
     /// <param name="PlannedDistance">Metres, or none.</param>
     /// <param name="PlannedLongRun">Metres, or none.</param>
-    /// <param name="RunningDays">"monday" to "sunday".</param>
-    private sealed record WeekRequest(int WeeksToRace, double? PlannedDistance, double? PlannedLongRun, string[] RunningDays, bool RecoveryWeek);
+    /// <param name="RunningDays">In any order; the days left out are rest days.</param>
+    private sealed record WeekRequest(int WeeksToRace, double? PlannedDistance, double? PlannedLongRun, RunningDayRequest[] RunningDays, bool RecoveryWeek);
+
+    /// <param name="Day">"monday" to "sunday".</param>
+    /// <param name="RunType">"easy", "long", "tempo", "intervals" or "race".</param>
+    private sealed record RunningDayRequest(string Day, string? RunType);
+
+    /// <summary>Running Days written as "tuesday easy, sunday long"; a day written without a Run Type is sent without one.</summary>
+    private static RunningDayRequest[] Days(string days) =>
+        [.. days.Split(", ").Select(d => d.Split(' ')).Select(d => new RunningDayRequest(d[0], d.ElementAtOrDefault(1)))];
 
     private sealed record PlannedWeeksResponse(List<PlannedWeekResponse> Weeks)
     {
-        /// <summary>What is planned for one week, comparable as a whole: Running Days joined by spaces.</summary>
+        /// <summary>What is planned for one week, comparable as a whole: Running Days written as "tuesday easy, sunday long".</summary>
         public (int, double?, double?, string, bool) Row(int weeksToRace)
         {
             var week = Weeks.Single(w => w.WeeksToRace == weeksToRace);
-            return (week.WeeksToRace, week.PlannedDistance, week.PlannedLongRun, string.Join(' ', week.RunningDays), week.RecoveryWeek);
+            var days = string.Join(", ", week.RunningDays.Select(d => $"{d.Day} {d.RunType}"));
+            return (week.WeeksToRace, week.PlannedDistance, week.PlannedLongRun, days, week.RecoveryWeek);
         }
 
         public List<(int, double?, double?, string, bool)> Rows() => [.. Weeks.Select(w => Row(w.WeeksToRace))];
     }
 
-    private sealed record PlannedWeekResponse(int WeeksToRace, double? PlannedDistance, double? PlannedLongRun, List<string> RunningDays, bool RecoveryWeek);
+    /// <param name="RunningDays">Monday first.</param>
+    private sealed record PlannedWeekResponse(int WeeksToRace, double? PlannedDistance, double? PlannedLongRun, List<RunningDayResponse> RunningDays, bool RecoveryWeek);
+
+    /// <param name="Day">"monday" to "sunday".</param>
+    /// <param name="RunType">"easy", "long", "tempo", "intervals" or "race".</param>
+    private sealed record RunningDayResponse(string Day, string RunType);
 }

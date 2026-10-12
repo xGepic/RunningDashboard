@@ -31,10 +31,31 @@ export interface TrainingPlanWeek {
   plannedDistance: number | null;
   /** Metres; null until planned. */
   plannedLongRun: number | null;
-  /** Monday first. */
-  runningDays: Weekday[];
+  /** Monday first; the days left out are rest days. */
+  runningDays: RunningDay[];
   recoveryWeek: boolean;
 }
+
+/** A day of a plan week the Athlete plans to run on, and what for. */
+export interface RunningDay {
+  day: Weekday;
+  runType: RunType;
+}
+
+/** What a Running Day is planned for. */
+export type RunType = 'easy' | 'long' | 'tempo' | 'intervals' | 'race';
+
+/** What a day of a plan week is planned for: a Run Type, or rest. */
+export type DayPlan = RunType | 'rest';
+
+/** The Run Types, in the order the editor offers them; `short` fits a day of the editor's table. */
+export const runTypes: { type: RunType; name: string; short: string }[] = [
+  { type: 'easy', name: 'Easy', short: 'Easy' },
+  { type: 'tempo', name: 'Tempo', short: 'Tempo' },
+  { type: 'intervals', name: 'Intervals', short: 'Int.' },
+  { type: 'race', name: 'Race', short: 'Race' },
+  { type: 'long', name: 'Long', short: 'Long' },
+];
 
 /** What PUT /api/goal-races/{id}/training-plan takes. */
 export interface TrainingPlanRequest {

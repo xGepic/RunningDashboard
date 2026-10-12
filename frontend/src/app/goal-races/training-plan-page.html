@@ -24,19 +24,23 @@
       </div>
 
       <div class="shape-grid">
-        <label class="field length">
-          Length
-          <select #lengthPicker (change)="setLength(+lengthPicker.value)" [attr.aria-invalid]="!!errors()['length']">
-            @for (weeks of planLengths; track weeks) {
-              <option [value]="weeks" [selected]="weeks === length()">{{ weeks }} weeks</option>
-            }
-          </select>
+        <!-- Built like the Phases beside it, so its select lines up with theirs. -->
+        <fieldset class="boxes length">
+          <legend>Length</legend>
+          <label class="field">
+            <span>Training Weeks</span>
+            <select #lengthPicker (change)="setLength(+lengthPicker.value)" [attr.aria-invalid]="!!errors()['length']">
+              @for (weeks of planLengths; track weeks) {
+                <option [value]="weeks" [selected]="weeks === length()">{{ weeks }} weeks</option>
+              }
+            </select>
+          </label>
           @for (error of errors()['length']; track error) {
             <span class="field-error">{{ error }}</span>
           }
-        </label>
+        </fieldset>
 
-        <fieldset class="phases" [attr.aria-invalid]="!!errors()['phases']">
+        <fieldset class="boxes phases" [attr.aria-invalid]="!!errors()['phases']">
           <legend>Phases of 4 weeks</legend>
           @for (phase of phases(); track $index) {
             <label class="field" [class]="'phase-' + phase">

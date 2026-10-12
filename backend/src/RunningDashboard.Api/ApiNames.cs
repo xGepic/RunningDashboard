@@ -14,12 +14,18 @@ public static class ApiNames
         var values = new List<TEnum>();
         foreach (var name in names)
         {
-            // Names only: Enum.TryParse would also take "7".
-            if (!Enum.GetNames<TEnum>().Contains(name, StringComparer.OrdinalIgnoreCase))
+            if (Parse<TEnum>(name) is not { } value)
                 return null;
-            values.Add(Enum.Parse<TEnum>(name, ignoreCase: true));
+            values.Add(value);
         }
 
         return values;
     }
+
+    /// <summary>The value named; null if there is no name or it is not a value's.</summary>
+    public static TEnum? Parse<TEnum>(string? name) where TEnum : struct, Enum =>
+        // Names only: Enum.TryParse would also take "7".
+        name is not null && Enum.GetNames<TEnum>().Contains(name, StringComparer.OrdinalIgnoreCase)
+            ? Enum.Parse<TEnum>(name, ignoreCase: true)
+            : null;
 }

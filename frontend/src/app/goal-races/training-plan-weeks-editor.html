@@ -16,12 +16,12 @@
       @for (row of rows(); track row.week.weeksToRace; let i = $index) {
         <tr [attr.data-weeks-to-race]="row.week.weeksToRace" [class]="'phase-' + row.week.phase" [class.recovery]="row.recoveryWeek">
           <td class="number">
-            {{ row.week.weeksToRace }}@if (row.week.weeksToRace === 0) { <span class="race-week">· Race Week</span> }
+            {{ row.week.weeksToRace }}@if (row.week.weeksToRace === 0) { <span class="race-week">Race Week</span> }
             @for (error of fieldErrors(i, 'weeksToRace'); track error) {
               <span class="field-error">{{ error }}</span>
             }
           </td>
-          <td class="dates">{{ row.week.start | date: 'd MMM' }} – {{ row.week.end | date: 'd MMM y' }}</td>
+          <td class="dates"><span>{{ row.week.start | date: 'd MMM' }} –</span>&ngsp;<span>{{ row.week.end | date: 'd MMM y' }}</span></td>
           <td><span class="phase">{{ row.week.phase }}</span></td>
           <td>
             <input class="distance" inputmode="decimal" [value]="row.distanceKm"
@@ -44,9 +44,21 @@
           <td>
             <div class="days" role="group" [attr.aria-label]="'Running Days, week ' + row.week.weeksToRace">
               @for (weekday of weekdays; track weekday.day) {
-                <button type="button" class="day" [attr.aria-label]="weekday.name"
-                        [attr.aria-pressed]="row.runningDays.includes(weekday.day)"
-                        (click)="toggleDay(i, weekday.day)">{{ weekday.initial }}</button>
+                @let runType = runTypeOn(row, weekday.day);
+                <label class="day">
+                  <span class="initial" aria-hidden="true">{{ weekday.initial }}</span>
+                  <!-- The select is laid invisibly over the chip: the chip fits a short name, the open list shows the full ones. -->
+                  <span class="picker">
+                    <span class="chip" [class.rest]="runType === 'rest'" aria-hidden="true">{{ shortName(runType) }}</span>
+                    <select #runTypePicker [attr.aria-label]="weekday.name"
+                            (change)="pickRunType(i, weekday.day, $any(runTypePicker.value))">
+                      <option value="rest" [selected]="runType === 'rest'">Rest</option>
+                      @for (option of runTypes; track option.type) {
+                        <option [value]="option.type" [selected]="option.type === runType">{{ option.name }}</option>
+                      }
+                    </select>
+                  </span>
+                </label>
               }
             </div>
             @for (error of fieldErrors(i, 'runningDays'); track error) {
@@ -65,7 +77,11 @@
           </td>
           <td>
             @if (i > 0) {
-              <button type="button" class="copy link quiet" (click)="copyFromPrevious(i)">Copy from previous week</button>
+              <button type="button" class="copy link quiet" aria-label="Copy from previous week" title="Copy from previous week"
+                      (click)="copyFromPrevious(i)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 9h11v11H9zM5 15H4V4h11v1" /></svg>
+              </button>
             }
           </td>
         </tr>

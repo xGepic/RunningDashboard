@@ -8,6 +8,16 @@ public enum PhaseType
     Taper,
 }
 
+/// <summary>What a Running Day is planned for. Runs themselves never have one.</summary>
+public enum RunType
+{
+    Easy,
+    Long,
+    Tempo,
+    Intervals,
+    Race,
+}
+
 /// <summary>
 /// What the Athlete intends to do during a Goal Race's Training Block: its Phases, and its weeks. The weeks are tied
 /// to Weeks to Race, not to dates, so moving the Goal Race moves the plan.
@@ -31,7 +41,7 @@ public sealed class TrainingPlan
 
     /// <summary>
     /// Sets the length and the Phases. Weeks still within the new length keep what was planned for them, weeks before
-    /// it are dropped, and new weeks start empty.
+    /// it are dropped, and new weeks start empty, pre-marked as Recovery Weeks where <see cref="IsDefaultRecoveryWeek"/>.
     /// </summary>
     public void Shape(int length, IReadOnlyList<PhaseType> phases)
     {
@@ -39,8 +49,17 @@ public sealed class TrainingPlan
         Phases = [.. phases];
         Weeks.RemoveAll(w => w.WeeksToRace <= -length);
         var planned = Weeks.Select(w => w.WeeksToRace).ToHashSet();
-        Weeks.AddRange(Enumerable.Range(1 - length, length).Where(n => !planned.Contains(n)).Select(n => new TrainingPlanWeek { WeeksToRace = n }));
+        Weeks.AddRange(Enumerable.Range(1 - length, length)
+            .Where(n => !planned.Contains(n))
+            .Select(n => new TrainingPlanWeek { WeeksToRace = n, RecoveryWeek = IsDefaultRecoveryWeek(n) }));
     }
+
+    /// <summary>
+    /// Whether a new week starts as a Recovery Week: in a plan whose length divides into 4-week stretches, every 4th
+    /// week from the first, except the Race Week.
+    /// </summary>
+    private bool IsDefaultRecoveryWeek(int weeksToRace) =>
+        Length % PhaseWeeks == 0 && weeksToRace != 0 && (weeksToRace + Length) % PhaseWeeks == 0;
 
     /// <summary>The Phase the week <paramref name="weeksToRace"/> falls in; Phases follow each other from the plan's first week.</summary>
     public PhaseType PhaseOf(int weeksToRace) => Phases[(weeksToRace + Length - 1) / PhaseWeeks];
@@ -66,9 +85,12 @@ public sealed class TrainingPlanWeek
     /// <summary>The planned Long Run in metres; none until the Athlete plans it.</summary>
     public double? PlannedLongRun { get; set; }
 
-    /// <summary>The days the Athlete plans to run on, Monday first.</summary>
-    public List<DayOfWeek> RunningDays { get; set; } = [];
+    /// <summary>The days the Athlete plans to run on, at most one per weekday, Monday first; the other days are rest days.</summary>
+    public List<RunningDay> RunningDays { get; set; } = [];
 
     /// <summary>A week of deliberately lower load; never the Race Week.</summary>
     public bool RecoveryWeek { get; set; }
 }
+
+/// <summary>A day of a plan week the Athlete plans to run on, and what for.</summary>
+public sealed record RunningDay(DayOfWeek Day, RunType RunType);
