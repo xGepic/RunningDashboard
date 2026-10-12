@@ -118,6 +118,18 @@
             <span class="note">Avg Pace = the month's Moving Time ÷ its distance</span>
           </nav>
         </section>
+
+        <section class="card monthly-chart">
+          <div class="card-header">
+            <div class="titles">
+              <h2 class="card-title">Distance per month</h2>
+              <p class="card-sub">{{ selectedYear() }}, in {{ distanceUnit() }}. Click a point to see its Runs.</p>
+            </div>
+          </div>
+          <div class="chart" echarts [options]="monthlyDistance()" [autoResize]="true" role="img"
+               (chartClick)="openChartMonth($event.dataIndex)"
+               [attr.aria-label]="'Line chart of distance per month in ' + selectedYear() + '; the table above has the same numbers'"></div>
+        </section>
       }
     }
   } @else if (runs.error()) {

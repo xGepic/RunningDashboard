@@ -2,6 +2,9 @@ import { DatePipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { Component, computed, inject, input } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { NgxEchartsDirective } from 'ngx-echarts';
+import { ChartTheme } from '../shared/chart-theme';
+import { monthlyDistanceChart } from '../shared/charts';
 import { DistanceUnit, formatDistance, formatDuration, formatPace } from '../shared/format';
 import { reloadOnSync } from '../sync/reload-on-sync';
 import { RunMonths, RunPage, RunSortKey } from './run';
@@ -25,12 +28,13 @@ const longRunDistance = 20_000;
 
 @Component({
   selector: 'app-runs-page',
-  imports: [DatePipe, RouterLink],
+  imports: [DatePipe, NgxEchartsDirective, RouterLink],
   templateUrl: './runs-page.html',
   styleUrl: './runs-page.scss',
 })
 export class RunsPage {
   private readonly router = inject(Router);
+  private readonly theme = inject(ChartTheme);
 
   // From the query string (component input binding).
   /** "months" for the year's monthly totals; the list of a month's Runs otherwise. */
@@ -106,6 +110,11 @@ export class RunsPage {
     });
   });
 
+  /** The months so far as points of a line, in the unit the table shows. */
+  protected readonly monthlyDistance = computed(() =>
+    monthlyDistanceChart(this.selectedYear(), this.monthRows(), this.distanceUnit(), this.theme.colors()),
+  );
+
   protected readonly hasPreviousYear = computed(() => {
     const firstYear = this.months.hasValue() ? this.months.value().firstYear : null;
     return firstYear !== null && this.selectedYear() > firstYear;
@@ -173,6 +182,12 @@ export class RunsPage {
   protected openMonth(monthParam: string | null, event: MouseEvent): void {
     if ((event.target as HTMLElement).closest('a')) return;
     this.navigate({ view: null, year: null, month: monthParam, page: null });
+  }
+
+  /** A point opens its month's Runs, as the table's rows do. */
+  protected openChartMonth(index: number): void {
+    const row = this.monthRows()[index];
+    if (row) this.navigate({ view: null, year: null, month: row.monthParam, page: null });
   }
 
   /** Kilometres stay out of the URL, like the current month. */

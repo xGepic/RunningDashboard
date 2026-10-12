@@ -5,6 +5,11 @@ export type DistanceUnit = 'km' | 'mi';
 
 const metresPer: Record<DistanceUnit, number> = { km: 1000, mi: 1609.344 };
 
+/** Metres in kilometres or miles, unrounded. */
+export function distanceIn(metres: number, unit: DistanceUnit): number {
+  return metres / metresPer[unit];
+}
+
 export function formatDistance(metres: number, unit: DistanceUnit = 'km', fractionDigits = 2): string {
   return `${(metres / metresPer[unit]).toFixed(fractionDigits)} ${unit}`;
 }

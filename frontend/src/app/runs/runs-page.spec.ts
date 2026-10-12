@@ -1,7 +1,9 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { Router, provideRouter } from '@angular/router';
+import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import { MonthTotals, RunMonths } from './run';
 import { RunsPage } from './runs-page';
 
@@ -24,14 +26,19 @@ describe('RunsPage monthly totals', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date(2026, 9, 12, 9));
+    // The chart resizes with its card; jsdom has no ResizeObserver.
+    vi.stubGlobal('ResizeObserver', class { observe() {} unobserve() {} disconnect() {} });
   });
 
-  afterEach(() => vi.useRealTimers());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
 
   async function render(unit?: string) {
     TestBed.configureTestingModule({
       imports: [RunsPage],
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([]), provideEchartsCore({ echarts: () => import('echarts') })],
     });
     const fixture = TestBed.createComponent(RunsPage);
     fixture.componentRef.setInput('view', 'months');
@@ -46,8 +53,15 @@ describe('RunsPage monthly totals', () => {
     await fixture.whenStable();
     // The list of a month's Runs is not loaded alongside.
     expect(http.match((r) => r.url === '/api/runs')).toEqual([]);
-    return { fixture, element: fixture.nativeElement as HTMLElement };
+    const chartElement = fixture.debugElement.query(By.directive(NgxEchartsDirective));
+    return { fixture, element: fixture.nativeElement as HTMLElement, chart: chartElement.injector.get(NgxEchartsDirective), chartElement };
   }
+
+  /** The chart's month labels and values. */
+  const columns = (chart: NgxEchartsDirective) => {
+    const options = chart.options() as { xAxis: { data: string[] }; series: { data: number[] }[] };
+    return { labels: options.xAxis.data, values: options.series[0].data };
+  };
 
   const cells = (row: Element) => [...row.querySelectorAll('td')].map((cell) => cell.textContent!.trim());
 
@@ -88,6 +102,33 @@ describe('RunsPage monthly totals', () => {
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
 
     (element.querySelectorAll('.months tbody tr')[8].querySelector('td.number') as HTMLElement).click();
+
+    expect(navigate).toHaveBeenCalledWith([], {
+      queryParams: { view: null, year: null, month: '2026-09', page: null },
+      queryParamsHandling: 'merge',
+    });
+  });
+
+  it('charts the distance of each month so far, in the unit the table shows', async () => {
+    const { chart } = await render();
+
+    expect(columns(chart)).toEqual({
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
+      values: [0, 0, 0, 0, 0, 0, 0, 0, 60.7, 9.6],
+    });
+  });
+
+  it('charts miles when asked', async () => {
+    const { chart } = await render('mi');
+
+    expect(columns(chart).values.slice(8)).toEqual([37.7, 6]);
+  });
+
+  it("opens a month's Runs from its point", async () => {
+    const { chartElement } = await render();
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+
+    chartElement.triggerEventHandler('chartClick', { dataIndex: 8 });
 
     expect(navigate).toHaveBeenCalledWith([], {
       queryParams: { view: null, year: null, month: '2026-09', page: null },

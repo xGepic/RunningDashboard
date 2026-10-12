@@ -1,5 +1,6 @@
 import type { EChartsCoreOption } from 'echarts/core';
 import { ChartColors, baseChartOptions, tooltipHtml } from './chart-theme';
+import { DistanceUnit, distanceIn } from './format';
 
 export const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -79,6 +80,68 @@ export function weeklyDistanceChart(weeks: WeekDistance[], colors: ChartColors):
         barCategoryGap: weeks.length > 12 ? '18%' : '28%',
         itemStyle: { color: barGradient(colors), borderRadius: [3, 3, 1, 1] },
         emphasis: { itemStyle: { color: '#8cc4ff' } },
+        animationDuration: 700,
+        animationEasing: 'cubicOut',
+      },
+    ],
+  };
+}
+
+/** Distance (metres) and Runs in one calendar month; `month` is 1 for January. */
+export interface MonthDistance {
+  month: number;
+  runs: number;
+  distance: number;
+}
+
+/** Line chart of distance per calendar month of `year`, in kilometres or miles; months without Runs sit at zero. */
+export function monthlyDistanceChart(year: number, months: MonthDistance[], unit: DistanceUnit, colors: ChartColors): EChartsCoreOption {
+  const base = baseChartOptions(colors);
+  const fullNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  return {
+    ...base,
+    tooltip: {
+      ...base.tooltip,
+      axisPointer: { type: 'line', lineStyle: { color: colors.tooltipBorder, type: 'solid' } },
+      formatter: (params: { dataIndex: number }[]) => {
+        const month = months[params[0]?.dataIndex];
+        if (!month) return '';
+        const title = `${fullNames[month.month - 1]} ${year}`;
+        if (month.runs === 0) return tooltipHtml(colors, title, 'no Runs');
+        return tooltipHtml(colors, title, distanceIn(month.distance, unit).toFixed(1), unit, `${month.runs} ${month.runs === 1 ? 'Run' : 'Runs'}`);
+      },
+    },
+    xAxis: { ...categoryAxis(months.map((m) => monthNames[m.month - 1]), colors), boundaryGap: false },
+    yAxis: (() => {
+      // The first point sits on the axis: keep the labels clear of it.
+      const axis = valueAxis(colors, (value) => `${value} ${unit}`, true);
+      return { ...axis, axisLabel: { ...axis.axisLabel, margin: 16 } };
+    })(),
+    series: [
+      {
+        type: 'line',
+        data: months.map((m) => Math.round(distanceIn(m.distance, unit) * 10) / 10),
+        smooth: false,
+        lineStyle: { width: 2, color: colors.series, join: 'round' },
+        // A point per month, so there is something to hover and click even for a single month.
+        itemStyle: { color: colors.background, borderColor: colors.seriesLight, borderWidth: 2 },
+        symbol: 'circle',
+        symbolSize: 9,
+        emphasis: { scale: 1.4 },
+        cursor: 'pointer',
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(74,158,255,0.22)' },
+              { offset: 1, color: 'rgba(74,158,255,0)' },
+            ],
+          },
+        },
         animationDuration: 700,
         animationEasing: 'cubicOut',
       },
