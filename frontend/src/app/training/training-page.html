@@ -9,24 +9,105 @@
   @if (training.error()) {
     <p class="error" role="alert">The Training Block could not be loaded.</p>
   } @else if (training.value(); as training) {
-    @if (training.block; as block) {
-      <section class="card race">
-        <div class="race-info">
-          <h2>{{ block.goalRace.name }}</h2>
-          <p>
-            {{ block.goalRace.date | date: 'EEEE d MMMM y' }} · {{ formatDistance(block.goalRace.distance) }}
-            @if (block.goalRace.targetTime !== null && block.targetPace !== null) {
-              · Target Time <b>{{ formatDuration(block.goalRace.targetTime) }}</b>, Target Pace <b>{{ formatPace(block.targetPace) }}</b>
+    @if (hero(); as hero) {
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-main">
+          <h2 id="hero-title" class="hero-eyebrow"><span class="dot"></span>{{ hero.to === 'block' ? 'Next Training Block' : 'Race Day' }}</h2>
+          @if (hero.to === 'race' && hero.days === 0) {
+            <p class="days"><span class="value">Today</span> is race day</p>
+          } @else {
+            <p class="days">
+              <span class="value">{{ hero.days }}</span>
+              {{ hero.days === 1 ? 'day' : 'days' }} to go
+            </p>
+            <div class="clock-wrap">
+              <span class="clock-note">
+                Exact time until {{ hero.to === 'block' ? 'block start' : 'race day' }}, {{ hero.target | date: 'EEEE' }} 00:00
+              </span>
+              <div class="clock mono" aria-hidden="true">
+                @for (part of clock(); track part.unit) {
+                  <div><span class="v">{{ part.value }}</span><span class="u">{{ part.unit }}</span></div>
+                }
+              </div>
+            </div>
+          }
+          <p class="lede">
+            @if (hero.to === 'block') {
+              <b>{{ hero.goalRace.name }}</b> ({{ hero.goalRace.date | date: 'EEE d MMM y' }}, in
+              {{ hero.daysToRace }} {{ hero.daysToRace === 1 ? 'day' : 'days' }}): the Training Block starts on
+              {{ hero.start | date: 'EEEE d MMMM y' }}.
+            } @else {
+              <b>{{ hero.goalRace.name }}</b> ({{ hero.goalRace.date | date: 'EEE d MMM y' }}): Week {{ hero.currentWeek }}
+              of {{ hero.weekCount }} of the Training Block.
             }
           </p>
-          <div class="race-actions">
-            @if (goalRace()) {
-              <a class="link quiet" routerLink="/training">← Back to today</a>
+          <div class="hero-actions">
+            @if (hero.to === 'block') {
+              <a class="btn btn-primary" [routerLink]="['/training/plan', hero.goalRace.id]">Open Training Plan</a>
+              <a class="btn" routerLink="/training" [queryParams]="{ goalRace: hero.goalRace.id }">View Training Block</a>
+              <button type="button" class="btn" (click)="editRace(hero.goalRace.id)">Edit race</button>
+            } @else {
+              <a class="btn btn-primary" [routerLink]="['/training/plan', hero.goalRace.id]">Training Plan</a>
+              @if (goalRace()) {
+                <a class="btn" routerLink="/training">← Back to today</a>
+              }
             }
-            <a class="link" [routerLink]="['/training/plan', block.goalRace.id]">Training Plan</a>
+          </div>
+        </div>
+        <div class="hero-side">
+          <dl class="facts">
+            <div><dt class="label">Block length</dt><dd class="value">{{ hero.weekCount }} weeks</dd></div>
+            <div><dt class="label">Race distance</dt><dd class="value">{{ formatDistance(hero.goalRace.distance) }}</dd></div>
+            <div><dt class="label">Target Time</dt><dd class="value">{{ hero.goalRace.targetTime === null ? '–' : formatDuration(hero.goalRace.targetTime) }}</dd></div>
+            <div><dt class="label">Target Pace</dt><dd class="value">{{ hero.targetPace === null ? '–' : formatPace(hero.targetPace) }}</dd></div>
+          </dl>
+          <div class="timeline" aria-hidden="true">
+            <div class="ends">
+              @if (hero.to === 'block') {
+                <span>Today</span>
+              }
+              <span>Block start</span><span>Race day</span>
+            </div>
+            <div class="line">
+              <div class="block-weeks" [style.left.%]="hero.blockLeft">
+                @for (week of hero.weeks; track $index) {
+                  <span [class.race]="week.race" [style.--alpha]="week.alpha"></span>
+                }
+              </div>
+              <span class="today" [style.left.%]="hero.todayLeft"></span>
+            </div>
+            <div class="ends mono">
+              @if (hero.to === 'block') {
+                <span>{{ todayDate | date: 'd MMM' }}</span>
+              }
+              <span>{{ hero.start | date: 'd MMM y' }}</span>
+              <span>{{ hero.goalRace.date | date: 'd MMM y' }}</span>
+            </div>
           </div>
         </div>
       </section>
+    }
+
+    @if (training.block; as block) {
+      @if (!hero()) {
+        <section class="card race">
+          <div class="race-info">
+            <h2>{{ block.goalRace.name }}</h2>
+            <p>
+              {{ block.goalRace.date | date: 'EEEE d MMMM y' }} · {{ formatDistance(block.goalRace.distance) }}
+              @if (block.goalRace.targetTime !== null && block.targetPace !== null) {
+                · Target Time <b>{{ formatDuration(block.goalRace.targetTime) }}</b>, Target Pace <b>{{ formatPace(block.targetPace) }}</b>
+              }
+            </p>
+            <div class="race-actions">
+              @if (goalRace()) {
+                <a class="link quiet" routerLink="/training">← Back to today</a>
+              }
+              <a class="link" [routerLink]="['/training/plan', block.goalRace.id]">Training Plan</a>
+            </div>
+          </div>
+        </section>
+      }
 
       <section class="card flush">
         @if (block.phases) {
@@ -169,72 +250,16 @@
         }
       </ng-template>
     } @else if (training.countdown; as countdown) {
-      <section class="hero" aria-labelledby="next-block">
-        <div class="hero-main">
-          <h2 id="next-block" class="hero-eyebrow"><span class="dot"></span>Next Training Block</h2>
-          <p class="days">
-            <span class="value">{{ countdown.daysRemaining }}</span>
-            {{ countdown.daysRemaining === 1 ? 'day' : 'days' }} to go
-          </p>
-          <div class="clock-wrap">
-            <span class="clock-note">Exact time until block start, Monday 00:00</span>
-            <div class="clock mono" aria-hidden="true">
-              @for (part of clock(); track part.unit) {
-                <div><span class="v">{{ part.value }}</span><span class="u">{{ part.unit }}</span></div>
-              }
-            </div>
-          </div>
-          <p class="lede">
-            <b>{{ countdown.goalRace.name }}</b> ({{ countdown.goalRace.date | date: 'EEE d MMM y' }}@if (figures(); as fig) {, in
-            {{ fig.daysToRace }} {{ fig.daysToRace === 1 ? 'day' : 'days' }}}): the Training Block starts on
-            {{ countdown.trainingBlockStart | date: 'EEEE d MMMM y' }}.
-          </p>
-          <div class="hero-actions">
-            <a class="btn btn-primary" [routerLink]="['/training/plan', countdown.goalRace.id]">Open Training Plan</a>
-            <a class="btn" routerLink="/training" [queryParams]="{ goalRace: countdown.goalRace.id }">View Training Block</a>
-            <button type="button" class="btn" (click)="editRace(countdown.goalRace.id)">Edit race</button>
-          </div>
-        </div>
-        @if (figures(); as fig) {
-          <div class="hero-side">
-            <dl class="facts">
-              <div><dt class="label">Block length</dt><dd class="value">{{ fig.weekCount }} weeks</dd></div>
-              <div><dt class="label">Race distance</dt><dd class="value">{{ formatDistance(countdown.goalRace.distance) }}</dd></div>
-              <div><dt class="label">Target Time</dt><dd class="value">{{ countdown.goalRace.targetTime === null ? '–' : formatDuration(countdown.goalRace.targetTime) }}</dd></div>
-              <div><dt class="label">Target Pace</dt><dd class="value">{{ fig.targetPace === null ? '–' : formatPace(fig.targetPace) }}</dd></div>
-            </dl>
-            <div class="timeline" aria-hidden="true">
-              <div class="ends"><span>Today</span><span>Block start</span><span>Race day</span></div>
-              <div class="line">
-                <div class="block-weeks" [style.left.%]="fig.blockLeft">
-                  @for (week of fig.weeks; track $index) {
-                    <span [class.race]="week.race" [style.--alpha]="week.alpha"></span>
-                  }
-                </div>
-                <span class="today"></span>
-              </div>
-              <div class="ends mono">
-                <span>{{ todayDate | date: 'd MMM' }}</span>
-                <span>{{ countdown.trainingBlockStart | date: 'd MMM y' }}</span>
-                <span>{{ countdown.goalRace.date | date: 'd MMM y' }}</span>
-              </div>
-            </div>
-          </div>
-        }
-      </section>
-
       <section class="card">
         <div class="card-header">
           <div class="titles">
             <h2 class="card-title">Recent weeks</h2>
             <p class="card-sub">The last {{ countdown.recentWeeks.length }} Training Weeks</p>
           </div>
-          @if (figures(); as fig) {
-            <div class="stats">
-              <div class="stat"><span class="label">Total</span><span class="value">{{ km(fig.recentTotal) }} km</span></div>
-              <div class="stat"><span class="label">Avg / week</span><span class="value">{{ km(fig.recentAverage) }} km</span></div>
-            </div>
-          }
+          <div class="stats">
+            <div class="stat"><span class="label">Total</span><span class="value">{{ km(recent().total) }} km</span></div>
+            <div class="stat"><span class="label">Avg / week</span><span class="value">{{ km(recent().average) }} km</span></div>
+          </div>
         </div>
         @if (recentWeeksChart(); as options) {
           <div class="chart" echarts [options]="options" [autoResize]="true" role="img"

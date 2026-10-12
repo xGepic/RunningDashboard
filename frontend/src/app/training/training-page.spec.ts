@@ -59,8 +59,22 @@ function week(
   };
 }
 
+/** The day before the block starts, counting down to it. */
+const countdown: Training = {
+  view: 'countdown',
+  block: null,
+  countdown: { goalRace: training.block!.goalRace, trainingBlockStart: '2027-03-01', daysRemaining: 1, recentWeeks: [] },
+};
+
 describe('TrainingPage', () => {
-  async function render(): Promise<HTMLElement> {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] });
+    vi.setSystemTime(new Date(2027, 2, 10, 10));
+  });
+
+  afterEach(() => vi.useRealTimers());
+
+  async function render(answer = training) {
     TestBed.configureTestingModule({
       imports: [TrainingPage],
       providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
@@ -72,16 +86,16 @@ describe('TrainingPage', () => {
     http.expectOne('/api/sync').flush({ running: false, importedRuns: 0, lastSyncedAt: null });
     fixture.detectChanges();
     http.expectOne('/api/goal-races').flush([]);
-    http.match('/api/training').filter((request) => !request.cancelled).forEach((request) => request.flush(training));
+    http.match('/api/training').filter((request) => !request.cancelled).forEach((request) => request.flush(answer));
     await fixture.whenStable();
-    return fixture.nativeElement as HTMLElement;
+    return { element: fixture.nativeElement as HTMLElement, fixture, http };
   }
 
   const row = (element: HTMLElement, weeksToRace: number) =>
     element.querySelector(`tbody tr[data-weeks-to-race="${weeksToRace}"]`) as HTMLTableRowElement;
 
   it('shows each planned week with its calendar strip', async () => {
-    const element = await render();
+    const { element } = await render();
 
     const states = (weeksToRace: number) =>
       [...row(element, weeksToRace).querySelectorAll('.strip li')].map((day) => day.className.replace('day ', ''));
@@ -91,7 +105,7 @@ describe('TrainingPage', () => {
   });
 
   it('marks each of its weeks with the Phase', async () => {
-    const element = await render();
+    const { element } = await render();
 
     for (const weeksToRace of [-11, -10]) {
       expect(row(element, weeksToRace).classList).toContain('phase-peak');
@@ -100,7 +114,7 @@ describe('TrainingPage', () => {
   });
 
   it('puts the planned distance next to the actual one, and only the plan for a future week', async () => {
-    const element = await render();
+    const { element } = await render();
 
     expect(row(element, -11).textContent).toContain('32.00 km');
     expect(row(element, -11).textContent).toContain('planned 30.00 km');
@@ -110,5 +124,32 @@ describe('TrainingPage', () => {
     expect(row(element, -9).textContent).toContain('planned 24.00 km');
     expect(row(element, -9).textContent).toContain('Recovery Week');
     expect(row(element, -9).classList).toContain('recovery-week');
+  });
+
+  it('counts down to race day during the block, in place of the race card', async () => {
+    const { element } = await render();
+
+    const hero = element.querySelector('.hero')!.textContent!.replace(/\s+/g, ' ');
+    expect(hero).toContain('Race Day');
+    expect(hero).toContain('74 days to go');
+    expect(hero).toContain('Exact time until race day, Sunday 00:00');
+    expect(hero).toContain('Week 2 of 12 of the Training Block');
+    expect(element.querySelector('.card.race')).toBeNull();
+  });
+
+  it('switches to the race day countdown when the block starts', async () => {
+    vi.setSystemTime(new Date(2027, 1, 28, 23, 59, 59));
+    const { element, fixture, http } = await render(countdown);
+    expect(element.querySelector('.hero')!.textContent).toContain('Next Training Block');
+
+    vi.advanceTimersByTime(2000);
+    fixture.detectChanges();
+    http.expectOne('/api/training').flush(training);
+    await fixture.whenStable();
+
+    const hero = element.querySelector('.hero')!.textContent!.replace(/\s+/g, ' ');
+    expect(hero).toContain('Race Day');
+    expect(hero).toContain('83 days to go');
+    expect(hero).toContain('Week 1 of 12 of the Training Block');
   });
 });
