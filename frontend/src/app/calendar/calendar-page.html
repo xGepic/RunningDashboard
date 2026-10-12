@@ -101,6 +101,10 @@
       }
     </ol>
 
+    @if (timeRun(); as time) {
+      <p class="time-run">You have run <strong>{{ time.hours }}</strong> hours {{ time.when }}, that's <strong>{{ time.days }}</strong> days.</p>
+    }
+
     @if (months.hasValue()) {
       <section class="card">
         <div class="card-header">

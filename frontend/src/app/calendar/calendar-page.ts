@@ -139,6 +139,17 @@ export class CalendarPage {
     }));
   });
 
+  /** The year's Moving Time in whole hours and in days; none until it adds up to more than a day. */
+  protected readonly timeRun = computed(() => {
+    const seconds = this.months.hasValue() ? this.months.value().months.reduce((sum, m) => sum + m.movingTime, 0) : 0;
+    if (seconds <= 86_400) return null;
+    return {
+      hours: Math.floor(seconds / 3600),
+      days: (seconds / 86_400).toFixed(1),
+      when: this.isCurrentYear() ? 'this year' : `in ${this.selectedYear()}`,
+    };
+  });
+
   /** January of the first year with Runs is as far back as the months go. */
   protected readonly hasPreviousMonth = computed(() => this.hasPreviousYear() || this.selectedMonth() !== 1);
   /** The current month is as far ahead as they go. */

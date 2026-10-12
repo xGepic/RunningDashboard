@@ -159,6 +159,28 @@ describe('CalendarPage', () => {
       expect(text(boxes()[8])).toBe('September 37.7 mi 7h 17m');
     });
 
+    it('says how many hours and days were run this year, once that is more than a day', async () => {
+      // 161 h 6 m 40 s in all: 6.7 days.
+      const busy: RunMonths = { ...year2026, months: year2026.months.map((m) => ({ ...m, movingTime: m.month <= 10 ? 58000 : 0 })) };
+      const { element } = await open('/calendar', busy);
+
+      expect(element.querySelector('.time-run')!.textContent!.trim()).toBe("You have run 161 hours this year, that's 6.7 days.");
+    });
+
+    it('names the year when it is not the current one', async () => {
+      const busy: RunMonths = { ...year2026, year: 2025, months: year2026.months.map((m) => ({ ...m, movingTime: 36000 })) };
+      const { element } = await open('/calendar/2025', busy);
+
+      expect(element.querySelector('.time-run')!.textContent!.trim()).toBe("You have run 120 hours in 2025, that's 5.0 days.");
+    });
+
+    it('says nothing about the hours run before they add up to more than a day', async () => {
+      // 8 h 24 m in all.
+      const { element } = await open('/calendar');
+
+      expect(element.querySelector('.time-run')).toBeNull();
+    });
+
     it('always shows all Runs, whatever type an old link asks for', async () => {
       const { element } = await open('/calendar?sportType=TrailRun');
 
