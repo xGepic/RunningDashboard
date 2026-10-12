@@ -8,7 +8,7 @@ namespace RunningDashboard.Api.Tests;
 /// A Goal Race's Training Plan: its length (12, 16 or 20 weeks) and the type of each 4-week Phase. The second
 /// marathon is on Sun 23 May 2027, so its Race Week starts Mon 17 May; on its own it has a 10-week block.
 /// </summary>
-public sealed class TrainingPlanTests : IAsyncLifetime
+public sealed class TrainingPlanTests
 {
     private const double Marathon = 42195;
 
@@ -21,42 +21,41 @@ public sealed class TrainingPlanTests : IAsyncLifetime
     private readonly TestApp _app = new();
     private HttpClient _browser = null!;
 
-    public Task InitializeAsync()
+    [SetUp]
+    public void SetUp()
     {
         _browser = _app.CreateBrowser();
-        return Task.CompletedTask;
     }
 
-    public async Task DisposeAsync() => await _app.DisposeAsync();
+    [TearDown]
+    public async Task TearDownAsync() => await _app.DisposeAsync();
 
-    [Fact]
+    [Test]
     public async Task A_16_week_build_peak_peak_taper_plan_splits_into_phases_and_sets_the_training_block()
     {
         var race = await CreateGoalRaceAsync(SecondMarathon);
 
         var saved = await PutPlanAsync(race, BuildPeakPeakTaper);
         var plan = await GetPlanAsync(race);
-        var listed = Assert.Single(await ListGoalRacesAsync());
+        var listed = (await ListGoalRacesAsync()).ShouldHaveSingleItem();
 
-        Assert.Equal(saved, plan);
-        Assert.Equal(16, plan.Length);
-        Assert.Equal(
-            [new PhaseResponse("build", -15, -12), new PhaseResponse("peak", -11, -8), new PhaseResponse("peak", -7, -4), new PhaseResponse("taper", -3, 0)],
-            plan.Phases);
-        Assert.Equal(Enumerable.Range(-15, 16), plan.Weeks.Select(w => w.WeeksToRace));
-        Assert.Equal(new WeekResponse(-15, new DateOnly(2027, 2, 1), new DateOnly(2027, 2, 7), "build"), plan.Weeks[0]);
-        Assert.Equal(new WeekResponse(0, new DateOnly(2027, 5, 17), new DateOnly(2027, 5, 23), "taper"), plan.Weeks[^1]);
+        plan.ShouldBe(saved);
+        plan.Length.ShouldBe(16);
+        plan.Phases.ShouldBe(
+            [new PhaseResponse("build", -15, -12), new PhaseResponse("peak", -11, -8), new PhaseResponse("peak", -7, -4), new PhaseResponse("taper", -3, 0)]);
+        plan.Weeks.Select(w => w.WeeksToRace).ShouldBe(Enumerable.Range(-15, 16));
+        plan.Weeks[0].ShouldBe(new WeekResponse(-15, new DateOnly(2027, 2, 1), new DateOnly(2027, 2, 7), "build"));
+        plan.Weeks[^1].ShouldBe(new WeekResponse(0, new DateOnly(2027, 5, 17), new DateOnly(2027, 5, 23), "taper"));
         // The plan's 16 weeks are the Training Block now; the race's own 10 weeks only count without a plan.
-        Assert.Equal((new DateOnly(2027, 2, 1), 16, 10), (listed.TrainingBlockStart, listed.TrainingPlanLength, listed.TrainingBlockWeeks));
+        (listed.TrainingBlockStart, listed.TrainingPlanLength, listed.TrainingBlockWeeks).ShouldBe((new DateOnly(2027, 2, 1), 16, 10));
     }
 
-    [Theory]
-    [InlineData(14, new[] { "build", "peak", "taper" }, "length")]
-    [InlineData(null, new[] { "build", "peak", "peak", "taper" }, "length")]
-    [InlineData(16, new[] { "build", "peak", "taper", "peak" }, "phases")]
-    [InlineData(16, new[] { "build", "peak", "taper" }, "phases")]
-    [InlineData(16, new[] { "build", "peak", "recovery", "taper" }, "phases")]
-    [InlineData(16, new[] { "build", "7", "peak", "taper" }, "phases")]
+    [TestCase(14, new[] { "build", "peak", "taper" }, "length")]
+    [TestCase(null, new[] { "build", "peak", "peak", "taper" }, "length")]
+    [TestCase(16, new[] { "build", "peak", "taper", "peak" }, "phases")]
+    [TestCase(16, new[] { "build", "peak", "taper" }, "phases")]
+    [TestCase(16, new[] { "build", "peak", "recovery", "taper" }, "phases")]
+    [TestCase(16, new[] { "build", "7", "peak", "taper" }, "phases")]
     public async Task A_plan_must_be_12_16_or_20_weeks_of_4_week_phases_ending_with_a_taper(int? length, string[] phases, string field)
     {
         var race = await CreateGoalRaceAsync(SecondMarathon);
@@ -64,12 +63,12 @@ public sealed class TrainingPlanTests : IAsyncLifetime
         var response = await _browser.PutAsJsonAsync(PlanPath(race), new TrainingPlanRequest(length, phases));
         var problem = await response.Content.ReadFromJsonAsync<ValidationProblem>();
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal([field], problem!.Errors.Keys);
-        Assert.Equal(HttpStatusCode.NotFound, (await _browser.GetAsync(PlanPath(race))).StatusCode);
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        problem!.Errors.Keys.ShouldBe([field]);
+        (await _browser.GetAsync(PlanPath(race))).StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
-    [Fact]
+    [Test]
     public async Task The_last_phase_must_be_a_taper()
     {
         var race = await CreateGoalRaceAsync(SecondMarathon);
@@ -77,10 +76,10 @@ public sealed class TrainingPlanTests : IAsyncLifetime
         var response = await _browser.PutAsJsonAsync(PlanPath(race), new TrainingPlanRequest(12, ["build", "peak", "peak"]));
         var problem = await response.Content.ReadFromJsonAsync<ValidationProblem>();
 
-        Assert.Equal("The last Phase must be a Taper.", Assert.Single(problem!.Errors["phases"]));
+        problem!.Errors["phases"].ShouldHaveSingleItem().ShouldBe("The last Phase must be a Taper.");
     }
 
-    [Fact]
+    [Test]
     public async Task Moving_the_race_date_moves_the_plan_with_it()
     {
         var race = await CreateGoalRaceAsync(SecondMarathon);
@@ -89,13 +88,13 @@ public sealed class TrainingPlanTests : IAsyncLifetime
         var moved = await _browser.PutAsJsonAsync($"/api/goal-races/{race.Id}", SecondMarathon with { Date = new DateOnly(2027, 5, 30) });
         var plan = await GetPlanAsync(race);
 
-        Assert.Equal(HttpStatusCode.OK, moved.StatusCode);
-        Assert.Equal(new WeekResponse(-15, new DateOnly(2027, 2, 8), new DateOnly(2027, 2, 14), "build"), plan.Weeks[0]);
-        Assert.Equal(new WeekResponse(0, new DateOnly(2027, 5, 24), new DateOnly(2027, 5, 30), "taper"), plan.Weeks[^1]);
-        Assert.Equal(new DateOnly(2027, 2, 8), Assert.Single(await ListGoalRacesAsync()).TrainingBlockStart);
+        moved.StatusCode.ShouldBe(HttpStatusCode.OK);
+        plan.Weeks[0].ShouldBe(new WeekResponse(-15, new DateOnly(2027, 2, 8), new DateOnly(2027, 2, 14), "build"));
+        plan.Weeks[^1].ShouldBe(new WeekResponse(0, new DateOnly(2027, 5, 24), new DateOnly(2027, 5, 30), "taper"));
+        (await ListGoalRacesAsync()).ShouldHaveSingleItem().TrainingBlockStart.ShouldBe(new DateOnly(2027, 2, 8));
     }
 
-    [Fact]
+    [Test]
     public async Task Changing_the_length_keeps_the_weeks_still_in_range_and_adds_empty_ones()
     {
         var race = await CreateGoalRaceAsync(SecondMarathon);
@@ -106,17 +105,17 @@ public sealed class TrainingPlanTests : IAsyncLifetime
         var longer = await PutPlanAsync(race, new TrainingPlanRequest(20, ["build", "build", "peak", "peak", "taper"]));
         var weeks = await GetPlannedWeeksAsync(race);
 
-        Assert.Equal(Enumerable.Range(-11, 12), shorter.Weeks.Select(w => w.WeeksToRace));
-        Assert.Equal(["build", "build", "build", "build"], shorter.Weeks.Take(4).Select(w => w.Phase));
-        Assert.Equal(Enumerable.Range(-19, 20), longer.Weeks.Select(w => w.WeeksToRace));
-        Assert.Equal(new DateOnly(2027, 1, 4), longer.Weeks[0].Start);
-        Assert.Equal(new DateOnly(2027, 1, 4), Assert.Single(await ListGoalRacesAsync()).TrainingBlockStart);
+        shorter.Weeks.Select(w => w.WeeksToRace).ShouldBe(Enumerable.Range(-11, 12));
+        shorter.Weeks.Take(4).Select(w => w.Phase).ShouldBe(["build", "build", "build", "build"]);
+        longer.Weeks.Select(w => w.WeeksToRace).ShouldBe(Enumerable.Range(-19, 20));
+        longer.Weeks[0].Start.ShouldBe(new DateOnly(2027, 1, 4));
+        (await ListGoalRacesAsync()).ShouldHaveSingleItem().TrainingBlockStart.ShouldBe(new DateOnly(2027, 1, 4));
         // Week −11 stayed in range throughout; week −15 was dropped by the 12-week plan and came back empty.
-        Assert.Equal((-11, 35000.0, 14000.0, "tuesday sunday", true), weeks.Row(-11));
-        Assert.Equal((-15, null, null, "", false), weeks.Row(-15));
+        weeks.Row(-11).ShouldBe((-11, 35000.0, 14000.0, "tuesday sunday", true));
+        weeks.Row(-15).ShouldBe((-15, null, null, "", false));
     }
 
-    [Fact]
+    [Test]
     public async Task Weekly_rows_are_saved_and_read_back()
     {
         var race = await CreateGoalRaceAsync(SecondMarathon);
@@ -131,18 +130,18 @@ public sealed class TrainingPlanTests : IAsyncLifetime
         var saved = await response.Content.ReadFromJsonAsync<PlannedWeeksResponse>();
         var read = await GetPlannedWeeksAsync(race);
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Equal(saved!.Rows(), read.Rows());
-        Assert.Equal(16, read.Weeks.Count);
-        Assert.Equal((-15, 30000.0, 12000.0, "tuesday thursday saturday sunday", false), read.Row(-15));
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        read.Rows().ShouldBe(saved!.Rows());
+        read.Weeks.Count.ShouldBe(16);
+        read.Row(-15).ShouldBe((-15, 30000.0, 12000.0, "tuesday thursday saturday sunday", false));
         // Running Days come back Monday first.
-        Assert.Equal((-12, 25000.0, 10000.0, "tuesday sunday", true), read.Row(-12));
-        Assert.Equal((0, 55000.0, 42195.0, "tuesday thursday sunday", false), read.Row(0));
+        read.Row(-12).ShouldBe((-12, 25000.0, 10000.0, "tuesday sunday", true));
+        read.Row(0).ShouldBe((0, 55000.0, 42195.0, "tuesday thursday sunday", false));
         // Weeks left out keep what they had: nothing yet.
-        Assert.Equal((-14, null, null, "", false), read.Row(-14));
+        read.Row(-14).ShouldBe((-14, null, null, "", false));
     }
 
-    [Fact]
+    [Test]
     public async Task Saving_weeks_again_replaces_what_was_planned_for_them()
     {
         var race = await CreateGoalRaceAsync(SecondMarathon);
@@ -151,10 +150,10 @@ public sealed class TrainingPlanTests : IAsyncLifetime
 
         await PutWeeksAsync(race, new WeekRequest(-15, null, null, [], false));
 
-        Assert.Equal((-15, null, null, "", false), (await GetPlannedWeeksAsync(race)).Row(-15));
+        (await GetPlannedWeeksAsync(race)).Row(-15).ShouldBe((-15, null, null, "", false));
     }
 
-    [Fact]
+    [Test]
     public async Task The_race_week_cannot_be_a_recovery_week()
     {
         var race = await CreateGoalRaceAsync(SecondMarathon);
@@ -167,19 +166,18 @@ public sealed class TrainingPlanTests : IAsyncLifetime
         ]));
         var problem = await response.Content.ReadFromJsonAsync<ValidationProblem>();
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal("The Race Week can't be a Recovery Week.", Assert.Single(problem!.Errors["weeks[1].recoveryWeek"]));
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        problem!.Errors["weeks[1].recoveryWeek"].ShouldHaveSingleItem().ShouldBe("The Race Week can't be a Recovery Week.");
         // Nothing is saved, not even the valid week.
-        Assert.Equal((-1, null, null, "", false), (await GetPlannedWeeksAsync(race)).Row(-1));
+        (await GetPlannedWeeksAsync(race)).Row(-1).ShouldBe((-1, null, null, "", false));
     }
 
-    [Theory]
-    [InlineData(-16, 30000.0, 12000.0, "tuesday", "weeks[0].weeksToRace")]
-    [InlineData(1, 30000.0, 12000.0, "tuesday", "weeks[0].weeksToRace")]
-    [InlineData(-15, 0.0, 12000.0, "tuesday", "weeks[0].plannedDistance")]
-    [InlineData(-15, 30000.0, -1.0, "tuesday", "weeks[0].plannedLongRun")]
-    [InlineData(-15, 30000.0, 12000.0, "funday", "weeks[0].runningDays")]
-    [InlineData(-15, 30000.0, 12000.0, "3", "weeks[0].runningDays")]
+    [TestCase(-16, 30000.0, 12000.0, "tuesday", "weeks[0].weeksToRace")]
+    [TestCase(1, 30000.0, 12000.0, "tuesday", "weeks[0].weeksToRace")]
+    [TestCase(-15, 0.0, 12000.0, "tuesday", "weeks[0].plannedDistance")]
+    [TestCase(-15, 30000.0, -1.0, "tuesday", "weeks[0].plannedLongRun")]
+    [TestCase(-15, 30000.0, 12000.0, "funday", "weeks[0].runningDays")]
+    [TestCase(-15, 30000.0, 12000.0, "3", "weeks[0].runningDays")]
     public async Task A_week_must_be_in_the_plan_with_positive_distances_and_real_days(int weeksToRace, double distance, double longRun, string day, string field)
     {
         var race = await CreateGoalRaceAsync(SecondMarathon);
@@ -188,11 +186,11 @@ public sealed class TrainingPlanTests : IAsyncLifetime
         var response = await _browser.PutAsJsonAsync(WeeksPath(race), new TrainingPlanWeeksRequest([new WeekRequest(weeksToRace, distance, longRun, [day], false)]));
         var problem = await response.Content.ReadFromJsonAsync<ValidationProblem>();
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal([field], problem!.Errors.Keys);
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        problem!.Errors.Keys.ShouldBe([field]);
     }
 
-    [Fact]
+    [Test]
     public async Task A_week_can_be_in_a_request_only_once()
     {
         var race = await CreateGoalRaceAsync(SecondMarathon);
@@ -202,21 +200,21 @@ public sealed class TrainingPlanTests : IAsyncLifetime
             [new WeekRequest(-3, 30000, 12000, [], false), new WeekRequest(-3, 20000, 8000, [], false)]));
         var problem = await response.Content.ReadFromJsonAsync<ValidationProblem>();
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal(["weeks[1].weeksToRace"], problem!.Errors.Keys);
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        problem!.Errors.Keys.ShouldBe(["weeks[1].weeksToRace"]);
     }
 
-    [Fact]
+    [Test]
     public async Task Weeks_of_a_goal_race_without_a_plan_cannot_be_saved()
     {
         var race = await CreateGoalRaceAsync(SecondMarathon);
 
         var response = await _browser.PutAsJsonAsync(WeeksPath(race), new TrainingPlanWeeksRequest([new WeekRequest(0, 55000, 42195, [], false)]));
 
-        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
-    [Fact]
+    [Test]
     public async Task A_plan_whose_block_would_overlap_another_goal_races_is_rejected()
     {
         await CreateGoalRaceAsync(FirstMarathon);
@@ -226,13 +224,12 @@ public sealed class TrainingPlanTests : IAsyncLifetime
         var response = await _browser.PutAsJsonAsync(PlanPath(race), new TrainingPlanRequest(20, ["build", "build", "peak", "peak", "taper"]));
         var problem = await response.Content.ReadFromJsonAsync<ValidationProblem>();
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Equal(
-            "The Training Block (17 Aug 2026 – 3 Jan 2027) overlaps the one of Vienna Marathon (22 Jun – 27 Sep 2026).",
-            Assert.Single(problem!.Errors["length"]));
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        problem!.Errors["length"].ShouldHaveSingleItem().ShouldBe(
+            "The Training Block (17 Aug 2026 – 3 Jan 2027) overlaps the one of Vienna Marathon (22 Jun – 27 Sep 2026).");
     }
 
-    [Fact]
+    [Test]
     public async Task Another_goal_race_inside_a_planned_block_is_rejected_even_outside_the_races_own_block_length()
     {
         var second = await CreateGoalRaceAsync(SecondMarathon);
@@ -243,11 +240,11 @@ public sealed class TrainingPlanTests : IAsyncLifetime
         // Lengthening the planned race's own block changes nothing while it has a plan.
         var edited = await _browser.PutAsJsonAsync($"/api/goal-races/{second.Id}", SecondMarathon with { TrainingBlockWeeks = 30 });
 
-        Assert.Equal(HttpStatusCode.BadRequest, tuneUp.StatusCode);
-        Assert.Equal(HttpStatusCode.OK, edited.StatusCode);
+        tuneUp.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        edited.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
-    [Fact]
+    [Test]
     public async Task Deleting_the_plan_gives_the_race_back_its_own_block_length()
     {
         var race = await CreateGoalRaceAsync(SecondMarathon);
@@ -256,19 +253,19 @@ public sealed class TrainingPlanTests : IAsyncLifetime
 
         var deleted = await _browser.DeleteAsync(PlanPath(race));
         var again = await _browser.DeleteAsync(PlanPath(race));
-        var listed = Assert.Single(await ListGoalRacesAsync());
+        var listed = (await ListGoalRacesAsync()).ShouldHaveSingleItem();
 
-        Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, again.StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await _browser.GetAsync(PlanPath(race))).StatusCode);
+        deleted.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        again.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        (await _browser.GetAsync(PlanPath(race))).StatusCode.ShouldBe(HttpStatusCode.NotFound);
         // Its own 10 weeks: from Mon 15 Mar 2027 instead of the plan's Mon 1 Feb.
-        Assert.Equal((new DateOnly(2027, 3, 15), null), (listed.TrainingBlockStart, listed.TrainingPlanLength));
+        (listed.TrainingBlockStart, listed.TrainingPlanLength).ShouldBe((new DateOnly(2027, 3, 15), null));
         // A new plan starts from nothing.
         await PutPlanAsync(race, BuildPeakPeakTaper);
-        Assert.Equal((0, null, null, "", false), (await GetPlannedWeeksAsync(race)).Row(0));
+        (await GetPlannedWeeksAsync(race)).Row(0).ShouldBe((0, null, null, "", false));
     }
 
-    [Fact]
+    [Test]
     public async Task Deleting_a_goal_race_deletes_its_plan()
     {
         var race = await CreateGoalRaceAsync(SecondMarathon);
@@ -277,18 +274,18 @@ public sealed class TrainingPlanTests : IAsyncLifetime
         var deleted = await _browser.DeleteAsync($"/api/goal-races/{race.Id}");
         var again = await CreateGoalRaceAsync(SecondMarathon);
 
-        Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await _browser.GetAsync(PlanPath(again))).StatusCode);
-        Assert.Equal(new DateOnly(2027, 3, 15), Assert.Single(await ListGoalRacesAsync()).TrainingBlockStart);
+        deleted.StatusCode.ShouldBe(HttpStatusCode.NoContent);
+        (await _browser.GetAsync(PlanPath(again))).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        (await ListGoalRacesAsync()).ShouldHaveSingleItem().TrainingBlockStart.ShouldBe(new DateOnly(2027, 3, 15));
     }
 
-    [Fact]
+    [Test]
     public async Task A_goal_race_without_a_plan_or_an_unknown_one_has_none_to_show()
     {
         var race = await CreateGoalRaceAsync(SecondMarathon);
 
-        Assert.Equal(HttpStatusCode.NotFound, (await _browser.GetAsync(PlanPath(race))).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await _browser.PutAsJsonAsync("/api/goal-races/999/training-plan", BuildPeakPeakTaper)).StatusCode);
+        (await _browser.GetAsync(PlanPath(race))).StatusCode.ShouldBe(HttpStatusCode.NotFound);
+        (await _browser.PutAsJsonAsync("/api/goal-races/999/training-plan", BuildPeakPeakTaper)).StatusCode.ShouldBe(HttpStatusCode.NotFound);
     }
 
     private async Task<GoalRaceResponse> CreateGoalRaceAsync(GoalRaceRequest race)
@@ -306,7 +303,7 @@ public sealed class TrainingPlanTests : IAsyncLifetime
     private async Task<TrainingPlanResponse> PutPlanAsync(GoalRaceResponse race, TrainingPlanRequest plan)
     {
         var response = await _browser.PutAsJsonAsync(PlanPath(race), plan);
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
         return (await response.Content.ReadFromJsonAsync<TrainingPlanResponse>())!;
     }
 
@@ -318,7 +315,7 @@ public sealed class TrainingPlanTests : IAsyncLifetime
     private async Task PutWeeksAsync(GoalRaceResponse race, params WeekRequest[] weeks)
     {
         var response = await _browser.PutAsJsonAsync(WeeksPath(race), new TrainingPlanWeeksRequest([.. weeks]));
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
     }
 
     /// <summary>The plan as GET returns it, read for what is planned each week.</summary>

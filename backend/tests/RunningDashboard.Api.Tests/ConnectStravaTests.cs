@@ -5,60 +5,60 @@ using RunningDashboard.Api.Tests.Harness;
 
 namespace RunningDashboard.Api.Tests;
 
-public sealed class ConnectStravaTests : IAsyncLifetime
+public sealed class ConnectStravaTests
 {
     private readonly TestApp _app = new();
 
-    public Task InitializeAsync() => Task.CompletedTask;
 
-    public async Task DisposeAsync() => await _app.DisposeAsync();
+    [TearDown]
+    public async Task TearDownAsync() => await _app.DisposeAsync();
 
-    [Fact]
+    [Test]
     public async Task Before_connecting_the_app_is_not_connected()
     {
         var browser = _app.CreateBrowser();
 
         var connection = await GetConnectionAsync(browser);
 
-        Assert.False(connection.Connected);
-        Assert.Null(connection.Athlete);
+        connection.Connected.ShouldBeFalse();
+        connection.Athlete.ShouldBeNull();
     }
 
-    [Fact]
+    [Test]
     public async Task Connect_sends_the_athlete_to_strava_asking_for_read_access_to_activities_and_profile()
     {
         var browser = _app.CreateBrowser();
 
         var response = await browser.GetAsync("/api/strava/connect");
 
-        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        response.StatusCode.ShouldBe(HttpStatusCode.Redirect);
         var location = response.Headers.Location!;
-        Assert.Equal("https://www.strava.com/oauth/authorize", location.GetLeftPart(UriPartial.Path));
+        location.GetLeftPart(UriPartial.Path).ShouldBe("https://www.strava.com/oauth/authorize");
         var query = QueryHelpers.ParseQuery(location.Query);
-        Assert.Equal(TestApp.ClientId, query["client_id"]);
-        Assert.Equal(TestApp.RedirectUri, query["redirect_uri"]);
-        Assert.Equal("code", query["response_type"]);
-        Assert.Equal(TestApp.AllScopes, query["scope"]);
-        Assert.False(string.IsNullOrEmpty(query["state"]));
+        query["client_id"].ToString().ShouldBe(TestApp.ClientId);
+        query["redirect_uri"].ToString().ShouldBe(TestApp.RedirectUri);
+        query["response_type"].ToString().ShouldBe("code");
+        query["scope"].ToString().ShouldBe(TestApp.AllScopes);
+        string.IsNullOrEmpty(query["state"]).ShouldBeFalse();
     }
 
-    [Fact]
+    [Test]
     public async Task After_strava_approves_the_app_is_connected_as_that_athlete()
     {
         var browser = _app.CreateBrowser();
 
         var callback = await _app.ConnectStravaAsync(browser, "token-exchange.json");
 
-        Assert.Equal(HttpStatusCode.Redirect, callback.StatusCode);
-        Assert.Equal("/?strava=connected", callback.Headers.Location!.OriginalString);
+        callback.StatusCode.ShouldBe(HttpStatusCode.Redirect);
+        callback.Headers.Location!.OriginalString.ShouldBe("/?strava=connected");
 
         var connection = await GetConnectionAsync(browser);
-        Assert.True(connection.Connected);
-        Assert.Equal(new AthleteResponse(133415890, "Stefan", "Simanek"), connection.Athlete);
-        Assert.Equal(_app.Clock.GetUtcNow(), connection.ConnectedAt);
+        connection.Connected.ShouldBeTrue();
+        connection.Athlete.ShouldBe(new AthleteResponse(133415890, "Stefan", "Simanek"));
+        connection.ConnectedAt.ShouldBe(_app.Clock.GetUtcNow());
     }
 
-    [Fact]
+    [Test]
     public async Task The_code_is_exchanged_with_strava_using_the_apps_credentials()
     {
         var browser = _app.CreateBrowser();
@@ -66,15 +66,15 @@ public sealed class ConnectStravaTests : IAsyncLifetime
         await _app.ConnectStravaAsync(browser, "token-exchange.json");
 
         // The token request is Strava's contract: a wrong field name here only fails against the real Strava.
-        var tokenRequest = Assert.Single(_app.Strava.Requests, r => r.Uri.AbsolutePath == "/oauth/token");
+        var tokenRequest = _app.Strava.Requests.Where(r => r.Uri.AbsolutePath == "/oauth/token").ShouldHaveSingleItem();
         var form = QueryHelpers.ParseQuery(tokenRequest.Body);
-        Assert.Equal(TestApp.ClientId, form["client_id"]);
-        Assert.Equal(TestApp.ClientSecret, form["client_secret"]);
-        Assert.Equal("auth-code-from-strava", form["code"]);
-        Assert.Equal("authorization_code", form["grant_type"]);
+        form["client_id"].ToString().ShouldBe(TestApp.ClientId);
+        form["client_secret"].ToString().ShouldBe(TestApp.ClientSecret);
+        form["code"].ToString().ShouldBe("auth-code-from-strava");
+        form["grant_type"].ToString().ShouldBe("authorization_code");
     }
 
-    [Fact]
+    [Test]
     public async Task A_different_strava_athlete_is_refused_once_one_is_connected()
     {
         var browser = _app.CreateBrowser();
@@ -82,12 +82,12 @@ public sealed class ConnectStravaTests : IAsyncLifetime
 
         var callback = await _app.ConnectStravaAsync(browser, "token-exchange-other-athlete.json");
 
-        Assert.Equal("/?strava=error&reason=different-athlete", callback.Headers.Location!.OriginalString);
+        callback.Headers.Location!.OriginalString.ShouldBe("/?strava=error&reason=different-athlete");
         var connection = await GetConnectionAsync(browser);
-        Assert.Equal(new AthleteResponse(133415890, "Stefan", "Simanek"), connection.Athlete);
+        connection.Athlete.ShouldBe(new AthleteResponse(133415890, "Stefan", "Simanek"));
     }
 
-    [Fact]
+    [Test]
     public async Task Connecting_the_same_athlete_again_keeps_the_app_connected()
     {
         var browser = _app.CreateBrowser();
@@ -95,12 +95,12 @@ public sealed class ConnectStravaTests : IAsyncLifetime
 
         var callback = await _app.ConnectStravaAsync(browser, "token-exchange.json");
 
-        Assert.Equal("/?strava=connected", callback.Headers.Location!.OriginalString);
+        callback.Headers.Location!.OriginalString.ShouldBe("/?strava=connected");
         var connection = await GetConnectionAsync(browser);
-        Assert.Equal(new AthleteResponse(133415890, "Stefan", "Simanek"), connection.Athlete);
+        connection.Athlete.ShouldBe(new AthleteResponse(133415890, "Stefan", "Simanek"));
     }
 
-    [Fact]
+    [Test]
     public async Task A_callback_that_was_not_started_by_this_browser_is_refused()
     {
         var browser = _app.CreateBrowser();
@@ -109,11 +109,11 @@ public sealed class ConnectStravaTests : IAsyncLifetime
 
         var callback = await browser.GetAsync($"/api/strava/callback?state=forged&code=attacker-code&scope={TestApp.AllScopes}");
 
-        Assert.Equal("/?strava=error&reason=invalid-state", callback.Headers.Location!.OriginalString);
-        Assert.False((await GetConnectionAsync(browser)).Connected);
+        callback.Headers.Location!.OriginalString.ShouldBe("/?strava=error&reason=invalid-state");
+        (await GetConnectionAsync(browser)).Connected.ShouldBeFalse();
     }
 
-    [Fact]
+    [Test]
     public async Task Declining_on_strava_leaves_the_app_unconnected()
     {
         var browser = _app.CreateBrowser();
@@ -121,22 +121,22 @@ public sealed class ConnectStravaTests : IAsyncLifetime
 
         var callback = await browser.GetAsync($"/api/strava/callback?state={state}&error=access_denied");
 
-        Assert.Equal("/?strava=error&reason=access-denied", callback.Headers.Location!.OriginalString);
-        Assert.False((await GetConnectionAsync(browser)).Connected);
+        callback.Headers.Location!.OriginalString.ShouldBe("/?strava=error&reason=access-denied");
+        (await GetConnectionAsync(browser)).Connected.ShouldBeFalse();
     }
 
-    [Fact]
+    [Test]
     public async Task Unticking_a_required_permission_on_strava_leaves_the_app_unconnected()
     {
         var browser = _app.CreateBrowser();
 
         var callback = await _app.ConnectStravaAsync(browser, "token-exchange.json", scope: "read,profile:read_all");
 
-        Assert.Equal("/?strava=error&reason=missing-permissions", callback.Headers.Location!.OriginalString);
-        Assert.False((await GetConnectionAsync(browser)).Connected);
+        callback.Headers.Location!.OriginalString.ShouldBe("/?strava=error&reason=missing-permissions");
+        (await GetConnectionAsync(browser)).Connected.ShouldBeFalse();
     }
 
-    [Fact]
+    [Test]
     public async Task When_strava_rejects_the_code_the_app_stays_unconnected_and_says_so()
     {
         var browser = _app.CreateBrowser();
@@ -148,8 +148,8 @@ public sealed class ConnectStravaTests : IAsyncLifetime
 
         var callback = await browser.GetAsync($"/api/strava/callback?state={state}&code=expired-code&scope={TestApp.AllScopes}");
 
-        Assert.Equal("/?strava=error&reason=strava-rejected", callback.Headers.Location!.OriginalString);
-        Assert.False((await GetConnectionAsync(browser)).Connected);
+        callback.Headers.Location!.OriginalString.ShouldBe("/?strava=error&reason=strava-rejected");
+        (await GetConnectionAsync(browser)).Connected.ShouldBeFalse();
     }
 
     private static async Task<ConnectionResponse> GetConnectionAsync(HttpClient browser) =>

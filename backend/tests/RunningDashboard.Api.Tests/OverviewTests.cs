@@ -4,15 +4,15 @@ using RunningDashboard.Api.Tests.Harness;
 namespace RunningDashboard.Api.Tests;
 
 /// <summary>The clock stands at Friday 2026-10-09, so the current Training Week starts Monday 2026-10-05.</summary>
-public sealed class OverviewTests : IAsyncLifetime
+public sealed class OverviewTests
 {
     private readonly TestApp _app = new();
 
-    public Task InitializeAsync() => Task.CompletedTask;
 
-    public async Task DisposeAsync() => await _app.DisposeAsync();
+    [TearDown]
+    public async Task TearDownAsync() => await _app.DisposeAsync();
 
-    [Fact]
+    [Test]
     public async Task Totals_add_up_all_runs_and_each_calendar_year_by_local_time()
     {
         var browser = await _app.ConnectWithActivitiesAsync(
@@ -23,13 +23,12 @@ public sealed class OverviewTests : IAsyncLifetime
 
         var overview = await GetOverviewAsync(browser);
 
-        Assert.Equal(new TotalsResponse(3, 23000, 8400, 100), overview.Totals);
-        Assert.Equal(
-            [new YearResponse(2025, 1, 5000, 1800, 20), new YearResponse(2026, 2, 18000, 6600, 80)],
-            overview.Years);
+        overview.Totals.ShouldBe(new TotalsResponse(3, 23000, 8400, 100));
+        overview.Years.ShouldBe(
+            [new YearResponse(2025, 1, 5000, 1800, 20), new YearResponse(2026, 2, 18000, 6600, 80)]);
     }
 
-    [Fact]
+    [Test]
     public async Task A_run_late_on_sunday_counts_in_the_week_that_started_on_monday()
     {
         var browser = await _app.ConnectWithActivitiesAsync(
@@ -38,11 +37,11 @@ public sealed class OverviewTests : IAsyncLifetime
 
         var overview = await GetOverviewAsync(browser);
 
-        Assert.Equal(10000, DistanceInWeek(overview, new DateOnly(2026, 9, 21)));
-        Assert.Equal(5000, DistanceInWeek(overview, new DateOnly(2026, 9, 28)));
+        DistanceInWeek(overview, new DateOnly(2026, 9, 21)).ShouldBe(10000);
+        DistanceInWeek(overview, new DateOnly(2026, 9, 28)).ShouldBe(5000);
     }
 
-    [Fact]
+    [Test]
     public async Task A_run_abroad_counts_by_the_local_time_where_it_was_run()
     {
         // Sunday 23:30 in New York is already Monday 03:30 in UTC.
@@ -51,11 +50,11 @@ public sealed class OverviewTests : IAsyncLifetime
 
         var overview = await GetOverviewAsync(browser);
 
-        Assert.Equal(8000, DistanceInWeek(overview, new DateOnly(2026, 7, 27)));
-        Assert.Equal(0, DistanceInWeek(overview, new DateOnly(2026, 8, 3)));
+        DistanceInWeek(overview, new DateOnly(2026, 7, 27)).ShouldBe(8000);
+        DistanceInWeek(overview, new DateOnly(2026, 8, 3)).ShouldBe(0);
     }
 
-    [Fact]
+    [Test]
     public async Task Monthly_pace_is_total_moving_time_over_total_distance()
     {
         var browser = await _app.ConnectWithActivitiesAsync(
@@ -66,14 +65,14 @@ public sealed class OverviewTests : IAsyncLifetime
         var overview = await GetOverviewAsync(browser);
 
         // 4000 s over 12 km, not the average of 300 and 500 s/km.
-        var september = Assert.Single(overview.Months, m => m is { Year: 2026, Month: 9 });
-        Assert.Equal(333.3, september.Pace!.Value, 1);
-        Assert.Equal(12000, september.Distance);
-        var august = Assert.Single(overview.Months, m => m is { Year: 2026, Month: 8 });
-        Assert.Null(august.Pace);
+        var september = overview.Months.Where(m => m is { Year: 2026, Month: 9 }).ShouldHaveSingleItem();
+        september.Pace!.Value.ShouldBe(333.3, 0.05);
+        september.Distance.ShouldBe(12000);
+        var august = overview.Months.Where(m => m is { Year: 2026, Month: 8 }).ShouldHaveSingleItem();
+        august.Pace.ShouldBeNull();
     }
 
-    [Fact]
+    [Test]
     public async Task Weeks_without_runs_show_as_zero_up_to_the_current_week()
     {
         var browser = await _app.ConnectWithActivitiesAsync(
@@ -82,27 +81,26 @@ public sealed class OverviewTests : IAsyncLifetime
 
         var overview = await GetOverviewAsync(browser);
 
-        Assert.Equal(
-            [new DateOnly(2026, 9, 7), new DateOnly(2026, 9, 14), new DateOnly(2026, 9, 21), new DateOnly(2026, 9, 28), new DateOnly(2026, 10, 5)],
-            overview.Weeks.Select(w => w.Start));
-        Assert.Equal([6000, 0, 7000, 0, 0], overview.Weeks.Select(w => w.Distance));
+        overview.Weeks.Select(w => w.Start).ShouldBe(
+            [new DateOnly(2026, 9, 7), new DateOnly(2026, 9, 14), new DateOnly(2026, 9, 21), new DateOnly(2026, 9, 28), new DateOnly(2026, 10, 5)]);
+        overview.Weeks.Select(w => w.Distance).ShouldBe([6000, 0, 7000, 0, 0]);
     }
 
-    [Fact]
+    [Test]
     public async Task Without_runs_the_overview_is_empty()
     {
         var browser = _app.CreateBrowser();
 
         var overview = await GetOverviewAsync(browser);
 
-        Assert.Equal(new TotalsResponse(0, 0, 0, 0), overview.Totals);
-        Assert.Empty(overview.Years);
-        Assert.Empty(overview.Weeks);
-        Assert.Empty(overview.Months);
+        overview.Totals.ShouldBe(new TotalsResponse(0, 0, 0, 0));
+        overview.Years.ShouldBeEmpty();
+        overview.Weeks.ShouldBeEmpty();
+        overview.Months.ShouldBeEmpty();
     }
 
     private static double DistanceInWeek(OverviewResponse overview, DateOnly monday) =>
-        Assert.Single(overview.Weeks, w => w.Start == monday).Distance;
+        overview.Weeks.Where(w => w.Start == monday).ShouldHaveSingleItem().Distance;
 
     private static async Task<OverviewResponse> GetOverviewAsync(HttpClient browser) =>
         (await browser.GetFromJsonAsync<OverviewResponse>("/api/overview"))!;

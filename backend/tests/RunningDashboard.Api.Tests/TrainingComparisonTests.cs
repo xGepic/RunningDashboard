@@ -9,7 +9,7 @@ namespace RunningDashboard.Api.Tests;
 /// marathon (Sun 12 Apr 2026, 8 weeks), the first marathon (Sun 27 Sep 2026, 14 weeks) and the second marathon
 /// (Sun 23 May 2027, 16 weeks).
 /// </summary>
-public sealed class TrainingComparisonTests : IAsyncLifetime
+public sealed class TrainingComparisonTests
 {
     private const double Marathon = 42195;
 
@@ -21,11 +21,11 @@ public sealed class TrainingComparisonTests : IAsyncLifetime
 
     private readonly TestApp _app = new();
 
-    public Task InitializeAsync() => Task.CompletedTask;
 
-    public async Task DisposeAsync() => await _app.DisposeAsync();
+    [TearDown]
+    public async Task TearDownAsync() => await _app.DisposeAsync();
 
-    [Fact]
+    [Test]
     public async Task A_16_week_block_lines_up_with_a_14_week_one_by_weeks_to_race()
     {
         var browser = await _app.ConnectWithActivitiesAsync(
@@ -38,24 +38,23 @@ public sealed class TrainingComparisonTests : IAsyncLifetime
 
         var block = (await GetTrainingAsync(browser)).Block!;
 
-        Assert.Equal(second.Id, block.GoalRace.Id);
+        block.GoalRace.Id.ShouldBe(second.Id);
         var comparison = block.Comparison!;
-        Assert.Equal((first.Id, "Vienna Marathon"), (comparison.GoalRace.Id, comparison.GoalRace.Name));
-        Assert.Equal(Enumerable.Range(-15, 16), comparison.Weeks.Select(w => w.WeeksToRace));
-        Assert.All(comparison.Weeks, w => Assert.Equal(new DateOnly(2027, 5, 17).AddDays(7 * w.WeeksToRace), w.Viewed!.Start));
+        (comparison.GoalRace.Id, comparison.GoalRace.Name).ShouldBe((first.Id, "Vienna Marathon"));
+        comparison.Weeks.Select(w => w.WeeksToRace).ShouldBe(Enumerable.Range(-15, 16));
+        comparison.Weeks.ShouldAllBe(w => w.Viewed!.Start == new DateOnly(2027, 5, 17).AddDays(7 * w.WeeksToRace));
         // Weeks −15 and −14 have nothing to compare against.
-        Assert.Equal([-15, -14], comparison.Weeks.Where(w => w.Compared is null).Select(w => w.WeeksToRace));
+        comparison.Weeks.Where(w => w.Compared is null).Select(w => w.WeeksToRace).ShouldBe([-15, -14]);
 
         var weekMinus13 = comparison.Weeks.Single(w => w.WeeksToRace == -13);
-        Assert.Equal(2, weekMinus13.Viewed!.Actual!.LongRun!.RunId);
-        Assert.Equal((new DateOnly(2026, 6, 22), "past"), (weekMinus13.Compared!.Start, weekMinus13.Compared.Status));
+        weekMinus13.Viewed!.Actual!.LongRun!.RunId.ShouldBe(2);
+        (weekMinus13.Compared!.Start, weekMinus13.Compared.Status).ShouldBe((new DateOnly(2026, 6, 22), "past"));
         // Last time's Long Run against the Pace needed now: 390 s/km is 36 s/km faster than 7:06.
-        Assert.Equal(
-            new ActualResponse(1, 16000, 6240, 95, new LongRunResponse(1, "First block, first long run", 16000, 390, -36)),
-            weekMinus13.Compared.Actual);
+        weekMinus13.Compared.Actual.ShouldBe(
+            new ActualResponse(1, 16000, 6240, 95, new LongRunResponse(1, "First block, first long run", 16000, 390, -36)));
     }
 
-    [Fact]
+    [Test]
     public async Task Compared_with_a_longer_block_the_viewed_block_has_nothing_in_its_earliest_weeks()
     {
         var browser = _app.CreateBrowser();
@@ -64,12 +63,12 @@ public sealed class TrainingComparisonTests : IAsyncLifetime
 
         var comparison = (await GetBlockAsync(browser, first, $"&compareWith={second.Id}")).Comparison!;
 
-        Assert.Equal(Enumerable.Range(-15, 16), comparison.Weeks.Select(w => w.WeeksToRace));
-        Assert.Equal([-15, -14], comparison.Weeks.Where(w => w.Viewed is null).Select(w => w.WeeksToRace));
-        Assert.All(comparison.Weeks, w => Assert.NotNull(w.Compared));
+        comparison.Weeks.Select(w => w.WeeksToRace).ShouldBe(Enumerable.Range(-15, 16));
+        comparison.Weeks.Where(w => w.Viewed is null).Select(w => w.WeeksToRace).ShouldBe([-15, -14]);
+        comparison.Weeks.ShouldAllBe(w => w.Compared != null);
     }
 
-    [Fact]
+    [Test]
     public async Task By_default_a_block_is_compared_with_the_most_recent_goal_race_before_it()
     {
         var browser = _app.CreateBrowser();
@@ -78,12 +77,12 @@ public sealed class TrainingComparisonTests : IAsyncLifetime
         var half = await CreateGoalRaceAsync(browser, HalfMarathon);
         var first = await CreateGoalRaceAsync(browser, FirstMarathon);
 
-        Assert.Equal(first.Id, (await GetBlockAsync(browser, second)).Comparison!.GoalRace.Id);
-        Assert.Equal(half.Id, (await GetBlockAsync(browser, first)).Comparison!.GoalRace.Id);
-        Assert.Null((await GetBlockAsync(browser, half)).Comparison);
+        (await GetBlockAsync(browser, second)).Comparison!.GoalRace.Id.ShouldBe(first.Id);
+        (await GetBlockAsync(browser, first)).Comparison!.GoalRace.Id.ShouldBe(half.Id);
+        (await GetBlockAsync(browser, half)).Comparison.ShouldBeNull();
     }
 
-    [Fact]
+    [Test]
     public async Task The_athlete_can_compare_with_another_goal_race_or_turn_the_comparison_off()
     {
         var browser = _app.CreateBrowser();
@@ -94,15 +93,14 @@ public sealed class TrainingComparisonTests : IAsyncLifetime
         var withHalf = await GetBlockAsync(browser, second, $"&compareWith={half.Id}");
         var off = await GetBlockAsync(browser, second, "&compareWith=none");
 
-        Assert.Equal(half.Id, withHalf.Comparison!.GoalRace.Id);
-        Assert.Equal(Enumerable.Range(-7, 8), withHalf.Comparison.Weeks.Where(w => w.Compared is not null).Select(w => w.WeeksToRace));
-        Assert.Null(off.Comparison);
+        withHalf.Comparison!.GoalRace.Id.ShouldBe(half.Id);
+        withHalf.Comparison.Weeks.Where(w => w.Compared is not null).Select(w => w.WeeksToRace).ShouldBe(Enumerable.Range(-7, 8));
+        off.Comparison.ShouldBeNull();
     }
 
-    [Theory]
-    [InlineData("999", HttpStatusCode.NotFound)]
-    [InlineData("previous", HttpStatusCode.BadRequest)]
-    [InlineData("self", HttpStatusCode.BadRequest)]
+    [TestCase("999", HttpStatusCode.NotFound)]
+    [TestCase("previous", HttpStatusCode.BadRequest)]
+    [TestCase("self", HttpStatusCode.BadRequest)]
     public async Task Comparing_with_an_unknown_race_or_the_race_itself_is_refused(string compareWith, HttpStatusCode expected)
     {
         var browser = _app.CreateBrowser();
@@ -112,7 +110,7 @@ public sealed class TrainingComparisonTests : IAsyncLifetime
 
         var response = await browser.GetAsync($"/api/training?goalRaceId={second.Id}&compareWith={compareWith}");
 
-        Assert.Equal(expected, response.StatusCode);
+        response.StatusCode.ShouldBe(expected);
     }
 
     private static async Task<BlockResponse> GetBlockAsync(HttpClient browser, GoalRaceResponse race, string query = "") =>

@@ -4,7 +4,7 @@ using RunningDashboard.Api.Tests.Harness;
 
 namespace RunningDashboard.Api.Tests;
 
-public sealed class TokenRefreshTests : IAsyncLifetime
+public sealed class TokenRefreshTests
 {
     private const string ActivitiesPath = "/api/v3/athlete/activities";
     private const string ConnectAccessToken = "Bearer a4b945687g1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e";
@@ -15,11 +15,11 @@ public sealed class TokenRefreshTests : IAsyncLifetime
 
     private readonly TestApp _app = new();
 
-    public Task InitializeAsync() => Task.CompletedTask;
 
-    public async Task DisposeAsync() => await _app.DisposeAsync();
+    [TearDown]
+    public async Task TearDownAsync() => await _app.DisposeAsync();
 
-    [Fact]
+    [Test]
     public async Task A_token_about_to_expire_is_refreshed_before_syncing_and_the_new_one_is_kept()
     {
         _app.Strava.RespondWithFixture(HttpMethod.Get, ActivitiesPath, "activities-empty.json");
@@ -36,20 +36,20 @@ public sealed class TokenRefreshTests : IAsyncLifetime
         await browser.PostAsync("/api/sync", null);
         await TestApp.WaitForSyncAsync(browser, finishedAfter: refreshed.LastSyncedAt);
 
-        var refresh = Assert.Single(_app.Strava.Requests, r => r.Uri.AbsolutePath == "/oauth/token" && r.Body!.Contains("refresh_token"));
+        var refresh = _app.Strava.Requests.Where(r => r.Uri.AbsolutePath == "/oauth/token" && r.Body!.Contains("refresh_token")).ShouldHaveSingleItem();
         var form = QueryHelpers.ParseQuery(refresh.Body);
-        Assert.Equal("refresh_token", form["grant_type"]);
-        Assert.Equal("e5n567567a8f9b0c1d2e3f4a5b6c7d8e9f0a1b2c", form["refresh_token"]);
-        Assert.Equal(TestApp.ClientId, form["client_id"]);
-        Assert.Equal(TestApp.ClientSecret, form["client_secret"]);
+        form["grant_type"].ToString().ShouldBe("refresh_token");
+        form["refresh_token"].ToString().ShouldBe("e5n567567a8f9b0c1d2e3f4a5b6c7d8e9f0a1b2c");
+        form["client_id"].ToString().ShouldBe(TestApp.ClientId);
+        form["client_secret"].ToString().ShouldBe(TestApp.ClientSecret);
         var refreshAt = _app.Strava.Requests.IndexOf(refresh);
         var listTokens = _app.Strava.Requests.Select((r, i) => (Request: r, Index: i)).Where(x => x.Request.Uri.AbsolutePath == ActivitiesPath).ToList();
-        Assert.All(listTokens.Where(x => x.Index < refreshAt), x => Assert.Equal(ConnectAccessToken, x.Request.Authorization));
-        Assert.All(listTokens.Where(x => x.Index > refreshAt), x => Assert.Equal(RefreshedAccessToken, x.Request.Authorization));
-        Assert.Contains(listTokens, x => x.Index > refreshAt);
+        listTokens.Where(x => x.Index < refreshAt).ShouldAllBe(x => x.Request.Authorization == ConnectAccessToken);
+        listTokens.Where(x => x.Index > refreshAt).ShouldAllBe(x => x.Request.Authorization == RefreshedAccessToken);
+        listTokens.ShouldContain(x => x.Index > refreshAt);
     }
 
-    [Fact]
+    [Test]
     public async Task A_revoked_token_makes_the_sync_status_ask_for_a_reconnect()
     {
         _app.Strava.RespondWithFixture(HttpMethod.Get, ActivitiesPath, "activities-empty.json");
@@ -60,10 +60,10 @@ public sealed class TokenRefreshTests : IAsyncLifetime
         await browser.PostAsync("/api/sync", null);
         var status = await TestApp.WaitForStatusAsync(browser, s => !s.Running && s.ReconnectRequired);
 
-        Assert.NotNull(status.LastError);
+        status.LastError.ShouldNotBeNull();
     }
 
-    [Fact]
+    [Test]
     public async Task A_refused_token_refresh_makes_the_sync_status_ask_for_a_reconnect()
     {
         _app.Strava.RespondWithFixture(HttpMethod.Get, ActivitiesPath, "activities-empty.json");
@@ -80,7 +80,7 @@ public sealed class TokenRefreshTests : IAsyncLifetime
         await TestApp.WaitForStatusAsync(browser, s => !s.Running && s.ReconnectRequired);
     }
 
-    [Fact]
+    [Test]
     public async Task Reconnecting_the_same_athlete_syncs_again_and_keeps_the_runs()
     {
         _app.Strava.RespondWithFixture(HttpMethod.Get, ActivitiesPath, "activities-page-1.json");
@@ -97,12 +97,12 @@ public sealed class TokenRefreshTests : IAsyncLifetime
         await _app.ConnectStravaAsync(browser);
         var status = await TestApp.WaitForSyncAsync(browser, finishedAfter: firstSync.LastSyncedAt);
 
-        Assert.False(status.ReconnectRequired);
-        Assert.Null(status.LastError);
-        Assert.Equal(5, status.ImportedRuns);
+        status.ReconnectRequired.ShouldBeFalse();
+        status.LastError.ShouldBeNull();
+        status.ImportedRuns.ShouldBe(5);
     }
 
-    [Fact]
+    [Test]
     public async Task A_refused_access_token_is_refreshed_once_and_the_sync_carries_on()
     {
         _app.Strava.RespondWithFixture(HttpMethod.Get, ActivitiesPath, "activities-empty.json");
@@ -117,12 +117,12 @@ public sealed class TokenRefreshTests : IAsyncLifetime
         await browser.PostAsync("/api/sync", null);
         var status = await TestApp.WaitForSyncAsync(browser, finishedAfter: firstSync.LastSyncedAt);
 
-        Assert.False(status.ReconnectRequired);
-        Assert.Equal(2, status.ImportedRuns);
-        Assert.Equal(RefreshedAccessToken, _app.Strava.Requests.Last(r => r.Uri.AbsolutePath == ActivitiesPath).Authorization);
+        status.ReconnectRequired.ShouldBeFalse();
+        status.ImportedRuns.ShouldBe(2);
+        _app.Strava.Requests.Last(r => r.Uri.AbsolutePath == ActivitiesPath).Authorization.ShouldBe(RefreshedAccessToken);
     }
 
-    [Fact]
+    [Test]
     public async Task A_sync_that_succeeds_again_clears_the_reconnect_request()
     {
         _app.Strava.RespondWithFixture(HttpMethod.Get, ActivitiesPath, "activities-empty.json");
@@ -137,7 +137,7 @@ public sealed class TokenRefreshTests : IAsyncLifetime
         await browser.PostAsync("/api/sync", null);
         var status = await TestApp.WaitForSyncAsync(browser, finishedAfter: firstSync.LastSyncedAt);
 
-        Assert.False(status.ReconnectRequired);
+        status.ReconnectRequired.ShouldBeFalse();
     }
 
     /// <summary>The access token is refused, and so is refreshing it: what a revoked app looks like.</summary>

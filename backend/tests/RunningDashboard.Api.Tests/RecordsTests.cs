@@ -7,7 +7,7 @@ namespace RunningDashboard.Api.Tests;
 /// Three years of 5K Best Efforts: a 5K race, a faster 5K inside a half marathon, a parkrun in exactly the same time
 /// and a slower easy run.
 /// </summary>
-public sealed class RecordsTests : IAsyncLifetime
+public sealed class RecordsTests
 {
     // As Strava has it.
     private const double HalfMarathon = 21097;
@@ -31,46 +31,46 @@ public sealed class RecordsTests : IAsyncLifetime
     private readonly TestApp _app = new();
     private HttpClient _browser = null!;
 
-    public async Task InitializeAsync() =>
+    [SetUp]
+    public async Task SetUpAsync() =>
         _browser = await _app.ConnectWithActivitiesAsync(CityRace, HalfMarathonRace, Parkrun, EasyRun);
 
-    public async Task DisposeAsync() => await _app.DisposeAsync();
+    [TearDown]
+    public async Task TearDownAsync() => await _app.DisposeAsync();
 
-    [Fact]
+    [Test]
     public async Task A_best_effort_inside_a_longer_run_sets_a_personal_best()
     {
         var fiveK = await GetRecordAsync("5K");
 
-        Assert.Equal(
+        fiveK.Progression.ShouldBe(
             [
                 new PersonalBestResponse(1, "City 5K", new DateTime(2024, 4, 14, 9, 0, 0), 1500, 300),
                 new PersonalBestResponse(2, "Half marathon", new DateTime(2025, 10, 5, 9, 0, 0), 1470, 294),
-            ],
-            fiveK.Progression);
-        Assert.Equal(fiveK.Progression[^1], fiveK.PersonalBest);
+            ]);
+        fiveK.PersonalBest.ShouldBe(fiveK.Progression[^1]);
     }
 
-    [Fact]
+    [Test]
     public async Task An_equal_time_does_not_add_a_step()
     {
         var fiveK = await GetRecordAsync("5K");
 
-        Assert.Equal([1, 2], fiveK.Progression.Select(r => r.RunId));
-        Assert.Equal(2, fiveK.PersonalBest.RunId);
+        fiveK.Progression.Select(r => r.RunId).ShouldBe([1, 2]);
+        fiveK.PersonalBest.RunId.ShouldBe(2);
     }
 
-    [Fact]
+    [Test]
     public async Task Every_distance_strava_provides_is_listed_shortest_first_with_the_main_ones_shown_by_default()
     {
         var records = await GetRecordsAsync();
 
-        Assert.Equal(
-            [("400m", false), ("1K", false), ("5K", true), ("10K", false), ("Half-Marathon", true)],
-            records.Select(r => (r.Name, r.ShownByDefault)));
-        Assert.Equal(HalfMarathon, records[^1].Distance);
+        records.Select(r => (r.Name, r.ShownByDefault)).ShouldBe(
+            [("400m", false), ("1K", false), ("5K", true), ("10K", false), ("Half-Marathon", true)]);
+        records[^1].Distance.ShouldBe(HalfMarathon);
     }
 
-    [Fact]
+    [Test]
     public async Task A_run_removed_on_strava_disappears_from_the_history()
     {
         var firstSync = await TestApp.WaitForSyncAsync(_browser);
@@ -83,21 +83,20 @@ public sealed class RecordsTests : IAsyncLifetime
         await TestApp.WaitForSyncAsync(_browser, finishedAfter: firstSync.LastSyncedAt);
         var records = await GetRecordsAsync();
 
-        Assert.Equal(["1K", "5K"], records.Select(r => r.Name));
+        records.Select(r => r.Name).ShouldBe(["1K", "5K"]);
         var fiveK = records[1];
-        Assert.Equal([1, 3], fiveK.Progression.Select(r => r.RunId));
-        Assert.Equal(new PersonalBestResponse(3, "Parkrun", new DateTime(2026, 3, 7, 9, 0, 0), 1470, 294), fiveK.PersonalBest);
+        fiveK.Progression.Select(r => r.RunId).ShouldBe([1, 3]);
+        fiveK.PersonalBest.ShouldBe(new PersonalBestResponse(3, "Parkrun", new DateTime(2026, 3, 7, 9, 0, 0), 1470, 294));
     }
 
-    [Fact]
+    [Test]
     public async Task A_runs_best_efforts_are_marked_when_they_were_a_personal_best_at_the_time()
     {
-        Assert.Equal([("1K", true), ("5K", true)], await PersonalBestMarksAsync(CityRace));
-        Assert.Equal(
-            [("400m", true), ("1K", true), ("5K", true), ("10K", true), ("Half-Marathon", true)],
-            await PersonalBestMarksAsync(HalfMarathonRace));
-        Assert.Equal([("1K", false), ("5K", false)], await PersonalBestMarksAsync(Parkrun));
-        Assert.Equal([("1K", false), ("5K", false)], await PersonalBestMarksAsync(EasyRun));
+        (await PersonalBestMarksAsync(CityRace)).ShouldBe([("1K", true), ("5K", true)]);
+        (await PersonalBestMarksAsync(HalfMarathonRace)).ShouldBe(
+            [("400m", true), ("1K", true), ("5K", true), ("10K", true), ("Half-Marathon", true)]);
+        (await PersonalBestMarksAsync(Parkrun)).ShouldBe([("1K", false), ("5K", false)]);
+        (await PersonalBestMarksAsync(EasyRun)).ShouldBe([("1K", false), ("5K", false)]);
     }
 
     private async Task<List<(string, bool)>> PersonalBestMarksAsync(TestActivity activity)

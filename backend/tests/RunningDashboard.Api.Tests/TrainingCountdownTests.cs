@@ -7,7 +7,7 @@ namespace RunningDashboard.Api.Tests;
 /// The Training page between Training Blocks: a countdown to the next one with recent weekly distance, or an empty
 /// state without an upcoming Goal Race. The clock stands at Friday 9 Oct 2026 unless a test moves it.
 /// </summary>
-public sealed class TrainingCountdownTests : IAsyncLifetime
+public sealed class TrainingCountdownTests
 {
     private const double Marathon = 42195;
 
@@ -19,11 +19,11 @@ public sealed class TrainingCountdownTests : IAsyncLifetime
 
     private readonly TestApp _app = new();
 
-    public Task InitializeAsync() => Task.CompletedTask;
 
-    public async Task DisposeAsync() => await _app.DisposeAsync();
+    [TearDown]
+    public async Task TearDownAsync() => await _app.DisposeAsync();
 
-    [Fact]
+    [Test]
     public async Task Between_blocks_the_page_counts_down_to_the_next_one_with_recent_weekly_distance()
     {
         var browser = await _app.ConnectWithActivitiesAsync(
@@ -36,24 +36,23 @@ public sealed class TrainingCountdownTests : IAsyncLifetime
 
         var training = await GetTrainingAsync(browser);
 
-        Assert.Equal(("countdown", null), (training.View, training.Block));
+        (training.View, training.Block).ShouldBe(("countdown", null));
         var countdown = training.Countdown!;
-        Assert.Equal((second.Id, "Second marathon"), (countdown.GoalRace.Id, countdown.GoalRace.Name));
-        Assert.Equal(new DateOnly(2027, 2, 1), countdown.TrainingBlockStart);
-        Assert.Equal(115, countdown.DaysRemaining);
+        (countdown.GoalRace.Id, countdown.GoalRace.Name).ShouldBe((second.Id, "Second marathon"));
+        countdown.TrainingBlockStart.ShouldBe(new DateOnly(2027, 2, 1));
+        countdown.DaysRemaining.ShouldBe(115);
         // The last 5 Training Weeks up to the current one, oldest first; weeks without Runs as zero.
-        Assert.Equal(
+        countdown.RecentWeeks.ShouldBe(
             [
                 new RecentWeekResponse(new DateOnly(2026, 9, 7), 0),
                 new RecentWeekResponse(new DateOnly(2026, 9, 14), 0),
                 new RecentWeekResponse(new DateOnly(2026, 9, 21), 0),
                 new RecentWeekResponse(new DateOnly(2026, 9, 28), 14000),
                 new RecentWeekResponse(new DateOnly(2026, 10, 5), 5081.2),
-            ],
-            countdown.RecentWeeks);
+            ]);
     }
 
-    [Fact]
+    [Test]
     public async Task The_day_before_the_block_still_counts_down_one_day()
     {
         var browser = _app.CreateBrowser();
@@ -63,12 +62,12 @@ public sealed class TrainingCountdownTests : IAsyncLifetime
 
         var training = await GetTrainingAsync(browser);
 
-        Assert.Equal("countdown", training.View);
-        Assert.Equal((new DateOnly(2027, 2, 1), 1), (training.Countdown!.TrainingBlockStart, training.Countdown.DaysRemaining));
-        Assert.Equal(new DateOnly(2027, 1, 25), training.Countdown.RecentWeeks[^1].Start);
+        training.View.ShouldBe("countdown");
+        (training.Countdown!.TrainingBlockStart, training.Countdown.DaysRemaining).ShouldBe((new DateOnly(2027, 2, 1), 1));
+        training.Countdown.RecentWeeks[^1].Start.ShouldBe(new DateOnly(2027, 1, 25));
     }
 
-    [Fact]
+    [Test]
     public async Task On_the_first_day_of_the_block_the_page_shows_the_block()
     {
         var browser = _app.CreateBrowser();
@@ -78,10 +77,10 @@ public sealed class TrainingCountdownTests : IAsyncLifetime
 
         var training = await GetTrainingAsync(browser);
 
-        Assert.Equal(("block", second.Id, null), (training.View, training.Block!.GoalRace.Id, training.Countdown));
+        (training.View, training.Block!.GoalRace.Id, training.Countdown).ShouldBe(("block", second.Id, null));
     }
 
-    [Fact]
+    [Test]
     public async Task Without_an_upcoming_goal_race_there_is_nothing_to_count_down_to()
     {
         var browser = _app.CreateBrowser();
@@ -89,7 +88,7 @@ public sealed class TrainingCountdownTests : IAsyncLifetime
 
         var training = await GetTrainingAsync(browser);
 
-        Assert.Equal(("none", null, null), (training.View, training.Block, training.Countdown));
+        (training.View, training.Block, training.Countdown).ShouldBe(("none", null, null));
     }
 
     private static async Task<GoalRaceResponse> CreateGoalRaceAsync(HttpClient browser, GoalRaceRequest race)

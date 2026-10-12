@@ -8,7 +8,7 @@ namespace RunningDashboard.Api.Tests;
 /// Strava allows 100 read requests per 15 minutes (windows start at :00, :15, :30, :45) and 1,000 per UTC day,
 /// and reports usage in X-ReadRateLimit-* / X-RateLimit-* headers on every response.
 /// </summary>
-public sealed class RateLimitTests : IAsyncLifetime
+public sealed class RateLimitTests
 {
     private const string ActivitiesPath = "/api/v3/athlete/activities";
     private static readonly DateTimeOffset SevenPastSix = new(2026, 10, 9, 18, 7, 0, TimeSpan.Zero);
@@ -16,11 +16,11 @@ public sealed class RateLimitTests : IAsyncLifetime
 
     private readonly TestApp _app = new();
 
-    public Task InitializeAsync() => Task.CompletedTask;
 
-    public async Task DisposeAsync() => await _app.DisposeAsync();
+    [TearDown]
+    public async Task TearDownAsync() => await _app.DisposeAsync();
 
-    [Fact]
+    [Test]
     public async Task A_rate_limited_request_pauses_the_sync_until_the_next_quarter_hour_and_then_resumes()
     {
         _app.Clock.SetUtcNow(SevenPastSix);
@@ -34,14 +34,14 @@ public sealed class RateLimitTests : IAsyncLifetime
         _app.Clock.Advance(QuarterPastSix - SevenPastSix);
         var finished = await TestApp.WaitForSyncAsync(browser);
 
-        Assert.Equal(QuarterPastSix, paused.PausedUntil);
-        Assert.True(paused.Running);
-        Assert.Equal(1, listRequestsWhilePaused);
-        Assert.Null(finished.PausedUntil);
-        Assert.Equal(5, finished.ImportedRuns);
+        paused.PausedUntil.ShouldBe(QuarterPastSix);
+        paused.Running.ShouldBeTrue();
+        listRequestsWhilePaused.ShouldBe(1);
+        finished.PausedUntil.ShouldBeNull();
+        finished.ImportedRuns.ShouldBe(5);
     }
 
-    [Fact]
+    [Test]
     public async Task The_sync_waits_for_the_next_quarter_hour_instead_of_exceeding_the_fifteen_minute_limit()
     {
         _app.Clock.SetUtcNow(SevenPastSix);
@@ -56,12 +56,12 @@ public sealed class RateLimitTests : IAsyncLifetime
         _app.Clock.Advance(QuarterPastSix - SevenPastSix);
         var finished = await TestApp.WaitForSyncAsync(browser);
 
-        Assert.Equal(QuarterPastSix, paused.PausedUntil);
-        Assert.Equal(1, listRequestsWhilePaused);
-        Assert.Equal(5, finished.ImportedRuns);
+        paused.PausedUntil.ShouldBe(QuarterPastSix);
+        listRequestsWhilePaused.ShouldBe(1);
+        finished.ImportedRuns.ShouldBe(5);
     }
 
-    [Fact]
+    [Test]
     public async Task Once_the_daily_limit_is_used_up_the_sync_waits_until_midnight_utc()
     {
         _app.Clock.SetUtcNow(SevenPastSix);
@@ -74,8 +74,8 @@ public sealed class RateLimitTests : IAsyncLifetime
         _app.Clock.SetUtcNow(new DateTimeOffset(2026, 10, 10, 0, 0, 0, TimeSpan.Zero));
         var finished = await TestApp.WaitForSyncAsync(browser);
 
-        Assert.Equal(new DateTimeOffset(2026, 10, 10, 0, 0, 0, TimeSpan.Zero), paused.PausedUntil);
-        Assert.Equal(2, finished.ImportedRuns);
+        paused.PausedUntil.ShouldBe(new DateTimeOffset(2026, 10, 10, 0, 0, 0, TimeSpan.Zero));
+        finished.ImportedRuns.ShouldBe(2);
     }
 
     private List<RecordedRequest> ListRequests() =>

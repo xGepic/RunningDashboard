@@ -7,7 +7,7 @@ namespace RunningDashboard.Api.Tests;
 /// The Race Result of a Goal Race comes from the longest Run on race day (ADR 0003): its Best Effort over the race
 /// distance, otherwise its elapsed time, otherwise there is none.
 /// </summary>
-public sealed class RaceResultTests : IAsyncLifetime
+public sealed class RaceResultTests
 {
     private const double Marathon = 42195;
 
@@ -18,11 +18,11 @@ public sealed class RaceResultTests : IAsyncLifetime
 
     private readonly TestApp _app = new();
 
-    public Task InitializeAsync() => Task.CompletedTask;
 
-    public async Task DisposeAsync() => await _app.DisposeAsync();
+    [TearDown]
+    public async Task TearDownAsync() => await _app.DisposeAsync();
 
-    [Fact]
+    [Test]
     public async Task A_marathon_run_measured_longer_gives_the_marathon_best_effort()
     {
         var browser = await _app.ConnectWithActivitiesAsync(Finisher);
@@ -30,11 +30,11 @@ public sealed class RaceResultTests : IAsyncLifetime
         var race = await CreateAsync(browser, new GoalRaceRequest("Vienna Marathon", new DateOnly(2026, 9, 27), Marathon, 5 * 3600, 14));
 
         // 5:00:11 over the marathon, 11 s over the Target Time; the whole Run took 5:03:10.
-        Assert.Equal(new RaceResultResponse(Finisher.Id, "Finisher.", 18011, "bestEffort", 11), race.RaceResult);
-        Assert.Equal(race, Assert.Single(await ListAsync(browser)));
+        race.RaceResult.ShouldBe(new RaceResultResponse(Finisher.Id, "Finisher.", 18011, "bestEffort", 11));
+        (await ListAsync(browser)).ShouldHaveSingleItem().ShouldBe(race);
     }
 
-    [Fact]
+    [Test]
     public async Task With_several_runs_on_race_day_the_longest_one_is_the_race()
     {
         var browser = await _app.ConnectWithActivitiesAsync(
@@ -44,10 +44,10 @@ public sealed class RaceResultTests : IAsyncLifetime
 
         var race = await CreateAsync(browser, new GoalRaceRequest("Vienna Marathon", new DateOnly(2026, 9, 27), Marathon, null, 14));
 
-        Assert.Equal(new RaceResultResponse(Finisher.Id, "Finisher.", 18011, "bestEffort", null), race.RaceResult);
+        race.RaceResult.ShouldBe(new RaceResultResponse(Finisher.Id, "Finisher.", 18011, "bestEffort", null));
     }
 
-    [Fact]
+    [Test]
     public async Task Without_a_run_on_race_day_there_is_no_race_result()
     {
         var browser = await _app.ConnectWithActivitiesAsync(
@@ -55,10 +55,10 @@ public sealed class RaceResultTests : IAsyncLifetime
 
         var race = await CreateAsync(browser, new GoalRaceRequest("Autumn 10K", new DateOnly(2026, 10, 4), 10000, 3000, 4));
 
-        Assert.Null(race.RaceResult);
+        race.RaceResult.ShouldBeNull();
     }
 
-    [Fact]
+    [Test]
     public async Task A_custom_distance_without_a_best_effort_falls_back_to_the_elapsed_time()
     {
         var trailRace = new TestActivity(
@@ -68,10 +68,10 @@ public sealed class RaceResultTests : IAsyncLifetime
 
         var race = await CreateAsync(browser, new GoalRaceRequest("Wienerwald trail", new DateOnly(2026, 9, 20), 15500, null, 2));
 
-        Assert.Equal(new RaceResultResponse(1, "Wienerwald trail race", 6100, "elapsedTime", null), race.RaceResult);
+        race.RaceResult.ShouldBe(new RaceResultResponse(1, "Wienerwald trail race", 6100, "elapsedTime", null));
     }
 
-    [Fact]
+    [Test]
     public async Task The_official_half_marathon_distance_matches_stravas_half_marathon_best_effort()
     {
         // Strava's half marathon is 21,097 m; the Goal Race has the official 21,097.5 m.
@@ -83,10 +83,10 @@ public sealed class RaceResultTests : IAsyncLifetime
         var race = await CreateAsync(browser, new GoalRaceRequest("Vienna Half", new DateOnly(2026, 4, 12), 21097.5, 6900, 8));
 
         // 1:50:20 against a Target Time of 1:55:00.
-        Assert.Equal(new RaceResultResponse(1, "Half marathon", 6620, "bestEffort", -280), race.RaceResult);
+        race.RaceResult.ShouldBe(new RaceResultResponse(1, "Half marathon", 6620, "bestEffort", -280));
     }
 
-    [Fact]
+    [Test]
     public async Task While_the_race_runs_best_efforts_are_still_loading_the_race_result_is_pending()
     {
         _app.Strava.RespondWithActivities("/api/v3/athlete/activities", Finisher);
@@ -100,7 +100,7 @@ public sealed class RaceResultTests : IAsyncLifetime
         var race = await CreateAsync(browser, new GoalRaceRequest("Vienna Marathon", new DateOnly(2026, 9, 27), Marathon, 5 * 3600, 14));
 
         // Not the 5:03:10 the whole Run took: the Marathon Best Effort is still to come.
-        Assert.Equal(new RaceResultResponse(Finisher.Id, "Finisher.", null, "pending", null), race.RaceResult);
+        race.RaceResult.ShouldBe(new RaceResultResponse(Finisher.Id, "Finisher.", null, "pending", null));
     }
 
     private static async Task<GoalRaceResponse> CreateAsync(HttpClient browser, GoalRaceRequest race)

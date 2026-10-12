@@ -7,7 +7,7 @@ namespace RunningDashboard.Api.Tests;
 /// Strava lists three Shoes: the Nike Pegasus 41 (Evening Run, Lauf am Nachmittag, Treadmill intervals), the Adidas
 /// Adizero SL2 (Finisher., Wienerwald trail) and the retired Asics Novablast 4, which none of the synced Runs used.
 /// </summary>
-public sealed class ShoesTests : IAsyncLifetime
+public sealed class ShoesTests
 {
     private const string ActivitiesPath = "/api/v3/athlete/activities";
     private const string AthletePath = "/api/v3/athlete";
@@ -15,7 +15,8 @@ public sealed class ShoesTests : IAsyncLifetime
     private readonly TestApp _app = new();
     private HttpClient _browser = null!;
 
-    public async Task InitializeAsync()
+    [SetUp]
+    public async Task SetUpAsync()
     {
         _app.Strava.RespondWithFixture(HttpMethod.Get, ActivitiesPath, "activities-page-1.json");
         _app.Strava.RespondWithFixture(HttpMethod.Get, ActivitiesPath, "activities-page-2.json");
@@ -26,23 +27,23 @@ public sealed class ShoesTests : IAsyncLifetime
         await TestApp.WaitForSyncAsync(_browser);
     }
 
-    public async Task DisposeAsync() => await _app.DisposeAsync();
+    [TearDown]
+    public async Task TearDownAsync() => await _app.DisposeAsync();
 
-    [Fact]
+    [Test]
     public async Task The_sync_brings_in_every_shoe_with_its_strava_distance_runs_and_last_run()
     {
         var shoes = await GetShoesAsync();
 
-        Assert.Equal(
+        shoes.ShouldBe(
             [
                 new ShoeResponse("g31444377", "Nike Pegasus 41", 812345, false, 3, new DateTime(2026, 10, 6, 20, 35, 26)),
                 new ShoeResponse("g33395946", "Adidas Adizero SL2", 412000, false, 2, new DateTime(2026, 9, 27, 9, 47, 0)),
                 new ShoeResponse("g29876543", "Asics Novablast 4", 1012000, true, 0, null),
-            ],
-            shoes);
+            ]);
     }
 
-    [Fact]
+    [Test]
     public async Task A_shoe_retired_on_strava_is_retired_here_and_listed_after_the_active_ones()
     {
         var firstSync = await TestApp.WaitForSyncAsync(_browser);
@@ -54,13 +55,13 @@ public sealed class ShoesTests : IAsyncLifetime
         await TestApp.WaitForSyncAsync(_browser, finishedAfter: firstSync.LastSyncedAt);
         var shoes = await GetShoesAsync();
 
-        Assert.Equal(["Adidas Adizero SL2", "Nike Pegasus 41", "Asics Novablast 4"], shoes.Select(s => s.Name));
+        shoes.Select(s => s.Name).ShouldBe(["Adidas Adizero SL2", "Nike Pegasus 41", "Asics Novablast 4"]);
         var pegasus = shoes[1];
-        Assert.True(pegasus.Retired);
-        Assert.Equal(820123, pegasus.Distance);
+        pegasus.Retired.ShouldBeTrue();
+        pegasus.Distance.ShouldBe(820123);
     }
 
-    [Fact]
+    [Test]
     public async Task Shoes_deleted_on_strava_are_removed_and_their_runs_show_no_shoe()
     {
         var firstSync = await TestApp.WaitForSyncAsync(_browser);
@@ -72,19 +73,19 @@ public sealed class ShoesTests : IAsyncLifetime
         await TestApp.WaitForSyncAsync(_browser, finishedAfter: firstSync.LastSyncedAt);
         var list = (await _browser.GetFromJsonAsync<RunPage>("/api/runs"))!;
 
-        Assert.Empty(await GetShoesAsync());
-        Assert.All(list.Items, r => Assert.Null(r.ShoeName));
+        (await GetShoesAsync()).ShouldBeEmpty();
+        list.Items.ShouldAllBe(r => r.ShoeName == null);
     }
 
-    [Fact]
+    [Test]
     public async Task Runs_show_the_name_of_their_shoe()
     {
         var list = (await _browser.GetFromJsonAsync<RunPage>("/api/runs"))!;
         var marathon = (await _browser.GetFromJsonAsync<RunWithShoe>("/api/runs/20351282630"))!;
 
-        Assert.Equal("Nike Pegasus 41", list.Items.Single(r => r.Name == "Evening Run").ShoeName);
-        Assert.Equal("Adidas Adizero SL2", list.Items.Single(r => r.Name == "Wienerwald trail").ShoeName);
-        Assert.Equal("Adidas Adizero SL2", marathon.ShoeName);
+        list.Items.Single(r => r.Name == "Evening Run").ShoeName.ShouldBe("Nike Pegasus 41");
+        list.Items.Single(r => r.Name == "Wienerwald trail").ShoeName.ShouldBe("Adidas Adizero SL2");
+        marathon.ShoeName.ShouldBe("Adidas Adizero SL2");
     }
 
     private async Task<List<ShoeResponse>> GetShoesAsync() =>

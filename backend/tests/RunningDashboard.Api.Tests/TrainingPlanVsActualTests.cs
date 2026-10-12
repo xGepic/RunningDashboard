@@ -8,7 +8,7 @@ namespace RunningDashboard.Api.Tests;
 /// Build–Peak–Peak–Taper plan from Mon 1 Feb; most planned weeks run on Tuesday, Thursday and Sunday. The clock
 /// stands at Wednesday 10 Mar 2027, in week −10 (Mon 8 to Sun 14 Mar).
 /// </summary>
-public sealed class TrainingPlanVsActualTests : IAsyncLifetime
+public sealed class TrainingPlanVsActualTests
 {
     private const double Marathon = 42195;
 
@@ -19,11 +19,11 @@ public sealed class TrainingPlanVsActualTests : IAsyncLifetime
 
     private readonly TestApp _app = new();
 
-    public Task InitializeAsync() => Task.CompletedTask;
 
-    public async Task DisposeAsync() => await _app.DisposeAsync();
+    [TearDown]
+    public async Task TearDownAsync() => await _app.DisposeAsync();
 
-    [Fact]
+    [Test]
     public async Task A_week_where_the_plan_was_met()
     {
         // Week −11, Mon 1 to Sun 7 Mar 2027, the first Peak week: 30 km with a 16 km Long Run planned.
@@ -37,15 +37,15 @@ public sealed class TrainingPlanVsActualTests : IAsyncLifetime
 
         var plan = Week(block, -11).Plan!;
 
-        Assert.Equal(("peak", false, 30000.0, 16000.0), (plan.Phase, plan.RecoveryWeek, plan.PlannedDistance, plan.PlannedLongRun));
-        Assert.Equal((true, true), (plan.DistanceMet, plan.LongRunMet));
-        Assert.Equal(["rest", "ran", "rest", "ran", "rest", "rest", "ran"], plan.Days.Select(d => d.State));
-        Assert.Equal(new DateOnly(2027, 3, 1), plan.Days[0].Date);
-        Assert.Equal(new DateOnly(2027, 3, 7), plan.Days[^1].Date);
-        Assert.Equal(32000, Week(block, -11).Actual!.Distance);
+        (plan.Phase, plan.RecoveryWeek, plan.PlannedDistance, plan.PlannedLongRun).ShouldBe(("peak", false, 30000.0, 16000.0));
+        (plan.DistanceMet, plan.LongRunMet).ShouldBe((true, true));
+        plan.Days.Select(d => d.State).ShouldBe(["rest", "ran", "rest", "ran", "rest", "rest", "ran"]);
+        plan.Days[0].Date.ShouldBe(new DateOnly(2027, 3, 1));
+        plan.Days[^1].Date.ShouldBe(new DateOnly(2027, 3, 7));
+        Week(block, -11).Actual!.Distance.ShouldBe(32000);
     }
 
-    [Fact]
+    [Test]
     public async Task A_missed_running_day_and_a_run_on_an_unplanned_day()
     {
         // Week −12, Mon 22 to Sun 28 Feb 2027: Thursday and Sunday were skipped, the Long Run moved to Saturday.
@@ -58,11 +58,11 @@ public sealed class TrainingPlanVsActualTests : IAsyncLifetime
 
         var plan = Week(block, -12).Plan!;
 
-        Assert.Equal(["rest", "ran", "rest", "missed", "rest", "unplanned", "missed"], plan.Days.Select(d => d.State));
-        Assert.Equal((false, false), (plan.DistanceMet, plan.LongRunMet));
+        plan.Days.Select(d => d.State).ShouldBe(["rest", "ran", "rest", "missed", "rest", "unplanned", "missed"]);
+        (plan.DistanceMet, plan.LongRunMet).ShouldBe((false, false));
     }
 
-    [Fact]
+    [Test]
     public async Task Planned_days_of_the_current_week_still_to_come_are_not_missed()
     {
         // Week −10, Mon 8 to Sun 14 Mar 2027, today Wednesday: Tuesday was run, Thursday and Sunday are ahead.
@@ -72,13 +72,13 @@ public sealed class TrainingPlanVsActualTests : IAsyncLifetime
 
         var week = Week(block, -10);
 
-        Assert.Equal("current", week.Status);
-        Assert.Equal(["rest", "ran", "rest", "planned", "rest", "rest", "planned"], week.Plan!.Days.Select(d => d.State));
+        week.Status.ShouldBe("current");
+        week.Plan!.Days.Select(d => d.State).ShouldBe(["rest", "ran", "rest", "planned", "rest", "rest", "planned"]);
         // 8 of 30 km so far: not short yet, the week is still running.
-        Assert.Equal(((bool?)null, (bool?)null), (week.Plan.DistanceMet, week.Plan.LongRunMet));
+        (week.Plan.DistanceMet, week.Plan.LongRunMet).ShouldBe(((bool?)null, (bool?)null));
     }
 
-    [Fact]
+    [Test]
     public async Task A_future_week_shows_only_the_plan()
     {
         // Week −9, Mon 15 to Sun 21 Mar 2027: a Recovery Week.
@@ -86,35 +86,34 @@ public sealed class TrainingPlanVsActualTests : IAsyncLifetime
 
         var week = Week(block, -9);
 
-        Assert.Equal(("future", null), (week.Status, week.Actual));
-        Assert.Equal(("peak", true, 24000.0, 12000.0), (week.Plan!.Phase, week.Plan.RecoveryWeek, week.Plan.PlannedDistance, week.Plan.PlannedLongRun));
-        Assert.Equal(((bool?)null, (bool?)null), (week.Plan.DistanceMet, week.Plan.LongRunMet));
-        Assert.Equal(["rest", "planned", "rest", "rest", "rest", "rest", "planned"], week.Plan.Days.Select(d => d.State));
+        (week.Status, week.Actual).ShouldBe(("future", null));
+        (week.Plan!.Phase, week.Plan.RecoveryWeek, week.Plan.PlannedDistance, week.Plan.PlannedLongRun).ShouldBe(("peak", true, 24000.0, 12000.0));
+        (week.Plan.DistanceMet, week.Plan.LongRunMet).ShouldBe(((bool?)null, (bool?)null));
+        week.Plan.Days.Select(d => d.State).ShouldBe(["rest", "planned", "rest", "rest", "rest", "rest", "planned"]);
     }
 
-    [Fact]
+    [Test]
     public async Task A_week_without_targets_has_nothing_to_meet()
     {
         var block = await PlannedBlockAsync([Run(1, "Tuesday easy", new DateTime(2027, 3, 2, 18, 0, 0), 8000)]);
 
         var plan = Week(block, -11).Plan!;
 
-        Assert.Equal(((double?)null, (double?)null, (bool?)null, (bool?)null), (plan.PlannedDistance, plan.PlannedLongRun, plan.DistanceMet, plan.LongRunMet));
-        Assert.Equal(["rest", "unplanned", "rest", "rest", "rest", "rest", "rest"], plan.Days.Select(d => d.State));
+        (plan.PlannedDistance, plan.PlannedLongRun, plan.DistanceMet, plan.LongRunMet).ShouldBe(((double?)null, (double?)null, (bool?)null, (bool?)null));
+        plan.Days.Select(d => d.State).ShouldBe(["rest", "unplanned", "rest", "rest", "rest", "rest", "rest"]);
     }
 
-    [Fact]
+    [Test]
     public async Task The_block_shows_its_phases_as_bands()
     {
         var block = await PlannedBlockAsync([]);
 
-        Assert.Equal(
-            [new PhaseResponse("build", -15, -12), new PhaseResponse("peak", -11, -8), new PhaseResponse("peak", -7, -4), new PhaseResponse("taper", -3, 0)],
-            block.Phases);
-        Assert.Equal("taper", Week(block, 0).Plan!.Phase);
+        block.Phases.ShouldBe(
+            [new PhaseResponse("build", -15, -12), new PhaseResponse("peak", -11, -8), new PhaseResponse("peak", -7, -4), new PhaseResponse("taper", -3, 0)]);
+        Week(block, 0).Plan!.Phase.ShouldBe("taper");
     }
 
-    [Fact]
+    [Test]
     public async Task A_block_without_a_plan_shows_actual_values_only()
     {
         var browser = await _app.ConnectWithActivitiesAsync(Run(1, "Tuesday easy", new DateTime(2027, 3, 2, 18, 0, 0), 8000));
@@ -124,9 +123,9 @@ public sealed class TrainingPlanVsActualTests : IAsyncLifetime
 
         var block = (await browser.GetFromJsonAsync<TrainingResponse>("/api/training"))!.Block!;
 
-        Assert.Null(block.Phases);
-        Assert.All(block.Weeks, w => Assert.Null(w.Plan));
-        Assert.Equal(8000, Week(block, -11).Actual!.Distance);
+        block.Phases.ShouldBeNull();
+        block.Weeks.ShouldAllBe(w => w.Plan == null);
+        Week(block, -11).Actual!.Distance.ShouldBe(8000);
     }
 
     /// <summary>The second marathon's planned block on Wed 10 Mar 2027, with <paramref name="runs"/> and <paramref name="weeks"/> planned.</summary>
