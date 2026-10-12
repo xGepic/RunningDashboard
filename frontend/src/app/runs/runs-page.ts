@@ -2,12 +2,12 @@ import { DatePipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { Component, computed, inject, input } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { formatDistance, formatDuration, formatPace } from '../shared/format';
+import { DistanceUnit, formatDistance, formatDuration, formatPace } from '../shared/format';
 import { reloadOnSync } from '../sync/reload-on-sync';
 import { RunMonths, RunPage, RunSortKey } from './run';
 
 /** The list's state, kept in the URL so the back button and shared links work. */
-type ListParams = Partial<Record<'view' | 'year' | 'month' | 'search' | 'sportType' | 'sort' | 'direction' | 'page', string | null>>;
+type ListParams = Partial<Record<'view' | 'year' | 'month' | 'search' | 'sportType' | 'sort' | 'direction' | 'page' | 'unit', string | null>>;
 
 /** All Runs of a month fit on one page; the pager only shows up past this. */
 const pageSize = 200;
@@ -44,6 +44,8 @@ export class RunsPage {
   readonly sort = input<RunSortKey>();
   readonly direction = input<'asc' | 'desc'>();
   readonly page = input<string>();
+  /** "mi" shows distances in miles and Pace per mile; kilometres otherwise. */
+  readonly unit = input<string>();
 
   protected readonly selectedMonth = computed(() => {
     const month = this.month();
@@ -60,6 +62,8 @@ export class RunsPage {
     return year && /^\d{4}$/.test(year) ? Number(year) : new Date().getFullYear();
   });
   protected readonly isCurrentYear = computed(() => this.selectedYear() >= new Date().getFullYear());
+
+  protected readonly distanceUnit = computed<DistanceUnit>(() => (this.unit() === 'mi' ? 'mi' : 'km'));
 
   protected readonly sortKey = computed(() => this.sort() ?? 'date');
   protected readonly ascending = computed(() => this.direction() === 'asc');
@@ -169,6 +173,11 @@ export class RunsPage {
   protected openMonth(monthParam: string | null, event: MouseEvent): void {
     if ((event.target as HTMLElement).closest('a')) return;
     this.navigate({ view: null, year: null, month: monthParam, page: null });
+  }
+
+  /** Kilometres stay out of the URL, like the current month. */
+  protected showUnit(unit: DistanceUnit): void {
+    this.navigate({ unit: unit === 'km' ? null : unit });
   }
 
   /** "12h 05m". */

@@ -7,9 +7,9 @@
     @if (summary().runs > 0) {
       <div class="stats summary" [attr.aria-label]="monthsView() ? 'Totals of ' + selectedYear() : 'Totals of the listed Runs'">
         <div class="stat"><span class="label">Runs</span><span class="value">{{ summary().runs }}</span></div>
-        <div class="stat"><span class="label">Distance</span><span class="value">{{ (summary().distance / 1000).toFixed(1) }} km</span></div>
+        <div class="stat"><span class="label">Distance</span><span class="value">{{ formatDistance(summary().distance, distanceUnit(), 1) }}</span></div>
         <div class="stat"><span class="label">Moving Time</span><span class="value">{{ summary().hours }}h {{ summary().minutes }}m</span></div>
-        <div class="stat"><span class="label">Avg Pace</span><span class="value">{{ formatPace(summary().pace) }}</span></div>
+        <div class="stat"><span class="label">Avg Pace</span><span class="value">{{ formatPace(summary().pace, distanceUnit()) }}</span></div>
       </div>
     }
   </header>
@@ -63,6 +63,11 @@
         <button type="button" class="link" (click)="clearFilters()">Clear filters</button>
       }
     </form>
+
+    <div class="segmented" role="group" aria-label="Units">
+      <button type="button" [attr.aria-pressed]="distanceUnit() === 'km'" (click)="showUnit('km')">km</button>
+      <button type="button" [attr.aria-pressed]="distanceUnit() === 'mi'" (click)="showUnit('mi')">mi</button>
+    </div>
   </div>
 
   @if (monthsView()) {
@@ -97,11 +102,11 @@
                     <td class="number">
                       <span class="dist">
                         <span class="track mini" aria-hidden="true"><span [style.width.%]="row.share"></span></span>
-                        {{ row.runs ? formatDistance(row.distance) : '–' }}
+                        {{ row.runs ? formatDistance(row.distance, distanceUnit()) : '–' }}
                       </span>
                     </td>
                     <td class="number">{{ row.runs ? formatHours(row.movingTime) : '–' }}</td>
-                    <td class="number muted">{{ formatPace(row.pace) }}</td>
+                    <td class="number muted">{{ formatPace(row.pace, distanceUnit()) }}</td>
                   </tr>
                 }
               </tbody>
@@ -170,11 +175,11 @@
                   <td class="number">
                     <span class="dist">
                       <span class="track mini" aria-hidden="true"><span [style.width.%]="(run.distance / longest()) * 100"></span></span>
-                      {{ formatDistance(run.distance) }}
+                      {{ formatDistance(run.distance, distanceUnit()) }}
                     </span>
                   </td>
                   <td class="number">{{ formatDuration(run.movingTime) }}</td>
-                  <td class="number muted">{{ formatPace(run.pace) }}</td>
+                  <td class="number muted">{{ formatPace(run.pace, distanceUnit()) }}</td>
                   <td class="shoe">{{ run.shoeName ?? '–' }}</td>
                 </tr>
               }

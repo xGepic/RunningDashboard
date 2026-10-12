@@ -5,6 +5,11 @@ describe('formatDistance', () => {
     expect(formatDistance(5081.2)).toBe('5.08 km');
     expect(formatDistance(42582.8)).toBe('42.58 km');
   });
+
+  it('shows metres as miles', () => {
+    expect(formatDistance(42195, 'mi')).toBe('26.22 mi');
+    expect(formatDistance(42195, 'mi', 1)).toBe('26.2 mi');
+  });
 });
 
 describe('formatDuration', () => {
@@ -29,8 +34,14 @@ describe('formatPace', () => {
     expect(formatPace(359.6)).toBe('6:00 /km');
   });
 
+  it('shows seconds per kilometre as min:ss per mile', () => {
+    expect(formatPace(300, 'mi')).toBe('8:03 /mi');
+    expect(formatPace(372.82, 'mi')).toBe('10:00 /mi');
+  });
+
   it('shows a dash for a Run without a Pace', () => {
     expect(formatPace(null)).toBe('–');
+    expect(formatPace(null, 'mi')).toBe('–');
   });
 });
 

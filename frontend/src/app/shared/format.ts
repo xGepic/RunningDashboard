@@ -1,7 +1,12 @@
 /** The API speaks metres and seconds; these turn them into what the Athlete reads. */
 
-export function formatDistance(metres: number): string {
-  return `${(metres / 1000).toFixed(2)} km`;
+/** Kilometres, or miles for an Athlete who reads distances in them. */
+export type DistanceUnit = 'km' | 'mi';
+
+const metresPer: Record<DistanceUnit, number> = { km: 1000, mi: 1609.344 };
+
+export function formatDistance(metres: number, unit: DistanceUnit = 'km', fractionDigits = 2): string {
+  return `${(metres / metresPer[unit]).toFixed(fractionDigits)} ${unit}`;
 }
 
 const wholeNumber = new Intl.NumberFormat('en', { maximumFractionDigits: 0 });
@@ -25,11 +30,11 @@ export function formatDuration(seconds: number): string {
   return hours > 0 ? `${hours}:${pad(minutes)}:${pad(secs)}` : `${minutes}:${pad(secs)}`;
 }
 
-/** Pace as min:ss /km; a Run without distance has none. */
-export function formatPace(secondsPerKm: number | null): string {
+/** Pace as min:ss /km, or per mile as min:ss /mi; a Run without distance has none. */
+export function formatPace(secondsPerKm: number | null, unit: DistanceUnit = 'km'): string {
   if (secondsPerKm === null) return '–';
-  const total = Math.round(secondsPerKm);
-  return `${Math.floor(total / 60)}:${pad(total % 60)} /km`;
+  const total = Math.round((secondsPerKm * metresPer[unit]) / 1000);
+  return `${Math.floor(total / 60)}:${pad(total % 60)} /${unit}`;
 }
 
 /** Whole seconds per km against the Target Pace: "3 s/km slower", "1:12 /km faster" or "on Target Pace". */

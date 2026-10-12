@@ -28,13 +28,14 @@ describe('RunsPage monthly totals', () => {
 
   afterEach(() => vi.useRealTimers());
 
-  async function render() {
+  async function render(unit?: string) {
     TestBed.configureTestingModule({
       imports: [RunsPage],
       providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     });
     const fixture = TestBed.createComponent(RunsPage);
     fixture.componentRef.setInput('view', 'months');
+    if (unit) fixture.componentRef.setInput('unit', unit);
     fixture.detectChanges();
     const http = TestBed.inject(HttpTestingController);
     http.expectOne('/api/sync').flush({ running: false, importedRuns: 0, lastSyncedAt: null });
@@ -61,6 +62,25 @@ describe('RunsPage monthly totals', () => {
     expect(cells(rows[0])).toEqual(['January', '–', '–', '–', '–']);
     const summary = [...element.querySelectorAll('.summary .value')].map((value) => value.textContent!.trim());
     expect(summary).toEqual(['5', '70.3 km', '8h 24m', '7:10 /km']);
+  });
+
+  it('shows distances in miles and Pace per mile when asked', async () => {
+    const { element } = await render('mi');
+
+    const rows = [...element.querySelectorAll('.months tbody tr')];
+    expect(cells(rows[8])).toEqual(['September', '3', '37.71 mi', '7h 17m', '11:36 /mi']);
+    const summary = [...element.querySelectorAll('.summary .value')].map((value) => value.textContent!.trim());
+    expect(summary).toEqual(['5', '43.7 mi', '8h 24m', '11:33 /mi']);
+  });
+
+  it('keeps kilometres out of the URL when switching back', async () => {
+    const { element } = await render('mi');
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+
+    const km = [...element.querySelectorAll<HTMLButtonElement>('[aria-label="Units"] button')].find((b) => b.textContent!.trim() === 'km')!;
+    km.click();
+
+    expect(navigate).toHaveBeenCalledWith([], { queryParams: { unit: null }, queryParamsHandling: 'merge' });
   });
 
   it("opens a month's Runs from its row", async () => {

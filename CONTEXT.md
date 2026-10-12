@@ -26,7 +26,7 @@ The longest Run of a Training Week.
 _Avoid_: LSD, long one
 
 **Pace**:
-Moving Time per kilometre, written as min:ss/km.
+Moving Time per kilometre, written as min:ss/km. The Run history can show it per mile instead, written as min:ss/mi.
 _Avoid_: Speed (except when talking about Strava's raw data)
 
 **Shoe**:
