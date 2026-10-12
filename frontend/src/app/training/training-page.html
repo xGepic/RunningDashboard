@@ -125,6 +125,9 @@
             @for (runType of runTypes; track runType.type) {
               <span class="run-type-key">{{ runType.letter }}</span> {{ runType.name }}
             }
+            <span class="legend-group">Distance Jumps:</span>
+            <span class="jump-marker">▲</span> in what was run
+            <span class="planned-jump-marker">△</span> in the plan
           </p>
         }
 
@@ -226,7 +229,7 @@
               @let note = distanceJumpNote(actual.distanceJump);
               <span class="jump-marker" [title]="note"><span aria-hidden="true">▲</span><span class="visually-hidden">{{ note }}</span></span>
             }
-            <ng-container *ngTemplateOutlet="planned; context: { $implicit: plan?.plannedDistance }" />
+            <ng-container *ngTemplateOutlet="planned; context: { $implicit: plan?.plannedDistance, jump: plan?.distanceJump }" />
           </td>
           <td class="number" [class.compared]="compared">{{ formatDuration(actual.movingTime) }}</td>
           <td class="number" [class.compared]="compared">{{ actual.relativeEffort === null ? '–' : (actual.relativeEffort | number: '1.0-0') }}</td>
@@ -245,7 +248,7 @@
         } @else {
           <td class="number" [class.compared]="compared">
             –
-            <ng-container *ngTemplateOutlet="planned; context: { $implicit: plan?.plannedDistance }" />
+            <ng-container *ngTemplateOutlet="planned; context: { $implicit: plan?.plannedDistance, jump: plan?.distanceJump }" />
           </td>
           <td class="number" [class.compared]="compared">–</td>
           <td class="number" [class.compared]="compared">–</td>
@@ -256,10 +259,16 @@
         }
       </ng-template>
 
-      <!-- What the plan has: a planned distance or Long Run, if any. -->
-      <ng-template #planned let-distance>
+      <!-- What the plan has: a planned distance or Long Run, if any, and whether the planned distance is a Distance Jump. -->
+      <ng-template #planned let-distance let-jump="jump">
         @if (distance != null) {
-          <span class="planned">planned {{ formatDistance(distance) }}</span>
+          <span class="planned">
+            planned {{ formatDistance(distance) }}
+            @if (jump) {
+              @let note = 'Planned ' + distanceJumpNote(jump);
+              <span class="planned-jump-marker" [title]="note"><span aria-hidden="true">△</span><span class="visually-hidden">{{ note }}</span></span>
+            }
+          </span>
         }
       </ng-template>
     } @else if (training.countdown; as countdown) {

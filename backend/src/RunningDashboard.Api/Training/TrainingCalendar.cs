@@ -55,6 +55,7 @@ public sealed record PlanDay(DateOnly Date, DayState State, RunType? RunType);
 /// </param>
 /// <param name="LongRunMet">Likewise for the Long Run.</param>
 /// <param name="Days">Monday to Sunday.</param>
+/// <param name="DistanceJump">None unless the planned distance makes the week one, against the planned weeks before it.</param>
 public sealed record WeekPlan(
     PhaseType Phase,
     bool RecoveryWeek,
@@ -62,7 +63,8 @@ public sealed record WeekPlan(
     double? PlannedLongRun,
     bool? DistanceMet,
     bool? LongRunMet,
-    IReadOnlyList<PlanDay> Days);
+    IReadOnlyList<PlanDay> Days,
+    DistanceJump? DistanceJump);
 
 /// <summary>One Weeks to Race across two Training Blocks; either block may not have that week.</summary>
 public sealed record LinedUpWeek(int WeeksToRace, TrainingBlockWeek? Viewed, TrainingBlockWeek? Compared);
@@ -138,6 +140,7 @@ public static class TrainingCalendar
     {
         var byWeek = runs.ToLookup(r => TrainingWeek.Of(r.StartLocal));
         var jumps = RunWeekDistanceJumps(block.FirstWeek, block.RaceWeek, DistanceOfWeeks(runs), recoveryWeeks);
+        Dictionary<int, DistanceJump?> plannedJumps = plan is null ? [] : PlannedDistanceJumps(plan, block);
         var currentWeek = TrainingWeek.Of(today);
         return [.. block.Weeks
             .Select(week =>
@@ -148,7 +151,7 @@ public static class TrainingCalendar
                     : WeekStatus.Past;
                 var runsOfWeek = byWeek[week].ToList();
                 var actual = status == WeekStatus.Future ? null : ActualOf(runsOfWeek, jumps[week]);
-                var weekPlan = plan is null ? null : PlanOf(plan, weeksToRace, week, status, runsOfWeek, actual, today);
+                var weekPlan = plan is null ? null : PlanOf(plan, weeksToRace, week, status, runsOfWeek, actual, plannedJumps[weeksToRace], today);
                 return new TrainingBlockWeek(weeksToRace, week, status, actual, weekPlan);
             })];
     }
@@ -208,6 +211,17 @@ public static class TrainingCalendar
     }
 
     /// <summary>
+    /// The planned Distance Jump of each week of <paramref name="plan"/>, by Weeks to Race: its planned distance
+    /// against the planned weeks before it, never against what was run or weeks before the plan.
+    /// </summary>
+    public static Dictionary<int, DistanceJump?> PlannedDistanceJumps(TrainingPlan plan, TrainingBlock block)
+    {
+        var weeks = plan.Weeks.OrderBy(w => w.WeeksToRace).ToList();
+        var jumps = DistanceJumps([.. weeks.Select(w => new DistanceWeek(block.WeekAt(w.WeeksToRace), w.PlannedDistance, w.RecoveryWeek))]);
+        return weeks.Zip(jumps).ToDictionary(w => w.First.WeeksToRace, w => w.Second);
+    }
+
+    /// <summary>
     /// The Distance Jump of each of <paramref name="weeks"/>, which follow each other; none for a week that is not
     /// one. A week is one if its distance is more than 1.10 times that of the week it is compared with: the week
     /// before, skipping back past Recovery Weeks. There is none without such a week, if that week has no distance, or
@@ -250,6 +264,7 @@ public static class TrainingCalendar
         WeekStatus status,
         IReadOnlyCollection<RunSummary> runs,
         WeekActual? actual,
+        DistanceJump? distanceJump,
         DateOnly today)
     {
         // A plan is as long as its Training Block, so it has every week of it.
@@ -268,7 +283,8 @@ public static class TrainingCalendar
             Met(actual?.Distance, planned.PlannedDistance, status),
             // A week without Runs has a Long Run of nothing.
             Met(actual is null ? null : actual.LongRun?.Distance ?? 0, planned.PlannedLongRun, status),
-            days);
+            days,
+            distanceJump);
     }
 
     private static DayState DayOf(DateOnly date, bool runningDay, bool ran, DateOnly today) =>

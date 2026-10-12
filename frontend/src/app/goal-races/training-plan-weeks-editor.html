@@ -31,6 +31,10 @@
             @for (error of fieldErrors(i, 'plannedDistance'); track error) {
               <span class="field-error">{{ error }}</span>
             }
+            <!-- From the plan as last saved: what is typed counts once it is saved. -->
+            @if (row.week.distanceJump) {
+              <span class="jump">{{ distanceJumpNote(row.week.distanceJump) }}</span>
+            }
           </td>
           <td>
             <input class="long-run" inputmode="decimal" [value]="row.longRunKm"

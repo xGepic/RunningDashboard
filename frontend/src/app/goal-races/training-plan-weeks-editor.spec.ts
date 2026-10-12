@@ -35,18 +35,19 @@ function week(weeksToRace: number, start: string, planned: Partial<TrainingPlanW
     plannedLongRun: null,
     runningDays: [],
     recoveryWeek: false,
+    distanceJump: null,
     ...planned,
   };
 }
 
 describe('TrainingPlanWeeksEditor', () => {
-  async function render() {
+  async function render(initial = plan) {
     TestBed.configureTestingModule({
       imports: [TrainingPlanWeeksEditor],
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });
     const fixture = TestBed.createComponent(TrainingPlanWeeksEditor);
-    fixture.componentRef.setInput('plan', plan);
+    fixture.componentRef.setInput('plan', initial);
     await fixture.whenStable();
     const element = fixture.nativeElement as HTMLElement;
     const row = (weeksToRace: number) => element.querySelector(`tr[data-weeks-to-race="${weeksToRace}"]`) as HTMLElement;
@@ -90,6 +91,25 @@ describe('TrainingPlanWeeksEditor', () => {
     });
     expect((row(-1).querySelector('input.distance') as HTMLInputElement).value).toBe('45');
     expect((row(-1).querySelector('select[aria-label="Thursday"]') as HTMLSelectElement).value).toBe('tempo');
+  });
+
+  it('warns about planned Distance Jumps of the last saved plan, without holding up saving', async () => {
+    const jumped: TrainingPlan = {
+      ...plan,
+      weeks: plan.weeks.map((w) => (w.weeksToRace === 0 ? { ...w, distanceJump: { comparedWith: '2027-05-03', increase: 0.22 } } : w)),
+    };
+    const { fixture, row, click, element } = await render(jumped);
+
+    expect(row(0).querySelector('.jump')?.textContent).toContain('Distance Jump: +22% on the week of 3 May 2027');
+    expect(row(-1).querySelector('.jump')).toBeNull();
+
+    // Saving goes ahead, and the warning follows what was saved.
+    await click(element.querySelector('button.save'));
+    TestBed.inject(HttpTestingController).expectOne('/api/goal-races/7/training-plan/weeks').flush(plan);
+    fixture.componentRef.setInput('plan', plan);
+    await fixture.whenStable();
+
+    expect(row(0).querySelector('.jump')).toBeNull();
   });
 
   it('offers no copy on the first week of the plan', async () => {

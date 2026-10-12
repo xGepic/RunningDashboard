@@ -1,3 +1,5 @@
+import { DistanceJump } from '../shared/charts';
+
 export type PhaseType = 'build' | 'peak' | 'taper';
 
 /** A Goal Race's Training Plan as returned by GET and PUT /api/goal-races/{id}/training-plan. */
@@ -34,6 +36,8 @@ export interface TrainingPlanWeek {
   /** Monday first; the days left out are rest days. */
   runningDays: RunningDay[];
   recoveryWeek: boolean;
+  /** None unless the planned distance makes the week one, against the planned weeks before it. A warning only. */
+  distanceJump: DistanceJump | null;
 }
 
 /** A day of a plan week the Athlete plans to run on, and what for. */

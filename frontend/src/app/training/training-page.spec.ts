@@ -55,6 +55,7 @@ function week(
       plannedLongRun: null,
       distanceMet: null,
       longRunMet: null,
+      distanceJump: null,
       ...plan,
       days: plan.days.map((written, i) => {
         const [state, runType] = written.split(' ') as [DayState, RunType?];
@@ -129,6 +130,18 @@ describe('TrainingPage', () => {
     expect(marker?.getAttribute('title')).toBe('Distance Jump: +20% on the week of 1 Mar 2027');
     expect(marker?.textContent).toContain('Distance Jump: +20% on the week of 1 Mar 2027');
     expect(row(element, -11).querySelector('.jump-marker')).toBeNull();
+  });
+
+  it('marks a planned Distance Jump apart from one in what was run', async () => {
+    const jumped = structuredClone(training);
+    jumped.block!.weeks[2].plan!.distanceJump = { comparedWith: '2027-03-08', increase: 0.2 };
+    const { element } = await render(jumped);
+
+    const marker = row(element, -9).querySelector('.planned-jump-marker');
+    expect(marker?.getAttribute('title')).toBe('Planned Distance Jump: +20% on the week of 8 Mar 2027');
+    expect(marker?.textContent).toContain('Planned Distance Jump: +20% on the week of 8 Mar 2027');
+    expect(row(element, -9).querySelector('.jump-marker')).toBeNull();
+    expect(row(element, -10).querySelector('.planned-jump-marker')).toBeNull();
   });
 
   it('marks each of its weeks with the Phase', async () => {

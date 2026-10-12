@@ -1,6 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, input, linkedSignal, output, signal } from '@angular/core';
+import { distanceJumpNote } from '../shared/charts';
 import { FieldErrors, formError } from '../shared/field-errors';
 import { kilometresToMetres } from '../shared/format';
 import {
@@ -46,6 +47,7 @@ export class TrainingPlanWeeksEditor {
   protected readonly weekdays = weekdays;
   protected readonly runTypes = runTypes;
   protected readonly formError = formError;
+  protected readonly distanceJumpNote = distanceJumpNote;
 
   /**
    * One per week of the plan. When the plan changes shape, weeks still in it keep what was entered, saved or not;

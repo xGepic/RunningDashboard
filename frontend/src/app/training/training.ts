@@ -88,6 +88,8 @@ export interface WeekPlan {
   longRunMet: boolean | null;
   /** Monday to Sunday: the calendar strip. */
   days: PlannedDay[];
+  /** None unless the planned distance makes the week one, against the planned weeks before it. */
+  distanceJump: DistanceJump | null;
 }
 
 export interface PlannedDay {

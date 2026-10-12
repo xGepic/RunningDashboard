@@ -164,6 +164,7 @@ public static class TrainingPlanEndpoints
         {
             var plan = race.TrainingPlan!;
             var block = race.TrainingBlock;
+            var jumps = TrainingCalendar.PlannedDistanceJumps(plan, block);
             return new TrainingPlanResponse(
                 race.Id,
                 plan.Length,
@@ -179,7 +180,8 @@ public static class TrainingPlanEndpoints
                         w.Planned.PlannedDistance,
                         w.Planned.PlannedLongRun,
                         [.. w.Planned.RunningDays.Select(d => new RunningDayResponse(ApiNames.Of(d.Day), ApiNames.Of(d.RunType)))],
-                        w.Planned.RecoveryWeek))]);
+                        w.Planned.RecoveryWeek,
+                        DistanceJumpResponse.From(jumps[w.Planned.WeeksToRace])))]);
         }
     }
 
@@ -192,6 +194,9 @@ public static class TrainingPlanEndpoints
     /// <param name="PlannedDistance">Metres, or none.</param>
     /// <param name="PlannedLongRun">Metres, or none.</param>
     /// <param name="RunningDays">Monday first; the days left out are rest days.</param>
+    /// <param name="DistanceJump">
+    /// None unless the planned distance makes the week one, against the planned weeks before it. A warning only.
+    /// </param>
     private sealed record WeekResponse(
         int WeeksToRace,
         DateOnly Start,
@@ -200,7 +205,8 @@ public static class TrainingPlanEndpoints
         double? PlannedDistance,
         double? PlannedLongRun,
         IReadOnlyList<RunningDayResponse> RunningDays,
-        bool RecoveryWeek);
+        bool RecoveryWeek,
+        DistanceJumpResponse? DistanceJump);
 
     /// <param name="Day">"monday" to "sunday".</param>
     /// <param name="RunType">"easy", "long", "tempo", "intervals" or "race".</param>

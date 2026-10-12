@@ -66,8 +66,9 @@ tr.future td {
   font-weight: 600;
 }
 
-/* A Distance Jump in what was run: a warning, with the details on hover. */
-.jump-marker {
+/* A Distance Jump, in what was run (filled) or in the plan (outlined): a warning, with the details on hover. */
+.jump-marker,
+.planned-jump-marker {
   margin-left: 4px;
   color: var(--amber);
   font-size: 10px;

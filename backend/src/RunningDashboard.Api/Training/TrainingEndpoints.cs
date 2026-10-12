@@ -214,7 +214,8 @@ public static class TrainingEndpoints
                     plan.PlannedLongRun,
                     plan.DistanceMet,
                     plan.LongRunMet,
-                    [.. plan.Days.Select(d => new DayResponse(d.Date, ApiNames.Of(d.State), d.RunType is { } runType ? ApiNames.Of(runType) : null))])
+                    [.. plan.Days.Select(d => new DayResponse(d.Date, ApiNames.Of(d.State), d.RunType is { } runType ? ApiNames.Of(runType) : null))],
+                    DistanceJumpResponse.From(plan.DistanceJump))
                 : null);
     }
 
@@ -227,6 +228,10 @@ public static class TrainingEndpoints
     /// </param>
     /// <param name="LongRunMet">Likewise for the Long Run.</param>
     /// <param name="Days">Monday to Sunday: the calendar strip.</param>
+    /// <param name="DistanceJump">
+    /// None unless the planned distance makes the week one, against the planned weeks before it. Separate from the
+    /// actual values' Distance Jump, in what was run.
+    /// </param>
     private sealed record PlanResponse(
         string Phase,
         bool RecoveryWeek,
@@ -234,7 +239,8 @@ public static class TrainingEndpoints
         double? PlannedLongRun,
         bool? DistanceMet,
         bool? LongRunMet,
-        IReadOnlyList<DayResponse> Days);
+        IReadOnlyList<DayResponse> Days,
+        DistanceJumpResponse? DistanceJump);
 
     /// <param name="State">
     /// "ran" (a Running Day with a Run), "missed" (a past Running Day without one), "unplanned" (a Run on another day),
