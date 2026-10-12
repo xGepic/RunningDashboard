@@ -93,8 +93,10 @@ export interface MonthDistance {
   month: number;
   runs: number;
   distance: number;
-  /** The current month, still running: left out of the trend. */
+  /** The current month, still running: charted, but left out of the trend. */
   unfinished?: boolean;
+  /** Still ahead: on the axis, without a distance. */
+  future?: boolean;
 }
 
 /**
@@ -111,14 +113,15 @@ function linearTrend(values: number[], count: number): number[] | null {
 }
 
 /**
- * Line chart of distance per calendar month of `year`, in kilometres or miles; months without Runs sit at zero. A
- * dashed trend runs through the finished months and on to an unfinished one.
+ * Line chart of distance per calendar month of `year`, in kilometres or miles; months without Runs sit at zero, months
+ * still ahead have no point. A dashed trend, fitted to the finished months only, runs across all of them.
  */
 export function monthlyDistanceChart(year: number, months: MonthDistance[], unit: DistanceUnit, colors: ChartColors): EChartsCoreOption {
   const base = baseChartOptions(colors);
-  const values = months.map((m) => Math.round(distanceIn(m.distance, unit) * 10) / 10);
-  // Months are consecutive from January, so an unfinished one can only be the last.
-  const trend = linearTrend(values.filter((_, i) => !months[i].unfinished), months.length);
+  const values = months.map((m) => (m.future ? null : Math.round(distanceIn(m.distance, unit) * 10) / 10));
+  // Months run from January, so the finished ones come first, then the unfinished one and those still ahead.
+  const finished = values.filter((value, i): value is number => value !== null && !months[i].unfinished);
+  const trend = linearTrend(finished, months.length);
   return {
     ...base,
     tooltip: {
@@ -128,6 +131,7 @@ export function monthlyDistanceChart(year: number, months: MonthDistance[], unit
         const month = months[params[0]?.dataIndex];
         if (!month) return '';
         const title = `${fullMonthNames[month.month - 1]} ${year}`;
+        if (month.future) return tooltipHtml(colors, title, 'still to come');
         if (month.runs === 0) return tooltipHtml(colors, title, 'no Runs');
         return tooltipHtml(colors, title, distanceIn(month.distance, unit).toFixed(1), unit, `${month.runs} ${month.runs === 1 ? 'Run' : 'Runs'}`);
       },

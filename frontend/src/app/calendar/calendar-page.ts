@@ -168,9 +168,9 @@ export class CalendarPage {
     return { previous: name(-1), next: name(1) };
   });
 
-  /** The months so far as points of a line, in the unit the boxes show. */
+  /** The whole year, a point for each month so far, in the unit the boxes show. */
   protected readonly monthlyDistance = computed(() =>
-    monthlyDistanceChart(this.selectedYear(), this.boxes().filter((b) => !b.future), this.distanceUnit(), this.theme.colors()),
+    monthlyDistanceChart(this.selectedYear(), this.boxes(), this.distanceUnit(), this.theme.colors()),
   );
 
   protected readonly weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -199,7 +199,7 @@ export class CalendarPage {
   /** A point opens its month, as its box does. */
   protected openChartMonth(index: number): void {
     const box = this.boxes()[index];
-    if (box) this.router.navigate(this.yearPath(), { queryParamsHandling: 'preserve', fragment: box.fragment });
+    if (box && !box.future) this.router.navigate(this.yearPath(), { queryParamsHandling: 'preserve', fragment: box.fragment });
   }
 
   /** Kilometres stay out of the URL. */

@@ -159,7 +159,7 @@ describe('CalendarPage', () => {
       expect(text(boxes()[8])).toBe('September 37.7 mi 7h 17m');
     });
 
-    it("draws a trend through the finished months' distances, carried on to the current month", async () => {
+    it("draws a trend through the finished months' distances only, carried on to the end of the year", async () => {
       // 100 km in January, 10 km more every month up to 180 km in September; October has only begun.
       const steady: RunMonths = {
         ...year2026,
@@ -170,7 +170,7 @@ describe('CalendarPage', () => {
       const series = (chart.options() as { series: { name?: string; data: number[] }[] }).series;
 
       expect(series[1].name).toBe('Trend');
-      expect(series[1].data).toEqual([100, 110, 120, 130, 140, 150, 160, 170, 180, 190]);
+      expect(series[1].data).toEqual([100, 110, 120, 130, 140, 150, 160, 170, 180, 190, 200, 210]);
     });
 
     it('says how many hours and days were run this year, once that is more than a day', async () => {
@@ -201,13 +201,14 @@ describe('CalendarPage', () => {
       expect(element.querySelector('[aria-label="Type"]')).toBeNull();
     });
 
-    it('charts the distance of each month so far and opens a month from its point', async () => {
+    it('charts the whole year, with a distance for each month so far, and opens a month from its point', async () => {
       const { harness, settle } = await open('/calendar?unit=mi');
       const chart = harness.fixture.debugElement.query(By.directive(NgxEchartsDirective));
-      const options = chart.injector.get(NgxEchartsDirective).options() as { xAxis: { data: string[] }; series: { data: number[] }[] };
+      const options = chart.injector.get(NgxEchartsDirective).options() as { xAxis: { data: string[] }; series: { data: (number | null)[] }[] };
 
-      expect(options.xAxis.data).toEqual(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct']);
-      expect(options.series[0].data.slice(8)).toEqual([37.7, 6]);
+      expect(options.xAxis.data).toEqual(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
+      // November and December are still ahead: no point yet.
+      expect(options.series[0].data.slice(8)).toEqual([37.7, 6, null, null]);
 
       chart.triggerEventHandler('chartClick', { dataIndex: 8 });
       await settle();
