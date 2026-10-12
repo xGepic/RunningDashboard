@@ -125,6 +125,11 @@ select {
   font-variant-numeric: tabular-nums;
 }
 
+/* A Distance Jump: a warning, never an error. */
+.jump {
+  color: var(--amber);
+}
+
 /* Pages */
 
 .page {

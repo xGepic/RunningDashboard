@@ -1,5 +1,5 @@
 import { Phase, PhaseType, RunType } from '../goal-races/training-plan';
-import { WeekDistance } from '../shared/charts';
+import { DistanceJump, WeekDistance } from '../shared/charts';
 
 /** As returned by GET /api/training. Distances in metres, times in seconds, paces in seconds per km. */
 export interface Training {
@@ -112,6 +112,8 @@ export interface WeekActual {
   relativeEffort: number | null;
   /** The longest Run of the week; none in a week without Runs. */
   longRun: LongRun | null;
+  /** None unless the week's distance so far makes it one. */
+  distanceJump: DistanceJump | null;
 }
 
 export interface LongRun {

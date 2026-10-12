@@ -222,6 +222,10 @@
         @if (week?.actual; as actual) {
           <td class="number" [class.compared]="compared" [title]="compared ? 'Week of ' + (week.start | date: 'd MMM y') : ''">
             <span [class]="metClass(plan?.distanceMet)">{{ formatDistance(actual.distance) }}</span>
+            @if (actual.distanceJump) {
+              @let note = distanceJumpNote(actual.distanceJump);
+              <span class="jump-marker" [title]="note"><span aria-hidden="true">▲</span><span class="visually-hidden">{{ note }}</span></span>
+            }
             <ng-container *ngTemplateOutlet="planned; context: { $implicit: plan?.plannedDistance }" />
           </td>
           <td class="number" [class.compared]="compared">{{ formatDuration(actual.movingTime) }}</td>
@@ -278,10 +282,14 @@
           <summary>Show as table</summary>
           <div class="table-box">
             <table class="data-table recent">
-              <thead><tr><th>Week starting</th><th class="number">Distance</th></tr></thead>
+              <thead><tr><th>Week starting</th><th class="number">Distance</th><th>Distance Jump</th></tr></thead>
               <tbody>
                 @for (week of countdown.recentWeeks; track week.start) {
-                  <tr><td class="muted">{{ weekLabel(week.start) }}</td><td class="number">{{ formatDistance(week.distance) }}</td></tr>
+                  <tr>
+                    <td class="muted">{{ weekLabel(week.start) }}</td>
+                    <td class="number">{{ formatDistance(week.distance) }}</td>
+                    <td class="jump">{{ distanceJumpNote(week.distanceJump) }}</td>
+                  </tr>
                 }
               </tbody>
             </table>

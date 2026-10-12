@@ -4,10 +4,10 @@ using RunningDashboard.Api.Tests.Harness;
 namespace RunningDashboard.Api.Tests;
 
 /// <summary>
-/// Distance Jumps on the Overview's weekly list: a Training Week more than 10% above the week it is compared with,
-/// the previous one or, past Recovery Weeks, the last one before them. The first marathon (Sun 27 Sep 2026) has a
-/// 12-week plan; week −9 is Mon 20 Jul, week −8 Mon 27 Jul, week −7 Mon 3 Aug. The clock stands at Friday 9 Oct 2026,
-/// in the week of Mon 5 Oct.
+/// Distance Jumps in what was run, on the Overview's weekly list and the Training page: a Training Week more than 10%
+/// above the week it is compared with, the previous one or, past Recovery Weeks, the last one before them. The first
+/// marathon (Sun 27 Sep 2026) has a 12-week plan from Mon 6 Jul; week −9 is Mon 20 Jul, week −8 Mon 27 Jul, week −7
+/// Mon 3 Aug, week −3 Mon 31 Aug. The clock stands at Friday 9 Oct 2026, in the week of Mon 5 Oct.
 /// </summary>
 public sealed class DistanceJumpTests
 {
@@ -151,6 +151,76 @@ public sealed class DistanceJumpTests
         overview.Weeks.Select(w => w.DistanceJump).ShouldAllBe(j => j == null);
     }
 
+    [Test]
+    public async Task Each_week_of_a_training_block_carries_its_distance_jump_starting_with_the_week_before_the_block()
+    {
+        var browser = await _app.ConnectWithActivitiesAsync(
+            Run(1, new DateOnly(2026, 6, 29), 40000),
+            Run(2, new DateOnly(2026, 7, 6), 50000),
+            Run(3, new DateOnly(2026, 7, 20), 50000),
+            Run(4, new DateOnly(2026, 7, 27), 30000),
+            Run(5, new DateOnly(2026, 8, 3), 60000));
+        var race = await PlanFirstMarathonAsync(browser, recoveryWeeks: [-8]);
+
+        var block = (await browser.GetFromJsonAsync<TrainingResponse>($"/api/training?goalRaceId={race}"))!.Block!;
+
+        // Week −11, the block's first, against the week before the block.
+        ShouldBeJump(ActualJump(block.Weeks, -11), new DateOnly(2026, 6, 29), 0.25);
+        // Week −9 after a week without Runs, and the Recovery Week −8 well below it.
+        ActualJump(block.Weeks, -9).ShouldBeNull();
+        ActualJump(block.Weeks, -8).ShouldBeNull();
+        // Week −7 past the plan's Recovery Week, against week −9.
+        ShouldBeJump(ActualJump(block.Weeks, -7), new DateOnly(2026, 7, 20), 0.2);
+    }
+
+    [Test]
+    public async Task A_past_block_in_the_comparison_carries_its_own_distance_jumps()
+    {
+        var browser = await _app.ConnectWithActivitiesAsync(
+            Run(1, new DateOnly(2026, 6, 29), 40000),
+            Run(2, new DateOnly(2026, 7, 6), 50000),
+            Run(3, new DateOnly(2026, 7, 20), 50000),
+            Run(4, new DateOnly(2026, 7, 27), 30000),
+            Run(5, new DateOnly(2026, 8, 3), 60000));
+        await PlanFirstMarathonAsync(browser, recoveryWeeks: [-8]);
+        // The second marathon (Sun 23 May 2027): on Wed 10 Mar 2027 its block is shown, compared with the first's.
+        (await browser.PostAsJsonAsync("/api/goal-races", new { name = "Second marathon", date = new DateOnly(2027, 5, 23), distance = 42195, trainingBlockWeeks = 16 }))
+            .EnsureSuccessStatusCode();
+        _app.Clock.SetUtcNow(new DateTimeOffset(2027, 3, 10, 12, 0, 0, TimeSpan.Zero));
+
+        var comparison = (await browser.GetFromJsonAsync<TrainingResponse>("/api/training"))!.Block!.Comparison!;
+
+        DistanceJumpResponse? ComparedJump(int weeksToRace) =>
+            comparison.Weeks.Single(w => w.WeeksToRace == weeksToRace).Compared!.Actual!.DistanceJump;
+        // The compared block's first week against the week before that block, and week −7 past its Recovery Week.
+        ShouldBeJump(ComparedJump(-11), new DateOnly(2026, 6, 29), 0.25);
+        ShouldBeJump(ComparedJump(-7), new DateOnly(2026, 7, 20), 0.2);
+    }
+
+    [Test]
+    public async Task The_oldest_recent_week_of_the_countdown_is_compared_with_a_week_before_it_that_is_not_listed()
+    {
+        // The recent weeks are Mon 7 Sep to Mon 5 Oct. 7 Sep is compared with 24 Aug, past the Recovery Week of 31 Aug.
+        var browser = await _app.ConnectWithActivitiesAsync(
+            Run(1, new DateOnly(2026, 8, 24), 40000),
+            Run(2, new DateOnly(2026, 8, 31), 20000),
+            Run(3, new DateOnly(2026, 9, 7), 46000),
+            Run(4, new DateOnly(2026, 9, 14), 46000),
+            Run(5, new DateOnly(2026, 9, 21), 60000));
+        await PlanFirstMarathonAsync(browser, recoveryWeeks: [-3]);
+        (await browser.PostAsJsonAsync("/api/goal-races", new { name = "Second marathon", date = new DateOnly(2027, 5, 23), distance = 42195, trainingBlockWeeks = 16 }))
+            .EnsureSuccessStatusCode();
+
+        var countdown = (await browser.GetFromJsonAsync<TrainingResponse>("/api/training"))!.Countdown!;
+
+        countdown.RecentWeeks.Select(w => w.Start).ShouldBe(
+            [new DateOnly(2026, 9, 7), new DateOnly(2026, 9, 14), new DateOnly(2026, 9, 21), new DateOnly(2026, 9, 28), new DateOnly(2026, 10, 5)]);
+        ShouldBeJump(countdown.RecentWeeks[0].DistanceJump, new DateOnly(2026, 8, 24), 0.15);
+        countdown.RecentWeeks[1].DistanceJump.ShouldBeNull();
+        ShouldBeJump(countdown.RecentWeeks[2].DistanceJump, new DateOnly(2026, 9, 14), 60.0 / 46 - 1);
+        countdown.RecentWeeks.Skip(3).ShouldAllBe(w => w.DistanceJump == null);
+    }
+
     /// <summary>A Run on the Sunday of the Training Week starting <paramref name="monday"/>, at an easy 6:00 /km.</summary>
     private static TestActivity Run(long id, DateOnly monday, double distance) =>
         new(id, $"Long run of the week of {monday:d MMM}", monday.AddDays(6).ToDateTime(new TimeOnly(9, 0)), distance, (int)(distance * 0.36));
@@ -162,15 +232,22 @@ public sealed class DistanceJumpTests
         return (await response.Content.ReadFromJsonAsync<GoalRaceResponse>())!.Id;
     }
 
-    /// <summary>Gives the first marathon a 12-week plan with <paramref name="recoveryWeeks"/> (Weeks to Race) as Recovery Weeks.</summary>
-    private static async Task PlanFirstMarathonAsync(HttpClient browser, int[] recoveryWeeks)
+    /// <summary>
+    /// Gives the first marathon a 12-week plan with <paramref name="recoveryWeeks"/> (Weeks to Race) as Recovery Weeks;
+    /// returns its id.
+    /// </summary>
+    private static async Task<int> PlanFirstMarathonAsync(HttpClient browser, int[] recoveryWeeks)
     {
         var id = await CreateFirstMarathonAsync(browser);
         (await browser.PutAsJsonAsync($"/api/goal-races/{id}/training-plan", new { length = 12, phases = new[] { "build", "peak", "taper" } }))
             .EnsureSuccessStatusCode();
         var weeks = recoveryWeeks.Select(n => new { weeksToRace = n, recoveryWeek = true });
         (await browser.PutAsJsonAsync($"/api/goal-races/{id}/training-plan/weeks", new { weeks })).EnsureSuccessStatusCode();
+        return id;
     }
+
+    private static DistanceJumpResponse? ActualJump(List<BlockWeekResponse> weeks, int weeksToRace) =>
+        weeks.Single(w => w.WeeksToRace == weeksToRace).Actual!.DistanceJump;
 
     private static DistanceJumpResponse? Jump(OverviewResponse overview, DateOnly monday) =>
         overview.Weeks.Where(w => w.Start == monday).ShouldHaveSingleItem().DistanceJump;
@@ -187,6 +264,26 @@ public sealed class DistanceJumpTests
         (await browser.GetFromJsonAsync<OverviewResponse>("/api/overview"))!;
 
     private sealed record GoalRaceResponse(int Id);
+
+    private sealed record TrainingResponse(BlockResponse? Block, CountdownResponse? Countdown);
+
+    private sealed record BlockResponse(List<BlockWeekResponse> Weeks, ComparisonResponse? Comparison);
+
+    private sealed record ComparisonResponse(List<LinedUpWeekResponse> Weeks);
+
+    private sealed record LinedUpWeekResponse(int WeeksToRace, BlockWeekResponse? Viewed, BlockWeekResponse? Compared);
+
+    /// <param name="Actual">What was run; none for a future week.</param>
+    private sealed record BlockWeekResponse(int WeeksToRace, ActualResponse? Actual);
+
+    /// <param name="DistanceJump">None unless the week is one.</param>
+    private sealed record ActualResponse(double Distance, DistanceJumpResponse? DistanceJump);
+
+    /// <param name="RecentWeeks">Oldest first.</param>
+    private sealed record CountdownResponse(List<RecentWeekResponse> RecentWeeks);
+
+    /// <param name="DistanceJump">None unless the week is one.</param>
+    private sealed record RecentWeekResponse(DateOnly Start, double Distance, DistanceJumpResponse? DistanceJump);
 
     private sealed record OverviewResponse(List<WeekResponse> Weeks);
 

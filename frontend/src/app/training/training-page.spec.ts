@@ -47,7 +47,7 @@ function week(
     start,
     end: day(6),
     status,
-    actual: distance === null ? null : { runs: 3, distance, movingTime: 11520, relativeEffort: null, longRun: null },
+    actual: distance === null ? null : { runs: 3, distance, movingTime: 11520, relativeEffort: null, longRun: null, distanceJump: null },
     plan: {
       phase: 'peak',
       recoveryWeek: false,
@@ -118,6 +118,17 @@ describe('TrainingPage', () => {
     expect(days[6].textContent).toContain('Sunday: Long, still to come');
     expect(days[5].getAttribute('title')).toBe('Sat 13 Mar: run on an unplanned day');
     expect(days[0].getAttribute('title')).toBe('Mon 8 Mar: rest day');
+  });
+
+  it('marks a week whose distance is a Distance Jump, with the increase and the week compared with on hover', async () => {
+    const jumped = structuredClone(training);
+    jumped.block!.weeks[1].actual!.distanceJump = { comparedWith: '2027-03-01', increase: 0.2 };
+    const { element } = await render(jumped);
+
+    const marker = row(element, -10).querySelector('.jump-marker');
+    expect(marker?.getAttribute('title')).toBe('Distance Jump: +20% on the week of 1 Mar 2027');
+    expect(marker?.textContent).toContain('Distance Jump: +20% on the week of 1 Mar 2027');
+    expect(row(element, -11).querySelector('.jump-marker')).toBeNull();
   });
 
   it('marks each of its weeks with the Phase', async () => {

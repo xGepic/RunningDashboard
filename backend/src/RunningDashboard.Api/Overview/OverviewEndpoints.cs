@@ -53,11 +53,9 @@ public static class OverviewEndpoints
                 .ToDictionary(g => g.Key, g => g.Sum(r => r.Distance));
             var firstWeek = distanceByWeek.Keys.Min(w => w.Start);
             var lastWeek = Max(distanceByWeek.Keys.Max(w => w.Start), TrainingWeek.Of(today).Start);
-            var distanceWeeks = TrainingWeek.Range(new TrainingWeek(firstWeek), new TrainingWeek(lastWeek))
-                .Select(w => new DistanceWeek(w, distanceByWeek.TryGetValue(w, out var distance) ? distance : null, recoveryWeeks.Contains(w)))
-                .ToList();
-            var weeks = distanceWeeks
-                .Zip(TrainingCalendar.DistanceJumps(distanceWeeks), (w, jump) => new WeekResponse(w.Week.Start, w.Distance ?? 0, DistanceJumpResponse.From(jump)))
+            var jumps = TrainingCalendar.RunWeekDistanceJumps(new TrainingWeek(firstWeek), new TrainingWeek(lastWeek), distanceByWeek, recoveryWeeks);
+            var weeks = TrainingWeek.Range(new TrainingWeek(firstWeek), new TrainingWeek(lastWeek))
+                .Select(w => new WeekResponse(w.Start, distanceByWeek.GetValueOrDefault(w), DistanceJumpResponse.From(jumps[w])))
                 .ToList();
 
             var byMonth = runs.ToLookup(r => new DateOnly(r.StartLocal.Year, r.StartLocal.Month, 1));
