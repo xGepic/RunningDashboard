@@ -25,12 +25,14 @@ public static class OverviewEndpoints
     /// <param name="Weeks">Every Training Week from the first Run's up to the current one, empty weeks as zero.</param>
     /// <param name="Months">Every month from the first Run's up to the current one.</param>
     /// <param name="YearlyGoal">The current year's; none without one.</param>
+    /// <param name="Days">Every local date with Runs, oldest first.</param>
     private sealed record OverviewResponse(
         TotalsResponse Totals,
         IReadOnlyList<YearResponse> Years,
         IReadOnlyList<WeekResponse> Weeks,
         IReadOnlyList<MonthResponse> Months,
-        YearlyGoalResponse? YearlyGoal)
+        YearlyGoalResponse? YearlyGoal,
+        IReadOnlyList<DayResponse> Days)
     {
         public static OverviewResponse From(
             IReadOnlyList<RunFigures> runs,
@@ -40,7 +42,7 @@ public static class OverviewEndpoints
         {
             var totals = TotalsResponse.Of(runs);
             if (runs.Count == 0)
-                return new OverviewResponse(totals, [], [], [], yearlyGoal);
+                return new OverviewResponse(totals, [], [], [], yearlyGoal, []);
 
             var years = runs
                 .GroupBy(r => r.StartLocal.Year)
@@ -70,7 +72,14 @@ public static class OverviewEndpoints
                 months.Add(new MonthResponse(month.Year, month.Month, distance, Run.PaceOf(inMonth.Sum(r => r.MovingTime), distance)));
             }
 
-            return new OverviewResponse(totals, years, weeks, months, yearlyGoal);
+            // By the local start date, the same that decides a Run's Training Week.
+            var days = runs
+                .GroupBy(r => DateOnly.FromDateTime(r.StartLocal))
+                .OrderBy(g => g.Key)
+                .Select(g => new DayResponse(g.Key, g.Sum(r => r.Distance)))
+                .ToList();
+
+            return new OverviewResponse(totals, years, weeks, months, yearlyGoal, days);
         }
 
         private static DateOnly Max(DateOnly a, DateOnly b) => a > b ? a : b;
@@ -98,4 +107,7 @@ public static class OverviewEndpoints
 
     /// <param name="Pace">Seconds per kilometre over all of the month's Runs; none without Runs.</param>
     private sealed record MonthResponse(int Year, int Month, double Distance, double? Pace);
+
+    /// <param name="Distance">Metres run that day, all its Runs together.</param>
+    private sealed record DayResponse(DateOnly Date, double Distance);
 }

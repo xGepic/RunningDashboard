@@ -1,0 +1,44 @@
+@let map = heatmap();
+<section class="card consistency" aria-labelledby="consistency-title">
+  <div class="card-header">
+    <div class="titles">
+      <h2 id="consistency-title" class="card-title">Consistency</h2>
+      <p class="card-sub">{{ map.daysWithRuns }} {{ map.daysWithRuns === 1 ? 'day' : 'days' }} with Runs in {{ selectedYear() }}</p>
+    </div>
+    <div class="segmented mono" role="group" aria-label="Year">
+      @for (y of years(); track y) {
+        <button type="button" [attr.aria-pressed]="y === selectedYear()" (click)="selectedYear.set(y)">{{ y }}</button>
+      }
+    </div>
+  </div>
+
+  <div class="heatmap-scroll">
+    <div class="heatmap" [style.--columns]="map.columns">
+      <div class="months" aria-hidden="true">
+        @for (month of map.months; track month.column) {
+          <span [style.grid-column]="month.column">{{ month.name }}</span>
+        }
+      </div>
+      <div class="weekdays" aria-hidden="true">
+        <span class="monday">Mon</span>
+        <span class="wednesday">Wed</span>
+        <span class="friday">Fri</span>
+      </div>
+      <div class="cells" role="img"
+           [attr.aria-label]="'Calendar heatmap of ' + selectedYear() + ', a cell per day shaded by its distance: ' + map.daysWithRuns + (map.daysWithRuns === 1 ? ' day' : ' days') + ' with Runs'">
+        @for (cell of map.cells; track $index) {
+          <span class="cell" [class.future]="cell.future" [attr.data-date]="cell.date" [attr.data-level]="cell.date ? cell.level : null"
+                [attr.title]="cell.date ? cell.title : null" [style.grid-row]="cell.row" [style.grid-column]="cell.column"></span>
+        }
+      </div>
+    </div>
+  </div>
+
+  <p class="legend" aria-hidden="true">
+    Less
+    @for (level of levels; track level) {
+      <span class="cell" [attr.data-level]="level"></span>
+    }
+    More · shaded against the year's furthest day
+  </p>
+</section>

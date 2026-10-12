@@ -13,6 +13,15 @@ export interface Overview {
   months: MonthPace[];
   /** The current year's Yearly Goal; none without one. */
   yearlyGoal: YearlyGoal | null;
+  /** Every local date with Runs, oldest first. */
+  days: DayDistance[];
+}
+
+/** Metres run on one local date, all its Runs together. */
+export interface DayDistance {
+  /** yyyy-MM-dd. */
+  date: string;
+  distance: number;
 }
 
 /** The distance the Athlete wants to run in a calendar year, in metres. */

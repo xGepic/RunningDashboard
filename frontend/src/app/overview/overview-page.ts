@@ -17,6 +17,7 @@ import {
 } from '../shared/charts';
 import { formatDistance, formatPace } from '../shared/format';
 import { reloadOnSync } from '../sync/reload-on-sync';
+import { ConsistencyCard } from './consistency-card';
 import { MonthPace, Overview, Totals, YearTotals } from './overview';
 import { YearlyGoalCard } from './yearly-goal-card';
 
@@ -40,7 +41,7 @@ const kpiDefinitions: { label: string; unit: string; icon: string; of: (t: Total
 
 @Component({
   selector: 'app-overview-page',
-  imports: [DecimalPipe, NgxEchartsDirective, YearlyGoalCard],
+  imports: [ConsistencyCard, DecimalPipe, NgxEchartsDirective, YearlyGoalCard],
   templateUrl: './overview-page.html',
   styleUrl: './overview-page.scss',
 })
