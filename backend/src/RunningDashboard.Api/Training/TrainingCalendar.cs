@@ -164,7 +164,7 @@ public static class TrainingCalendar
         var runDays = runs.Select(r => DateOnly.FromDateTime(r.StartLocal)).ToHashSet();
         var days = Enumerable.Range(0, 7)
             .Select(i => week.Start.AddDays(i))
-            .Select(date => new PlanDay(date, DayOf(date, planned.RunningDays.Contains(date.DayOfWeek), runDays.Contains(date), today)))
+            .Select(date => new PlanDay(date, DayOf(date, planned.RunningDays.Any(d => d.Day == date.DayOfWeek), runDays.Contains(date), today)))
             .ToList();
         return new WeekPlan(
             plan.PhaseOf(weeksToRace),

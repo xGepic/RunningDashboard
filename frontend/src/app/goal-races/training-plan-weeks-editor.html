@@ -44,9 +44,17 @@
           <td>
             <div class="days" role="group" [attr.aria-label]="'Running Days, week ' + row.week.weeksToRace">
               @for (weekday of weekdays; track weekday.day) {
-                <button type="button" class="day" [attr.aria-label]="weekday.name"
-                        [attr.aria-pressed]="row.runningDays.includes(weekday.day)"
-                        (click)="toggleDay(i, weekday.day)">{{ weekday.initial }}</button>
+                @let runType = runTypeOn(row, weekday.day);
+                <label class="day">
+                  <span class="initial" aria-hidden="true">{{ weekday.initial }}</span>
+                  <select #runTypePicker [attr.aria-label]="weekday.name" [class.rest]="runType === 'rest'"
+                          (change)="pickRunType(i, weekday.day, $any(runTypePicker.value))">
+                    <option value="rest" [selected]="runType === 'rest'">Rest</option>
+                    @for (option of runTypes; track option.type) {
+                      <option [value]="option.type" [selected]="option.type === runType">{{ option.name }}</option>
+                    }
+                  </select>
+                </label>
               }
             </div>
             @for (error of fieldErrors(i, 'runningDays'); track error) {

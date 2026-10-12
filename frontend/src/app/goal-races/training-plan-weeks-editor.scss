@@ -3,7 +3,7 @@
 }
 
 .data-table {
-  min-width: 960px;
+  min-width: 1240px;
 
   td {
     padding-top: 10px;
@@ -52,28 +52,27 @@ input.long-run {
 }
 
 .day {
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: 1px solid var(--border-strong);
-  border-radius: 50%;
-  background: var(--inset);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.initial {
   color: var(--text-muted);
-  font-size: 11.5px;
-  cursor: pointer;
-  transition:
-    background 0.15s,
-    border-color 0.15s;
+  font-size: 11px;
+}
 
-  &:hover {
-    color: var(--text);
-  }
+.day select {
+  width: 5.25rem;
+  height: 28px;
+  padding: 0 4px 0 6px;
+  border-color: var(--accent);
+  font-size: 12px;
 
-  &[aria-pressed='true'] {
-    border-color: var(--accent);
-    background: var(--accent);
-    color: var(--on-accent);
-    font-weight: 600;
+  &.rest {
+    border-color: var(--border-strong);
+    color: var(--text-muted);
   }
 }
 
