@@ -5,10 +5,10 @@ import { Router, RouterLink } from '@angular/router';
 import { isoDate } from '../shared/dates';
 import { DistanceUnit, formatDistance, formatDuration, formatHoursMinutes, formatPace } from '../shared/format';
 import { reloadOnSync } from '../sync/reload-on-sync';
-import { RunPage, RunSortKey, sportTypes } from './run';
+import { RunPage, RunSortKey } from './run';
 
 /** The list's state, kept in the URL so the back button and shared links work. */
-type ListParams = Partial<Record<'month' | 'search' | 'sportType' | 'sort' | 'direction' | 'page' | 'unit', string | null>>;
+type ListParams = Partial<Record<'month' | 'search' | 'sort' | 'direction' | 'page' | 'unit', string | null>>;
 
 /** All Runs of a month fit on one page; the pager only shows up past this. */
 const pageSize = 200;
@@ -29,7 +29,6 @@ export class RunsPage {
   /** "2026-10"; the current month when missing or malformed. */
   readonly month = input<string>();
   readonly search = input<string>();
-  readonly sportType = input<string>();
   readonly sort = input<RunSortKey>();
   readonly direction = input<'asc' | 'desc'>();
   readonly page = input<string>();
@@ -58,7 +57,6 @@ export class RunsPage {
         from: isoDate(this.monthStart()),
         to: isoDate(lastDayOf(this.monthStart())),
         search: this.search(),
-        sportType: this.sportType(),
         sort: this.sort(),
         direction: this.direction(),
         page: this.page(),
@@ -72,9 +70,8 @@ export class RunsPage {
     return page ? Math.max(1, Math.ceil(page.totalCount / page.pageSize)) : 1;
   });
 
-  protected readonly filtered = computed(() => !!(this.search() || this.sportType()));
+  protected readonly searched = computed(() => !!this.search());
 
-  protected readonly sportTypes = sportTypes;
   protected readonly longRunDistance = longRunDistance;
 
   /** Totals of the Runs listed: count, distance, Moving Time and their average Pace. */
@@ -139,8 +136,8 @@ export class RunsPage {
     this.navigate({ page: page > 1 ? String(page) : null });
   }
 
-  protected clearFilters(): void {
-    this.navigate({ search: null, sportType: null, page: null });
+  protected clearSearch(): void {
+    this.navigate({ search: null, page: null });
   }
 
   protected sortIndicator(key: RunSortKey): string {

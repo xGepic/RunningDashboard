@@ -49,8 +49,8 @@ describe('App', () => {
   });
 
   it('leads from a month back to its year, keeping the filters', async () => {
-    const { element } = await render('/calendar/2025?unit=mi&sportType=TrailRun#Dec');
+    const { element } = await render('/calendar/2025?unit=mi#Dec');
 
-    expect(element.querySelector('.crumbs a')!.getAttribute('href')).toBe('/calendar/2025?unit=mi&sportType=TrailRun');
+    expect(element.querySelector('.crumbs a')!.getAttribute('href')).toBe('/calendar/2025?unit=mi');
   });
 });

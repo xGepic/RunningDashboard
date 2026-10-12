@@ -35,12 +35,6 @@
       </nav>
     }
 
-    <div class="segmented" role="group" aria-label="Type">
-      @for (type of sportTypes; track type.value) {
-        <button type="button" [attr.aria-pressed]="(sportType() ?? '') === type.value" (click)="filter(type.value)">{{ type.label }}</button>
-      }
-    </div>
-
     <div class="segmented units" role="group" aria-label="Units">
       <button type="button" [attr.aria-pressed]="distanceUnit() === 'km'" (click)="showUnit('km')">km</button>
       <button type="button" [attr.aria-pressed]="distanceUnit() === 'mi'" (click)="showUnit('mi')">mi</button>

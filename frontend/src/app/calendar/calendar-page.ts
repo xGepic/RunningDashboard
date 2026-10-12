@@ -9,7 +9,7 @@ import { fullMonthNames, isoDate, today } from '../shared/dates';
 import { monthNames, monthlyDistanceChart } from '../shared/charts';
 import { DistanceUnit, formatDistance, formatHoursMinutes, formatPace } from '../shared/format';
 import { reloadOnSync } from '../sync/reload-on-sync';
-import { Run, RunMonths, RunPage, sportTypes } from '../runs/run';
+import { Run, RunMonths, RunPage } from '../runs/run';
 
 /** A month as the URL's fragment names it: "Jan" to "Dec". */
 export const monthFragments = monthNames;
@@ -40,8 +40,6 @@ export class CalendarPage {
   // From the route and the query string (component input binding).
   /** The year from /calendar/2025; the current year at /calendar or when malformed. */
   readonly year = input<string>();
-  /** Strava's sport type to show only, e.g. "TrailRun"; all Runs when missing. */
-  readonly sportType = input<string>();
   /** "mi" shows distances in miles; kilometres otherwise. */
   readonly unit = input<string>();
 
@@ -73,16 +71,12 @@ export class CalendarPage {
   protected readonly isCurrentYear = computed(() => this.selectedYear() >= new Date().getFullYear());
 
   /** The year's monthly totals. */
-  protected readonly months = httpResource<RunMonths>(() => {
-    const sportType = this.sportType();
-    return { url: '/api/runs/months', params: { year: String(this.selectedYear()), ...(sportType ? { sportType } : {}) } };
-  });
+  protected readonly months = httpResource<RunMonths>(() => ({ url: '/api/runs/months', params: { year: String(this.selectedYear()) } }));
 
   /** The Runs of the month's Training Weeks, oldest first; not loaded for the year view. */
   protected readonly runs = httpResource<RunPage>(() => {
     const range = this.gridRange();
     if (!range) return undefined;
-    const sportType = this.sportType();
     return {
       url: '/api/runs',
       params: {
@@ -91,7 +85,6 @@ export class CalendarPage {
         pageSize: String(pageSize),
         sort: 'date',
         direction: 'asc',
-        ...(sportType ? { sportType } : {}),
       },
     };
   });
@@ -127,7 +120,7 @@ export class CalendarPage {
     return month === null ? null : `${fullMonthNames[month - 1]} ${this.selectedYear()}`;
   });
 
-  /** Back to the year of the first Run, of any type. */
+  /** Back to the year of the first Run. */
   protected readonly hasPreviousYear = computed(() => {
     const firstYear = this.months.hasValue() ? this.months.value().firstYear : null;
     return firstYear !== null && this.selectedYear() > firstYear;
@@ -169,7 +162,6 @@ export class CalendarPage {
   );
 
   protected readonly weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  protected readonly sportTypes = sportTypes;
   protected readonly formatDistance = formatDistance;
   protected readonly formatHoursMinutes = formatHoursMinutes;
   protected readonly formatPace = formatPace;
@@ -181,12 +173,12 @@ export class CalendarPage {
     });
   }
 
-  /** The filters stay as they are. */
+  /** The unit stays as it is. */
   protected shiftYear(years: number): void {
     this.router.navigate(yearPath(this.selectedYear() + years), { queryParamsHandling: 'preserve' });
   }
 
-  /** The filters stay as they are; stepping past December or January changes the year. */
+  /** The unit stays as it is; stepping past December or January changes the year. */
   protected shiftMonth(months: number): void {
     const date = new Date(this.selectedYear(), (this.selectedMonth() ?? 1) - 1 + months, 1);
     this.router.navigate(yearPath(date.getFullYear()), { queryParamsHandling: 'preserve', fragment: monthFragments[date.getMonth()] });
@@ -196,10 +188,6 @@ export class CalendarPage {
   protected openChartMonth(index: number): void {
     const box = this.boxes()[index];
     if (box) this.router.navigate(this.yearPath(), { queryParamsHandling: 'preserve', fragment: box.fragment });
-  }
-
-  protected filter(sportType: string): void {
-    this.navigateHere({ sportType: sportType || null });
   }
 
   /** Kilometres stay out of the URL. */

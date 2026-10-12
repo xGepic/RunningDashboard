@@ -1,14 +1,11 @@
-using RunningDashboard.Api.Persistence;
-
 namespace RunningDashboard.Api.Runs;
 
 /// <summary>
-/// What the Runs list asks for, from the query string: search, filters, sort order and page.
+/// What the Runs list asks for, from the query string: search, date range, sort order and page.
 /// </summary>
 /// <param name="Search">Part of the Run's name, ignoring case.</param>
 /// <param name="From">First local start date to include.</param>
 /// <param name="To">Last local start date to include.</param>
-/// <param name="SportType">One of the running sport types (Run, TrailRun, VirtualRun).</param>
 /// <param name="Sort">date (default), distance, movingTime or pace.</param>
 /// <param name="Direction">desc (default) or asc.</param>
 /// <param name="Page">1-based (default 1).</param>
@@ -17,7 +14,6 @@ public sealed record RunListQuery(
     string? Search,
     DateOnly? From,
     DateOnly? To,
-    string? SportType,
     string? Sort,
     string? Direction,
     int? Page,
@@ -48,8 +44,6 @@ public sealed record RunListQuery(
             errors[nameof(Sort)] = [$"Sort by one of: {string.Join(", ", SortKeys)}."];
         if (Direction is not null && !Directions.Contains(Direction))
             errors[nameof(Direction)] = ["Direction is asc or desc."];
-        if (SportType is not null && !Run.IsRunningSportType(SportType))
-            errors[nameof(SportType)] = ["Only running sport types are listed: Run, TrailRun, VirtualRun."];
         if (From > To)
             errors[nameof(From)] = ["The range starts after it ends."];
         return errors;

@@ -62,8 +62,8 @@ describe('CalendarPage', () => {
     vi.unstubAllGlobals();
   });
 
-  /** Opens `url`, answering the monthly totals with `months`; they must be asked for `sportType` only, if given. */
-  async function open(url: string, months: RunMonths = year2026, sportType: string | null = null) {
+  /** Opens `url`, answering the monthly totals with `months`, which are of all Runs. */
+  async function open(url: string, months: RunMonths = year2026) {
     const harness = await RouterTestingHarness.create();
     const http = TestBed.inject(HttpTestingController);
     /** Lets a navigation or a response take effect; requests it sets off stay open. */
@@ -75,7 +75,7 @@ describe('CalendarPage', () => {
     for (const sync of http.match('/api/sync')) sync.flush({ running: false, importedRuns: 0, lastSyncedAt: null });
     harness.detectChanges();
     http
-      .expectOne((r) => r.url === '/api/runs/months' && r.params.get('year') === String(months.year) && r.params.get('sportType') === sportType)
+      .expectOne((r) => r.url === '/api/runs/months' && r.params.get('year') === String(months.year) && !r.params.has('sportType'))
       .flush(months);
     await settle();
     const element = harness.routeNativeElement!;
@@ -83,11 +83,11 @@ describe('CalendarPage', () => {
   }
 
   /** Opens a month's `url`, answering its Training Weeks' Runs with `runs` from `from` to `to`. */
-  async function openMonth(url: string, from: string, to: string, runs: Run[] = septemberWeeks, sportType: string | null = null) {
-    const page = await open(url, year2026, sportType);
+  async function openMonth(url: string, from: string, to: string, runs: Run[] = septemberWeeks) {
+    const page = await open(url, year2026);
     const request = page.http.expectOne((r) => r.url === '/api/runs');
     expect(Object.fromEntries(request.request.params.keys().map((key) => [key, request.request.params.get(key)]))).toEqual({
-      from, to, pageSize: '200', sort: 'date', direction: 'asc', ...(sportType ? { sportType } : {}),
+      from, to, pageSize: '200', sort: 'date', direction: 'asc',
     });
     request.flush({ items: runs, page: 1, pageSize: 200, totalCount: runs.length } satisfies RunPage);
     await page.settle();
@@ -127,8 +127,8 @@ describe('CalendarPage', () => {
       expect(boxes()[11].getAttribute('href')).toBe('/calendar/2025#Dec');
     });
 
-    it('steps through the years from the first with Runs to the current one, keeping the filters', async () => {
-      const { harness, http, settle } = await open('/calendar?unit=mi&sportType=TrailRun', year2026, 'TrailRun');
+    it('steps through the years from the first with Runs to the current one, keeping the unit', async () => {
+      const { harness, http, settle } = await open('/calendar?unit=mi');
       // /calendar and /calendar/2025 are different routes: the page is rendered anew.
       const step = (label: string) => harness.routeNativeElement!.querySelector<HTMLButtonElement>(`button[aria-label^="${label}"]`)!;
       const answer = async (year: number) => {
@@ -140,7 +140,7 @@ describe('CalendarPage', () => {
       expect(step('Next year').disabled).toBe(true);
       step('Previous year').click();
       await settle();
-      expect(TestBed.inject(Router).url).toBe('/calendar/2025?unit=mi&sportType=TrailRun');
+      expect(TestBed.inject(Router).url).toBe('/calendar/2025?unit=mi');
 
       await answer(2025);
       step('Previous year').click();
@@ -150,13 +150,19 @@ describe('CalendarPage', () => {
 
       step('Next year').click();
       await settle();
-      expect(TestBed.inject(Router).url).toBe('/calendar/2025?unit=mi&sportType=TrailRun');
+      expect(TestBed.inject(Router).url).toBe('/calendar/2025?unit=mi');
     });
 
-    it('shows one sport type only, in miles, when asked', async () => {
-      const { boxes } = await open('/calendar?unit=mi&sportType=TrailRun', year2026, 'TrailRun');
+    it('shows miles when asked', async () => {
+      const { boxes } = await open('/calendar?unit=mi');
 
       expect(text(boxes()[8])).toBe('September 37.7 mi 7h 17m');
+    });
+
+    it('always shows all Runs, whatever type an old link asks for', async () => {
+      const { element } = await open('/calendar?sportType=TrailRun');
+
+      expect(element.querySelector('[aria-label="Type"]')).toBeNull();
     });
 
     it('charts the distance of each month so far and opens a month from its point', async () => {

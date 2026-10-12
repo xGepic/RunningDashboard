@@ -57,6 +57,13 @@ describe('RunsPage', () => {
     http.expectNone((r) => r.url === '/api/runs/months');
   });
 
+  it('always lists all Runs, whatever type an old link asks for', async () => {
+    const { element, request } = await open('/runs?sportType=TrailRun');
+
+    expect(request.params.has('sportType')).toBe(false);
+    expect(element.querySelector('[aria-label="Type"]')).toBeNull();
+  });
+
   it('shows the list for an old link to the monthly totals', async () => {
     const { http, element } = await open('/runs?view=months&year=2025');
 

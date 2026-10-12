@@ -35,15 +35,8 @@
         <input #searchBox type="search" placeholder="Search by name, e.g. Lauf" [value]="search() ?? ''"
                (change)="filter({ search: searchBox.value.trim() })" />
       </label>
-      <div class="segmented" role="group" aria-label="Type">
-        @for (type of sportTypes; track type.value) {
-          <button type="button" [attr.aria-pressed]="(sportType() ?? '') === type.value" (click)="filter({ sportType: type.value })">
-            {{ type.label }}
-          </button>
-        }
-      </div>
-      @if (filtered()) {
-        <button type="button" class="link" (click)="clearFilters()">Clear filters</button>
+      @if (searched()) {
+        <button type="button" class="link" (click)="clearSearch()">Clear search</button>
       }
     </form>
 
@@ -65,8 +58,8 @@
           @if (page.page > 1) {
             There are no Runs on page {{ page.page }}.
             <button type="button" class="link" (click)="goToPage(1)">Go to the first page</button>
-          } @else if (filtered()) {
-            No Runs in {{ monthStart() | date: 'MMMM y' }} match these filters.
+          } @else if (searched()) {
+            No Runs in {{ monthStart() | date: 'MMMM y' }} match this search.
           } @else {
             No Runs in {{ monthStart() | date: 'MMMM y' }}.
           }

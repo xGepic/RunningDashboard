@@ -64,18 +64,17 @@ public sealed class RunsListTests
         (await ListAsync(query)).Names.ShouldBe(expected);
     }
 
-    [TestCase("TrailRun", new[] { "Wienerwald trail" })]
-    [TestCase("VirtualRun", new[] { "Treadmill intervals" })]
-    [TestCase("Run", new[] { "Evening Run", "Lauf am Nachmittag", "Finisher." })]
-    public async Task Filtering_by_sport_type_keeps_only_that_type(string sportType, string[] expected)
+    [Test]
+    public async Task Road_trail_and_treadmill_runs_are_all_listed_whatever_type_is_asked_for()
     {
-        (await ListAsync($"sportType={sportType}")).Names.ShouldBe(expected);
+        (await ListAsync("sportType=TrailRun")).Names.ShouldBe(
+            ["Evening Run", "Lauf am Nachmittag", "Finisher.", "Treadmill intervals", "Wienerwald trail"]);
     }
 
     [Test]
-    public async Task Search_date_range_and_sport_type_combine()
+    public async Task Search_and_date_range_combine()
     {
-        var page = await ListAsync("search=e&from=2026-09-25&sportType=Run");
+        var page = await ListAsync("search=e&from=2026-09-25");
 
         page.Names.ShouldBe(["Evening Run", "Finisher."]);
         page.TotalCount.ShouldBe(2);
@@ -111,7 +110,6 @@ public sealed class RunsListTests
     [TestCase("pageSize=201")]
     [TestCase("sort=name")]
     [TestCase("direction=up")]
-    [TestCase("sportType=Ride")]
     [TestCase("from=2026-10-03&to=2026-09-24")]
     public async Task Invalid_options_are_refused(string query)
     {
@@ -145,12 +143,11 @@ public sealed class RunsListTests
     }
 
     [Test]
-    public async Task Months_count_only_the_sport_type_filtered_for()
+    public async Task Months_count_road_trail_and_treadmill_runs_alike_whatever_type_is_asked_for()
     {
         var year = await MonthsAsync("year=2026&sportType=TrailRun");
 
-        (year.Months[8].Runs, year.Months[8].Distance).ShouldBe((1, 12105.4));
-        year.Months[9].Runs.ShouldBe(0);
+        (year.Months[8].Runs, year.Months[9].Runs).ShouldBe((3, 2));
     }
 
     [Test]
@@ -163,7 +160,6 @@ public sealed class RunsListTests
     }
 
     [TestCase("year=1899")]
-    [TestCase("sportType=Ride")]
     public async Task Invalid_month_options_are_refused(string query)
     {
         var response = await _browser.GetAsync($"/api/runs/months?{query}");

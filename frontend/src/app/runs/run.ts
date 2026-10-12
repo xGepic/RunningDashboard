@@ -24,7 +24,7 @@ export interface RunPage {
 /** GET /api/runs/months: one year's Runs added up per calendar month. Distance in metres, times in seconds. */
 export interface RunMonths {
   year: number;
-  /** The year of the first Run of any type; none without Runs. */
+  /** The year of the first Run; none without Runs. */
   firstYear: number | null;
   /** January to December; months without Runs as zero. */
   months: MonthTotals[];
@@ -39,14 +39,6 @@ export interface MonthTotals {
   /** Seconds per km over all of the month's Runs; none without Runs. */
   pace: number | null;
 }
-
-/** The kinds of Run the filters offer, as Strava's sport types; an empty one for all. */
-export const sportTypes = [
-  { value: '', label: 'All Runs' },
-  { value: 'Run', label: 'Road' },
-  { value: 'TrailRun', label: 'Trail' },
-  { value: 'VirtualRun', label: 'Treadmill' },
-];
 
 export type RunSortKey = 'date' | 'distance' | 'movingTime' | 'pace';
 

@@ -28,8 +28,7 @@ public static class RunEndpoints
             var matching = runs.Where(r =>
                 (string.IsNullOrWhiteSpace(query.Search) || r.Name.Contains(query.Search.Trim(), StringComparison.InvariantCultureIgnoreCase))
                 && (query.From is null || DateOnly.FromDateTime(r.StartLocal) >= query.From)
-                && (query.To is null || DateOnly.FromDateTime(r.StartLocal) <= query.To)
-                && (query.SportType is null || r.SportType == query.SportType))
+                && (query.To is null || DateOnly.FromDateTime(r.StartLocal) <= query.To))
                 .ToList();
 
             var page = Sorted(matching, query)
@@ -40,23 +39,19 @@ public static class RunEndpoints
             return Results.Ok(new RunPageResponse(page, query.PageOrDefault, query.PageSizeOrDefault, matching.Count));
         });
 
-        // One year's Runs added up per calendar month, by local start; all twelve months, empty ones as zero.
-        app.MapGet("/api/runs/months", async (int? year, string? sportType, AppDbContext db, TimeProvider clock, CancellationToken cancellationToken) =>
+        // One year's Runs, road, trail and treadmill alike, added up per calendar month, by local start; all twelve
+        // months, empty ones as zero.
+        app.MapGet("/api/runs/months", async (int? year, AppDbContext db, TimeProvider clock, CancellationToken cancellationToken) =>
         {
             if (year is < 1900 or > 2099)
                 return Results.ValidationProblem(new Dictionary<string, string[]> { ["year"] = ["The year is between 1900 and 2099."] });
-            if (sportType is not null && !Run.IsRunningSportType(sportType))
-                return Results.ValidationProblem(new Dictionary<string, string[]>
-                {
-                    ["sportType"] = ["Only running sport types are listed: Run, TrailRun, VirtualRun."],
-                });
 
             var selectedYear = year ?? clock.GetLocalNow().Year;
             var runs = await db.Runs
-                .Select(r => new { r.SportType, r.StartLocal, r.Distance, r.MovingTime })
+                .Select(r => new { r.StartLocal, r.Distance, r.MovingTime })
                 .ToListAsync(cancellationToken);
             var byMonth = runs
-                .Where(r => r.StartLocal.Year == selectedYear && (sportType is null || r.SportType == sportType))
+                .Where(r => r.StartLocal.Year == selectedYear)
                 .ToLookup(r => r.StartLocal.Month);
             var months = Enumerable.Range(1, 12)
                 .Select(month =>
@@ -67,7 +62,6 @@ public static class RunEndpoints
                     return new MonthTotalsResponse(month, inMonth.Count, distance, movingTime, Run.PaceOf(movingTime, distance));
                 })
                 .ToList();
-            // Of any type, so the years to step through stay the same whatever the filter.
             int? firstYear = runs.Count == 0 ? null : runs.Min(r => r.StartLocal.Year);
             return Results.Ok(new RunMonthsResponse(selectedYear, firstYear, months));
         });
