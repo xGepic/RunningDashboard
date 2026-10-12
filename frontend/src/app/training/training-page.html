@@ -24,9 +24,6 @@
               <a class="link quiet" routerLink="/training">← Back to today</a>
             }
             <a class="link" [routerLink]="['/training/plan', block.goalRace.id]">Training Plan</a>
-            @if (upcomingRaceShown()) {
-              <button type="button" class="link quiet" (click)="editRace(block.goalRace.id)">Edit race</button>
-            }
           </div>
         </div>
       </section>
