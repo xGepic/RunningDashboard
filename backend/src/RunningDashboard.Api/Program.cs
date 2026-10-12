@@ -38,6 +38,7 @@ app.MapStravaAuthEndpoints();
 app.MapSyncEndpoints();
 app.MapRunEndpoints();
 app.MapOverviewEndpoints();
+app.MapYearlyGoalEndpoints();
 app.MapShoeEndpoints();
 app.MapRecordEndpoints();
 app.MapGoalRaceEndpoints();

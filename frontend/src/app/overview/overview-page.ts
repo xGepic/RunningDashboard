@@ -8,6 +8,7 @@ import { WeekDistance, categoryAxis, km, monthNames, shortWeekLabel, valueAxis, 
 import { formatDistance, formatPace } from '../shared/format';
 import { reloadOnSync } from '../sync/reload-on-sync';
 import { MonthPace, Overview, Totals, YearTotals } from './overview';
+import { YearlyGoalCard } from './yearly-goal-card';
 
 const wholeNumber = new Intl.NumberFormat('en', { maximumFractionDigits: 0 });
 
@@ -29,7 +30,7 @@ const kpiDefinitions: { label: string; unit: string; icon: string; of: (t: Total
 
 @Component({
   selector: 'app-overview-page',
-  imports: [DecimalPipe, NgxEchartsDirective],
+  imports: [DecimalPipe, NgxEchartsDirective, YearlyGoalCard],
   templateUrl: './overview-page.html',
   styleUrl: './overview-page.scss',
 })
@@ -69,6 +70,9 @@ export class OverviewPage {
       };
     });
   });
+
+  /** Metres run so far this year. */
+  protected readonly thisYearsDistance = computed(() => this.years().find((y) => y.year === this.thisYear)?.distance ?? 0);
 
   /** The years, newest first, each with its share of the longest year's distance. */
   protected readonly yearRows = computed(() => {
@@ -134,6 +138,11 @@ export class OverviewPage {
 
   constructor() {
     reloadOnSync(() => this.overview.reload());
+  }
+
+  /** The Yearly Goal was set, changed or removed. */
+  protected goalChanged(): void {
+    this.overview.reload();
   }
 
   protected formatWhole(value: number): string {

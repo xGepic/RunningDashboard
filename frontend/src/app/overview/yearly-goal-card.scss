@@ -1,0 +1,110 @@
+.goal {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+
+  .card-header {
+    margin: 0;
+  }
+}
+
+.goal-actions,
+.form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.none {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 13.5px;
+  }
+}
+
+.goal-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+
+  .field {
+    flex: 0 1 220px;
+  }
+
+  /* In line with the input, below the label. */
+  .form-actions {
+    margin-top: 21px;
+  }
+}
+
+.figures {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.done {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+
+  .value {
+    font-size: 38px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+
+  .of {
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 14px;
+  }
+}
+
+.percent {
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+
+/* The progress, with a tick where the even split of the goal is today. */
+.bar {
+  position: relative;
+
+  .track {
+    height: 10px;
+    border-radius: 5px;
+  }
+}
+
+.scheduled {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--text);
+}
+
+.met {
+  color: var(--met);
+}
+
+.short {
+  color: var(--error);
+}
+
+.error {
+  margin: 0;
+}

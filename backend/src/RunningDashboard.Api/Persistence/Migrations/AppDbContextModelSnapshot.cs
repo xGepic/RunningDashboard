@@ -244,6 +244,22 @@ namespace RunningDashboard.Api.Persistence.Migrations
                     b.ToTable("SyncStates");
                 });
 
+            modelBuilder.Entity("RunningDashboard.Api.Persistence.YearlyGoal", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("Distance")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("YearlyGoals");
+                });
+
             modelBuilder.Entity("RunningDashboard.Api.Persistence.BestEffort", b =>
                 {
                     b.HasOne("RunningDashboard.Api.Persistence.Run", null)

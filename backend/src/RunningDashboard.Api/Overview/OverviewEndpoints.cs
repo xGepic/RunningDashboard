@@ -13,7 +13,9 @@ public static class OverviewEndpoints
             var runs = await db.Runs
                 .Select(r => new RunFigures(r.StartLocal, r.Distance, r.MovingTime, r.ElevationGain))
                 .ToListAsync(cancellationToken);
-            return OverviewResponse.From(runs, DateOnly.FromDateTime(clock.GetLocalNow().DateTime));
+            var today = DateOnly.FromDateTime(clock.GetLocalNow().DateTime);
+            var goal = await db.GetYearlyGoalAsync(today.Year, cancellationToken);
+            return OverviewResponse.From(runs, goal is null ? null : YearlyGoalResponse.From(goal), today);
         });
     }
 
@@ -21,17 +23,19 @@ public static class OverviewEndpoints
 
     /// <param name="Weeks">Every Training Week from the first Run's up to the current one, empty weeks as zero.</param>
     /// <param name="Months">Every month from the first Run's up to the current one.</param>
+    /// <param name="YearlyGoal">The current year's; none without one.</param>
     private sealed record OverviewResponse(
         TotalsResponse Totals,
         IReadOnlyList<YearResponse> Years,
         IReadOnlyList<WeekResponse> Weeks,
-        IReadOnlyList<MonthResponse> Months)
+        IReadOnlyList<MonthResponse> Months,
+        YearlyGoalResponse? YearlyGoal)
     {
-        public static OverviewResponse From(IReadOnlyList<RunFigures> runs, DateOnly today)
+        public static OverviewResponse From(IReadOnlyList<RunFigures> runs, YearlyGoalResponse? yearlyGoal, DateOnly today)
         {
             var totals = TotalsResponse.Of(runs);
             if (runs.Count == 0)
-                return new OverviewResponse(totals, [], [], []);
+                return new OverviewResponse(totals, [], [], [], yearlyGoal);
 
             var years = runs
                 .GroupBy(r => r.StartLocal.Year)
@@ -60,7 +64,7 @@ public static class OverviewEndpoints
                 months.Add(new MonthResponse(month.Year, month.Month, distance, Run.PaceOf(inMonth.Sum(r => r.MovingTime), distance)));
             }
 
-            return new OverviewResponse(totals, years, weeks, months);
+            return new OverviewResponse(totals, years, weeks, months, yearlyGoal);
         }
 
         private static DateOnly Max(DateOnly a, DateOnly b) => a > b ? a : b;

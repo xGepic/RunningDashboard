@@ -106,3 +106,7 @@ _Avoid_: Goal (for weeks), quota
 **Running Days**:
 The days of a Training Week on which the Training Plan schedules Runs.
 _Avoid_: Training days, run days
+
+**Yearly Goal**:
+The distance the Athlete wants to run in the current calendar year. There is at most one; once its year is over, it no longer counts. Progress is measured against the goal spread evenly over the days of the year.
+_Avoid_: Annual target, mileage goal

@@ -8,6 +8,14 @@ export interface Overview {
   weeks: WeekDistance[];
   /** Every month from the first Run's up to the current one; months without Runs have no pace. */
   months: MonthPace[];
+  /** The current year's Yearly Goal; none without one. */
+  yearlyGoal: YearlyGoal | null;
+}
+
+/** The distance the Athlete wants to run in a calendar year, in metres. */
+export interface YearlyGoal {
+  year: number;
+  distance: number;
 }
 
 export interface Totals {

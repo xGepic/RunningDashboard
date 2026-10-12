@@ -13,6 +13,8 @@
     @if (overview.totals.runs === 0) {
       <div class="card empty-card"><p class="empty">No Runs yet. Connect Strava and sync to import them.</p></div>
     } @else {
+      <app-yearly-goal-card [goal]="overview.yearlyGoal" [distance]="thisYearsDistance()" (changed)="goalChanged()" />
+
       <section class="kpis" aria-label="All-time totals">
         @for (kpi of kpis(); track kpi.label) {
           <div class="card kpi">

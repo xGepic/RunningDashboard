@@ -1,0 +1,66 @@
+<section class="card goal" aria-labelledby="yearly-goal-title">
+  <div class="card-header">
+    <div class="titles">
+      <h2 id="yearly-goal-title" class="card-title">{{ year }} goal</h2>
+      <p class="card-sub">Schedule: the goal spread evenly over the days of the year</p>
+    </div>
+    @if (goal() && !editing()) {
+      <div class="goal-actions">
+        <button type="button" class="link" (click)="edit()">Edit</button>
+        <button type="button" class="link danger" (click)="remove()">Remove</button>
+      </div>
+    }
+  </div>
+
+  @if (editing()) {
+    <form class="goal-form" [formGroup]="form" (ngSubmit)="save()" novalidate>
+      <label class="field">
+        Distance (km)
+        <input class="mono" formControlName="km" inputmode="decimal" placeholder="e.g. 2000" [attr.aria-invalid]="!!errors()['km']" />
+        @for (error of errors()['km']; track error) {
+          <span class="field-error">{{ error }}</span>
+        }
+      </label>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" [disabled]="saving()">Save</button>
+        <button type="button" class="btn" (click)="cancel()">Cancel</button>
+      </div>
+    </form>
+  } @else if (!goal()) {
+    <div class="none">
+      <p>No distance goal for {{ year }} yet.</p>
+      <button type="button" class="btn btn-primary" (click)="edit()">Set a goal</button>
+    </div>
+  } @else if (progress(); as p) {
+    <div class="figures">
+      <p class="done">
+        <span class="value">{{ wholeKm(p.done) }}</span>
+        <span class="of">/ {{ wholeKm(p.goal) }} km</span>
+      </p>
+      <span class="percent mono">{{ p.percent | number: '1.0-0' }} %</span>
+    </div>
+
+    <div class="bar" role="img"
+         [attr.aria-label]="(p.percent | number: '1.0-0') + ' % of the goal done; by the schedule it would be ' + (p.schedulePercent | number: '1.0-0') + ' %'">
+      <div class="track"><span [style.width.%]="p.percent > 100 ? 100 : p.percent"></span></div>
+      <span class="scheduled" [style.left.%]="p.schedulePercent" title="Where the schedule is today"></span>
+    </div>
+
+    <div class="stats">
+      @if (p.remaining === 0) {
+        <div class="stat"><span class="label">Status</span><span class="value met">Goal reached</span></div>
+      } @else {
+        <div class="stat">
+          <span class="label">{{ p.ahead >= 0 ? 'Ahead of schedule' : 'Behind schedule' }}</span>
+          <span class="value" [class.met]="p.ahead >= 0" [class.short]="p.ahead < 0">{{ wholeKm(p.ahead < 0 ? -p.ahead : p.ahead) }} km</span>
+        </div>
+        <div class="stat"><span class="label">To go</span><span class="value">{{ wholeKm(p.remaining) }} km</span></div>
+        <div class="stat"><span class="label">Needed / week</span><span class="value">{{ oneDecimalKm(p.perWeek) }} km</span></div>
+      }
+    </div>
+  }
+
+  @for (error of errors()[formError]; track error) {
+    <p class="error" role="alert">{{ error }}</p>
+  }
+</section>

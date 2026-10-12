@@ -14,6 +14,12 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
     public DbSet<GoalRace> GoalRaces => Set<GoalRace>();
 
+    public DbSet<YearlyGoal> YearlyGoals => Set<YearlyGoal>();
+
+    /// <summary>The Yearly Goal for <paramref name="year"/>; none if none is set or it is for another year.</summary>
+    public Task<YearlyGoal?> GetYearlyGoalAsync(int year, CancellationToken cancellationToken) =>
+        YearlyGoals.SingleOrDefaultAsync(g => g.Year == year, cancellationToken);
+
     public Task<bool> IsStravaConnectedAsync(CancellationToken cancellationToken) =>
         StravaConnections.AnyAsync(cancellationToken);
 
@@ -56,6 +62,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         model.Entity<Split>(split => split.HasKey(s => new { s.RunId, s.Index }));
 
         model.Entity<SyncState>(state => state.Property(s => s.Id).ValueGeneratedNever());
+
+        model.Entity<YearlyGoal>(goal => goal.Property(g => g.Id).ValueGeneratedNever());
 
         model.Entity<Shoe>(shoe =>
         {
