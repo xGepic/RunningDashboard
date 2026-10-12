@@ -19,7 +19,6 @@ public static class TrainingEndpoints
         {
             var today = DateOnly.FromDateTime(clock.GetLocalNow().DateTime);
             var races = await db.GoalRaces.ToListAsync(cancellationToken);
-            var recoveryWeeks = TrainingCalendar.RecoveryWeeks(races);
             GoalRace? race;
             if (goalRaceId is not null)
             {
@@ -33,7 +32,7 @@ public static class TrainingEndpoints
                 if (race is null)
                 {
                     return TrainingCalendar.NextBlockRace(races, today) is { } next
-                        ? Results.Ok(new TrainingResponse("countdown", null, await CountdownAsync(next, today, recoveryWeeks, db, cancellationToken)))
+                        ? Results.Ok(new TrainingResponse("countdown", null, await CountdownAsync(next, today, db, cancellationToken)))
                         : Results.Ok(new TrainingResponse("none", null, null));
                 }
             }
@@ -42,12 +41,12 @@ public static class TrainingEndpoints
             if (rejected is not null)
                 return rejected;
 
-            var weeks = await WeeksAsync(race, today, recoveryWeeks, db, cancellationToken);
+            var weeks = await WeeksAsync(race, today, db, cancellationToken);
             var comparison = compared is null
                 ? null
                 : new ComparisonResponse(
                     GoalRaceResponse.From(compared),
-                    [.. TrainingCalendar.LineUp(weeks, await WeeksAsync(compared, today, recoveryWeeks, db, cancellationToken)).Select(w => LinedUpWeekResponse.From(w, race.TargetPace))]);
+                    [.. TrainingCalendar.LineUp(weeks, await WeeksAsync(compared, today, db, cancellationToken)).Select(w => LinedUpWeekResponse.From(w, race.TargetPace))]);
             return Results.Ok(new TrainingResponse(
                 "block",
                 new BlockResponse(
@@ -82,33 +81,22 @@ public static class TrainingEndpoints
     }
 
     /// <summary>The weeks of <paramref name="race"/>'s Training Block with what was run.</summary>
-    private static async Task<List<TrainingBlockWeek>> WeeksAsync(
-        GoalRace race,
-        DateOnly today,
-        IReadOnlySet<TrainingWeek> recoveryWeeks,
-        AppDbContext db,
-        CancellationToken cancellationToken)
+    private static async Task<List<TrainingBlockWeek>> WeeksAsync(GoalRace race, DateOnly today, AppDbContext db, CancellationToken cancellationToken)
     {
         var block = race.TrainingBlock;
-        var runs = await RunsAsync(TrainingCalendar.LookBackFrom(block.FirstWeek, recoveryWeeks).Start, block.End, db, cancellationToken);
-        return TrainingCalendar.WeeksOf(block, runs, today, race.TrainingPlan, recoveryWeeks);
+        var runs = await RunsAsync(block.Start, block.End, db, cancellationToken);
+        return TrainingCalendar.WeeksOf(block, runs, today, race.TrainingPlan);
     }
 
-    private static async Task<CountdownResponse> CountdownAsync(
-        GoalRace next,
-        DateOnly today,
-        IReadOnlySet<TrainingWeek> recoveryWeeks,
-        AppDbContext db,
-        CancellationToken cancellationToken)
+    private static async Task<CountdownResponse> CountdownAsync(GoalRace next, DateOnly today, AppDbContext db, CancellationToken cancellationToken)
     {
         var firstWeek = TrainingCalendar.FirstRecentWeek(today);
-        var runs = await RunsAsync(TrainingCalendar.LookBackFrom(firstWeek, recoveryWeeks).Start, today, db, cancellationToken);
+        var runs = await RunsAsync(firstWeek.Start, today, db, cancellationToken);
         return new CountdownResponse(
             GoalRaceResponse.From(next),
             next.TrainingBlock.Start,
             TrainingCalendar.DaysUntilBlock(next, today),
-            [.. TrainingCalendar.DistanceByWeek(firstWeek, TrainingWeek.Of(today), runs, recoveryWeeks)
-                .Select(w => new RecentWeekResponse(w.Week.Start, w.Distance, DistanceJumpResponse.From(w.DistanceJump)))]);
+            [.. TrainingCalendar.DistanceByWeek(firstWeek, TrainingWeek.Of(today), runs).Select(w => new RecentWeekResponse(w.Week.Start, w.Distance))]);
     }
 
     /// <summary>The Runs that started (local time) from <paramref name="firstDay"/> through <paramref name="lastDay"/>.</summary>
@@ -136,8 +124,7 @@ public static class TrainingEndpoints
 
     /// <param name="Start">The Monday.</param>
     /// <param name="Distance">Metres.</param>
-    /// <param name="DistanceJump">None unless the week is one; even the oldest is compared with the week before it.</param>
-    private sealed record RecentWeekResponse(DateOnly Start, double Distance, DistanceJumpResponse? DistanceJump);
+    private sealed record RecentWeekResponse(DateOnly Start, double Distance);
 
     /// <param name="TargetPace">
     /// Target Time ÷ Goal Race distance, in whole seconds per km rounded down; none without a Target Time.
@@ -198,13 +185,7 @@ public static class TrainingEndpoints
             week.Week.End,
             ApiNames.Of(week.Status),
             week.Actual is { } actual
-                ? new ActualResponse(
-                    actual.Runs,
-                    actual.Distance,
-                    actual.MovingTime,
-                    actual.RelativeEffort,
-                    LongRunResponse.From(actual.LongRun, targetPace),
-                    DistanceJumpResponse.From(actual.DistanceJump))
+                ? new ActualResponse(actual.Runs, actual.Distance, actual.MovingTime, actual.RelativeEffort, LongRunResponse.From(actual.LongRun, targetPace))
                 : null,
             week.Plan is { } plan
                 ? new PlanResponse(
@@ -214,8 +195,7 @@ public static class TrainingEndpoints
                     plan.PlannedLongRun,
                     plan.DistanceMet,
                     plan.LongRunMet,
-                    [.. plan.Days.Select(d => new DayResponse(d.Date, ApiNames.Of(d.State), d.RunType is { } runType ? ApiNames.Of(runType) : null))],
-                    DistanceJumpResponse.From(plan.DistanceJump))
+                    [.. plan.Days.Select(d => new DayResponse(d.Date, ApiNames.Of(d.State)))])
                 : null);
     }
 
@@ -228,10 +208,6 @@ public static class TrainingEndpoints
     /// </param>
     /// <param name="LongRunMet">Likewise for the Long Run.</param>
     /// <param name="Days">Monday to Sunday: the calendar strip.</param>
-    /// <param name="DistanceJump">
-    /// None unless the planned distance makes the week one, against the planned weeks before it. Separate from the
-    /// actual values' Distance Jump, in what was run.
-    /// </param>
     private sealed record PlanResponse(
         string Phase,
         bool RecoveryWeek,
@@ -239,29 +215,18 @@ public static class TrainingEndpoints
         double? PlannedLongRun,
         bool? DistanceMet,
         bool? LongRunMet,
-        IReadOnlyList<DayResponse> Days,
-        DistanceJumpResponse? DistanceJump);
+        IReadOnlyList<DayResponse> Days);
 
     /// <param name="State">
     /// "ran" (a Running Day with a Run), "missed" (a past Running Day without one), "unplanned" (a Run on another day),
     /// "planned" (a Running Day still to come) or "rest".
     /// </param>
-    /// <param name="RunType">
-    /// The Running Day's: "easy", "long", "tempo", "intervals" or "race"; none for a rest day or a Run on an unplanned day.
-    /// </param>
-    private sealed record DayResponse(DateOnly Date, string State, string? RunType);
+    private sealed record DayResponse(DateOnly Date, string State);
 
     /// <param name="Distance">Metres.</param>
     /// <param name="MovingTime">Seconds.</param>
     /// <param name="RelativeEffort">Sum over the week's Runs; none if no Run has one.</param>
-    /// <param name="DistanceJump">None unless the week's distance so far makes it one.</param>
-    private sealed record ActualResponse(
-        int Runs,
-        double Distance,
-        int MovingTime,
-        double? RelativeEffort,
-        LongRunResponse? LongRun,
-        DistanceJumpResponse? DistanceJump);
+    private sealed record ActualResponse(int Runs, double Distance, int MovingTime, double? RelativeEffort, LongRunResponse? LongRun);
 
     /// <param name="Distance">Metres.</param>
     /// <param name="Pace">Seconds per km.</param>
@@ -278,11 +243,4 @@ public static class TrainingEndpoints
             return new LongRunResponse(run.Id, run.Name, run.StartLocal, run.Distance, pace, TrainingCalendar.PaceVsTarget(pace, targetPace));
         }
     }
-}
-
-/// <param name="ComparedWith">The Monday of the week compared with.</param>
-/// <param name="Increase">The ratio of the distances minus one: 0.2 for 20% up.</param>
-internal sealed record DistanceJumpResponse(DateOnly ComparedWith, double Increase)
-{
-    public static DistanceJumpResponse? From(DistanceJump? jump) => jump is null ? null : new(jump.ComparedWith.Start, jump.Increase);
 }

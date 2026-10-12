@@ -14,8 +14,6 @@ export interface ChartColors {
   background: string;
   tooltip: string;
   tooltipBorder: string;
-  /** For warnings, such as a Distance Jump. */
-  warning: string;
   fontMono: string;
 }
 
@@ -39,7 +37,6 @@ export class ChartTheme {
       background: token('--background'),
       tooltip: token('--tooltip'),
       tooltipBorder: token('--border-hover'),
-      warning: token('--amber'),
       fontMono: token('--mono'),
     };
   });

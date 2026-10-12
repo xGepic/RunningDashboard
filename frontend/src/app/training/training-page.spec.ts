@@ -2,8 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { RunType } from '../goal-races/training-plan';
-import { DayState, Training, TrainingBlockWeek, WeekPlan } from './training';
+import { Training, TrainingBlockWeek, WeekPlan } from './training';
 import { TrainingPage } from './training-page';
 
 /** Weeks −11 to −9 of the second marathon's planned block, on Wed 10 Mar 2027. */
@@ -18,15 +17,15 @@ const training: Training = {
     weeks: [
       week(-11, '2027-03-01', 'past', 32000, {
         distanceMet: true,
-        days: ['rest', 'ran easy', 'rest', 'ran tempo', 'rest', 'rest', 'ran long'],
+        days: ['rest', 'ran', 'rest', 'ran', 'rest', 'rest', 'ran'],
       }),
       week(-10, '2027-03-08', 'current', 8000, {
-        days: ['rest', 'ran easy', 'rest', 'planned tempo', 'rest', 'unplanned', 'planned long'],
+        days: ['rest', 'ran', 'rest', 'planned', 'rest', 'unplanned', 'planned'],
       }),
       week(-9, '2027-03-15', 'future', null, {
         recoveryWeek: true,
         plannedDistance: 24000,
-        days: ['rest', 'planned easy', 'rest', 'rest', 'rest', 'rest', 'planned long'],
+        days: ['rest', 'planned', 'rest', 'rest', 'rest', 'rest', 'planned'],
       }),
     ],
   },
@@ -37,8 +36,7 @@ function week(
   start: string,
   status: TrainingBlockWeek['status'],
   distance: number | null,
-  /** Each day as its state, followed by its Run Type on a Running Day: "ran long". */
-  plan: Partial<Omit<WeekPlan, 'days'>> & { days: (DayState | `${DayState} ${RunType}`)[] },
+  plan: Partial<Omit<WeekPlan, 'days'>> & { days: WeekPlan['days'][number]['state'][] },
 ): TrainingBlockWeek {
   const monday = new Date(start);
   const day = (i: number) => new Date(monday.getTime() + i * 86_400_000).toISOString().slice(0, 10);
@@ -47,7 +45,7 @@ function week(
     start,
     end: day(6),
     status,
-    actual: distance === null ? null : { runs: 3, distance, movingTime: 11520, relativeEffort: null, longRun: null, distanceJump: null },
+    actual: distance === null ? null : { runs: 3, distance, movingTime: 11520, relativeEffort: null, longRun: null },
     plan: {
       phase: 'peak',
       recoveryWeek: false,
@@ -55,12 +53,8 @@ function week(
       plannedLongRun: null,
       distanceMet: null,
       longRunMet: null,
-      distanceJump: null,
       ...plan,
-      days: plan.days.map((written, i) => {
-        const [state, runType] = written.split(' ') as [DayState, RunType?];
-        return { date: day(i), state, runType: runType ?? null };
-      }),
+      days: plan.days.map((state, i) => ({ date: day(i), state })),
     },
   };
 }
@@ -108,40 +102,6 @@ describe('TrainingPage', () => {
     expect(states(-11)).toEqual(['rest', 'ran', 'rest', 'ran', 'rest', 'rest', 'ran']);
     expect(states(-10)).toEqual(['rest', 'ran', 'rest', 'planned', 'rest', 'unplanned', 'planned']);
     expect(row(element, -10).textContent).toContain('Saturday: run on an unplanned day');
-  });
-
-  it("labels each Running Day of the strip with its Run Type, named in full on hover", async () => {
-    const { element } = await render();
-
-    const days = [...row(element, -10).querySelectorAll('.strip li')];
-    expect(days.map((day) => day.querySelector('.run-type')?.textContent ?? '')).toEqual(['', 'E', '', 'T', '', '', 'L']);
-    expect(days[6].getAttribute('title')).toBe('Sun 14 Mar: Long, still to come');
-    expect(days[6].textContent).toContain('Sunday: Long, still to come');
-    expect(days[5].getAttribute('title')).toBe('Sat 13 Mar: run on an unplanned day');
-    expect(days[0].getAttribute('title')).toBe('Mon 8 Mar: rest day');
-  });
-
-  it('marks a week whose distance is a Distance Jump, with the increase and the week compared with on hover', async () => {
-    const jumped = structuredClone(training);
-    jumped.block!.weeks[1].actual!.distanceJump = { comparedWith: '2027-03-01', increase: 0.2 };
-    const { element } = await render(jumped);
-
-    const marker = row(element, -10).querySelector('.jump-marker');
-    expect(marker?.getAttribute('title')).toBe('Distance Jump: +20% on the week of 1 Mar 2027');
-    expect(marker?.textContent).toContain('Distance Jump: +20% on the week of 1 Mar 2027');
-    expect(row(element, -11).querySelector('.jump-marker')).toBeNull();
-  });
-
-  it('marks a planned Distance Jump apart from one in what was run', async () => {
-    const jumped = structuredClone(training);
-    jumped.block!.weeks[2].plan!.distanceJump = { comparedWith: '2027-03-08', increase: 0.2 };
-    const { element } = await render(jumped);
-
-    const marker = row(element, -9).querySelector('.planned-jump-marker');
-    expect(marker?.getAttribute('title')).toBe('Planned Distance Jump: +20% on the week of 8 Mar 2027');
-    expect(marker?.textContent).toContain('Planned Distance Jump: +20% on the week of 8 Mar 2027');
-    expect(row(element, -9).querySelector('.jump-marker')).toBeNull();
-    expect(row(element, -10).querySelector('.planned-jump-marker')).toBeNull();
   });
 
   it('marks each of its weeks with the Phase', async () => {

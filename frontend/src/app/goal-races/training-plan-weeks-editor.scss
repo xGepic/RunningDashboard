@@ -3,7 +3,7 @@
 }
 
 .data-table {
-  min-width: 1240px;
+  min-width: 960px;
 
   td {
     padding-top: 10px;
@@ -52,27 +52,28 @@ input.long-run {
 }
 
 .day {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-}
-
-.initial {
-  color: var(--text-muted);
-  font-size: 11px;
-}
-
-.day select {
-  width: 5.25rem;
+  width: 28px;
   height: 28px;
-  padding: 0 4px 0 6px;
-  border-color: var(--accent);
-  font-size: 12px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: var(--inset);
+  color: var(--text-muted);
+  font-size: 11.5px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 
-  &.rest {
-    border-color: var(--border-strong);
-    color: var(--text-muted);
+  &:hover {
+    color: var(--text);
+  }
+
+  &[aria-pressed='true'] {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--on-accent);
+    font-weight: 600;
   }
 }
 
@@ -80,13 +81,6 @@ input.long-run {
   height: auto;
   padding: 4px 8px;
   text-align: left;
-}
-
-.jump {
-  display: block;
-  max-width: 11rem;
-  margin-top: 4px;
-  font-size: 11.5px;
 }
 
 .field-error {

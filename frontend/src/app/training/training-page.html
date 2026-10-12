@@ -116,18 +116,11 @@
             <span class="swatch phase-build"></span> Build
             <span class="swatch phase-peak"></span> Peak
             <span class="swatch phase-taper"></span> Taper
-            <span class="legend-group">Running Days:</span>
+            <span class="running-days">Running Days:</span>
             <span class="day ran"></span> run as planned
             <span class="day missed"></span> missed
             <span class="day unplanned"></span> run on an unplanned day
             <span class="day planned"></span> still to come
-            <span class="legend-group">Run Types:</span>
-            @for (runType of runTypes; track runType.type) {
-              <span class="run-type-key">{{ runType.letter }}</span> {{ runType.name }}
-            }
-            <span class="legend-group">Distance Jumps:</span>
-            <span class="jump-marker">▲</span> in what was run
-            <span class="planned-jump-marker">△</span> in the plan
           </p>
         }
 
@@ -186,13 +179,8 @@
                       @if (row.viewed?.plan; as plan) {
                         <ol class="strip" [attr.aria-label]="'Running Days of the week from ' + (row.viewed!.start | date: 'd MMM')">
                           @for (day of plan.days; track day.date) {
-                            @let runType = day.runType ? runTypeByType[day.runType] : null;
-                            @let described = (runType ? runType.name + ', ' : '') + dayStates[day.state];
-                            <li [class]="'day ' + day.state" [title]="(day.date | date: 'EEE d MMM') + ': ' + described">
-                              @if (runType) {
-                                <span class="run-type" aria-hidden="true">{{ runType.letter }}</span>
-                              }
-                              <span class="visually-hidden">{{ day.date | date: 'EEEE' }}: {{ described }}</span>
+                            <li [class]="'day ' + day.state" [title]="(day.date | date: 'EEE d MMM') + ': ' + dayStates[day.state]">
+                              <span class="visually-hidden">{{ day.date | date: 'EEEE' }}: {{ dayStates[day.state] }}</span>
                             </li>
                           }
                         </ol>
@@ -225,11 +213,7 @@
         @if (week?.actual; as actual) {
           <td class="number" [class.compared]="compared" [title]="compared ? 'Week of ' + (week.start | date: 'd MMM y') : ''">
             <span [class]="metClass(plan?.distanceMet)">{{ formatDistance(actual.distance) }}</span>
-            @if (actual.distanceJump) {
-              @let note = distanceJumpNote(actual.distanceJump);
-              <span class="jump-marker" [title]="note"><span aria-hidden="true">▲</span><span class="visually-hidden">{{ note }}</span></span>
-            }
-            <ng-container *ngTemplateOutlet="planned; context: { $implicit: plan?.plannedDistance, jump: plan?.distanceJump }" />
+            <ng-container *ngTemplateOutlet="planned; context: { $implicit: plan?.plannedDistance }" />
           </td>
           <td class="number" [class.compared]="compared">{{ formatDuration(actual.movingTime) }}</td>
           <td class="number" [class.compared]="compared">{{ actual.relativeEffort === null ? '–' : (actual.relativeEffort | number: '1.0-0') }}</td>
@@ -248,7 +232,7 @@
         } @else {
           <td class="number" [class.compared]="compared">
             –
-            <ng-container *ngTemplateOutlet="planned; context: { $implicit: plan?.plannedDistance, jump: plan?.distanceJump }" />
+            <ng-container *ngTemplateOutlet="planned; context: { $implicit: plan?.plannedDistance }" />
           </td>
           <td class="number" [class.compared]="compared">–</td>
           <td class="number" [class.compared]="compared">–</td>
@@ -259,16 +243,10 @@
         }
       </ng-template>
 
-      <!-- What the plan has: a planned distance or Long Run, if any, and whether the planned distance is a Distance Jump. -->
-      <ng-template #planned let-distance let-jump="jump">
+      <!-- What the plan has: a planned distance or Long Run, if any. -->
+      <ng-template #planned let-distance>
         @if (distance != null) {
-          <span class="planned">
-            planned {{ formatDistance(distance) }}
-            @if (jump) {
-              @let note = 'Planned ' + distanceJumpNote(jump);
-              <span class="planned-jump-marker" [title]="note"><span aria-hidden="true">△</span><span class="visually-hidden">{{ note }}</span></span>
-            }
-          </span>
+          <span class="planned">planned {{ formatDistance(distance) }}</span>
         }
       </ng-template>
     } @else if (training.countdown; as countdown) {
@@ -291,14 +269,10 @@
           <summary>Show as table</summary>
           <div class="table-box">
             <table class="data-table recent">
-              <thead><tr><th>Week starting</th><th class="number">Distance</th><th>Distance Jump</th></tr></thead>
+              <thead><tr><th>Week starting</th><th class="number">Distance</th></tr></thead>
               <tbody>
                 @for (week of countdown.recentWeeks; track week.start) {
-                  <tr>
-                    <td class="muted">{{ weekLabel(week.start) }}</td>
-                    <td class="number">{{ formatDistance(week.distance) }}</td>
-                    <td class="jump">{{ distanceJumpNote(week.distanceJump) }}</td>
-                  </tr>
+                  <tr><td class="muted">{{ weekLabel(week.start) }}</td><td class="number">{{ formatDistance(week.distance) }}</td></tr>
                 }
               </tbody>
             </table>

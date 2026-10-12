@@ -57,14 +57,6 @@ _Avoid_: PR, record
 A week from Monday to Sunday, the unit used for totals and charts.
 _Avoid_: Calendar week, rolling 7 days
 
-**Streak**:
-The number of consecutive Training Weeks with at least one Run, counting back from the latest one. The current Training Week adds to it once it has a Run, and only breaks it once its Sunday has passed without one.
-_Avoid_: Run streak, daily streak
-
-**Distance Jump**:
-A Training Week whose distance is more than 10% above that of the week it is compared with: the previous Training Week, or, if that was a Recovery Week, the last week before it that was not. There is none if that week had no Runs. Planned weeks are compared with planned weeks (by their Weekly Target), and run weeks with run weeks.
-_Avoid_: Load warning, spike, overload
-
 **Relative Effort**:
 Strava's heart-rate-based score for how hard a Run was. Summing it over a week gives the week's training load.
 _Avoid_: Suffer score, load (on its own)
@@ -112,12 +104,8 @@ The planned distance and planned Long Run for one Training Week.
 _Avoid_: Goal (for weeks), quota
 
 **Running Days**:
-The days of a Training Week on which the Training Plan schedules Runs. Each Running Day has a Run Type; a day without one is a rest day. A Running Day counts as run if there is any Run on that date, whatever its distance.
+The days of a Training Week on which the Training Plan schedules Runs.
 _Avoid_: Training days, run days
-
-**Run Type**:
-What a Running Day is planned for: Easy, Long, Tempo, Intervals or Race. The list is fixed. It only says what was intended: actual Runs are never given a Run Type, and the Long Run of a week is still its longest Run, whichever day was planned as Long.
-_Avoid_: Workout, session, workout type
 
 **Yearly Goal**:
 The distance the Athlete wants to run in the current calendar year. There is at most one; once its year is over, it no longer counts. Progress is measured against the goal spread evenly over the days of the year.

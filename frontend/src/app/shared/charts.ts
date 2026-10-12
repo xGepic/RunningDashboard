@@ -7,24 +7,6 @@ export const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug
 export interface WeekDistance {
   start: string;
   distance: number;
-  /** None if the week is not one, or where Distance Jumps are not given. */
-  distanceJump?: DistanceJump | null;
-}
-
-/** A Training Week more than 10% above the week it is compared with. A warning only. */
-export interface DistanceJump {
-  /** The Monday of the week compared with, yyyy-MM-dd. */
-  comparedWith: string;
-  /** The ratio of the distances minus one: 0.2 for 20% up. */
-  increase: number;
-}
-
-/** "Distance Jump: +12.5% on the week of 7 Sep 2026"; empty for a week that is not one. */
-export function distanceJumpNote(jump: DistanceJump | null | undefined): string {
-  if (!jump) return '';
-  // A Distance Jump is more than 10% up, so it never reads as +10%, even when it is just over.
-  const percent = Math.max(Number((jump.increase * 100).toFixed(1)), 10.1);
-  return `Distance Jump: +${percent}% on the week of ${weekLabel(jump.comparedWith)}`;
 }
 
 /** "5 Oct 2026" for the Training Week starting Monday 2026-10-05. */
@@ -84,7 +66,7 @@ export function weeklyDistanceChart(weeks: WeekDistance[], colors: ChartColors):
       formatter: (params: { dataIndex: number }[]) => {
         const week = weeks[params[0]?.dataIndex];
         if (!week) return '';
-        return tooltipHtml(colors, `Week of ${weekLabel(week.start)}`, (week.distance / 1000).toFixed(1), 'km', distanceJumpNote(week.distanceJump));
+        return tooltipHtml(colors, `Week of ${weekLabel(week.start)}`, (week.distance / 1000).toFixed(1), 'km');
       },
     },
     xAxis: categoryAxis(weeks.map((w) => shortWeekLabel(w.start)), colors),
@@ -92,10 +74,7 @@ export function weeklyDistanceChart(weeks: WeekDistance[], colors: ChartColors):
     series: [
       {
         type: 'bar',
-        data: weeks.map((w) => {
-          const value = Math.round(w.distance / 100) / 10;
-          return w.distanceJump ? { value, itemStyle: { color: colors.warning } } : value;
-        }),
+        data: weeks.map((w) => Math.round(w.distance / 100) / 10),
         barMaxWidth: weeks.length > 12 ? 24 : 56,
         barCategoryGap: weeks.length > 12 ? '18%' : '28%',
         itemStyle: { color: barGradient(colors), borderRadius: [3, 3, 1, 1] },

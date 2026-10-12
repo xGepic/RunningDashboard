@@ -10,18 +10,9 @@ const plan: TrainingPlan = {
   length: 16,
   phases: [],
   weeks: [
-    week(-2, '2027-05-03', {
-      plannedDistance: 45000,
-      plannedLongRun: 18000,
-      runningDays: [
-        { day: 'tuesday', runType: 'easy' },
-        { day: 'thursday', runType: 'tempo' },
-        { day: 'sunday', runType: 'long' },
-      ],
-      recoveryWeek: true,
-    }),
+    week(-2, '2027-05-03', { plannedDistance: 45000, plannedLongRun: 18000, runningDays: ['tuesday', 'thursday', 'sunday'], recoveryWeek: true }),
     week(-1, '2027-05-10', {}),
-    week(0, '2027-05-17', { plannedDistance: 55000, plannedLongRun: 42195, runningDays: [{ day: 'sunday', runType: 'race' }] }),
+    week(0, '2027-05-17', { plannedDistance: 55000, plannedLongRun: 42195, runningDays: ['sunday'] }),
   ],
 };
 
@@ -35,19 +26,18 @@ function week(weeksToRace: number, start: string, planned: Partial<TrainingPlanW
     plannedLongRun: null,
     runningDays: [],
     recoveryWeek: false,
-    distanceJump: null,
     ...planned,
   };
 }
 
 describe('TrainingPlanWeeksEditor', () => {
-  async function render(initial = plan) {
+  async function render() {
     TestBed.configureTestingModule({
       imports: [TrainingPlanWeeksEditor],
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });
     const fixture = TestBed.createComponent(TrainingPlanWeeksEditor);
-    fixture.componentRef.setInput('plan', initial);
+    fixture.componentRef.setInput('plan', plan);
     await fixture.whenStable();
     const element = fixture.nativeElement as HTMLElement;
     const row = (weeksToRace: number) => element.querySelector(`tr[data-weeks-to-race="${weeksToRace}"]`) as HTMLElement;
@@ -62,17 +52,10 @@ describe('TrainingPlanWeeksEditor', () => {
       expect(request.request.method).toBe('PUT');
       return request.request.body as TrainingPlanWeeksRequest;
     };
-    /** Picks a Run Type, or "rest", for a day of a week. */
-    const pick = async (weeksToRace: number, day: string, runType: string) => {
-      const select = row(weeksToRace).querySelector(`select[aria-label="${day}"]`) as HTMLSelectElement;
-      select.value = runType;
-      select.dispatchEvent(new Event('change'));
-      await fixture.whenStable();
-    };
-    return { fixture, element, row, click, save, pick };
+    return { fixture, element, row, click, save };
   }
 
-  it('copies the planned distance, Long Run and Running Days with their Run Types from the week above, but not the Recovery Week', async () => {
+  it('copies the planned distance, Long Run and Running Days from the week above, but not the Recovery Week', async () => {
     const { row, click, save } = await render();
 
     await click(row(-1).querySelector('button.copy'));
@@ -82,34 +65,10 @@ describe('TrainingPlanWeeksEditor', () => {
       weeksToRace: -1,
       plannedDistance: 45000,
       plannedLongRun: 18000,
-      runningDays: [
-        { day: 'tuesday', runType: 'easy' },
-        { day: 'thursday', runType: 'tempo' },
-        { day: 'sunday', runType: 'long' },
-      ],
+      runningDays: ['tuesday', 'thursday', 'sunday'],
       recoveryWeek: false,
     });
     expect((row(-1).querySelector('input.distance') as HTMLInputElement).value).toBe('45');
-    expect((row(-1).querySelector('select[aria-label="Thursday"]') as HTMLSelectElement).value).toBe('tempo');
-  });
-
-  it('warns about planned Distance Jumps of the last saved plan, without holding up saving', async () => {
-    const jumped: TrainingPlan = {
-      ...plan,
-      weeks: plan.weeks.map((w) => (w.weeksToRace === 0 ? { ...w, distanceJump: { comparedWith: '2027-05-03', increase: 0.22 } } : w)),
-    };
-    const { fixture, row, click, element } = await render(jumped);
-
-    expect(row(0).querySelector('.jump')?.textContent).toContain('Distance Jump: +22% on the week of 3 May 2027');
-    expect(row(-1).querySelector('.jump')).toBeNull();
-
-    // Saving goes ahead, and the warning follows what was saved.
-    await click(element.querySelector('button.save'));
-    TestBed.inject(HttpTestingController).expectOne('/api/goal-races/7/training-plan/weeks').flush(plan);
-    fixture.componentRef.setInput('plan', plan);
-    await fixture.whenStable();
-
-    expect(row(0).querySelector('.jump')).toBeNull();
   });
 
   it('offers no copy on the first week of the plan', async () => {
@@ -118,27 +77,17 @@ describe('TrainingPlanWeeksEditor', () => {
     expect(row(-2).querySelector('button.copy')).toBeNull();
   });
 
-  it('shows each day as its Run Type or rest', async () => {
-    const { row } = await render();
-    const shown = (day: string) => (row(-2).querySelector(`select[aria-label="${day}"]`) as HTMLSelectElement).value;
+  it('toggles Running Days on and off and sends them Monday first', async () => {
+    const { row, click, save } = await render();
+    const day = (name: string) => row(-2).querySelector(`button[aria-label="${name}"]`);
 
-    expect(['Monday', 'Tuesday', 'Thursday', 'Sunday'].map(shown)).toEqual(['rest', 'easy', 'tempo', 'long']);
-  });
+    await click(day('Saturday'));
+    await click(day('Monday'));
+    await click(day('Thursday'));
 
-  it('picks a Run Type or rest per day and sends the Running Days Monday first', async () => {
-    const { pick, save } = await render();
-
-    await pick(-2, 'Saturday', 'long');
-    await pick(-2, 'Monday', 'intervals');
-    await pick(-2, 'Thursday', 'rest');
-    await pick(-2, 'Tuesday', 'race');
-
-    expect((await save()).weeks[0].runningDays).toEqual([
-      { day: 'monday', runType: 'intervals' },
-      { day: 'tuesday', runType: 'race' },
-      { day: 'saturday', runType: 'long' },
-      { day: 'sunday', runType: 'long' },
-    ]);
+    expect(day('Monday')?.getAttribute('aria-pressed')).toBe('true');
+    expect(day('Thursday')?.getAttribute('aria-pressed')).toBe('false');
+    expect((await save()).weeks[0].runningDays).toEqual(['monday', 'tuesday', 'saturday', 'sunday']);
   });
 
   it('sends typed kilometres as metres, and nothing for empty fields', async () => {

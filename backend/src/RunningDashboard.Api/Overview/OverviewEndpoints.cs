@@ -15,8 +15,7 @@ public static class OverviewEndpoints
                 .ToListAsync(cancellationToken);
             var today = DateOnly.FromDateTime(clock.GetLocalNow().DateTime);
             var goal = await db.GetYearlyGoalAsync(today.Year, cancellationToken);
-            var recoveryWeeks = TrainingCalendar.RecoveryWeeks(await db.GoalRaces.ToListAsync(cancellationToken));
-            return OverviewResponse.From(runs, goal is null ? null : YearlyGoalResponse.From(goal), recoveryWeeks, today);
+            return OverviewResponse.From(runs, goal is null ? null : YearlyGoalResponse.From(goal), today);
         });
     }
 
@@ -25,26 +24,18 @@ public static class OverviewEndpoints
     /// <param name="Weeks">Every Training Week from the first Run's up to the current one, empty weeks as zero.</param>
     /// <param name="Months">Every month from the first Run's up to the current one.</param>
     /// <param name="YearlyGoal">The current year's; none without one.</param>
-    /// <param name="Days">Every local date with Runs, oldest first.</param>
-    /// <param name="Streak">The current and the longest Streak, over the whole history.</param>
     private sealed record OverviewResponse(
         TotalsResponse Totals,
         IReadOnlyList<YearResponse> Years,
         IReadOnlyList<WeekResponse> Weeks,
         IReadOnlyList<MonthResponse> Months,
-        YearlyGoalResponse? YearlyGoal,
-        IReadOnlyList<DayResponse> Days,
-        StreakResponse Streak)
+        YearlyGoalResponse? YearlyGoal)
     {
-        public static OverviewResponse From(
-            IReadOnlyList<RunFigures> runs,
-            YearlyGoalResponse? yearlyGoal,
-            IReadOnlySet<TrainingWeek> recoveryWeeks,
-            DateOnly today)
+        public static OverviewResponse From(IReadOnlyList<RunFigures> runs, YearlyGoalResponse? yearlyGoal, DateOnly today)
         {
             var totals = TotalsResponse.Of(runs);
             if (runs.Count == 0)
-                return new OverviewResponse(totals, [], [], [], yearlyGoal, [], new StreakResponse(0, null));
+                return new OverviewResponse(totals, [], [], [], yearlyGoal);
 
             var years = runs
                 .GroupBy(r => r.StartLocal.Year)
@@ -57,9 +48,8 @@ public static class OverviewEndpoints
                 .ToDictionary(g => g.Key, g => g.Sum(r => r.Distance));
             var firstWeek = distanceByWeek.Keys.Min(w => w.Start);
             var lastWeek = Max(distanceByWeek.Keys.Max(w => w.Start), TrainingWeek.Of(today).Start);
-            var jumps = TrainingCalendar.RunWeekDistanceJumps(new TrainingWeek(firstWeek), new TrainingWeek(lastWeek), distanceByWeek, recoveryWeeks);
             var weeks = TrainingWeek.Range(new TrainingWeek(firstWeek), new TrainingWeek(lastWeek))
-                .Select(w => new WeekResponse(w.Start, distanceByWeek.GetValueOrDefault(w), DistanceJumpResponse.From(jumps[w])))
+                .Select(w => new WeekResponse(w.Start, distanceByWeek.GetValueOrDefault(w)))
                 .ToList();
 
             var byMonth = runs.ToLookup(r => new DateOnly(r.StartLocal.Year, r.StartLocal.Month, 1));
@@ -74,21 +64,7 @@ public static class OverviewEndpoints
                 months.Add(new MonthResponse(month.Year, month.Month, distance, Run.PaceOf(inMonth.Sum(r => r.MovingTime), distance)));
             }
 
-            // By the local start date, the same that decides a Run's Training Week.
-            var days = runs
-                .GroupBy(r => DateOnly.FromDateTime(r.StartLocal))
-                .OrderBy(g => g.Key)
-                .Select(g => new DayResponse(g.Key, g.Sum(r => r.Distance)))
-                .ToList();
-
-            // Up to the current week, so both Streaks look at the same weeks.
-            var currentWeek = TrainingWeek.Of(today);
-            var weeksWithRuns = distanceByWeek.Keys.Where(w => w.Start <= currentWeek.Start).ToHashSet();
-            var streak = new StreakResponse(
-                TrainingCalendar.CurrentStreak(weeksWithRuns, currentWeek),
-                LongestStreakResponse.From(TrainingCalendar.LongestStreak(weeksWithRuns)));
-
-            return new OverviewResponse(totals, years, weeks, months, yearlyGoal, days, streak);
+            return new OverviewResponse(totals, years, weeks, months, yearlyGoal);
         }
 
         private static DateOnly Max(DateOnly a, DateOnly b) => a > b ? a : b;
@@ -111,25 +87,8 @@ public static class OverviewEndpoints
     }
 
     /// <param name="Start">The Monday of the Training Week.</param>
-    /// <param name="DistanceJump">None unless the week is one.</param>
-    private sealed record WeekResponse(DateOnly Start, double Distance, DistanceJumpResponse? DistanceJump);
+    private sealed record WeekResponse(DateOnly Start, double Distance);
 
     /// <param name="Pace">Seconds per kilometre over all of the month's Runs; none without Runs.</param>
     private sealed record MonthResponse(int Year, int Month, double Distance, double? Pace);
-
-    /// <param name="Distance">Metres run that day, all its Runs together.</param>
-    private sealed record DayResponse(DateOnly Date, double Distance);
-
-    /// <param name="Current">Training Weeks; 0 without Runs.</param>
-    /// <param name="Longest">None without Runs.</param>
-    private sealed record StreakResponse(int Current, LongestStreakResponse? Longest);
-
-    /// <param name="Weeks">Training Weeks.</param>
-    /// <param name="First">The Monday of its first Training Week.</param>
-    /// <param name="Last">The Monday of its last Training Week.</param>
-    private sealed record LongestStreakResponse(int Weeks, DateOnly First, DateOnly Last)
-    {
-        public static LongestStreakResponse? From(Streak? streak) =>
-            streak is null ? null : new(streak.Weeks, streak.First.Start, streak.Last.Start);
-    }
 }

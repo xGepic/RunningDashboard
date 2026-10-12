@@ -87,50 +87,6 @@ public sealed class OverviewTests
     }
 
     [Test]
-    public async Task Each_day_with_runs_has_its_total_distance_and_a_double_is_added_up()
-    {
-        var browser = await _app.ConnectWithActivitiesAsync(
-            new TestActivity(1, "Morning", new DateTime(2026, 9, 15, 7, 0, 0), 8000, 2900),
-            new TestActivity(2, "Evening", new DateTime(2026, 9, 15, 19, 0, 0), 5000, 1800),
-            new TestActivity(3, "Long run", new DateTime(2026, 9, 20, 9, 0, 0), 20000, 7200));
-
-        var overview = await GetOverviewAsync(browser);
-
-        // Days without Runs are left out.
-        overview.Days.ShouldBe([new DayResponse(new DateOnly(2026, 9, 15), 13000), new DayResponse(new DateOnly(2026, 9, 20), 20000)]);
-    }
-
-    [Test]
-    public async Task A_run_after_midnight_or_abroad_counts_on_the_date_where_it_was_run()
-    {
-        var browser = await _app.ConnectWithActivitiesAsync(
-            // Still Sunday 22:10 in UTC.
-            new TestActivity(1, "Monday just after midnight", new DateTime(2026, 9, 28, 0, 10, 0), 5000, 1800),
-            // Already Monday 03:30 in UTC.
-            new TestActivity(2, "Central Park", new DateTime(2026, 8, 2, 23, 30, 0), 8000, 2900, UtcOffsetHours: -4));
-
-        var overview = await GetOverviewAsync(browser);
-
-        overview.Days.ShouldBe([new DayResponse(new DateOnly(2026, 8, 2), 8000), new DayResponse(new DateOnly(2026, 9, 28), 5000)]);
-    }
-
-    [Test]
-    public async Task Days_keep_their_own_year_where_a_training_week_spans_new_year()
-    {
-        // The Training Week of Mon 29 Dec 2025 to Sun 4 Jan 2026.
-        var browser = await _app.ConnectWithActivitiesAsync(
-            new TestActivity(1, "New Year's Eve run", new DateTime(2025, 12, 31, 15, 0, 0), 5000, 1800, UtcOffsetHours: 1),
-            new TestActivity(2, "New Year's run", new DateTime(2026, 1, 1, 0, 30, 0), 10000, 3600, UtcOffsetHours: 1),
-            new TestActivity(3, "First Sunday", new DateTime(2026, 1, 4, 10, 0, 0), 12000, 4300, UtcOffsetHours: 1));
-
-        var overview = await GetOverviewAsync(browser);
-
-        overview.Days.ShouldBe(
-            [new DayResponse(new DateOnly(2025, 12, 31), 5000), new DayResponse(new DateOnly(2026, 1, 1), 10000), new DayResponse(new DateOnly(2026, 1, 4), 12000)]);
-        DistanceInWeek(overview, new DateOnly(2025, 12, 29)).ShouldBe(27000);
-    }
-
-    [Test]
     public async Task Without_runs_the_overview_is_empty()
     {
         var browser = _app.CreateBrowser();
@@ -141,7 +97,6 @@ public sealed class OverviewTests
         overview.Years.ShouldBeEmpty();
         overview.Weeks.ShouldBeEmpty();
         overview.Months.ShouldBeEmpty();
-        overview.Days.ShouldBeEmpty();
     }
 
     private static double DistanceInWeek(OverviewResponse overview, DateOnly monday) =>
@@ -150,8 +105,7 @@ public sealed class OverviewTests
     private static async Task<OverviewResponse> GetOverviewAsync(HttpClient browser) =>
         (await browser.GetFromJsonAsync<OverviewResponse>("/api/overview"))!;
 
-    /// <param name="Days">Each local date with Runs, oldest first.</param>
-    private sealed record OverviewResponse(TotalsResponse Totals, List<YearResponse> Years, List<WeekResponse> Weeks, List<MonthResponse> Months, List<DayResponse> Days);
+    private sealed record OverviewResponse(TotalsResponse Totals, List<YearResponse> Years, List<WeekResponse> Weeks, List<MonthResponse> Months);
 
     private sealed record TotalsResponse(int Runs, double Distance, int MovingTime, double ElevationGain);
 
@@ -160,7 +114,4 @@ public sealed class OverviewTests
     private sealed record WeekResponse(DateOnly Start, double Distance);
 
     private sealed record MonthResponse(int Year, int Month, double Distance, double? Pace);
-
-    /// <param name="Distance">Metres run that day, all Runs together.</param>
-    private sealed record DayResponse(DateOnly Date, double Distance);
 }

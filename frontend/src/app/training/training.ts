@@ -1,5 +1,5 @@
-import { Phase, PhaseType, RunType } from '../goal-races/training-plan';
-import { DistanceJump, WeekDistance } from '../shared/charts';
+import { Phase, PhaseType } from '../goal-races/training-plan';
+import { WeekDistance } from '../shared/charts';
 
 /** As returned by GET /api/training. Distances in metres, times in seconds, paces in seconds per km. */
 export interface Training {
@@ -88,16 +88,12 @@ export interface WeekPlan {
   longRunMet: boolean | null;
   /** Monday to Sunday: the calendar strip. */
   days: PlannedDay[];
-  /** None unless the planned distance makes the week one, against the planned weeks before it. */
-  distanceJump: DistanceJump | null;
 }
 
 export interface PlannedDay {
   /** yyyy-MM-dd. */
   date: string;
   state: DayState;
-  /** The Running Day's; none for a rest day or a Run on an unplanned day. */
-  runType: RunType | null;
 }
 
 /**
@@ -114,8 +110,6 @@ export interface WeekActual {
   relativeEffort: number | null;
   /** The longest Run of the week; none in a week without Runs. */
   longRun: LongRun | null;
-  /** None unless the week's distance so far makes it one. */
-  distanceJump: DistanceJump | null;
 }
 
 export interface LongRun {

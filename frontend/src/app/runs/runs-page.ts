@@ -2,7 +2,6 @@ import { DatePipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { Component, computed, inject, input } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { isoDate } from '../shared/dates';
 import { DistanceUnit, formatDistance, formatDuration, formatPace } from '../shared/format';
 import { reloadOnSync } from '../sync/reload-on-sync';
 import { RunMonths, RunPage, RunSortKey } from './run';
@@ -255,3 +254,7 @@ function lastDayOf(monthStart: Date): Date {
   return new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
 }
 
+/** "2026-10-31", in local time. */
+function isoDate(date: Date): string {
+  return `${monthKey(date)}-${String(date.getDate()).padStart(2, '0')}`;
+}

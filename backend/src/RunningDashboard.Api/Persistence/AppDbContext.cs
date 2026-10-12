@@ -1,6 +1,4 @@
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace RunningDashboard.Api.Persistence;
 
@@ -89,14 +87,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
                     week.WithOwner().HasForeignKey("GoalRaceId");
                     week.HasKey("GoalRaceId", nameof(TrainingPlanWeek.WeeksToRace));
                     week.Property(w => w.WeeksToRace).ValueGeneratedNever();
-                    // One JSON column, as when the Running Days were plain weekdays. EF can't map JSON inside an owned type with its own table.
-                    week.Property(w => w.RunningDays).HasConversion(
-                        days => JsonSerializer.Serialize(days, (JsonSerializerOptions?)null),
-                        json => JsonSerializer.Deserialize<List<RunningDay>>(json, (JsonSerializerOptions?)null)!,
-                        new ValueComparer<List<RunningDay>>(
-                            (a, b) => a!.SequenceEqual(b!),
-                            days => days.Aggregate(0, (hash, day) => HashCode.Combine(hash, day)),
-                            days => days.ToList()));
                 });
             });
         });

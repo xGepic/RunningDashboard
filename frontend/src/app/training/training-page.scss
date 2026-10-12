@@ -66,15 +66,6 @@ tr.future td {
   font-weight: 600;
 }
 
-/* A Distance Jump, in what was run (filled) or in the plan (outlined): a warning, with the details on hover. */
-.jump-marker,
-.planned-jump-marker {
-  margin-left: 4px;
-  color: var(--amber);
-  font-size: 10px;
-  cursor: help;
-}
-
 .vs-target,
 .recovery,
 .planned,
@@ -124,15 +115,8 @@ td.compared {
     margin-left: 10px;
   }
 
-  .legend-group {
+  .running-days {
     margin-left: 18px;
-  }
-
-  .run-type-key {
-    margin-left: 10px;
-    color: var(--text-secondary);
-    font-family: var(--mono);
-    font-weight: 600;
   }
 }
 
@@ -163,23 +147,15 @@ tr.recovery-week td {
 }
 
 .day {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
+  display: inline-block;
+  width: 12px;
+  height: 12px;
   border: 1px solid var(--border-strong);
   border-radius: 3px;
-  color: var(--text-secondary);
-  font-family: var(--mono);
-  font-size: 9.5px;
-  font-weight: 600;
-  line-height: 1;
 
   &.ran {
     border-color: var(--met);
     background: var(--met);
-    color: var(--on-accent);
   }
 
   &.missed {

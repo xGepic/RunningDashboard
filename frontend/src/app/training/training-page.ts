@@ -6,18 +6,12 @@ import { NgxEchartsDirective } from 'ngx-echarts';
 import { GoalRace } from '../goal-races/goal-race';
 import { GoalRacePanel } from '../goal-races/goal-race-panel';
 import { ChartTheme } from '../shared/chart-theme';
-import { distanceJumpNote, km, weekLabel, weeklyDistanceChart } from '../shared/charts';
+import { km, weekLabel, weeklyDistanceChart } from '../shared/charts';
 import { daysBetween, localDate, today } from '../shared/dates';
 import { formatDistance, formatDuration, formatPace, formatPaceDifference } from '../shared/format';
 import { reloadOnSync } from '../sync/reload-on-sync';
-import { Phase, RunType, runTypes } from '../goal-races/training-plan';
+import { Phase } from '../goal-races/training-plan';
 import { DayState, GoalRaceSummary, LinedUpWeek, Training } from './training';
-
-/** The Run Types by type, for the calendar strip's labels. */
-const runTypeByType = Object.fromEntries(runTypes.map((runType) => [runType.type, runType])) as Record<
-  RunType,
-  (typeof runTypes)[number]
->;
 
 /** How the calendar strip names each day's state. */
 const dayStates: Record<DayState, string> = {
@@ -73,10 +67,7 @@ export class TrainingPage {
   protected readonly formatPace = formatPace;
   protected readonly formatPaceDifference = formatPaceDifference;
   protected readonly weekLabel = weekLabel;
-  protected readonly distanceJumpNote = distanceJumpNote;
   protected readonly dayStates = dayStates;
-  protected readonly runTypes = runTypes;
-  protected readonly runTypeByType = runTypeByType;
   protected readonly km = km;
   protected readonly todayDate = today();
 
@@ -179,7 +170,7 @@ export class TrainingPage {
   });
 
   protected readonly recentWeeksChart = computed(() => {
-    const weeks = this.training.hasValue() ? (this.training.value().countdown?.recentWeeks ?? []) : [];
+    const weeks = this.training.value()?.countdown?.recentWeeks ?? [];
     return weeks.length ? weeklyDistanceChart(weeks, this.theme.colors()) : null;
   });
 

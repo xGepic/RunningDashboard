@@ -8,16 +8,6 @@ public enum PhaseType
     Taper,
 }
 
-/// <summary>What a Running Day is planned for. Runs themselves never have one.</summary>
-public enum RunType
-{
-    Easy,
-    Long,
-    Tempo,
-    Intervals,
-    Race,
-}
-
 /// <summary>
 /// What the Athlete intends to do during a Goal Race's Training Block: its Phases, and its weeks. The weeks are tied
 /// to Weeks to Race, not to dates, so moving the Goal Race moves the plan.
@@ -76,12 +66,9 @@ public sealed class TrainingPlanWeek
     /// <summary>The planned Long Run in metres; none until the Athlete plans it.</summary>
     public double? PlannedLongRun { get; set; }
 
-    /// <summary>The days the Athlete plans to run on, at most one per weekday, Monday first; the other days are rest days.</summary>
-    public List<RunningDay> RunningDays { get; set; } = [];
+    /// <summary>The days the Athlete plans to run on, Monday first.</summary>
+    public List<DayOfWeek> RunningDays { get; set; } = [];
 
     /// <summary>A week of deliberately lower load; never the Race Week.</summary>
     public bool RecoveryWeek { get; set; }
 }
-
-/// <summary>A day of a plan week the Athlete plans to run on, and what for.</summary>
-public sealed record RunningDay(DayOfWeek Day, RunType RunType);

@@ -307,7 +307,7 @@ namespace RunningDashboard.Api.Persistence.Migrations
                                     b2.Property<bool>("RecoveryWeek")
                                         .HasColumnType("INTEGER");
 
-                                    b2.Property<string>("RunningDays")
+                                    b2.PrimitiveCollection<string>("RunningDays")
                                         .IsRequired()
                                         .HasColumnType("TEXT");
 

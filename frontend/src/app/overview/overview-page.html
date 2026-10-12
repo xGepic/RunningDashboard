@@ -12,7 +12,6 @@
   } @else if (overview.value(); as overview) {
     @if (overview.totals.runs === 0) {
       <div class="card empty-card"><p class="empty">No Runs yet. Connect Strava and sync to import them.</p></div>
-      <app-consistency-card [days]="overview.days" [streak]="overview.streak" />
     } @else {
       <app-yearly-goal-card [goal]="overview.yearlyGoal" [distance]="thisYearsDistance()" (changed)="goalChanged()" />
 
@@ -81,8 +80,6 @@
         </div>
       </section>
 
-      <app-consistency-card [days]="overview.days" [streak]="overview.streak" />
-
       <section class="card">
         <div class="card-header">
           <div class="titles">
@@ -114,14 +111,10 @@
           <summary>Show as table</summary>
           <div class="table-box">
             <table class="data-table">
-              <thead><tr><th>Week starting</th><th class="number">Distance</th><th>Distance Jump</th></tr></thead>
+              <thead><tr><th>Week starting</th><th class="number">Distance</th></tr></thead>
               <tbody>
                 @for (week of selectedWeeks(); track week.start) {
-                  <tr>
-                    <td class="muted">{{ weekLabel(week.start) }}</td>
-                    <td class="number">{{ formatDistance(week.distance) }}</td>
-                    <td class="jump">{{ distanceJumpNote(week.distanceJump) }}</td>
-                  </tr>
+                  <tr><td class="muted">{{ weekLabel(week.start) }}</td><td class="number">{{ formatDistance(week.distance) }}</td></tr>
                 }
               </tbody>
             </table>
