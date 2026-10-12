@@ -159,6 +159,20 @@ describe('CalendarPage', () => {
       expect(text(boxes()[8])).toBe('September 37.7 mi 7h 17m');
     });
 
+    it("draws a trend through the finished months' distances, carried on to the current month", async () => {
+      // 100 km in January, 10 km more every month up to 180 km in September; October has only begun.
+      const steady: RunMonths = {
+        ...year2026,
+        months: year2026.months.map((m) => ({ ...m, runs: m.month <= 10 ? 1 : 0, distance: m.month <= 9 ? 90_000 + m.month * 10_000 : m.month === 10 ? 5000 : 0 })),
+      };
+      const { harness } = await open('/calendar', steady);
+      const chart = harness.fixture.debugElement.query(By.directive(NgxEchartsDirective)).injector.get(NgxEchartsDirective);
+      const series = (chart.options() as { series: { name?: string; data: number[] }[] }).series;
+
+      expect(series[1].name).toBe('Trend');
+      expect(series[1].data).toEqual([100, 110, 120, 130, 140, 150, 160, 170, 180, 190]);
+    });
+
     it('says how many hours and days were run this year, once that is more than a day', async () => {
       // 161 h 6 m 40 s in all: 6.7 days.
       const busy: RunMonths = { ...year2026, months: year2026.months.map((m) => ({ ...m, movingTime: m.month <= 10 ? 58000 : 0 })) };

@@ -136,6 +136,7 @@ export class CalendarPage {
       name: fullMonthNames[m.month - 1],
       fragment: monthFragments[m.month - 1],
       future: year.year > now.getFullYear() || (year.year === now.getFullYear() && m.month > now.getMonth() + 1),
+      unfinished: year.year === now.getFullYear() && m.month === now.getMonth() + 1,
     }));
   });
 

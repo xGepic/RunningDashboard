@@ -93,11 +93,32 @@ export interface MonthDistance {
   month: number;
   runs: number;
   distance: number;
+  /** The current month, still running: left out of the trend. */
+  unfinished?: boolean;
 }
 
-/** Line chart of distance per calendar month of `year`, in kilometres or miles; months without Runs sit at zero. */
+/**
+ * The least-squares straight line through `values` (at 0, 1, 2, …), read off at each of `count` positions; none
+ * with fewer than two values.
+ */
+function linearTrend(values: number[], count: number): number[] | null {
+  if (values.length < 2) return null;
+  const meanX = (values.length - 1) / 2;
+  const meanY = values.reduce((sum, y) => sum + y, 0) / values.length;
+  const slope =
+    values.reduce((sum, y, x) => sum + (x - meanX) * (y - meanY), 0) / values.reduce((sum, _, x) => sum + (x - meanX) ** 2, 0);
+  return Array.from({ length: count }, (_, x) => meanY + slope * (x - meanX));
+}
+
+/**
+ * Line chart of distance per calendar month of `year`, in kilometres or miles; months without Runs sit at zero. A
+ * dashed trend runs through the finished months and on to an unfinished one.
+ */
 export function monthlyDistanceChart(year: number, months: MonthDistance[], unit: DistanceUnit, colors: ChartColors): EChartsCoreOption {
   const base = baseChartOptions(colors);
+  const values = months.map((m) => Math.round(distanceIn(m.distance, unit) * 10) / 10);
+  // Months are consecutive from January, so an unfinished one can only be the last.
+  const trend = linearTrend(values.filter((_, i) => !months[i].unfinished), months.length);
   return {
     ...base,
     tooltip: {
@@ -115,12 +136,15 @@ export function monthlyDistanceChart(year: number, months: MonthDistance[], unit
     yAxis: (() => {
       // The first point sits on the axis: keep the labels clear of it.
       const axis = valueAxis(colors, (value) => `${value} ${unit}`, true);
-      return { ...axis, axisLabel: { ...axis.axisLabel, margin: 16 } };
+      // A falling trend may head below zero; no month can.
+      return { ...axis, min: 0, axisLabel: { ...axis.axisLabel, margin: 16 } };
     })(),
     series: [
       {
+        name: 'Distance',
         type: 'line',
-        data: months.map((m) => Math.round(distanceIn(m.distance, unit) * 10) / 10),
+        z: 3,
+        data: values,
         smooth: false,
         lineStyle: { width: 2, color: colors.series, join: 'round' },
         // A point per month, so there is something to hover and click even for a single month.
@@ -145,6 +169,21 @@ export function monthlyDistanceChart(year: number, months: MonthDistance[], unit
         animationDuration: 700,
         animationEasing: 'cubicOut',
       },
+      ...(trend
+        ? [
+            {
+              name: 'Trend',
+              type: 'line',
+              z: 2,
+              data: trend.map((value) => Math.round(value * 10) / 10),
+              symbol: 'none',
+              silent: true,
+              lineStyle: { width: 1.5, type: 'dashed', color: colors.muted },
+              emphasis: { disabled: true },
+              animationDuration: 700,
+            },
+          ]
+        : []),
     ],
   };
 }
