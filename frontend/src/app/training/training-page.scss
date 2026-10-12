@@ -120,34 +120,12 @@ td.compared {
   }
 }
 
-/* The Phase bands: one cell per Phase, spanning its weeks, in the Phase's colour. */
-.band-header,
-td.band {
-  width: 34px;
+/* A line in the week's Phase colour at the start of its row. */
+tr[class*='phase-'] td.to-race {
+  box-shadow: inset 3px 0 var(--phase);
 }
 
-.data-table td.band {
-  padding: 0;
-  border-bottom: 2px solid var(--surface);
-  border-left: 3px solid var(--phase);
-  background: color-mix(in srgb, var(--phase) 22%, transparent);
-  color: var(--phase);
-  text-align: center;
-  vertical-align: middle;
-
-  span {
-    display: inline-block;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: capitalize;
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-  }
-}
-
-
-tr.recovery-week td:not(.band) {
+tr.recovery-week td {
   background: repeating-linear-gradient(135deg, transparent 0 6px, rgb(124 136 155 / 8%) 6px 12px);
 }
 

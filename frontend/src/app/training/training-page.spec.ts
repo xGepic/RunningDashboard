@@ -90,13 +90,13 @@ describe('TrainingPage', () => {
     expect(row(element, -10).textContent).toContain('Saturday: run on an unplanned day');
   });
 
-  it('shows the Phase as a band over its weeks', async () => {
+  it('marks each of its weeks with the Phase', async () => {
     const element = await render();
 
-    const band = row(element, -11).querySelector('td.band');
-    expect(band?.textContent?.trim()).toBe('peak');
-    expect(band?.getAttribute('rowspan')).toBe('4');
-    expect(row(element, -10).querySelector('td.band')).toBeNull();
+    for (const weeksToRace of [-11, -10]) {
+      expect(row(element, weeksToRace).classList).toContain('phase-peak');
+      expect(row(element, weeksToRace).querySelector('td.to-race')?.textContent).toContain('peak Phase');
+    }
   });
 
   it('puts the planned distance next to the actual one, and only the plan for a future week', async () => {

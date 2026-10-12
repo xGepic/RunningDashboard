@@ -136,9 +136,9 @@ export class TrainingPage {
     this.training.reload();
   }
 
-  /** The Phase whose band starts at this row. */
-  protected phaseStartingAt(phases: Phase[], weeksToRace: number): Phase | undefined {
-    return phases.find((p) => p.firstWeeksToRace === weeksToRace);
+  /** The Phase this week is in; none outside the Phases. */
+  protected phaseOf(phases: Phase[] | null, weeksToRace: number): Phase | undefined {
+    return phases?.find((p) => p.firstWeeksToRace <= weeksToRace && weeksToRace <= p.lastWeeksToRace);
   }
 
   /** Marks an actual value against the plan as the API judged it: met, short, or neither yet. */

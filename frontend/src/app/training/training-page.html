@@ -48,7 +48,7 @@
             <thead>
               @if (block.comparison; as comparison) {
                 <tr class="sides">
-                  <th [attr.colspan]="block.phases ? 2 : 1"></th>
+                  <th></th>
                   <th [attr.colspan]="block.phases ? 7 : 6">{{ block.goalRace.name }}</th>
                   <th colspan="4" class="compared">
                     {{ comparison.goalRace.name }}
@@ -59,9 +59,6 @@
                 </tr>
               }
               <tr>
-                @if (block.phases) {
-                  <th class="band-header"><span class="visually-hidden">Phase</span></th>
-                }
                 <th class="number">Weeks to Race</th>
                 <th>Training Week</th>
                 <th class="number">Runs</th>
@@ -76,20 +73,14 @@
             </thead>
             <tbody>
               @for (row of rows(); track row.weeksToRace) {
-                <tr [attr.data-weeks-to-race]="row.weeksToRace" [class.current]="row.viewed?.status === 'current'"
+                @let phase = phaseOf(block.phases, row.weeksToRace);
+                <tr [attr.data-weeks-to-race]="row.weeksToRace" [class]="phase ? 'phase-' + phase.type : ''" [class.current]="row.viewed?.status === 'current'"
                     [class.future]="row.viewed?.status === 'future'" [class.recovery-week]="row.viewed?.plan?.recoveryWeek"
                     [attr.aria-current]="row.viewed?.status === 'current' ? 'date' : null">
-                  @if (block.phases; as phases) {
-                    @if (phaseStartingAt(phases, row.weeksToRace); as phase) {
-                      <td [class]="'band phase-' + phase.type" [attr.rowspan]="phase.lastWeeksToRace - phase.firstWeeksToRace + 1">
-                        <span>{{ phase.type }}</span>
-                      </td>
-                    } @else if (!row.viewed) {
-                      <!-- A compared block's week before the plan starts. -->
-                      <td class="band"></td>
+                  <td class="number to-race" [title]="phase ? phase.type + ' Phase' : ''">
+                    @if (phase) {
+                      <span class="visually-hidden">{{ phase.type }} Phase:</span>
                     }
-                  }
-                  <td class="number">
                     {{ row.weeksToRace }}@if (row.weeksToRace === 0) { <span class="race-week">· Race Week</span> }
                     @if (row.viewed?.plan?.recoveryWeek) {
                       <span class="recovery">Recovery Week</span>
