@@ -14,6 +14,19 @@
   }
 }
 
+.shoes .setting {
+  align-items: flex-end;
+  justify-content: flex-start;
+
+  input {
+    width: 140px;
+  }
+}
+
+.shoes .field-error {
+  margin: 10px 0 0;
+}
+
 .who {
   margin: 0 0 12px;
   color: var(--text-secondary);

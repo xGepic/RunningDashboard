@@ -1,11 +1,6 @@
-import { HttpClient } from '@angular/common/http';
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { AthleteSettings } from './athlete-settings';
 import { DistanceUnit, distanceIn, formatDistance, formatPace, formatPaceDifference, formatSpeed, formatTotalDistance, parseDistance } from './format';
-
-/** As returned by GET/PUT /api/settings. */
-export interface Settings {
-  distanceUnit: DistanceUnit;
-}
 
 /**
  * The Athlete's Distance Unit, from Settings, and formatters that show distances, paces and speeds in it. The API
@@ -13,33 +8,13 @@ export interface Settings {
  */
 @Injectable({ providedIn: 'root' })
 export class Units {
-  private readonly http = inject(HttpClient);
+  private readonly settings = inject(AthleteSettings);
 
-  readonly unit = signal<DistanceUnit>('km');
-
-  /** Whether the Athlete has chosen a unit since the app started: the stored one, coming in later, must not undo it. */
-  private chosen = false;
-
-  constructor() {
-    // Without the setting the dashboard still works, in kilometres; there is nothing more to show for it.
-    this.http.get<Settings>('/api/settings').subscribe({
-      next: (settings) => {
-        if (!this.chosen) this.unit.set(settings.distanceUnit);
-      },
-      error: () => {},
-    });
-  }
+  readonly unit = this.settings.distanceUnit;
 
   /** Shown at once; if it cannot be saved, the unit before comes back, unless another has been chosen since. */
   choose(unit: DistanceUnit): void {
-    const before = this.unit();
-    this.chosen = true;
-    this.unit.set(unit);
-    this.http.put<Settings>('/api/settings', { distanceUnit: unit }).subscribe({
-      error: () => {
-        if (this.unit() === unit) this.unit.set(before);
-      },
-    });
+    void this.settings.change({ distanceUnit: unit });
   }
 
   distance(metres: number, fractionDigits = 2): string {

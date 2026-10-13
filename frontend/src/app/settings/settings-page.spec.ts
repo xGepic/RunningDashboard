@@ -24,12 +24,12 @@ const idle: SyncStatus = {
 };
 
 describe('SettingsPage', () => {
-  async function render(unit: 'km' | 'mi', connection: Connection = connected) {
+  async function render(unit: 'km' | 'mi', connection: Connection = connected, shoeMaximumDistance = 700_000) {
     TestBed.configureTestingModule({ imports: [SettingsPage], providers: [provideHttpClient(), provideHttpClientTesting()] });
     const fixture = TestBed.createComponent(SettingsPage);
     const http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
-    http.expectOne('/api/settings').flush({ distanceUnit: unit });
+    http.expectOne('/api/settings').flush({ distanceUnit: unit, shoeMaximumDistance });
     http.expectOne('/api/connection').flush(connection);
     await fixture.whenStable();
     fixture.detectChanges();
@@ -56,7 +56,7 @@ describe('SettingsPage', () => {
     fixture.detectChanges();
 
     expect(pressed(element)).toBe('mi');
-    expect(http.expectOne((r) => r.method === 'PUT' && r.url === '/api/settings').request.body).toEqual({ distanceUnit: 'mi' });
+    expect(http.expectOne((r) => r.method === 'PATCH' && r.url === '/api/settings').request.body).toEqual({ distanceUnit: 'mi' });
   });
 
   it('shows who Strava is connected as, since when, and the last sync', async () => {
@@ -72,5 +72,62 @@ describe('SettingsPage', () => {
     const { element } = await render('km', { connected: false, athlete: null, connectedAt: null });
 
     expect(element.querySelector<HTMLAnchorElement>('.strava a[href="/api/strava/connect"]')?.textContent?.trim()).toBe('Connect Strava');
+  });
+
+  describe('the Maximum Distance of the Shoes', () => {
+    const field = (element: HTMLElement) => element.querySelector<HTMLInputElement>('.shoes input')!;
+    const type = async (fixture: { whenStable: () => Promise<unknown> }, element: HTMLElement, text: string) => {
+      field(element).value = text;
+      field(element).dispatchEvent(new Event('input'));
+      element.querySelector<HTMLFormElement>('.shoes form')!.dispatchEvent(new Event('submit'));
+      await fixture.whenStable();
+    };
+
+    it('shows it in the Distance Unit', async () => {
+      const { element } = await render('mi');
+
+      // 700 km is 434.96 mi.
+      expect(field(element).value).toBe('435');
+      expect(element.querySelector('.shoes label')!.textContent).toContain('Maximum Distance (mi)');
+    });
+
+    it('saves a typed distance as metres', async () => {
+      const { fixture, http, element } = await render('km');
+
+      await type(fixture, element, '800');
+
+      expect(http.expectOne((r) => r.method === 'PATCH').request.body).toEqual({ shoeMaximumDistance: 800_000 });
+    });
+
+    it('keeps its metres when saved as it was, though the field shows it rounded', async () => {
+      const { fixture, http, element } = await render('mi');
+
+      await type(fixture, element, '435');
+
+      expect(http.expectOne((r) => r.method === 'PATCH').request.body).toEqual({ shoeMaximumDistance: 700_000 });
+    });
+
+    it('does not send a distance it cannot read, or one beyond 5,000 km', async () => {
+      const { fixture, http, element } = await render('km');
+
+      await type(fixture, element, 'far');
+      expect(element.querySelector('.shoes .field-error')?.textContent).toContain('Enter the distance in kilometres, e.g. 700.');
+      await type(fixture, element, '6000');
+      expect(element.querySelector('.shoes .field-error')?.textContent).toContain('At most 5,000 km.');
+
+      http.expectNone((r) => r.method === 'PATCH');
+    });
+
+    it('says when it could not be saved, and shows the distance before again', async () => {
+      const { fixture, http, element } = await render('km');
+
+      await type(fixture, element, '800');
+      http.expectOne((r) => r.method === 'PATCH').flush('down', { status: 502, statusText: 'Bad Gateway' });
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(element.querySelector('.shoes [role="alert"]')?.textContent).toContain('could not be saved');
+      expect(field(element).value).toBe('700');
+    });
   });
 });

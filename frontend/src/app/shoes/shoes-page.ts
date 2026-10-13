@@ -1,6 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { Component, computed, inject } from '@angular/core';
+import { AthleteSettings } from '../shared/athlete-settings';
 import { Units } from '../shared/units';
 import { reloadOnSync } from '../sync/reload-on-sync';
 import { Shoe } from './shoe';
@@ -10,9 +11,6 @@ const shoeColors = ['var(--accent)', 'var(--teal)', 'var(--amber)', 'var(--met)'
 
 const wholeNumber = new Intl.NumberFormat('en', { maximumFractionDigits: 0 });
 const oneDecimal = new Intl.NumberFormat('en', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-
-/** The Maximum Distance, in metres: the same for every Shoe. */
-const maxDistance = 700_000;
 
 /** From this share of its Maximum Distance on, a Shoe is close to it. */
 const nearMaxShare = 0.9;
@@ -25,8 +23,9 @@ const nearMaxShare = 0.9;
 })
 export class ShoesPage {
   protected readonly shoes = httpResource<Shoe[]>(() => '/api/shoes');
-  /** Distances in the Distance Unit; the Maximum Distance too, though it is fixed in kilometres. */
+  /** Distances in the Distance Unit, the Maximum Distance too. */
   protected readonly units = inject(Units);
+  private readonly settings = inject(AthleteSettings);
 
   /** Each Shoe with its share of all Shoes' distance; the first active one is the most recently used. */
   protected readonly cards = computed(() => {
@@ -66,8 +65,9 @@ export class ShoesPage {
     reloadOnSync(() => this.shoes.reload());
   }
 
-  /** How far a Shoe is towards the Maximum Distance. */
+  /** How far a Shoe is towards the Maximum Distance, the same for every Shoe and set in Settings. */
   private wear(shoe: Shoe) {
+    const maxDistance = this.settings.shoeMaximumDistance();
     const share = shoe.distance / maxDistance;
     const left = maxDistance - shoe.distance;
     return {

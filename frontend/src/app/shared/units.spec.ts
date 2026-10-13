@@ -39,7 +39,7 @@ describe('Units', () => {
     units.choose('mi');
 
     expect(units.unit()).toBe('mi');
-    const save = http.expectOne((r) => r.method === 'PUT' && r.url === '/api/settings');
+    const save = http.expectOne((r) => r.method === 'PATCH' && r.url === '/api/settings');
     expect(save.request.body).toEqual({ distanceUnit: 'mi' });
     save.flush({ distanceUnit: 'mi' });
     expect(units.unit()).toBe('mi');
@@ -57,7 +57,7 @@ describe('Units', () => {
 
     units.choose('mi');
     units.choose('km');
-    const [first] = http.match((r) => r.method === 'PUT');
+    const [first] = http.match((r) => r.method === 'PATCH');
     first.flush('down', { status: 502, statusText: 'Bad Gateway' });
 
     expect(units.unit()).toBe('km');
@@ -67,7 +67,7 @@ describe('Units', () => {
     http.expectOne('/api/settings').flush({ distanceUnit: 'km' });
 
     units.choose('mi');
-    http.expectOne((r) => r.method === 'PUT').flush('down', { status: 502, statusText: 'Bad Gateway' });
+    http.expectOne((r) => r.method === 'PATCH').flush('down', { status: 502, statusText: 'Bad Gateway' });
 
     expect(units.unit()).toBe('km');
   });

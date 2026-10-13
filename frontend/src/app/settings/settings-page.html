@@ -24,6 +24,26 @@
     </div>
   </section>
 
+  <section class="card shoes">
+    <div class="card-header">
+      <div class="titles">
+        <h2 class="card-title">Shoes</h2>
+        <p class="card-sub">A Shoe is due to be retired after its Maximum Distance, the same for every Shoe. Strava does not know it.</p>
+      </div>
+    </div>
+    <form class="setting" (submit)="$event.preventDefault(); saveMaximumDistance()" novalidate>
+      <label class="field">
+        Maximum Distance ({{ units.unit() }})
+        <input class="mono" inputmode="decimal" [value]="maximumDistance()" (input)="maximumDistance.set($any($event.target).value)"
+               [attr.aria-invalid]="!!maximumDistanceError()" />
+      </label>
+      <button type="submit" class="btn" [disabled]="saving()">Save</button>
+    </form>
+    @if (maximumDistanceError(); as error) {
+      <p class="field-error" role="alert">{{ error }}</p>
+    }
+  </section>
+
   <section class="card strava">
     <div class="card-header">
       <div class="titles">
