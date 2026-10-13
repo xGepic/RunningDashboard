@@ -106,7 +106,7 @@ public static class OverviewEndpoints
         private const int RecentWeekCount = 12;
 
         /// <param name="weeksWithRuns">At least one.</param>
-        public static StreakResponse Of(IReadOnlySet<TrainingWeek> weeksWithRuns, TrainingWeek thisWeek)
+        public static StreakResponse Of(HashSet<TrainingWeek> weeksWithRuns, TrainingWeek thisWeek)
         {
             var thisWeekHasRun = weeksWithRuns.Contains(thisWeek);
             var current = 0;
