@@ -22,7 +22,7 @@ A Strava activity with a cycling sport type: road, virtual, gravel or mountain b
 _Avoid_: Cycle, bike ride, workout
 
 **Avg Speed**:
-A Ride's distance per Moving Time, in km/h (or mph when the Ride history shows miles). Rides have it instead of a Pace.
+A Ride's distance per Moving Time, in km/h. Rides have it instead of a Pace.
 _Avoid_: Pace (for Rides), velocity
 
 **Moving Time**:

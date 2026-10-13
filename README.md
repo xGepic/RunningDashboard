@@ -1,6 +1,6 @@
 # Running Dashboard
 
-A local dashboard for one Athlete's Strava running history and marathon training. See [CONTEXT.md](CONTEXT.md) for the domain language, [docs/specs](docs/specs) for the spec and tickets, [docs/adr](docs/adr) for decisions, and [docs/database-schema.png](docs/database-schema.png) for the database tables.
+A local dashboard for one Athlete's Strava running history and marathon training, with a plain list of their Rides on the side. See [CONTEXT.md](CONTEXT.md) for the domain language, [docs/specs](docs/specs) for the spec and tickets, [docs/adr](docs/adr) for decisions, and [docs/database-schema.png](docs/database-schema.png) for the database tables (drawn from [docs/database-schema.html](docs/database-schema.html), which says how to render it again).
 
 ## One-time setup
 
