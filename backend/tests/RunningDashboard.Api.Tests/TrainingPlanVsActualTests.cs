@@ -165,7 +165,7 @@ public sealed class TrainingPlanVsActualTests
     private sealed record WeekRequest(int WeeksToRace, double? PlannedDistance, double? PlannedLongRun, RunningDayRequest[] RunningDays, bool RecoveryWeek);
 
     /// <param name="Day">"monday" to "sunday".</param>
-    /// <param name="RunType">"easy", "long", "tempo", "intervals" or "race".</param>
+    /// <param name="RunType">"easy", "long", "tempo" or "intervals".</param>
     private sealed record RunningDayRequest(string Day, string RunType);
 
     private sealed record TrainingResponse(BlockResponse? Block);

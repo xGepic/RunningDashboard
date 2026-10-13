@@ -15,7 +15,6 @@ public enum RunType
     Long,
     Tempo,
     Intervals,
-    Race,
 }
 
 /// <summary>One Training Week of a Training Plan: its Weekly Target, Running Days and whether it is a Recovery Week.</summary>

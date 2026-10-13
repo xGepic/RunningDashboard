@@ -56,7 +56,7 @@ internal sealed record WeekRequest(int WeeksToRace, double? PlannedDistance, dou
         if (PlannedLongRun <= 0)
             yield return ("plannedLongRun", "The planned Long Run is a positive number of metres, or none.");
         if (Days() is not { } days)
-            yield return ("runningDays", "Each Running Day is a day of the week, \"monday\" to \"sunday\", with a Run Type: \"easy\", \"long\", \"tempo\", \"intervals\" or \"race\".");
+            yield return ("runningDays", "Each Running Day is a day of the week, \"monday\" to \"sunday\", with a Run Type: \"easy\", \"long\", \"tempo\" or \"intervals\".");
         else if (days.DistinctBy(d => d.Day).Count() < days.Count)
             yield return ("runningDays", "Each day of the week can have only one Run Type.");
         if (PlanningRules.RecoveryWeekError(WeeksToRace, RecoveryWeek) is { } recovery)
@@ -90,7 +90,7 @@ internal sealed record WeekRequest(int WeeksToRace, double? PlannedDistance, dou
 }
 
 /// <param name="Day">"monday" to "sunday".</param>
-/// <param name="RunType">"easy", "long", "tempo", "intervals" or "race".</param>
+/// <param name="RunType">"easy", "long", "tempo" or "intervals".</param>
 internal sealed record RunningDayRequest(string? Day, string? RunType);
 
 /// <param name="Length">Training Weeks, including the Race Week.</param>
@@ -141,5 +141,5 @@ internal sealed record WeekResponse(
     bool RecoveryWeek);
 
 /// <param name="Day">"monday" to "sunday".</param>
-/// <param name="RunType">"easy", "long", "tempo", "intervals" or "race".</param>
+/// <param name="RunType">"easy", "long", "tempo" or "intervals".</param>
 internal sealed record RunningDayResponse(string Day, string RunType);

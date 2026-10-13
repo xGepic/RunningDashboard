@@ -21,7 +21,7 @@ const plan: TrainingPlan = {
       recoveryWeek: true,
     }),
     week(-1, '2027-05-10', {}),
-    week(0, '2027-05-17', { plannedDistance: 55000, plannedLongRun: 42195, runningDays: [{ day: 'sunday', runType: 'race' }] }),
+    week(0, '2027-05-17', { plannedDistance: 55000, plannedLongRun: 42195, runningDays: [{ day: 'sunday', runType: 'easy' }] }),
   ],
 };
 
@@ -105,11 +105,11 @@ describe('TrainingPlanWeeksEditor', () => {
     expect(['Monday', 'Tuesday', 'Thursday', 'Sunday'].map(shown)).toEqual(['rest', 'easy', 'tempo', 'long']);
   });
 
-  it('offers rest and then the Run Types easy, tempo, intervals, race and long', async () => {
+  it('offers rest and then the Run Types easy, tempo, intervals and long', async () => {
     const { row } = await render();
     const select = row(-2).querySelector('select[aria-label="Monday"]') as HTMLSelectElement;
 
-    expect([...select.options].map((o) => o.value)).toEqual(['rest', 'easy', 'tempo', 'intervals', 'race', 'long']);
+    expect([...select.options].map((o) => o.value)).toEqual(['rest', 'easy', 'tempo', 'intervals', 'long']);
   });
 
   it('picks a Run Type or rest per day and sends the Running Days Monday first', async () => {
@@ -118,11 +118,11 @@ describe('TrainingPlanWeeksEditor', () => {
     await pick(-2, 'Saturday', 'long');
     await pick(-2, 'Monday', 'intervals');
     await pick(-2, 'Thursday', 'rest');
-    await pick(-2, 'Tuesday', 'race');
+    await pick(-2, 'Tuesday', 'tempo');
 
     expect((await save()).weeks[0].runningDays).toEqual([
       { day: 'monday', runType: 'intervals' },
-      { day: 'tuesday', runType: 'race' },
+      { day: 'tuesday', runType: 'tempo' },
       { day: 'saturday', runType: 'long' },
       { day: 'sunday', runType: 'long' },
     ]);

@@ -124,7 +124,7 @@ The days of a Training Week on which the Training Plan schedules Runs. Each Runn
 _Avoid_: Training days, run days
 
 **Run Type**:
-What a Running Day is planned for: Easy, Tempo, Intervals, Race or Long. The list is fixed. It only says what was intended: actual Runs are never given a Run Type, and the Long Run of a week is still its longest Run, whichever day was planned as Long.
+What a Running Day is planned for: Easy, Tempo, Intervals or Long. The list is fixed. It only says what was intended: actual Runs are never given a Run Type, and the Long Run of a week is still its longest Run, whichever day was planned as Long.
 _Avoid_: Workout, session, workout type
 
 **Yearly Goal**:

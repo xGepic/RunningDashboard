@@ -154,7 +154,7 @@ public sealed class TrainingPlanTests
         [
             new WeekRequest(-15, 30000, 12000, Days("tuesday easy, thursday tempo, saturday easy, sunday long"), false),
             new WeekRequest(-12, 25000, 10000, Days("sunday long, tuesday intervals"), true),
-            new WeekRequest(0, 55000, 42195, Days("tuesday easy, thursday easy, sunday race"), false),
+            new WeekRequest(0, 55000, 42195, Days("tuesday easy, thursday easy, sunday long"), false),
         ]));
         var saved = await response.Content.ReadFromJsonAsync<PlannedWeeksResponse>();
         var read = await GetPlannedWeeksAsync(race);
@@ -165,7 +165,7 @@ public sealed class TrainingPlanTests
         read.Row(-15).ShouldBe((-15, 30000.0, 12000.0, "tuesday easy, thursday tempo, saturday easy, sunday long", false));
         // Running Days come back Monday first.
         read.Row(-12).ShouldBe((-12, 25000.0, 10000.0, "tuesday intervals, sunday long", true));
-        read.Row(0).ShouldBe((0, 55000.0, 42195.0, "tuesday easy, thursday easy, sunday race", false));
+        read.Row(0).ShouldBe((0, 55000.0, 42195.0, "tuesday easy, thursday easy, sunday long", false));
         // Weeks left out keep what they had: nothing yet.
         read.Row(-14).ShouldBe((-14, null, null, "", false));
     }
@@ -204,7 +204,7 @@ public sealed class TrainingPlanTests
         var response = await _browser.PutAsJsonAsync(WeeksPath(race), new TrainingPlanWeeksRequest(
         [
             new WeekRequest(-1, 40000, 16000, Days("tuesday easy, sunday long"), false),
-            new WeekRequest(0, 55000, 42195, Days("sunday race"), true),
+            new WeekRequest(0, 55000, 42195, Days("sunday long"), true),
         ]));
         var problem = await response.Content.ReadFromJsonAsync<ValidationProblem>();
 
@@ -221,6 +221,7 @@ public sealed class TrainingPlanTests
     [TestCase(-15, 30000.0, 12000.0, "funday easy", "weeks[0].runningDays")]
     [TestCase(-15, 30000.0, 12000.0, "3 easy", "weeks[0].runningDays")]
     [TestCase(-15, 30000.0, 12000.0, "tuesday jog", "weeks[0].runningDays")]
+    [TestCase(-15, 30000.0, 12000.0, "sunday race", "weeks[0].runningDays")]
     [TestCase(-15, 30000.0, 12000.0, "tuesday 0", "weeks[0].runningDays")]
     [TestCase(-15, 30000.0, 12000.0, "tuesday", "weeks[0].runningDays")]
     [TestCase(-15, 30000.0, 12000.0, "tuesday easy, sunday long, tuesday tempo", "weeks[0].runningDays")]
@@ -296,7 +297,7 @@ public sealed class TrainingPlanTests
     {
         var race = await CreateGoalRaceAsync(SecondMarathon);
         await PutPlanAsync(race, BuildPeakPeakTaper);
-        await PutWeeksAsync(race, new WeekRequest(0, 55000, 42195, Days("sunday race"), false));
+        await PutWeeksAsync(race, new WeekRequest(0, 55000, 42195, Days("sunday long"), false));
 
         var deleted = await _browser.DeleteAsync(PlanPath(race));
         var again = await _browser.DeleteAsync(PlanPath(race));
@@ -405,7 +406,7 @@ public sealed class TrainingPlanTests
     private sealed record WeekRequest(int WeeksToRace, double? PlannedDistance, double? PlannedLongRun, RunningDayRequest[] RunningDays, bool RecoveryWeek);
 
     /// <param name="Day">"monday" to "sunday".</param>
-    /// <param name="RunType">"easy", "long", "tempo", "intervals" or "race".</param>
+    /// <param name="RunType">"easy", "long", "tempo" or "intervals".</param>
     private sealed record RunningDayRequest(string Day, string? RunType);
 
     /// <summary>Running Days written as "tuesday easy, sunday long"; a day written without a Run Type is sent without one.</summary>
@@ -429,6 +430,6 @@ public sealed class TrainingPlanTests
     private sealed record PlannedWeekResponse(int WeeksToRace, double? PlannedDistance, double? PlannedLongRun, List<RunningDayResponse> RunningDays, bool RecoveryWeek);
 
     /// <param name="Day">"monday" to "sunday".</param>
-    /// <param name="RunType">"easy", "long", "tempo", "intervals" or "race".</param>
+    /// <param name="RunType">"easy", "long", "tempo" or "intervals".</param>
     private sealed record RunningDayResponse(string Day, string RunType);
 }
