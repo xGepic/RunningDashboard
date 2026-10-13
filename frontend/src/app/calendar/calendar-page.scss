@@ -3,6 +3,11 @@
   container-type: inline-size;
 }
 
+/* The year or month switcher is all the bar holds, so it sits in the middle. */
+.toolbar {
+  justify-content: center;
+}
+
 /* A quarter per row: 4 months side by side, 2 or 1 where the page is narrow. */
 .year-grid {
   display: grid;
