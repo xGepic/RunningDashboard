@@ -133,7 +133,7 @@ public sealed class ImportRunsTests
         var finished = await TestApp.WaitForSyncAsync(browser);
 
         midImport.Running.ShouldBeTrue();
-        midImport.Phase.ShouldBe("importing-runs");
+        midImport.Phase.ShouldBe("importing-activities");
         runsMidImport.Select(r => r.Name).ShouldBe(["Evening Run", "Lauf am Nachmittag"]);
         finished.ImportedRuns.ShouldBe(5);
         finished.Phase.ShouldBe("idle");
@@ -200,6 +200,20 @@ public sealed class ImportRunsTests
         var syncNow = await browser.PostAsync("/api/sync", null);
 
         syncNow.StatusCode.ShouldBe(HttpStatusCode.Conflict);
+    }
+
+    [Test]
+    public async Task The_status_counts_every_imported_activity_and_the_runs_among_them_for_their_details()
+    {
+        var browser = await _app.ConnectWithActivitiesAsync(
+            new TestActivity(20479305419, "Evening Run", new DateTime(2026, 10, 6, 20, 35, 26), 5081.2, 2096),
+            new TestActivity(20460000001, "Kahlenberg climb", new DateTime(2026, 10, 5, 10, 0, 0), 42300, 5400, "Ride"),
+            new TestActivity(20460000011, "Pool 2k", new DateTime(2026, 10, 4, 7, 0, 0), 2000, 2400, "Swim"),
+            new TestActivity(20420000004, "Sunday walk", new DateTime(2026, 9, 27, 15, 0, 0), 4000, 3000, "Walk"));
+
+        var finished = await TestApp.WaitForSyncAsync(browser);
+
+        (finished.ImportedActivities, finished.ImportedRuns, finished.DetailedRuns).ShouldBe((3, 1, 1));
     }
 
     private void StravaHasTwoPagesOfActivities()

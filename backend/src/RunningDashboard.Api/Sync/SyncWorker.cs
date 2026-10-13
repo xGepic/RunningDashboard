@@ -46,7 +46,7 @@ public sealed class SyncWorker(
             }
 
             _running = true;
-            _phase = SyncPhase.ImportingRuns;
+            _phase = SyncPhase.ImportingActivities;
             _syncRequested.Release();
         }
     }
@@ -55,6 +55,7 @@ public sealed class SyncWorker(
     {
         var state = await db.GetSyncStateAsync(cancellationToken);
         var importedRuns = await db.Runs.CountAsync(cancellationToken);
+        var importedActivities = importedRuns + await db.ListedActivities.CountAsync(cancellationToken);
         var detailedRuns = await db.Runs.CountAsync(r => r.DetailFetchedAt != null, cancellationToken);
 
         // Read after the counts, so the phase is never older than them.
@@ -65,6 +66,7 @@ public sealed class SyncWorker(
         return new SyncStatus(
             running,
             phase,
+            importedActivities,
             importedRuns,
             detailedRuns,
             running ? rateLimits.PausedUntil : null,
@@ -100,7 +102,7 @@ public sealed class SyncWorker(
                     _running = _followUpRequested;
                     if (_followUpRequested)
                     {
-                        _phase = SyncPhase.ImportingRuns;
+                        _phase = SyncPhase.ImportingActivities;
                         _syncRequested.Release();
                     }
                     _followUpRequested = false;
@@ -114,7 +116,7 @@ public sealed class SyncWorker(
         Action<SyncState> outcome;
         try
         {
-            SetPhase(SyncPhase.ImportingRuns);
+            SetPhase(SyncPhase.ImportingActivities);
             using (var scope = scopes.CreateScope())
                 await scope.ServiceProvider.GetRequiredService<ActivityImport>().ImportAsync(stoppingToken);
 

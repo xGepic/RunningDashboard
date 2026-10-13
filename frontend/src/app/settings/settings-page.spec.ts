@@ -14,6 +14,7 @@ const connected: Connection = {
 const idle: SyncStatus = {
   running: false,
   phase: 'idle',
+  importedActivities: 565,
   importedRuns: 540,
   detailedRuns: 540,
   pausedUntil: null,

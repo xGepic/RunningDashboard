@@ -27,11 +27,11 @@ describe('App', () => {
     return { fixture, element: fixture.nativeElement as HTMLElement };
   }
 
-  it('lists the Calendar after the Runs, opened with key 4', async () => {
+  it('lists the Calendar after the Activities, opened with key 4', async () => {
     const { element } = await render();
 
     const links = [...element.querySelectorAll('.sidebar nav[aria-label="Pages"] a')].map((a) => [a.querySelector('.label')!.textContent, a.querySelector('kbd')!.textContent]);
-    expect(links).toEqual([['Overview', '1'], ['Training', '2'], ['Runs', '3'], ['Calendar', '4'], ['Records', '5'], ['Shoes', '6']]);
+    expect(links).toEqual([['Overview', '1'], ['Training', '2'], ['Activities', '3'], ['Calendar', '4'], ['Records', '5'], ['Shoes', '6']]);
 
     document.body.dispatchEvent(new KeyboardEvent('keydown', { key: '4', bubbles: true }));
     await new Promise((resolve) => setTimeout(resolve));

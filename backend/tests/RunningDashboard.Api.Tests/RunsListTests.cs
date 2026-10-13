@@ -159,6 +159,24 @@ public sealed class RunsListTests
         year.FirstYear.ShouldBe(2026);
     }
 
+    [Test]
+    public async Task A_run_counts_for_the_year_of_its_local_start_right_up_to_new_years_eve_midnight()
+    {
+        await using var app = new TestApp();
+        var browser = await app.ConnectWithActivitiesAsync(
+            new TestActivity(20500000001, "New Year's Day run", new DateTime(2026, 1, 1, 0, 0, 0), 5000, 1800),
+            new TestActivity(20500000002, "Silvesterlauf", new DateTime(2025, 12, 31, 23, 59, 59), 10000, 3000),
+            new TestActivity(20500000003, "Summer jog", new DateTime(2024, 6, 1, 7, 0, 0), 8000, 2900));
+        await TestApp.WaitForSyncAsync(browser);
+        var months = async (int year) => (await browser.GetFromJsonAsync<RunMonths>($"/api/runs/months?year={year}"))!;
+
+        var year2025 = await months(2025);
+        var year2026 = await months(2026);
+
+        (year2025.Months[11].Runs, year2025.Months.Sum(m => m.Runs), year2025.FirstYear).ShouldBe((1, 1, 2024));
+        (year2026.Months[0].Runs, year2026.Months.Sum(m => m.Runs)).ShouldBe((1, 1));
+    }
+
     [TestCase("year=1899")]
     public async Task Invalid_month_options_are_refused(string query)
     {

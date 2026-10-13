@@ -7,7 +7,7 @@
       @if (status.phase === 'importing-details') {
         <span class="progress">Loading Run details… {{ status.detailedRuns }} of {{ status.importedRuns }} Runs detailed</span>
       } @else {
-        <span class="progress">Importing Runs… {{ status.importedRuns }} Runs</span>
+        <span class="progress">Importing activities… {{ status.importedActivities }} activities</span>
       }
       @if (status.pausedUntil) {
         <span class="paused">Paused for Strava’s rate limit until {{ status.pausedUntil | date: 'd MMM, HH:mm' }}</span>

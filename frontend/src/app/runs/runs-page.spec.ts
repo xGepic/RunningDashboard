@@ -37,7 +37,7 @@ describe('RunsPage', () => {
     const harness = await RouterTestingHarness.create();
     const http = TestBed.inject(HttpTestingController);
     await harness.navigateByUrl(url);
-    for (const sync of http.match('/api/sync')) sync.flush({ running: false, importedRuns: 0, lastSyncedAt: null });
+    for (const sync of http.match('/api/sync')) sync.flush({ running: false, importedActivities: 0, lastSyncedAt: null });
     for (const settings of http.match('/api/settings')) settings.flush({ distanceUnit: unit });
     harness.detectChanges();
     const request = http.expectOne((r) => r.url === '/api/runs');

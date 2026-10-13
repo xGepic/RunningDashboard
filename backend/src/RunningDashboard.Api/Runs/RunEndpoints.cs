@@ -47,11 +47,12 @@ public static class RunEndpoints
                 return Results.ValidationProblem(new Dictionary<string, string[]> { ["year"] = ["The year is between 1900 and 2099."] });
 
             var selectedYear = year ?? clock.GetLocalNow().Year;
-            var runs = await db.Runs
-                .Select(r => new { r.StartLocal, r.Distance, r.MovingTime })
-                .ToListAsync(cancellationToken);
-            var byMonth = runs
-                .Where(r => r.StartLocal.Year == selectedYear)
+            var from = new DateTime(selectedYear, 1, 1);
+            var until = from.AddYears(1);
+            var byMonth = (await db.Runs
+                    .Where(r => r.StartLocal >= from && r.StartLocal < until)
+                    .Select(r => new { r.StartLocal, r.Distance, r.MovingTime })
+                    .ToListAsync(cancellationToken))
                 .ToLookup(r => r.StartLocal.Month);
             var months = Enumerable.Range(1, 12)
                 .Select(month =>
@@ -62,8 +63,8 @@ public static class RunEndpoints
                     return new MonthTotalsResponse(month, inMonth.Count, distance, movingTime, Run.PaceOf(movingTime, distance));
                 })
                 .ToList();
-            int? firstYear = runs.Count == 0 ? null : runs.Min(r => r.StartLocal.Year);
-            return Results.Ok(new RunMonthsResponse(selectedYear, firstYear, months));
+            var firstRun = await db.Runs.MinAsync(r => (DateTime?)r.StartLocal, cancellationToken);
+            return Results.Ok(new RunMonthsResponse(selectedYear, firstRun?.Year, months));
         });
 
         app.MapGet("/api/runs/{id:long}", async (long id, AppDbContext db, CancellationToken cancellationToken) =>

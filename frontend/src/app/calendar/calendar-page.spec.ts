@@ -72,7 +72,7 @@ describe('CalendarPage', () => {
       harness.detectChanges();
     };
     await harness.navigateByUrl(url);
-    for (const sync of http.match('/api/sync')) sync.flush({ running: false, importedRuns: 0, lastSyncedAt: null });
+    for (const sync of http.match('/api/sync')) sync.flush({ running: false, importedActivities: 0, lastSyncedAt: null });
     for (const settings of http.match('/api/settings')) settings.flush({ distanceUnit: unit });
     harness.detectChanges();
     http

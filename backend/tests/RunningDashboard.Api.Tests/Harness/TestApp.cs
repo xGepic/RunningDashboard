@@ -123,6 +123,7 @@ public sealed record SyncStatusResponse(
     bool Running,
     DateTimeOffset? LastSyncedAt,
     string? Phase = null,
+    int ImportedActivities = 0,
     int ImportedRuns = 0,
     int DetailedRuns = 0,
     DateTimeOffset? PausedUntil = null,

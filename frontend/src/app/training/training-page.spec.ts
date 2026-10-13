@@ -83,7 +83,7 @@ describe('TrainingPage', () => {
     fixture.detectChanges();
     const http = TestBed.inject(HttpTestingController);
     // The sync status comes in first; the page reloads its block on it, so answer whatever it asks last.
-    http.expectOne('/api/sync').flush({ running: false, importedRuns: 0, lastSyncedAt: null });
+    http.expectOne('/api/sync').flush({ running: false, importedActivities: 0, lastSyncedAt: null });
     fixture.detectChanges();
     http.expectOne('/api/goal-races').flush([]);
     http.match('/api/training').filter((request) => !request.cancelled).forEach((request) => request.flush(answer));

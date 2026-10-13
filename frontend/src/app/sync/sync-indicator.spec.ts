@@ -8,6 +8,7 @@ describe('SyncIndicator', () => {
   const idle: SyncStatus = {
     running: false,
     phase: 'idle',
+    importedActivities: 565,
     importedRuns: 540,
     detailedRuns: 540,
     pausedUntil: null,
@@ -33,13 +34,14 @@ describe('SyncIndicator', () => {
     const element = await render({
       ...idle,
       running: true,
-      phase: 'importing-runs',
+      phase: 'importing-activities',
+      importedActivities: 337,
       importedRuns: 312,
       pausedUntil: '2026-10-09T18:15:00+00:00',
     });
 
-    expect(element.textContent).toContain('Importing Runs');
-    expect(element.textContent).toContain('312 Runs');
+    // Runs, Rides and Swims alike.
+    expect(element.textContent).toContain('Importing activities… 337 activities');
     expect(element.textContent).toContain('Paused for Strava’s rate limit until');
     expect(element.querySelector('button')?.disabled).toBe(true);
   });
@@ -82,9 +84,9 @@ describe('SyncIndicator', () => {
     });
 
     it('shows the progress while syncing, without a button', async () => {
-      const element = await render({ ...idle, running: true, phase: 'importing-runs', importedRuns: 312 }, true);
+      const element = await render({ ...idle, running: true, phase: 'importing-activities', importedActivities: 337 }, true);
 
-      expect(element.textContent).toContain('Importing Runs… 312 Runs');
+      expect(element.textContent).toContain('Importing activities… 337 activities');
       expect(element.querySelector('button')).toBeNull();
     });
 

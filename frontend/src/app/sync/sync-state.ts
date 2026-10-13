@@ -4,8 +4,10 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 /** As returned by GET/POST /api/sync. */
 export interface SyncStatus {
   running: boolean;
-  phase: 'idle' | 'importing-runs' | 'importing-details';
-  /** Runs stored so far. */
+  phase: 'idle' | 'importing-activities' | 'importing-details';
+  /** Runs, Rides and Swims stored so far. */
+  importedActivities: number;
+  /** Runs stored so far: only they have details to load. */
   importedRuns: number;
   /** Runs whose Best Efforts and splits have been fetched. */
   detailedRuns: number;
