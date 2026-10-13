@@ -97,7 +97,116 @@ public sealed class OverviewTests
         overview.Years.ShouldBeEmpty();
         overview.Weeks.ShouldBeEmpty();
         overview.Months.ShouldBeEmpty();
+        overview.Streak.ShouldBeNull();
     }
+
+    [Test]
+    public async Task The_streak_counts_the_current_week_once_it_has_a_run()
+    {
+        var browser = await _app.ConnectWithActivitiesAsync(
+            Run(1, new DateTime(2026, 9, 24)), Run(2, new DateTime(2026, 9, 29)), Run(3, new DateTime(2026, 10, 6)));
+
+        var streak = (await GetOverviewAsync(browser)).Streak!;
+
+        streak.Current.ShouldBe(3);
+        streak.ThisWeekHasRun.ShouldBeTrue();
+    }
+
+    [Test]
+    public async Task The_current_week_does_not_break_the_streak_before_its_first_run_but_a_past_week_without_one_does()
+    {
+        // A gap in the week of 14 Sep, then Runs on two Sundays.
+        var browser = await _app.ConnectWithActivitiesAsync(
+            Run(1, new DateTime(2026, 9, 8)), Run(2, new DateTime(2026, 9, 27)), Run(3, new DateTime(2026, 10, 4)));
+
+        var streak = (await GetOverviewAsync(browser)).Streak!;
+
+        streak.Current.ShouldBe(2);
+        streak.ThisWeekHasRun.ShouldBeFalse();
+    }
+
+    [Test]
+    public async Task The_longest_streak_runs_from_the_monday_of_its_first_week_to_the_sunday_of_its_last_and_a_tie_goes_to_the_more_recent()
+    {
+        var browser = await _app.ConnectWithActivitiesAsync(
+            Run(1, new DateTime(2026, 7, 28)), Run(2, new DateTime(2026, 8, 4)), Run(3, new DateTime(2026, 8, 11)),
+            Run(4, new DateTime(2026, 8, 25)), Run(5, new DateTime(2026, 9, 1)), Run(6, new DateTime(2026, 9, 8)),
+            Run(7, new DateTime(2026, 9, 29)));
+
+        var streak = (await GetOverviewAsync(browser)).Streak!;
+
+        streak.Current.ShouldBe(1);
+        streak.Longest.ShouldBe(new LongestStreakResponse(3, new DateOnly(2026, 8, 24), new DateOnly(2026, 9, 13)));
+    }
+
+    [Test]
+    public async Task The_ongoing_streak_is_the_longest_once_it_ties_a_past_one()
+    {
+        var browser = await _app.ConnectWithActivitiesAsync(
+            Run(1, new DateTime(2026, 9, 1)), Run(2, new DateTime(2026, 9, 8)),
+            Run(3, new DateTime(2026, 9, 22)), Run(4, new DateTime(2026, 9, 29)));
+
+        var streak = (await GetOverviewAsync(browser)).Streak!;
+
+        streak.Longest.ShouldBe(new LongestStreakResponse(2, new DateOnly(2026, 9, 21), new DateOnly(2026, 10, 4)));
+    }
+
+    [Test]
+    public async Task The_recent_weeks_are_the_last_twelve_up_to_the_current_one()
+    {
+        var browser = await _app.ConnectWithActivitiesAsync(
+            Run(1, new DateTime(2026, 6, 2)), Run(2, new DateTime(2026, 7, 21)), Run(3, new DateTime(2026, 8, 4)),
+            Run(4, new DateTime(2026, 9, 30)), Run(5, new DateTime(2026, 10, 6)));
+
+        var recent = (await GetOverviewAsync(browser)).Streak!.RecentWeeks;
+
+        recent.Select(w => w.Start).ShouldBe(TrainingWeeks(new DateOnly(2026, 7, 20), 12));
+        recent.Select(w => w.HasRun).ShouldBe([true, false, true, false, false, false, false, false, false, false, true, true]);
+    }
+
+    [Test]
+    public async Task The_recent_weeks_start_with_the_first_run()
+    {
+        var browser = await _app.ConnectWithActivitiesAsync(Run(1, new DateTime(2026, 9, 22)));
+
+        var recent = (await GetOverviewAsync(browser)).Streak!.RecentWeeks;
+
+        recent.ShouldBe([
+            new StreakWeekResponse(new DateOnly(2026, 9, 21), true),
+            new StreakWeekResponse(new DateOnly(2026, 9, 28), false),
+            new StreakWeekResponse(new DateOnly(2026, 10, 5), false),
+        ]);
+    }
+
+    [Test]
+    public async Task A_run_without_distance_keeps_the_streak_up()
+    {
+        var browser = await _app.ConnectWithActivitiesAsync(
+            Run(1, new DateTime(2026, 9, 22)),
+            new TestActivity(2, "Treadmill without distance", new DateTime(2026, 9, 30, 18, 0, 0), 0, 1800, SportType: "VirtualRun"));
+
+        var streak = (await GetOverviewAsync(browser)).Streak!;
+
+        streak.Current.ShouldBe(2);
+    }
+
+    [Test]
+    public async Task A_run_dated_after_this_week_does_not_lengthen_the_longest_streak()
+    {
+        // Monday morning abroad, while it is still Sunday here: a week ahead of this one.
+        var browser = await _app.ConnectWithActivitiesAsync(
+            Run(1, new DateTime(2026, 9, 29)), Run(2, new DateTime(2026, 10, 6)), Run(3, new DateTime(2026, 10, 12)));
+
+        var streak = (await GetOverviewAsync(browser)).Streak!;
+
+        streak.Current.ShouldBe(2);
+        streak.Longest.ShouldBe(new LongestStreakResponse(2, new DateOnly(2026, 9, 28), new DateOnly(2026, 10, 11)));
+    }
+
+    private static IEnumerable<DateOnly> TrainingWeeks(DateOnly firstMonday, int count) =>
+        Enumerable.Range(0, count).Select(i => firstMonday.AddDays(7 * i));
+
+    private static TestActivity Run(long id, DateTime day) => new(id, $"Run {id}", day.AddHours(18), 6000, 2400);
 
     private static double DistanceInWeek(OverviewResponse overview, DateOnly monday) =>
         overview.Weeks.Where(w => w.Start == monday).ShouldHaveSingleItem().Distance;
@@ -105,7 +214,7 @@ public sealed class OverviewTests
     private static async Task<OverviewResponse> GetOverviewAsync(HttpClient browser) =>
         (await browser.GetFromJsonAsync<OverviewResponse>("/api/overview"))!;
 
-    private sealed record OverviewResponse(TotalsResponse Totals, List<YearResponse> Years, List<WeekResponse> Weeks, List<MonthResponse> Months);
+    private sealed record OverviewResponse(TotalsResponse Totals, List<YearResponse> Years, List<WeekResponse> Weeks, List<MonthResponse> Months, StreakResponse? Streak);
 
     private sealed record TotalsResponse(int Runs, double Distance, int MovingTime, double ElevationGain);
 
@@ -114,4 +223,10 @@ public sealed class OverviewTests
     private sealed record WeekResponse(DateOnly Start, double Distance);
 
     private sealed record MonthResponse(int Year, int Month, double Distance, double? Pace);
+
+    private sealed record StreakResponse(int Current, bool ThisWeekHasRun, LongestStreakResponse Longest, List<StreakWeekResponse> RecentWeeks);
+
+    private sealed record LongestStreakResponse(int Weeks, DateOnly Start, DateOnly End);
+
+    private sealed record StreakWeekResponse(DateOnly Start, bool HasRun);
 }

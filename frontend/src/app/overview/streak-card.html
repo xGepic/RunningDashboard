@@ -1,0 +1,24 @@
+<section class="card streak" aria-labelledby="streak-title">
+  <div class="card-header">
+    <div class="titles">
+      <h2 id="streak-title" class="card-title">Streak</h2>
+      <p class="card-sub">Training Weeks in a row with at least one Run</p>
+    </div>
+  </div>
+
+  <p class="count"><span class="value">{{ streak().current }}</span> <span class="unit">{{ unit() }}</span></p>
+
+  <p class="status" [class.warning]="status().warning">{{ status().text }}</p>
+
+  @if (longest(); as longest) {
+    <p class="longest"><span class="label">Longest:</span> {{ longest }}</p>
+  } @else {
+    <p class="longest">Your Longest Streak ever</p>
+  }
+
+  <div class="strip" role="img" [attr.aria-label]="recentLabel()">
+    @for (week of recentWeeks(); track week.start) {
+      <span class="week" [class.has-run]="week.hasRun" [class.pending]="week.pending" [title]="week.title"></span>
+    }
+  </div>
+</section>

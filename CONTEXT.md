@@ -57,6 +57,14 @@ _Avoid_: PR, record
 A week from Monday to Sunday, the unit used for totals and charts.
 _Avoid_: Calendar week, rolling 7 days
 
+**Streak**:
+The number of consecutive Training Weeks, up to the current one, that each contain at least one Run, whatever its distance. The current week only adds to it once it has a Run and only breaks it once it ends without one.
+_Avoid_: Chain, run streak (as a daily streak)
+
+**Longest Streak**:
+The longest Streak across all Runs, from the Monday of its first Training Week to the Sunday of its last. Of two equally long ones it is the more recent, so the ongoing Streak becomes the Longest Streak as soon as it ties it.
+_Avoid_: Best streak, record streak
+
 **Relative Effort**:
 Strava's heart-rate-based score for how hard a Run was. Summing it over a week gives the week's training load.
 _Avoid_: Suffer score, load (on its own)

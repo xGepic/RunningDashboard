@@ -8,6 +8,7 @@ import { WeekDistance, categoryAxis, km, monthNames, shortWeekLabel, valueAxis, 
 import { formatDistance, formatPace } from '../shared/format';
 import { reloadOnSync } from '../sync/reload-on-sync';
 import { MonthPace, Overview, Totals, YearTotals } from './overview';
+import { StreakCard } from './streak-card';
 import { YearlyGoalCard } from './yearly-goal-card';
 
 const wholeNumber = new Intl.NumberFormat('en', { maximumFractionDigits: 0 });
@@ -30,7 +31,7 @@ const kpiDefinitions: { label: string; unit: string; icon: string; of: (t: Total
 
 @Component({
   selector: 'app-overview-page',
-  imports: [DecimalPipe, NgxEchartsDirective, YearlyGoalCard],
+  imports: [DecimalPipe, NgxEchartsDirective, StreakCard, YearlyGoalCard],
   templateUrl: './overview-page.html',
   styleUrl: './overview-page.scss',
 })

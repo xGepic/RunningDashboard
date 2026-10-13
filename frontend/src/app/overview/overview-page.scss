@@ -1,3 +1,26 @@
+/* The Yearly Goal and the Streak side by side, the goal wider; stacked on narrow screens. */
+.goal-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 12px;
+
+  /* Both cards as tall as the row. */
+  > * {
+    display: flex;
+    min-width: 0;
+
+    > :first-child {
+      flex: 1;
+    }
+  }
+}
+
+@media (width < 900px) {
+  .goal-row {
+    grid-template-columns: 1fr;
+  }
+}
+
 .kpis {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));

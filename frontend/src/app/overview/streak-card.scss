@@ -1,0 +1,76 @@
+.streak {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  .card-header {
+    margin: 0;
+  }
+}
+
+.count {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+
+  .value {
+    font-size: 38px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+
+  .unit {
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 14px;
+  }
+}
+
+.status {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13.5px;
+
+  &.warning {
+    color: var(--amber);
+  }
+}
+
+.longest {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13px;
+
+  .label {
+    color: var(--text-faint);
+  }
+}
+
+/* One square per recent Training Week, kept at the bottom so it lines up with the goal card's stats. */
+.strip {
+  display: flex;
+  gap: 4px;
+  margin-top: auto;
+
+  .week {
+    flex: 1 1 0;
+    max-width: 26px;
+    height: 18px;
+    border: 1px solid var(--border-strong);
+    border-radius: 4px;
+    background: var(--inset);
+
+    &.has-run {
+      border-color: var(--accent);
+      background: var(--accent);
+    }
+
+    &.pending {
+      border: 1.5px dashed var(--accent-light);
+      background: transparent;
+    }
+  }
+}
