@@ -61,6 +61,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             run.Property(r => r.SportType).HasMaxLength(50);
             run.Property(r => r.ShoeId).HasMaxLength(50);
             run.HasIndex(r => r.StartUtc);
+            // Read from the stored detail on demand.
+            run.Ignore(r => r.MileSplits);
             run.HasMany(r => r.BestEfforts).WithOne().HasForeignKey(e => e.RunId).OnDelete(DeleteBehavior.Cascade);
             run.HasMany(r => r.Splits).WithOne().HasForeignKey(s => s.RunId).OnDelete(DeleteBehavior.Cascade);
         });

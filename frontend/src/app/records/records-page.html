@@ -25,7 +25,7 @@
               </div>
               <div class="pb-time">{{ formatDuration(item.record.personalBest.elapsedTime) }}</div>
               <dl class="pb-facts">
-                <div><dt>Pace</dt><dd class="mono">{{ formatPace(item.record.personalBest.timePerKm) }}</dd></div>
+                <div><dt>Pace</dt><dd class="mono">{{ units.pace(item.record.personalBest.timePerKm) }}</dd></div>
                 <div><dt>Set</dt><dd class="mono">{{ item.record.personalBest.date | date: 'd MMM y' }}</dd></div>
                 <div>
                   <dt>Run</dt>
@@ -50,7 +50,7 @@
                 <th>Distance</th>
                 <th class="number">Time</th>
                 <th class="bar-col"><span class="visually-hidden">Relative pace</span></th>
-                <th>Per km</th>
+                <th>Per {{ units.unit() }}</th>
                 <th class="number">Date</th>
                 <th>Run</th>
               </tr>
@@ -66,7 +66,7 @@
                   </td>
                   <td class="number time">{{ formatDuration(row.record.personalBest.elapsedTime) }}</td>
                   <td class="bar-col"><div class="track thin"><span [style.width.%]="row.share"></span></div></td>
-                  <td class="mono muted">{{ formatPace(row.record.personalBest.timePerKm) }}</td>
+                  <td class="mono muted">{{ units.pace(row.record.personalBest.timePerKm) }}</td>
                   <td class="number muted">{{ row.record.personalBest.date | date: 'd MMM y' }}</td>
                   <td><a [routerLink]="['/runs', row.record.personalBest.runId]">{{ row.record.personalBest.runName }}</a></td>
                 </tr>

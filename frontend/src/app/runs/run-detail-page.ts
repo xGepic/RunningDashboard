@@ -6,7 +6,8 @@ import type { EChartsCoreOption } from 'echarts/core';
 import { NgxEchartsDirective } from 'ngx-echarts';
 import { ChartColors, ChartTheme, baseChartOptions, tooltipHtml } from '../shared/chart-theme';
 import { categoryAxis, valueAxis } from '../shared/charts';
-import { formatDistance, formatDuration, formatPace } from '../shared/format';
+import { DistanceUnit, formatDistance, formatDuration, formatPace } from '../shared/format';
+import { Units } from '../shared/units';
 import { RunDetail, Split } from './run';
 import { RunMap } from './run-map';
 import { ReplayStretch } from './replay';
@@ -24,11 +25,18 @@ export class RunDetailPage {
   private readonly theme = inject(ChartTheme);
 
   protected readonly run = httpResource<RunDetail>(() => `/api/runs/${this.id()}`);
-  protected readonly formatDistance = formatDistance;
   protected readonly formatDuration = formatDuration;
-  protected readonly formatPace = formatPace;
+  /** Distances, Pace and Splits in the Distance Unit; elevation stays in metres. */
+  protected readonly units = inject(Units);
 
-  /** What the map's replay moves at: each Split's pace, or the Run's average while it has no Splits. */
+  /** The Splits per km, or per mile when the Distance Unit is miles and Strava has them; `unit` is what each one is. */
+  protected readonly splits = computed<{ unit: DistanceUnit; splits: Split[] }>(() => {
+    if (!this.run.hasValue()) return { unit: 'km', splits: [] };
+    const run = this.run.value();
+    return this.units.unit() === 'mi' && run.mileSplits.length > 0 ? { unit: 'mi', splits: run.mileSplits } : { unit: 'km', splits: run.splits };
+  });
+
+  /** What the map's replay moves at: each km Split's pace, or the Run's average while it has no Splits. */
   protected readonly replayStretches = computed<ReplayStretch[]>(() => {
     if (!this.run.hasValue()) return [];
     const run = this.run.value();
@@ -37,16 +45,16 @@ export class RunDetailPage {
 
   protected readonly splitPace = computed(() => {
     if (!this.run.hasValue()) return null;
-    const run = this.run.value();
-    if (!run.splits.some((s) => s.pace !== null)) return null;
-    return splitPaceChart(run.splits, run.pace, this.theme.colors());
+    const { unit, splits } = this.splits();
+    if (!splits.some((s) => s.pace !== null)) return null;
+    return splitPaceChart(splits, unit, this.run.value().pace, this.units.unit(), this.theme.colors());
   });
 }
 
 /** Faster is up, as in the Overview's Pace chart; a dashed line marks the Run's own Pace. */
-function splitPaceChart(splits: Split[], runPace: number | null, colors: ChartColors): EChartsCoreOption {
+function splitPaceChart(splits: Split[], splitUnit: DistanceUnit, runPace: number | null, unit: DistanceUnit, colors: ChartColors): EChartsCoreOption {
   const base = baseChartOptions(colors);
-  const paceLabel = (seconds: number) => formatPace(seconds).replace(' /km', '');
+  const paceLabel = (seconds: number) => formatPace(seconds, unit).replace(` /${unit}`, '');
   return {
     ...base,
     tooltip: {
@@ -55,8 +63,8 @@ function splitPaceChart(splits: Split[], runPace: number | null, colors: ChartCo
       formatter: (params: { dataIndex: number }[]) => {
         const split = splits[params[0]?.dataIndex];
         if (!split) return '';
-        if (split.pace === null) return tooltipHtml(colors, `km ${split.index}`, 'no Pace');
-        return tooltipHtml(colors, `km ${split.index}`, paceLabel(split.pace), '/km', `${formatDistance(split.distance)} in ${formatDuration(split.movingTime)}`);
+        if (split.pace === null) return tooltipHtml(colors, `${splitUnit} ${split.index}`, 'no Pace');
+        return tooltipHtml(colors, `${splitUnit} ${split.index}`, paceLabel(split.pace), `/${unit}`, `${formatDistance(split.distance, unit)} in ${formatDuration(split.movingTime)}`);
       },
     },
     xAxis: { ...categoryAxis(splits.map((s) => String(s.index)), colors), boundaryGap: false },

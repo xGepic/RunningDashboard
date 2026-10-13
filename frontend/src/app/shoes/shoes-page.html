@@ -24,7 +24,7 @@
                 <span class="badge green">Most recent</span>
               }
             </div>
-            <div class="distance"><span class="value">{{ card.km }}</span><span class="unit">km</span></div>
+            <div class="distance"><span class="value">{{ card.distance }}</span><span class="unit">{{ units.unit() }}</span></div>
             <div class="share">
               <div class="share-label"><span>Share of Shoe distance</span><span class="mono">{{ card.share }}%</span></div>
               <div class="track"><span [style.width.%]="card.share" [style.background]="card.color"></span></div>
@@ -32,7 +32,7 @@
             @if (card.wear; as wear) {
               <div class="max">
                 <div class="share-label">
-                  <span>Maximum Distance <span class="mono">{{ wear.maxKm }} km</span></span>
+                  <span>Maximum Distance <span class="mono">{{ wear.max }}</span></span>
                   <span class="mono note" [class.near]="wear.status === 'near'" [class.over]="wear.status === 'over'">{{ wear.note }}</span>
                 </div>
                 <div class="track" [class.near]="wear.status === 'near'" [class.over]="wear.status === 'over'"><span [style.width.%]="wear.percent"></span></div>
@@ -40,7 +40,7 @@
             }
             <dl class="foot">
               <div><dt>Runs</dt><dd>{{ card.shoe.runs }}</dd></div>
-              <div><dt>Avg / Run</dt><dd>{{ card.average }} km</dd></div>
+              <div><dt>Avg / Run</dt><dd>{{ card.average }} {{ card.average === '–' ? '' : units.unit() }}</dd></div>
               <div><dt>Last Run</dt><dd>{{ card.shoe.lastRun ? (card.shoe.lastRun | date: 'd MMM y') : '–' }}</dd></div>
             </dl>
           </article>

@@ -137,7 +137,44 @@
       "pace_zone": 2
     }
   ],
-  "splits_standard": [],
+  "splits_standard": [
+    {
+      "distance": 1609.3,
+      "elapsed_time": 661,
+      "elevation_difference": 2.0,
+      "moving_time": 661,
+      "split": 1,
+      "average_speed": 2.435,
+      "pace_zone": 2
+    },
+    {
+      "distance": 1609.4,
+      "elapsed_time": 663,
+      "elevation_difference": -1.4,
+      "moving_time": 663,
+      "split": 2,
+      "average_speed": 2.427,
+      "pace_zone": 2
+    },
+    {
+      "distance": 1609.3,
+      "elapsed_time": 668,
+      "elevation_difference": 0.6,
+      "moving_time": 668,
+      "split": 3,
+      "average_speed": 2.409,
+      "pace_zone": 2
+    },
+    {
+      "distance": 253.2,
+      "elapsed_time": 104,
+      "elevation_difference": 0.2,
+      "moving_time": 104,
+      "split": 4,
+      "average_speed": 2.435,
+      "pace_zone": 2
+    }
+  ],
   "laps": [],
   "best_efforts": [
     {

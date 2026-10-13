@@ -11,9 +11,9 @@
       @if (totals.rides > 0) {
         <div class="stats summary" aria-label="Totals of all Rides">
           <div class="stat"><span class="label">Rides</span><span class="value">{{ totals.rides }}</span></div>
-          <div class="stat"><span class="label">Distance</span><span class="value">{{ formatDistance(totals.distance, 'km', 1) }}</span></div>
+          <div class="stat"><span class="label">Distance</span><span class="value">{{ units.distance(totals.distance, 1) }}</span></div>
           <div class="stat"><span class="label">Moving Time</span><span class="value">{{ formatHoursMinutes(totals.movingTime) }}</span></div>
-          <div class="stat"><span class="label">Avg Speed</span><span class="value">{{ formatSpeed(totals.speed) }}</span></div>
+          <div class="stat"><span class="label">Avg Speed</span><span class="value">{{ units.speed(totals.speed) }}</span></div>
         </div>
       }
     }
@@ -70,11 +70,11 @@
                   <td class="number">
                     <span class="dist">
                       <span class="track mini" aria-hidden="true"><span [style.width.%]="(ride.distance / longest()) * 100"></span></span>
-                      {{ formatDistance(ride.distance) }}
+                      {{ units.distance(ride.distance) }}
                     </span>
                   </td>
                   <td class="number">{{ formatDuration(ride.movingTime) }}</td>
-                  <td class="number muted">{{ formatSpeed(ride.speed) }}</td>
+                  <td class="number muted">{{ units.speed(ride.speed) }}</td>
                   <td class="number muted">{{ ride.elevationGain | number: '1.0-0' }} m</td>
                 </tr>
               }

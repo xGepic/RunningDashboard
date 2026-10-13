@@ -54,6 +54,8 @@ export interface RunDetail extends Run {
   route: string | null;
   bestEfforts: BestEffort[];
   splits: Split[];
+  /** Strava's splits per mile, for an Athlete who reads miles; their pace is still per km. */
+  mileSplits: Split[];
 }
 
 /** Strava's fastest time over a standard distance within this Run. */

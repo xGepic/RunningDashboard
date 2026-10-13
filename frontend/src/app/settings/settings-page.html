@@ -9,13 +9,13 @@
   <section class="card">
     <div class="card-header">
       <div class="titles">
-        <h2 class="card-title">Units</h2>
-        <p class="card-sub">Shown everywhere: distances, paces, Ride speeds, the Yearly Goal, weekly targets and Shoe wear.
+        <h2 class="card-title">Distance Unit</h2>
+        <p class="card-sub">Shown everywhere: distances, Pace, the Avg Speed of Rides, the Yearly Goal, Weekly Targets and Shoe wear.
           Swims and elevation stay in metres.</p>
       </div>
     </div>
     <div class="setting">
-      <span class="label">Distance</span>
+      <span class="label">Show distances in</span>
       <div class="segmented" role="group" aria-label="Distance Unit">
         @for (unit of distanceUnits; track unit) {
           <button type="button" [attr.aria-pressed]="units.unit() === unit" (click)="units.choose(unit)">{{ unit }}</button>

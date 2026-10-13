@@ -75,7 +75,7 @@
                     <div class="track" [class.past]="year.year !== thisYear"><span [style.width.%]="year.share"></span></div>
                   </td>
                   <td class="number">{{ year.runs | number }}</td>
-                  <td class="number">{{ formatWhole(year.distance / 1000) }} <span class="unit">km</span></td>
+                  <td class="number">{{ formatWhole(units.fromMetres(year.distance)) }} <span class="unit">{{ units.unit() }}</span></td>
                   <td class="number">{{ formatWhole(year.movingTime / 3600) }} <span class="unit">h</span></td>
                   <td class="number">{{ year.elevationGain | number: '1.0-0' }} <span class="unit">m</span></td>
                 </tr>
@@ -96,9 +96,9 @@
               <div class="stats">
                 <div class="stat">
                   <span class="label">Peak week</span>
-                  <span class="value">{{ km(stats.peak.distance) }} km <span class="unit">· {{ stats.peakLabel }}</span></span>
+                  <span class="value">{{ units.distance(stats.peak.distance, 1) }} <span class="unit">· {{ stats.peakLabel }}</span></span>
                 </div>
-                <div class="stat"><span class="label">Avg / week</span><span class="value">{{ km(stats.average) }} km</span></div>
+                <div class="stat"><span class="label">Avg / week</span><span class="value">{{ units.distance(stats.average, 1) }}</span></div>
               </div>
             }
             <div class="segmented mono" role="group" aria-label="Year">
@@ -119,7 +119,7 @@
               <thead><tr><th>Week starting</th><th class="number">Distance</th></tr></thead>
               <tbody>
                 @for (week of selectedWeeks(); track week.start) {
-                  <tr><td class="muted">{{ weekLabel(week.start) }}</td><td class="number">{{ formatDistance(week.distance) }}</td></tr>
+                  <tr><td class="muted">{{ weekLabel(week.start) }}</td><td class="number">{{ units.distance(week.distance) }}</td></tr>
                 }
               </tbody>
             </table>
@@ -157,8 +157,8 @@
                 @for (month of selectedMonths(); track month.year * 100 + month.month) {
                   <tr>
                     <td class="muted">{{ monthLabel(month) }}</td>
-                    <td class="number">{{ formatDistance(month.distance) }}</td>
-                    <td class="number">{{ formatPace(month.pace) }}</td>
+                    <td class="number">{{ units.distance(month.distance) }}</td>
+                    <td class="number">{{ units.pace(month.pace) }}</td>
                   </tr>
                 }
               </tbody>

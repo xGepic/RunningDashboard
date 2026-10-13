@@ -13,7 +13,7 @@ describe('YearlyGoalCard', () => {
 
   afterEach(() => vi.useRealTimers());
 
-  async function render(goal: YearlyGoal | null, distance: number) {
+  async function render(goal: YearlyGoal | null, distance: number, unit: 'km' | 'mi' = 'km') {
     TestBed.configureTestingModule({
       imports: [YearlyGoalCard],
       providers: [provideHttpClient(), provideHttpClientTesting()],
@@ -21,6 +21,7 @@ describe('YearlyGoalCard', () => {
     const fixture = TestBed.createComponent(YearlyGoalCard);
     fixture.componentRef.setInput('goal', goal);
     fixture.componentRef.setInput('distance', distance);
+    TestBed.inject(HttpTestingController).expectOne('/api/settings').flush({ distanceUnit: unit });
     await fixture.whenStable();
     const element = fixture.nativeElement as HTMLElement;
     const text = () => element.textContent!.replace(/\s+/g, ' ');
@@ -86,5 +87,47 @@ describe('YearlyGoalCard', () => {
 
     http.expectNone('/api/yearly-goal');
     expect(element.querySelector('.field-error')?.textContent).toContain('Enter the goal in kilometres');
+  });
+
+  describe('in miles', () => {
+    it('shows the goal, the schedule and what is needed per week in miles', async () => {
+      // 1,200 mi = 1,931,212.8 m; 1,000 mi done.
+      const { element, stats } = await render({ year: 2026, distance: 1_931_212.8 }, 1_609_344, 'mi');
+
+      expect(element.querySelector('.done .value')!.textContent).toBe('1,000');
+      expect(element.querySelector('.done .of')!.textContent).toBe('/ 1,200 mi');
+      // By the schedule, 1200 mi × 281 / 365 = 923.8 mi; and 200 mi to go over the last 12 weeks.
+      expect(stats()).toEqual(['Ahead of schedule: 76 mi', 'To go: 200 mi', 'Needed / week: 16.7 mi']);
+    });
+
+    it('sets a goal typed in miles, and fills the form with it in miles', async () => {
+      const { fixture, element, http } = await render({ year: 2026, distance: 1_931_212.8 }, 1_609_344, 'mi');
+
+      (element.querySelector('.goal-actions button') as HTMLButtonElement).click();
+      await fixture.whenStable();
+      const input = element.querySelector('input') as HTMLInputElement;
+      expect(element.querySelector('.field')!.textContent).toContain('Distance (mi)');
+      expect(input.value).toBe('1200');
+      input.value = '1500';
+      input.dispatchEvent(new Event('input'));
+      (element.querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit'));
+
+      expect(http.expectOne('/api/yearly-goal').request.body).toEqual({ distance: 2_414_016 });
+    });
+
+    it('asks for miles when it cannot read the goal', async () => {
+      const { fixture, element, http } = await render(null, 0, 'mi');
+
+      (element.querySelector('.none button') as HTMLButtonElement).click();
+      await fixture.whenStable();
+      const input = element.querySelector('input') as HTMLInputElement;
+      input.value = 'lots';
+      input.dispatchEvent(new Event('input'));
+      (element.querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit'));
+      await fixture.whenStable();
+
+      http.expectNone('/api/yearly-goal');
+      expect(element.querySelector('.field-error')?.textContent).toContain('Enter the goal in miles, e.g. 1200.');
+    });
   });
 });

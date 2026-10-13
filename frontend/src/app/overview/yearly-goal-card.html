@@ -15,9 +15,10 @@
   @if (editing()) {
     <form class="goal-form" [formGroup]="form" (ngSubmit)="save()" novalidate>
       <label class="field">
-        Distance (km)
-        <input class="mono" formControlName="km" inputmode="decimal" placeholder="e.g. 2000" [attr.aria-invalid]="!!errors()['km']" />
-        @for (error of errors()['km']; track error) {
+        Distance ({{ units.unit() }})
+        <input class="mono" formControlName="distance" inputmode="decimal" [placeholder]="units.unit() === 'mi' ? 'e.g. 1200' : 'e.g. 2000'"
+               [attr.aria-invalid]="!!errors()['distance']" />
+        @for (error of errors()['distance']; track error) {
           <span class="field-error">{{ error }}</span>
         }
       </label>
@@ -34,8 +35,8 @@
   } @else if (progress(); as p) {
     <div class="figures">
       <p class="done">
-        <span class="value">{{ wholeKm(p.done) }}</span>
-        <span class="of">/ {{ wholeKm(p.goal) }} km</span>
+        <span class="value">{{ whole(p.done) }}</span>
+        <span class="of">/ {{ whole(p.goal) }} {{ units.unit() }}</span>
       </p>
       <span class="percent mono">{{ p.percent | number: '1.0-0' }} %</span>
     </div>
@@ -52,10 +53,10 @@
       } @else {
         <div class="stat">
           <span class="label">{{ p.ahead >= 0 ? 'Ahead of schedule' : 'Behind schedule' }}</span>
-          <span class="value" [class.met]="p.ahead >= 0" [class.short]="p.ahead < 0">{{ wholeKm(p.ahead < 0 ? -p.ahead : p.ahead) }} km</span>
+          <span class="value" [class.met]="p.ahead >= 0" [class.short]="p.ahead < 0">{{ whole(p.ahead < 0 ? -p.ahead : p.ahead) }} {{ units.unit() }}</span>
         </div>
-        <div class="stat"><span class="label">To go</span><span class="value">{{ wholeKm(p.remaining) }} km</span></div>
-        <div class="stat"><span class="label">Needed / week</span><span class="value">{{ oneDecimalKm(p.perWeek) }} km</span></div>
+        <div class="stat"><span class="label">To go</span><span class="value">{{ whole(p.remaining) }} {{ units.unit() }}</span></div>
+        <div class="stat"><span class="label">Needed / week</span><span class="value">{{ oneDecimal(p.perWeek) }} {{ units.unit() }}</span></div>
       }
     </div>
   }

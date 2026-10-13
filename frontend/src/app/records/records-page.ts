@@ -6,7 +6,8 @@ import type { EChartsCoreOption } from 'echarts/core';
 import { NgxEchartsDirective } from 'ngx-echarts';
 import { ChartColors, ChartTheme, baseChartOptions, tooltipHtml } from '../shared/chart-theme';
 import { daysBetween, localDate, today } from '../shared/dates';
-import { formatDuration, formatPace } from '../shared/format';
+import { DistanceUnit, formatDuration, formatPace } from '../shared/format';
+import { Units } from '../shared/units';
 import { reloadOnSync } from '../sync/reload-on-sync';
 import { PersonalBest, RecordDistance } from './record';
 
@@ -27,7 +28,8 @@ export class RecordsPage {
 
   protected readonly records = httpResource<RecordDistance[]>(() => '/api/records');
   protected readonly formatDuration = formatDuration;
-  protected readonly formatPace = formatPace;
+  /** Pace per km or mile; the distances themselves (5K, Half Marathon) keep their names. */
+  protected readonly units = inject(Units);
   protected readonly featuredNames = featuredNames;
 
   /** Distances (metres) the Athlete picked; until they pick, the ones shown by default. */
@@ -65,7 +67,7 @@ export class RecordsPage {
       .map((record) => {
         const first = record.progression[0];
         const gain = first.elapsedTime - record.personalBest.elapsedTime;
-        return { record, first, gain, steps: record.progression.length - 1, options: progressionChart(record, colors, now) };
+        return { record, first, gain, steps: record.progression.length - 1, options: progressionChart(record, this.units.unit(), colors, now) };
       });
   });
 
@@ -100,7 +102,7 @@ interface ChartPoint {
  * Step chart of how the Personal Best improved: each step holds until the next improvement, the last one up to
  * today. Faster is up.
  */
-function progressionChart(record: RecordDistance, colors: ChartColors, now: Date): EChartsCoreOption {
+function progressionChart(record: RecordDistance, unit: DistanceUnit, colors: ChartColors, now: Date): EChartsCoreOption {
   const points: ChartPoint[] = [
     ...record.progression.map((personalBest): ChartPoint => ({ value: [personalBest.date, personalBest.elapsedTime], personalBest })),
     { value: [now.toISOString(), record.personalBest.elapsedTime], personalBest: null, symbol: 'none' },
@@ -116,7 +118,7 @@ function progressionChart(record: RecordDistance, colors: ChartColors, now: Date
         const best = params.data.personalBest;
         if (!best) return '';
         const date = new Date(best.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-        return tooltipHtml(colors, date, formatDuration(best.elapsedTime), '', `${formatPace(best.timePerKm)} · ${escapeHtml(best.runName)}`);
+        return tooltipHtml(colors, date, formatDuration(best.elapsedTime), '', `${formatPace(best.timePerKm, unit)} · ${escapeHtml(best.runName)}`);
       },
     },
     xAxis: {

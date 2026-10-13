@@ -57,8 +57,8 @@ export function barGradient(colors: ChartColors) {
   };
 }
 
-/** Column chart of distance per Training Week, in km. */
-export function weeklyDistanceChart(weeks: WeekDistance[], colors: ChartColors): EChartsCoreOption {
+/** Column chart of distance per Training Week, in kilometres or miles. */
+export function weeklyDistanceChart(weeks: WeekDistance[], unit: DistanceUnit, colors: ChartColors): EChartsCoreOption {
   const base = baseChartOptions(colors);
   return {
     ...base,
@@ -68,15 +68,15 @@ export function weeklyDistanceChart(weeks: WeekDistance[], colors: ChartColors):
       formatter: (params: { dataIndex: number }[]) => {
         const week = weeks[params[0]?.dataIndex];
         if (!week) return '';
-        return tooltipHtml(colors, `Week of ${weekLabel(week.start)}`, (week.distance / 1000).toFixed(1), 'km');
+        return tooltipHtml(colors, `Week of ${weekLabel(week.start)}`, distanceIn(week.distance, unit).toFixed(1), unit);
       },
     },
     xAxis: categoryAxis(weeks.map((w) => shortWeekLabel(w.start)), colors),
-    yAxis: valueAxis(colors, (km) => `${km} km`, true),
+    yAxis: valueAxis(colors, (value) => `${value} ${unit}`, true),
     series: [
       {
         type: 'bar',
-        data: weeks.map((w) => Math.round(w.distance / 100) / 10),
+        data: weeks.map((w) => Math.round(distanceIn(w.distance, unit) * 10) / 10),
         barMaxWidth: weeks.length > 12 ? 24 : 56,
         barCategoryGap: weeks.length > 12 ? '18%' : '28%',
         itemStyle: { color: barGradient(colors), borderRadius: [3, 3, 1, 1] },
@@ -190,9 +190,4 @@ export function monthlyDistanceChart(year: number, months: MonthDistance[], unit
         : []),
     ],
   };
-}
-
-/** Kilometres with one decimal, from metres: "41.0". */
-export function km(metres: number): string {
-  return (metres / 1000).toFixed(1);
 }

@@ -30,7 +30,7 @@ A Swim's Moving Time per 100 metres, written as min:ss /100m.
 _Avoid_: Pace (on its own, for Swims), Avg Speed
 
 **Avg Speed**:
-A Ride's distance per Moving Time, in km/h. Rides have it instead of a Pace.
+A Ride's distance per Moving Time, in km/h (mph when the Distance Unit is miles). Rides have it instead of a Pace.
 _Avoid_: Pace (for Rides), velocity
 
 **Moving Time**:
@@ -64,7 +64,7 @@ Strava's fastest time over a standard distance (e.g. 1k, 5k, 10k, half marathon,
 _Avoid_: Split, segment
 
 **Split**:
-One kilometre of a single Run as Strava divides it, with its own Moving Time and Pace; the last Split is usually shorter. Not the same as a Best Effort.
+One kilometre of a single Run as Strava divides it (one mile when the Distance Unit is miles), with its own Moving Time and Pace; the last Split is usually shorter. Not the same as a Best Effort.
 _Avoid_: Lap, km segment
 
 **Personal Best**:

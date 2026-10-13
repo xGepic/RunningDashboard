@@ -2,8 +2,9 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { Component, computed, inject, input } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { formatDistance, formatDuration, formatHoursMinutes, formatSpeed } from '../shared/format';
+import { formatDuration, formatHoursMinutes } from '../shared/format';
 import { SportSwitch } from '../shared/sport-switch';
+import { Units } from '../shared/units';
 import { reloadOnSync } from '../sync/reload-on-sync';
 import { Ride, RidePage, RideSortKey } from './ride';
 
@@ -21,7 +22,7 @@ const kinds: Record<string, { label: string; tone: string }> = {
   MountainBikeRide: { label: 'MTB', tone: 'green' },
 };
 
-/** Ride history: like Run history, but all Rides, ten a page, in km only, without filters or a page per Ride. */
+/** Ride history: like Run history, but all Rides, ten a page, without filters or a page per Ride. */
 @Component({
   selector: 'app-rides-page',
   imports: [DatePipe, DecimalPipe, RouterLink, SportSwitch],
@@ -61,10 +62,10 @@ export class RidesPage {
   /** The longest Ride listed, which fills its distance bar. */
   protected readonly longest = computed(() => Math.max(1, ...(this.rides.value()?.items ?? []).map((r) => r.distance)));
 
-  protected readonly formatDistance = formatDistance;
   protected readonly formatDuration = formatDuration;
   protected readonly formatHoursMinutes = formatHoursMinutes;
-  protected readonly formatSpeed = formatSpeed;
+  /** Distances and Avg Speed (km/h or mph) in the Distance Unit; elevation stays in metres. */
+  protected readonly units = inject(Units);
 
   constructor() {
     reloadOnSync(() => this.rides.reload());

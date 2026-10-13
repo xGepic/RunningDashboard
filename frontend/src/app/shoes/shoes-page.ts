@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
-import { Component, computed } from '@angular/core';
-import { formatTotalDistance } from '../shared/format';
+import { Component, computed, inject } from '@angular/core';
+import { Units } from '../shared/units';
 import { reloadOnSync } from '../sync/reload-on-sync';
 import { Shoe } from './shoe';
 
@@ -9,6 +9,7 @@ import { Shoe } from './shoe';
 const shoeColors = ['var(--accent)', 'var(--teal)', 'var(--amber)', 'var(--met)', '#a78bfa'];
 
 const wholeNumber = new Intl.NumberFormat('en', { maximumFractionDigits: 0 });
+const oneDecimal = new Intl.NumberFormat('en', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 /** The Maximum Distance, in metres: the same for every Shoe. */
 const maxDistance = 700_000;
@@ -24,7 +25,8 @@ const nearMaxShare = 0.9;
 })
 export class ShoesPage {
   protected readonly shoes = httpResource<Shoe[]>(() => '/api/shoes');
-  protected readonly formatTotalDistance = formatTotalDistance;
+  /** Distances in the Distance Unit; the Maximum Distance too, though it is fixed in kilometres. */
+  protected readonly units = inject(Units);
 
   /** Each Shoe with its share of all Shoes' distance; the first active one is the most recently used. */
   protected readonly cards = computed(() => {
@@ -33,12 +35,12 @@ export class ShoesPage {
     const latest = shoes.find((s) => !s.retired && s.lastRun);
     return shoes.map((shoe, i) => ({
       shoe,
-      km: wholeNumber.format(shoe.distance / 1000),
+      distance: wholeNumber.format(this.units.fromMetres(shoe.distance)),
       share: total ? Math.round((shoe.distance / total) * 100) : 0,
-      average: shoe.runs ? (shoe.distance / shoe.runs / 1000).toFixed(1) : '–',
+      average: shoe.runs ? oneDecimal.format(this.units.fromMetres(shoe.distance / shoe.runs)) : '–',
       latest: shoe === latest,
       color: shoeColors[i % shoeColors.length],
-      wear: shoe.retired ? null : wear(shoe),
+      wear: shoe.retired ? null : this.wear(shoe),
     }));
   });
 
@@ -54,25 +56,25 @@ export class ShoesPage {
       };
     };
     return [
-      metric('Distance', (s) => s.distance, (v) => formatTotalDistance(v)),
+      metric('Distance', (s) => s.distance, (v) => this.units.totalDistance(v)),
       metric('Runs', (s) => s.runs, (v) => String(v)),
-      metric('Avg per Run', (s) => (s.runs ? s.distance / s.runs : 0), (v) => `${(v / 1000).toFixed(1)} km`),
+      metric('Avg per Run', (s) => (s.runs ? s.distance / s.runs : 0), (v) => this.units.distance(v, 1)),
     ];
   });
 
   constructor() {
     reloadOnSync(() => this.shoes.reload());
   }
-}
 
-/** How far a Shoe is towards the Maximum Distance. */
-function wear(shoe: Shoe) {
-  const share = shoe.distance / maxDistance;
-  const left = maxDistance - shoe.distance;
-  return {
-    maxKm: maxDistance / 1000,
-    percent: Math.min(100, share * 100),
-    status: left < 0 ? 'over' : share >= nearMaxShare ? 'near' : 'ok',
-    note: left < 0 ? `${wholeNumber.format(-left / 1000)} km over` : `${wholeNumber.format(left / 1000)} km left`,
-  };
+  /** How far a Shoe is towards the Maximum Distance. */
+  private wear(shoe: Shoe) {
+    const share = shoe.distance / maxDistance;
+    const left = maxDistance - shoe.distance;
+    return {
+      max: this.units.totalDistance(maxDistance),
+      percent: Math.min(100, share * 100),
+      status: left < 0 ? 'over' : share >= nearMaxShare ? 'near' : 'ok',
+      note: left < 0 ? `${this.units.totalDistance(-left)} over` : `${this.units.totalDistance(left)} left`,
+    };
+  }
 }

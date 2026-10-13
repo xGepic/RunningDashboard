@@ -14,12 +14,13 @@
     </select>
     @if (frame(); as frame) {
       <dl class="readout">
-        @if (stretches().length > 1) {
+        <!-- The replay moves km Split by km Split; with miles shown, which km it is in would only confuse. -->
+        @if (stretches().length > 1 && units.unit() === 'km') {
           <div><dt>km</dt><dd>{{ frame.stretch }}</dd></div>
         }
-        <div><dt>Pace</dt><dd>{{ formatPace(frame.pace) }}</dd></div>
+        <div><dt>Pace</dt><dd>{{ units.pace(frame.pace) }}</dd></div>
         <div><dt>Time</dt><dd>{{ formatDuration(frame.time) }}</dd></div>
-        <div><dt>Distance</dt><dd>{{ formatDistance(frame.distance) }}</dd></div>
+        <div><dt>Distance</dt><dd>{{ units.distance(frame.distance) }}</dd></div>
       </dl>
     }
   </div>

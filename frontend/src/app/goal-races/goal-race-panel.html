@@ -14,8 +14,8 @@
 
     <dl class="facts">
       <div><dt class="label">Target Time</dt><dd class="value">{{ next.race.targetTime === null ? '–' : formatDuration(next.race.targetTime) }}</dd></div>
-      <div><dt class="label">Target Pace</dt><dd class="value">{{ next.targetPace === null ? '–' : formatPace(next.targetPace) }}</dd></div>
-      <div><dt class="label">Distance</dt><dd class="value">{{ formatDistance(next.race.distance) }}</dd></div>
+      <div><dt class="label">Target Pace</dt><dd class="value">{{ next.targetPace === null ? '–' : units.pace(next.targetPace) }}</dd></div>
+      <div><dt class="label">Distance</dt><dd class="value">{{ units.distance(next.race.distance) }}</dd></div>
       <div><dt class="label">Block starts</dt><dd class="value">{{ next.race.trainingBlockStart | date: 'd MMM' }}</dd></div>
     </dl>
 
@@ -106,9 +106,10 @@
 
       @if (form.controls.distance.value === custom) {
         <label class="field">
-          Custom distance (km)
-          <input formControlName="customKm" inputmode="decimal" placeholder="e.g. 15.5" [attr.aria-invalid]="!!errors()['customKm']" />
-          @for (error of errors()['customKm']; track error) {
+          Custom distance ({{ units.unit() }})
+          <input formControlName="customDistance" inputmode="decimal" [placeholder]="units.unit() === 'mi' ? 'e.g. 10' : 'e.g. 15.5'"
+                 [attr.aria-invalid]="!!errors()['customDistance']" />
+          @for (error of errors()['customDistance']; track error) {
             <span class="field-error">{{ error }}</span>
           }
         </label>

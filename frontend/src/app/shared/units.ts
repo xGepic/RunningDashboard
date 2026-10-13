@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
-import { DistanceUnit, distanceIn, formatDistance, formatPace, formatSpeed, formatTotalDistance } from './format';
+import { DistanceUnit, distanceIn, formatDistance, formatPace, formatPaceDifference, formatSpeed, formatTotalDistance, parseDistance } from './format';
 
 /** As returned by GET/PUT /api/settings. */
 export interface Settings {
@@ -17,15 +17,29 @@ export class Units {
 
   readonly unit = signal<DistanceUnit>('km');
 
+  /** Whether the Athlete has chosen a unit since the app started: the stored one, coming in later, must not undo it. */
+  private chosen = false;
+
   constructor() {
-    this.http.get<Settings>('/api/settings').subscribe({ next: (settings) => this.unit.set(settings.distanceUnit), error: () => {} });
+    // Without the setting the dashboard still works, in kilometres; there is nothing more to show for it.
+    this.http.get<Settings>('/api/settings').subscribe({
+      next: (settings) => {
+        if (!this.chosen) this.unit.set(settings.distanceUnit);
+      },
+      error: () => {},
+    });
   }
 
-  /** Shown at once; if it cannot be saved, the unit before comes back. */
+  /** Shown at once; if it cannot be saved, the unit before comes back, unless another has been chosen since. */
   choose(unit: DistanceUnit): void {
     const before = this.unit();
+    this.chosen = true;
     this.unit.set(unit);
-    this.http.put<Settings>('/api/settings', { distanceUnit: unit }).subscribe({ error: () => this.unit.set(before) });
+    this.http.put<Settings>('/api/settings', { distanceUnit: unit }).subscribe({
+      error: () => {
+        if (this.unit() === unit) this.unit.set(before);
+      },
+    });
   }
 
   distance(metres: number, fractionDigits = 2): string {
@@ -43,6 +57,25 @@ export class Units {
 
   speed(kilometresPerHour: number | null): string {
     return formatSpeed(kilometresPerHour, this.unit());
+  }
+
+  /** Against the Target Pace: "16 s/mi slower". */
+  paceDifference(secondsPerKm: number): string {
+    return formatPaceDifference(secondsPerKm, this.unit());
+  }
+
+  /**
+   * Metres from a distance the Athlete typed in the unit; null if it is not a positive number. A field left as
+   * {@link inputValue} filled it from `original` gives back those metres, so saving it unchanged does not round it.
+   */
+  parse(text: string, original: number | null = null): number | null {
+    if (original !== null && text.trim() === this.inputValue(original)) return original;
+    return parseDistance(text, this.unit());
+  }
+
+  /** Metres in the unit, to one decimal, to fill a form field: "32.5". */
+  inputValue(metres: number): string {
+    return String(Math.round(this.fromMetres(metres) * 10) / 10);
   }
 
   /** A distance the Athlete typed in the unit, in metres. */

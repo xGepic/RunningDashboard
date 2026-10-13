@@ -6,9 +6,10 @@ import { NgxEchartsDirective } from 'ngx-echarts';
 import { GoalRace } from '../goal-races/goal-race';
 import { GoalRacePanel } from '../goal-races/goal-race-panel';
 import { ChartTheme } from '../shared/chart-theme';
-import { km, weekLabel, weeklyDistanceChart } from '../shared/charts';
+import { weekLabel, weeklyDistanceChart } from '../shared/charts';
 import { daysBetween, localDate, today } from '../shared/dates';
-import { formatDistance, formatDuration, formatPace, formatPaceDifference } from '../shared/format';
+import { formatDuration } from '../shared/format';
+import { Units } from '../shared/units';
 import { reloadOnSync } from '../sync/reload-on-sync';
 import { Phase } from '../goal-races/training-plan';
 import { DayState, GoalRaceSummary, LinedUpWeek, Training } from './training';
@@ -62,13 +63,11 @@ export class TrainingPage {
   });
   protected readonly goalRaces = httpResource<GoalRace[]>(() => '/api/goal-races');
 
-  protected readonly formatDistance = formatDistance;
   protected readonly formatDuration = formatDuration;
-  protected readonly formatPace = formatPace;
-  protected readonly formatPaceDifference = formatPaceDifference;
+  /** Distances, Pace and the gap to the Target Pace in the Distance Unit. */
+  protected readonly units = inject(Units);
   protected readonly weekLabel = weekLabel;
   protected readonly dayStates = dayStates;
-  protected readonly km = km;
   protected readonly todayDate = today();
 
   private readonly goalRacePanel = viewChild(GoalRacePanel);
@@ -171,7 +170,7 @@ export class TrainingPage {
 
   protected readonly recentWeeksChart = computed(() => {
     const weeks = this.training.value()?.countdown?.recentWeeks ?? [];
-    return weeks.length ? weeklyDistanceChart(weeks, this.theme.colors()) : null;
+    return weeks.length ? weeklyDistanceChart(weeks, this.units.unit(), this.theme.colors()) : null;
   });
 
   constructor() {

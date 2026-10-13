@@ -4,11 +4,14 @@ import { Component, computed, inject, input, output, signal } from '@angular/cor
 import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { daysBetween, today } from '../shared/dates';
 import { FieldErrors, formError } from '../shared/field-errors';
-import { kilometresToMetres } from '../shared/format';
+import { Units } from '../shared/units';
 import { YearlyGoal } from './overview';
 
-const wholeKm = new Intl.NumberFormat('en', { maximumFractionDigits: 0 });
-const oneDecimalKm = new Intl.NumberFormat('en', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const whole = new Intl.NumberFormat('en', { maximumFractionDigits: 0 });
+const oneDecimal = new Intl.NumberFormat('en', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+/** For "Enter the goal in miles, e.g. 1200." */
+const unitNames = { km: { name: 'kilometres', example: '2000' }, mi: { name: 'miles', example: '1200' } };
 
 /** Metres; the most the API accepts as a goal. */
 const maxDistance = 20_000_000;
@@ -25,6 +28,8 @@ const maxDistance = 20_000_000;
 })
 export class YearlyGoalCard {
   private readonly http = inject(HttpClient);
+  /** The goal is shown and typed in the Distance Unit; the API keeps it in metres. */
+  protected readonly units = inject(Units);
 
   /** The current year's goal; none without one. */
   readonly goal = input.required<YearlyGoal | null>();
@@ -41,7 +46,8 @@ export class YearlyGoalCard {
   protected readonly saving = signal(false);
   protected readonly errors = signal<FieldErrors>({});
 
-  protected readonly form = inject(NonNullableFormBuilder).group({ km: '' });
+  /** The distance as typed, in the Distance Unit. */
+  protected readonly form = inject(NonNullableFormBuilder).group({ distance: '' });
 
   /** Where the year stands against the goal; none without one. */
   protected readonly progress = computed(() => {
@@ -66,17 +72,18 @@ export class YearlyGoalCard {
     };
   });
 
-  protected wholeKm(metres: number): string {
-    return wholeKm.format(metres / 1000);
+  /** Whole kilometres or miles, without the unit: "1,642". */
+  protected whole(metres: number): string {
+    return whole.format(this.units.fromMetres(metres));
   }
 
-  protected oneDecimalKm(metres: number): string {
-    return oneDecimalKm.format(metres / 1000);
+  protected oneDecimal(metres: number): string {
+    return oneDecimal.format(this.units.fromMetres(metres));
   }
 
   protected edit(): void {
     const goal = this.goal();
-    this.form.setValue({ km: goal ? String(goal.distance / 1000) : '' });
+    this.form.setValue({ distance: goal ? this.units.inputValue(goal.distance) : '' });
     this.errors.set({});
     this.editing.set(true);
   }
@@ -87,13 +94,15 @@ export class YearlyGoalCard {
   }
 
   protected save(): void {
-    const distance = kilometresToMetres(this.form.getRawValue().km);
+    // A goal saved as it was keeps its metres, though the field shows it rounded.
+    const distance = this.units.parse(this.form.getRawValue().distance, this.goal()?.distance ?? null);
     if (distance === null) {
-      this.errors.set({ km: ['Enter the goal in kilometres, e.g. 2000.'] });
+      const unit = unitNames[this.units.unit()];
+      this.errors.set({ distance: [`Enter the goal in ${unit.name}, e.g. ${unit.example}.`] });
       return;
     }
     if (distance > maxDistance) {
-      this.errors.set({ km: [`The goal is at most ${wholeKm.format(maxDistance / 1000)} km.`] });
+      this.errors.set({ distance: [`The goal is at most ${this.whole(maxDistance)} ${this.units.unit()}.`] });
       return;
     }
     this.saving.set(true);
@@ -105,9 +114,8 @@ export class YearlyGoalCard {
       },
       error: (response: HttpErrorResponse) => {
         this.saving.set(false);
-        // The API names the field in metres; the form's field is the one in kilometres.
         const errors = response.error?.errors as FieldErrors | undefined;
-        this.errors.set(errors?.['distance'] ? { km: errors['distance'] } : { [formError]: ['The goal could not be saved.'] });
+        this.errors.set(errors?.['distance'] ? { distance: errors['distance'] } : { [formError]: ['The goal could not be saved.'] });
       },
     });
   }

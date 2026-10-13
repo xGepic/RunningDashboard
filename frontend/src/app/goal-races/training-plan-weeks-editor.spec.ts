@@ -40,13 +40,16 @@ function week(weeksToRace: number, start: string, planned: Partial<TrainingPlanW
 }
 
 describe('TrainingPlanWeeksEditor', () => {
-  async function render() {
+  /** The Distance Unit comes in after the editor first shows, as it may in the app. */
+  async function render(unit: 'km' | 'mi' = 'km') {
     TestBed.configureTestingModule({
       imports: [TrainingPlanWeeksEditor],
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });
     const fixture = TestBed.createComponent(TrainingPlanWeeksEditor);
     fixture.componentRef.setInput('plan', plan);
+    await fixture.whenStable();
+    TestBed.inject(HttpTestingController).expectOne('/api/settings').flush({ distanceUnit: unit });
     await fixture.whenStable();
     const element = fixture.nativeElement as HTMLElement;
     const row = (weeksToRace: number) => element.querySelector(`tr[data-weeks-to-race="${weeksToRace}"]`) as HTMLElement;
@@ -188,5 +191,46 @@ describe('TrainingPlanWeeksEditor', () => {
 
     TestBed.inject(HttpTestingController).expectNone('/api/goal-races/7/training-plan/weeks');
     expect(row(-1).textContent).toContain('Enter kilometres');
+  });
+
+  describe('in miles', () => {
+    it('shows the planned distance and Long Run in miles', async () => {
+      const { row } = await render('mi');
+
+      const distance = row(-2).querySelector('input.distance') as HTMLInputElement;
+      // 45 km is 27.96 mi, 18 km is 11.18 mi.
+      expect(distance.value).toBe('28');
+      expect((row(-2).querySelector('input.long-run') as HTMLInputElement).value).toBe('11.2');
+      expect(distance.getAttribute('aria-label')).toBe('Planned distance in mi, week -2');
+    });
+
+    it('sends typed miles as metres', async () => {
+      const { fixture, row, save } = await render('mi');
+      const distance = row(-1).querySelector('input.distance') as HTMLInputElement;
+
+      distance.value = '20';
+      distance.dispatchEvent(new Event('input'));
+      await fixture.whenStable();
+
+      expect((await save()).weeks[1]).toMatchObject({ plannedDistance: 32186.9, plannedLongRun: null });
+    });
+
+    it('saves weeks left as they were with their metres, not rounded to the tenth of a mile', async () => {
+      const { save } = await render('mi');
+
+      expect((await save()).weeks[0]).toMatchObject({ plannedDistance: 45000, plannedLongRun: 18000 });
+    });
+
+    it('asks for miles when it cannot read one', async () => {
+      const { fixture, row, click, element } = await render('mi');
+      const longRun = row(-1).querySelector('input.long-run') as HTMLInputElement;
+
+      longRun.value = 'far';
+      longRun.dispatchEvent(new Event('input'));
+      await fixture.whenStable();
+      await click(element.querySelector('button.save'));
+
+      expect(row(-1).textContent).toContain('Enter miles, e.g. 20.');
+    });
   });
 });

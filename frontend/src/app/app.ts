@@ -8,7 +8,8 @@ import { ConnectionStatus } from './connection/connection-status';
 import { monthFragments } from './calendar/calendar-page';
 import { RunPage } from './runs/run';
 import { fullMonthNames } from './shared/dates';
-import { formatDistance, formatDuration } from './shared/format';
+import { formatDuration } from './shared/format';
+import { Units } from './shared/units';
 import { reloadOnSync } from './sync/reload-on-sync';
 
 interface NavItem {
@@ -45,6 +46,8 @@ const settingsItem: NavItem = {
 })
 export class App {
   private readonly router = inject(Router);
+  /** Loads the Distance Unit as the app starts, and shows the last Run in it. */
+  private readonly units = inject(Units);
 
   protected readonly nav = navItems;
   protected readonly settings = settingsItem;
@@ -67,7 +70,7 @@ export class App {
   protected readonly breadcrumb = computed(() => {
     const [path] = this.url().split(/[?#]/);
     const fragment = this.url().split('#')[1] ?? '';
-    const section = [...navItems, settingsItem].reverse().find((item) =>
+    const section = [...this.tabs].reverse().find((item) =>
       item.path === '/' ? path === '/' : [item.path, ...(item.also ?? [])].some((sectionPath) => path.startsWith(sectionPath)));
     const month = monthFragments.indexOf(fragment);
     if (/^\/calendar(\/\d{4})?$/.test(path) && month >= 0) {
@@ -95,7 +98,7 @@ export class App {
   protected readonly lastRun = computed(() => {
     if (!this.latestRuns.hasValue()) return null;
     const run = this.latestRuns.value().items[0];
-    return run ? { ...run, figures: `${formatDistance(run.distance)} · ${formatDuration(run.movingTime)}` } : null;
+    return run ? { ...run, figures: `${this.units.distance(run.distance)} · ${formatDuration(run.movingTime)}` } : null;
   });
 
   constructor() {

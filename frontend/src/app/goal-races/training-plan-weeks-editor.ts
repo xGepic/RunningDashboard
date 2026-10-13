@@ -1,8 +1,9 @@
 import { DatePipe } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, input, linkedSignal, output, signal } from '@angular/core';
+import { Component, computed, inject, input, linkedSignal, output, signal } from '@angular/core';
 import { FieldErrors, formError } from '../shared/field-errors';
-import { kilometresToMetres } from '../shared/format';
+import { DistanceUnit } from '../shared/format';
+import { Units } from '../shared/units';
 import {
   DayPlan,
   RunningDay,
@@ -17,10 +18,10 @@ import {
 /** One row of the editor: a week of the plan with what the Athlete has entered for it. */
 interface WeekRow {
   week: TrainingPlanWeek;
-  /** The planned distance as typed. */
-  distanceKm: string;
-  /** The planned Long Run as typed. */
-  longRunKm: string;
+  /** The planned distance as typed, in the Distance Unit. */
+  distance: string;
+  /** The planned Long Run as typed, in the Distance Unit. */
+  longRun: string;
   /** Monday first. */
   runningDays: RunningDay[];
   recoveryWeek: boolean;
@@ -38,6 +39,7 @@ type WeekField = 'weeksToRace' | 'plannedDistance' | 'plannedLongRun' | 'running
 })
 export class TrainingPlanWeeksEditor {
   private readonly http = inject(HttpClient);
+  protected readonly units = inject(Units);
 
   readonly plan = input.required<TrainingPlan>();
   /** The plan as saved with the new weeks. */
@@ -47,16 +49,18 @@ export class TrainingPlanWeeksEditor {
   protected readonly runTypes = runTypes;
   protected readonly formError = formError;
 
+  private readonly planInUnit = computed(() => ({ plan: this.plan(), unit: this.units.unit() }));
+
   /**
    * One per week of the plan. When the plan changes shape, weeks still in it keep what was entered, saved or not;
-   * new weeks start from the plan.
+   * new weeks start from the plan. A new Distance Unit starts all weeks from the plan again, in that unit.
    */
-  protected readonly rows = linkedSignal<TrainingPlan, WeekRow[]>({
-    source: this.plan,
-    computation: (plan, previous) =>
+  protected readonly rows = linkedSignal<{ plan: TrainingPlan; unit: DistanceUnit }, WeekRow[]>({
+    source: this.planInUnit,
+    computation: ({ plan, unit }, previous) =>
       plan.weeks.map((week) => {
-        const entered = previous?.value.find((row) => row.week.weeksToRace === week.weeksToRace);
-        return entered ? { ...entered, week } : rowOf(week);
+        const entered = previous?.source.unit === unit ? previous.value.find((row) => row.week.weeksToRace === week.weeksToRace) : undefined;
+        return entered ? { ...entered, week } : this.rowOf(week);
       }),
   });
   /** Keyed by row number, so they go once the plan changes shape. */
@@ -92,15 +96,15 @@ export class TrainingPlanWeeksEditor {
 
   /** The Weekly Target and Running Days of the week above; whether it is a Recovery Week stays the Athlete's call. */
   protected copyFromPrevious(index: number): void {
-    const { distanceKm, longRunKm, runningDays } = this.rows()[index - 1];
-    this.edit(index, { distanceKm, longRunKm, runningDays });
+    const { distance, longRun, runningDays } = this.rows()[index - 1];
+    this.edit(index, { distance, longRun, runningDays });
   }
 
   protected save(): void {
     const typingErrors: FieldErrors = {};
     const weeks = this.rows().map((row, i): TrainingPlanWeekRequest => {
-      const plannedDistance = kilometres(row.distanceKm, () => (typingErrors[`weeks[${i}].plannedDistance`] = [typingError]));
-      const plannedLongRun = kilometres(row.longRunKm, () => (typingErrors[`weeks[${i}].plannedLongRun`] = [typingError]));
+      const plannedDistance = this.metres(row.distance, row.week.plannedDistance, () => (typingErrors[`weeks[${i}].plannedDistance`] = [typingErrorFor[this.units.unit()]]));
+      const plannedLongRun = this.metres(row.longRun, row.week.plannedLongRun, () => (typingErrors[`weeks[${i}].plannedLongRun`] = [typingErrorFor[this.units.unit()]]));
       return { weeksToRace: row.week.weeksToRace, plannedDistance, plannedLongRun, runningDays: row.runningDays, recoveryWeek: row.recoveryWeek };
     });
     this.errors.set(typingErrors);
@@ -119,24 +123,28 @@ export class TrainingPlanWeeksEditor {
       },
     });
   }
+
+  private rowOf(week: TrainingPlanWeek): WeekRow {
+    return {
+      week,
+      distance: week.plannedDistance === null ? '' : this.units.inputValue(week.plannedDistance),
+      longRun: week.plannedLongRun === null ? '' : this.units.inputValue(week.plannedLongRun),
+      runningDays: week.runningDays,
+      recoveryWeek: week.recoveryWeek,
+    };
+  }
+
+  /**
+   * Metres from a distance as typed; null for an empty field, and for one it cannot read after telling `invalid`.
+   * A field left as the plan filled it keeps the plan's metres.
+   */
+  private metres(text: string, planned: number | null, invalid: () => void): number | null {
+    if (text.trim() === '') return null;
+    const metres = this.units.parse(text, planned);
+    if (metres === null) invalid();
+    return metres;
+  }
 }
 
-const typingError = 'Enter kilometres, e.g. 32.5.';
-
-function rowOf(week: TrainingPlanWeek): WeekRow {
-  return {
-    week,
-    distanceKm: week.plannedDistance === null ? '' : String(week.plannedDistance / 1000),
-    longRunKm: week.plannedLongRun === null ? '' : String(week.plannedLongRun / 1000),
-    runningDays: week.runningDays,
-    recoveryWeek: week.recoveryWeek,
-  };
-}
-
-/** Metres from kilometres as typed; null for an empty field, and for one it cannot read after telling `invalid`. */
-function kilometres(text: string, invalid: () => void): number | null {
-  if (text.trim() === '') return null;
-  const metres = kilometresToMetres(text);
-  if (metres === null) invalid();
-  return metres;
-}
+/** What a field says when it cannot be read, in the Distance Unit. */
+const typingErrorFor: Record<DistanceUnit, string> = { km: 'Enter kilometres, e.g. 32.5.', mi: 'Enter miles, e.g. 20.' };

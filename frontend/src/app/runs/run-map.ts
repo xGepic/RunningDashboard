@@ -13,7 +13,8 @@ import {
   viewChild,
 } from '@angular/core';
 import * as L from 'leaflet';
-import { formatDistance, formatDuration, formatPace } from '../shared/format';
+import { formatDuration } from '../shared/format';
+import { Units } from '../shared/units';
 import { decodePolyline } from '../shared/polyline';
 import { Replay, ReplayStretch } from './replay';
 
@@ -58,9 +59,9 @@ export class RunMap {
   readonly stretches = input.required<ReplayStretch[]>();
 
   protected readonly speeds = speeds;
-  protected readonly formatDistance = formatDistance;
   protected readonly formatDuration = formatDuration;
-  protected readonly formatPace = formatPace;
+  /** The readout's Pace and distance in the Distance Unit. */
+  protected readonly units = inject(Units);
 
   private readonly points = computed(() => decodePolyline(this.route()));
   protected readonly replay = computed(() => new Replay(this.points(), this.stretches()));

@@ -61,11 +61,11 @@ export function formatSwimPace(secondsPer100m: number | null): string {
   return `${Math.floor(total / 60)}:${pad(total % 60)} /100m`;
 }
 
-/** Whole seconds per km against the Target Pace: "3 s/km slower", "1:12 /km faster" or "on Target Pace". */
-export function formatPaceDifference(secondsPerKm: number): string {
-  const seconds = Math.round(Math.abs(secondsPerKm));
+/** Whole seconds per km (or mile) against the Target Pace: "3 s/km slower", "1:12 /km faster" or "on Target Pace". */
+export function formatPaceDifference(secondsPerKm: number, unit: DistanceUnit = 'km'): string {
+  const seconds = Math.round((Math.abs(secondsPerKm) * metresPer[unit]) / 1000);
   if (seconds === 0) return 'on Target Pace';
-  const amount = seconds < 60 ? `${seconds} s/km` : formatPace(seconds);
+  const amount = seconds < 60 ? `${seconds} s/${unit}` : `${Math.floor(seconds / 60)}:${pad(seconds % 60)} /${unit}`;
   return `${amount} ${secondsPerKm > 0 ? 'slower' : 'faster'}`;
 }
 
@@ -84,10 +84,10 @@ export function parseDuration(text: string): number | null {
   return hours * 3600 + minutes * 60 + seconds;
 }
 
-/** Metres from kilometres as typed, accepting a decimal comma; null if it is not a positive number. */
-export function kilometresToMetres(text: string): number | null {
-  const km = Number(text.trim().replace(',', '.'));
-  return text.trim() === '' || Number.isNaN(km) || km <= 0 ? null : Math.round(km * 1000 * 10) / 10;
+/** Metres, to the decimetre, from a distance typed in kilometres or miles, accepting a decimal comma; null if it is not a positive number. */
+export function parseDistance(text: string, unit: DistanceUnit): number | null {
+  const distance = Number(text.trim().replace(',', '.'));
+  return text.trim() === '' || Number.isNaN(distance) || distance <= 0 ? null : Math.round(distance * metresPer[unit] * 10) / 10;
 }
 
 function pad(value: number): string {

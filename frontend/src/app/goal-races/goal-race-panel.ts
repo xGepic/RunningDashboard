@@ -4,7 +4,8 @@ import { Component, ElementRef, Injector, afterNextRender, computed, inject, inp
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { formatDistance, formatDuration, formatPace, kilometresToMetres, parseDuration } from '../shared/format';
+import { formatDuration, parseDuration } from '../shared/format';
+import { Units } from '../shared/units';
 import { daysBetween, localDate, today } from '../shared/dates';
 import { FieldErrors, formError } from '../shared/field-errors';
 import { GoalRace, GoalRaceRequest, distancePresets } from './goal-race';
@@ -36,8 +37,8 @@ export class GoalRacePanel {
   protected readonly custom = custom;
   protected readonly formError = formError;
   protected readonly formatDuration = formatDuration;
-  protected readonly formatDistance = formatDistance;
-  protected readonly formatPace = formatPace;
+  /** Distance and Target Pace are shown, and a custom distance typed, in the Distance Unit. */
+  protected readonly units = inject(Units);
 
   /** The race being edited; null while the form creates a new one. */
   protected readonly editing = signal<GoalRace | null>(null);
@@ -51,7 +52,8 @@ export class GoalRacePanel {
     date: '',
     /** A preset's distance in metres, as text, or "custom". */
     distance: String(distancePresets[0].distance),
-    customKm: '',
+    /** In the Distance Unit. */
+    customDistance: '',
     /** h:mm:ss, or empty for none. */
     targetTime: '',
     /** From a number input: null while it is empty or not a number. */
@@ -99,7 +101,7 @@ export class GoalRacePanel {
   });
 
   protected distanceLabel(metres: number): string {
-    return presetFor(metres)?.name ?? formatDistance(metres);
+    return presetFor(metres)?.name ?? this.units.distance(metres);
   }
 
   /** Opens the modal with the form on <code>race</code>. */
@@ -109,7 +111,7 @@ export class GoalRacePanel {
       name: race.name,
       date: race.date,
       distance: preset ? String(preset.distance) : custom,
-      customKm: preset ? '' : String(race.distance / 1000),
+      customDistance: preset ? '' : this.units.inputValue(race.distance),
       targetTime: race.targetTime === null ? '' : formatDuration(race.targetTime),
       trainingBlockWeeks: race.trainingBlockWeeks,
     });
@@ -134,7 +136,8 @@ export class GoalRacePanel {
   protected save(): void {
     const value = this.form.getRawValue();
     const targetTime = value.targetTime.trim() === '' ? null : parseDuration(value.targetTime);
-    const distance = value.distance === custom ? kilometresToMetres(value.customKm) : Number(value.distance);
+    // A custom distance saved as it was keeps its metres, though the field shows it rounded.
+    const distance = value.distance === custom ? this.units.parse(value.customDistance, this.editing()?.distance ?? null) : Number(value.distance);
     const weeks = value.trainingBlockWeeks;
 
     // What the API could not even read gets its message here, in the units the Athlete typed.
@@ -142,7 +145,7 @@ export class GoalRacePanel {
     if (targetTime === null && value.targetTime.trim() !== '')
       typingErrors['targetTime'] = ['Write the Target Time as h:mm:ss, e.g. 4:59:59.'];
     if (value.distance === custom && distance === null)
-      typingErrors['customKm'] = ['Enter the distance in kilometres, e.g. 15.5.'];
+      typingErrors['customDistance'] = [this.units.unit() === 'mi' ? 'Enter the distance in miles, e.g. 10.' : 'Enter the distance in kilometres, e.g. 15.5.'];
     if (weeks !== null && !Number.isInteger(weeks))
       typingErrors['trainingBlockWeeks'] = ['The Training Block is a whole number of weeks.'];
     if (Object.keys(typingErrors).length > 0) {

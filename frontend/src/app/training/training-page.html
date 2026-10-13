@@ -57,9 +57,9 @@
         <div class="hero-side">
           <dl class="facts">
             <div><dt class="label">Block length</dt><dd class="value">{{ hero.weekCount }} weeks</dd></div>
-            <div><dt class="label">Race distance</dt><dd class="value">{{ formatDistance(hero.goalRace.distance) }}</dd></div>
+            <div><dt class="label">Race distance</dt><dd class="value">{{ units.distance(hero.goalRace.distance) }}</dd></div>
             <div><dt class="label">Target Time</dt><dd class="value">{{ hero.goalRace.targetTime === null ? '–' : formatDuration(hero.goalRace.targetTime) }}</dd></div>
-            <div><dt class="label">Target Pace</dt><dd class="value">{{ hero.targetPace === null ? '–' : formatPace(hero.targetPace) }}</dd></div>
+            <div><dt class="label">Target Pace</dt><dd class="value">{{ hero.targetPace === null ? '–' : units.pace(hero.targetPace) }}</dd></div>
           </dl>
           <div class="timeline" aria-hidden="true">
             <div class="ends">
@@ -94,9 +94,9 @@
           <div class="race-info">
             <h2>{{ block.goalRace.name }}</h2>
             <p>
-              {{ block.goalRace.date | date: 'EEEE d MMMM y' }} · {{ formatDistance(block.goalRace.distance) }}
+              {{ block.goalRace.date | date: 'EEEE d MMMM y' }} · {{ units.distance(block.goalRace.distance) }}
               @if (block.goalRace.targetTime !== null && block.targetPace !== null) {
-                · Target Time <b>{{ formatDuration(block.goalRace.targetTime) }}</b>, Target Pace <b>{{ formatPace(block.targetPace) }}</b>
+                · Target Time <b>{{ formatDuration(block.goalRace.targetTime) }}</b>, Target Pace <b>{{ units.pace(block.targetPace) }}</b>
               }
             </p>
             <div class="race-actions">
@@ -212,17 +212,17 @@
       <ng-template #actualCells let-week let-compared="compared" let-plan="plan">
         @if (week?.actual; as actual) {
           <td class="number" [class.compared]="compared" [title]="compared ? 'Week of ' + (week.start | date: 'd MMM y') : ''">
-            <span [class]="metClass(plan?.distanceMet)">{{ formatDistance(actual.distance) }}</span>
+            <span [class]="metClass(plan?.distanceMet)">{{ units.distance(actual.distance) }}</span>
             <ng-container *ngTemplateOutlet="planned; context: { $implicit: plan?.plannedDistance }" />
           </td>
           <td class="number" [class.compared]="compared">{{ formatDuration(actual.movingTime) }}</td>
           <td class="number" [class.compared]="compared">{{ actual.relativeEffort === null ? '–' : (actual.relativeEffort | number: '1.0-0') }}</td>
           <td class="long-run" [class.compared]="compared">
             @if (actual.longRun; as longRun) {
-              <a [routerLink]="['/runs', longRun.runId]" [title]="longRun.name" [class]="metClass(plan?.longRunMet)">{{ formatDistance(longRun.distance) }}</a>
-              at {{ formatPace(longRun.pace) }}
+              <a [routerLink]="['/runs', longRun.runId]" [title]="longRun.name" [class]="metClass(plan?.longRunMet)">{{ units.distance(longRun.distance) }}</a>
+              at {{ units.pace(longRun.pace) }}
               @if (longRun.paceVsTarget !== null) {
-                <span class="vs-target" [class.ahead]="longRun.paceVsTarget <= 0">{{ formatPaceDifference(longRun.paceVsTarget) }}</span>
+                <span class="vs-target" [class.ahead]="longRun.paceVsTarget <= 0">{{ units.paceDifference(longRun.paceVsTarget) }}</span>
               }
             } @else {
               <span [class]="metClass(plan?.longRunMet)">–</span>
@@ -246,7 +246,7 @@
       <!-- What the plan has: a planned distance or Long Run, if any. -->
       <ng-template #planned let-distance>
         @if (distance != null) {
-          <span class="planned">planned {{ formatDistance(distance) }}</span>
+          <span class="planned">planned {{ units.distance(distance) }}</span>
         }
       </ng-template>
     } @else if (training.countdown; as countdown) {
@@ -257,8 +257,8 @@
             <p class="card-sub">The last {{ countdown.recentWeeks.length }} Training Weeks</p>
           </div>
           <div class="stats">
-            <div class="stat"><span class="label">Total</span><span class="value">{{ km(recent().total) }} km</span></div>
-            <div class="stat"><span class="label">Avg / week</span><span class="value">{{ km(recent().average) }} km</span></div>
+            <div class="stat"><span class="label">Total</span><span class="value">{{ units.distance(recent().total, 1) }}</span></div>
+            <div class="stat"><span class="label">Avg / week</span><span class="value">{{ units.distance(recent().average, 1) }}</span></div>
           </div>
         </div>
         @if (recentWeeksChart(); as options) {
@@ -272,7 +272,7 @@
               <thead><tr><th>Week starting</th><th class="number">Distance</th></tr></thead>
               <tbody>
                 @for (week of countdown.recentWeeks; track week.start) {
-                  <tr><td class="muted">{{ weekLabel(week.start) }}</td><td class="number">{{ formatDistance(week.distance) }}</td></tr>
+                  <tr><td class="muted">{{ weekLabel(week.start) }}</td><td class="number">{{ units.distance(week.distance) }}</td></tr>
                 }
               </tbody>
             </table>

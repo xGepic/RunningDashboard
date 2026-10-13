@@ -5,8 +5,8 @@
         <th class="number">Weeks to Race</th>
         <th>Training Week</th>
         <th>Phase</th>
-        <th>Distance (km)</th>
-        <th>Long Run (km)</th>
+        <th>Distance ({{ units.unit() }})</th>
+        <th>Long Run ({{ units.unit() }})</th>
         <th>Running Days</th>
         <th>Recovery Week</th>
         <th><span class="visually-hidden">Copy</span></th>
@@ -24,18 +24,18 @@
           <td class="dates"><span>{{ row.week.start | date: 'd MMM' }} –</span>&ngsp;<span>{{ row.week.end | date: 'd MMM y' }}</span></td>
           <td><span class="phase">{{ row.week.phase }}</span></td>
           <td>
-            <input class="distance" inputmode="decimal" [value]="row.distanceKm"
-                   (input)="edit(i, { distanceKm: $any($event.target).value })"
-                   [attr.aria-label]="'Planned distance in km, week ' + row.week.weeksToRace"
+            <input class="distance" inputmode="decimal" [value]="row.distance"
+                   (input)="edit(i, { distance: $any($event.target).value })"
+                   [attr.aria-label]="'Planned distance in ' + units.unit() + ', week ' + row.week.weeksToRace"
                    [attr.aria-invalid]="fieldErrors(i, 'plannedDistance').length > 0" />
             @for (error of fieldErrors(i, 'plannedDistance'); track error) {
               <span class="field-error">{{ error }}</span>
             }
           </td>
           <td>
-            <input class="long-run" inputmode="decimal" [value]="row.longRunKm"
-                   (input)="edit(i, { longRunKm: $any($event.target).value })"
-                   [attr.aria-label]="'Planned Long Run in km, week ' + row.week.weeksToRace"
+            <input class="long-run" inputmode="decimal" [value]="row.longRun"
+                   (input)="edit(i, { longRun: $any($event.target).value })"
+                   [attr.aria-label]="'Planned Long Run in ' + units.unit() + ', week ' + row.week.weeksToRace"
                    [attr.aria-invalid]="fieldErrors(i, 'plannedLongRun').length > 0" />
             @for (error of fieldErrors(i, 'plannedLongRun'); track error) {
               <span class="field-error">{{ error }}</span>

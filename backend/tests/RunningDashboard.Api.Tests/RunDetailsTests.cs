@@ -58,6 +58,39 @@ public sealed class RunDetailsTests
     }
 
     [Test]
+    public async Task A_run_also_has_strava_s_mile_splits_for_athletes_who_read_miles()
+    {
+        StravaHasTheFirstPageOfActivities(_app);
+        _app.Strava.RespondWithFixture(HttpMethod.Get, DetailPath(EveningRun), $"activity-{EveningRun}.json");
+        _app.Strava.RespondWithFixture(HttpMethod.Get, DetailPath(LaufAmNachmittag), $"activity-{LaufAmNachmittag}.json");
+        var browser = _app.CreateBrowser();
+
+        await _app.ConnectStravaAsync(browser);
+        await TestApp.WaitForSyncAsync(browser);
+        var run = (await browser.GetFromJsonAsync<RunDetailResponse>($"/api/runs/{EveningRun}"))!;
+
+        run.MileSplits.Select(s => (s.Index, s.Distance, s.MovingTime, s.ElevationDifference))
+            .ShouldBe([(1, 1609.3, 661, 2.0), (2, 1609.4, 663, -1.4), (3, 1609.3, 668, 0.6), (4, 253.2, 104, 0.2)]);
+        // Pace is still per kilometre: 661 s over 1609.3 m = 6:50.7 /km.
+        run.MileSplits[0].Pace.ShouldBe(410.7, 0.05);
+    }
+
+    [Test]
+    public async Task A_run_whose_detail_is_still_to_come_has_no_mile_splits_yet()
+    {
+        StravaHasTheFirstPageOfActivities(_app);
+        _app.Strava.Respond(HttpMethod.Get, DetailPath(EveningRun), () => new HttpResponseMessage(HttpStatusCode.InternalServerError));
+        _app.Strava.RespondWithFixture(HttpMethod.Get, DetailPath(LaufAmNachmittag), $"activity-{LaufAmNachmittag}.json");
+        var browser = _app.CreateBrowser();
+
+        await _app.ConnectStravaAsync(browser);
+        await TestApp.WaitForStatusAsync(browser, s => !s.Running && s.LastError is not null);
+        var run = (await browser.GetFromJsonAsync<RunDetailResponse>($"/api/runs/{EveningRun}"))!;
+
+        run.MileSplits.ShouldBeEmpty();
+    }
+
+    [Test]
     public async Task While_details_load_the_status_shows_how_many_runs_are_detailed()
     {
         var releaseSecondDetail = new TaskCompletionSource();
@@ -232,7 +265,8 @@ public sealed class RunDetailsTests
         string Detail,
         string? Route,
         List<BestEffortResponse> BestEfforts,
-        List<SplitResponse> Splits);
+        List<SplitResponse> Splits,
+        List<SplitResponse> MileSplits);
 
     private sealed record BestEffortResponse(string Name, double Distance, int ElapsedTime, double? TimePerKm);
 

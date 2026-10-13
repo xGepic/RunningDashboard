@@ -21,6 +21,7 @@ internal sealed record RunResponse(long Id, string Name, string SportType, DateT
 
 /// <param name="Detail">"pending", "loaded" or "unavailable": whether Best Efforts and splits are in.</param>
 /// <param name="Route">Google's encoded polyline of the route; none for a Run without GPS.</param>
+/// <param name="MileSplits">Strava's splits per mile, for an Athlete who reads miles; Pace is still per kilometre.</param>
 internal sealed record RunDetailResponse(
     long Id,
     string Name,
@@ -37,7 +38,8 @@ internal sealed record RunDetailResponse(
     string Detail,
     string? Route,
     IReadOnlyList<BestEffortResponse> BestEfforts,
-    IReadOnlyList<SplitResponse> Splits)
+    IReadOnlyList<SplitResponse> Splits,
+    IReadOnlyList<SplitResponse> MileSplits)
 {
     /// <param name="personalBestDistances">Distances at which the Run's Best Effort was a Personal Best at the time.</param>
     public static RunDetailResponse From(Run run, string? shoeName, HashSet<double> personalBestDistances) => new(
@@ -60,6 +62,9 @@ internal sealed record RunDetailResponse(
             .Select(e => new BestEffortResponse(
                 e.Name, e.Distance, e.ElapsedTime, Run.PerKilometre(e.ElapsedTime, e.Distance), personalBestDistances.Contains(e.Distance)))],
         [.. run.Splits
+            .OrderBy(s => s.Index)
+            .Select(s => new SplitResponse(s.Index, s.Distance, s.MovingTime, Run.PaceOf(s.MovingTime, s.Distance), s.ElevationDifference))],
+        [.. run.MileSplits
             .OrderBy(s => s.Index)
             .Select(s => new SplitResponse(s.Index, s.Distance, s.MovingTime, Run.PaceOf(s.MovingTime, s.Distance), s.ElevationDifference))]);
 }
