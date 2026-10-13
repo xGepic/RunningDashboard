@@ -18,8 +18,4 @@ public static class ConnectionEndpoints
                     connection.ConnectedAt);
         });
     }
-
-    private sealed record ConnectionResponse(bool Connected, ConnectedAthlete? Athlete, DateTimeOffset? ConnectedAt);
-
-    private sealed record ConnectedAthlete(long Id, string FirstName, string LastName);
 }

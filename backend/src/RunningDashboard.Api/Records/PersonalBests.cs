@@ -3,11 +3,6 @@ using RunningDashboard.Api.Persistence;
 
 namespace RunningDashboard.Api.Records;
 
-/// <summary>A Best Effort together with the Run it is part of.</summary>
-/// <param name="Distance">Metres.</param>
-/// <param name="ElapsedTime">Seconds.</param>
-public sealed record RunBestEffort(long RunId, string RunName, DateTime StartUtc, DateTime StartLocal, string Name, double Distance, int ElapsedTime);
-
 public static class PersonalBests
 {
     /// <summary>Every stored Best Effort with its Run; only those over <paramref name="distances"/> (metres), if given.</summary>
