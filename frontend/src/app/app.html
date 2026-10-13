@@ -25,6 +25,14 @@
       </a>
     </div>
   }
+  <nav class="settings-link" aria-label="Settings">
+    <a [routerLink]="settings.path" [class.active]="settings === breadcrumb().section"
+       [attr.aria-current]="settings === breadcrumb().section ? 'page' : null">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path [attr.d]="settings.icon" /></svg>
+      <span class="label">{{ settings.label }}</span>
+    </a>
+  </nav>
 </aside>
 
 <div class="main">
@@ -47,7 +55,7 @@
   </header>
 
   <nav class="tabs" aria-label="Pages">
-    @for (item of nav; track item.path) {
+    @for (item of tabs; track item.path) {
       <a [routerLink]="item.path" [class.active]="item === breadcrumb().section"
          [attr.aria-current]="item === breadcrumb().section ? 'page' : null">{{ item.label }}</a>
     }

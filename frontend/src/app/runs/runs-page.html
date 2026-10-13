@@ -10,9 +10,9 @@
     @if (summary().runs > 0) {
       <div class="stats summary" aria-label="Totals of the listed Runs">
         <div class="stat"><span class="label">Runs</span><span class="value">{{ summary().runs }}</span></div>
-        <div class="stat"><span class="label">Distance</span><span class="value">{{ formatDistance(summary().distance, distanceUnit(), 1) }}</span></div>
+        <div class="stat"><span class="label">Distance</span><span class="value">{{ units.distance(summary().distance, 1) }}</span></div>
         <div class="stat"><span class="label">Moving Time</span><span class="value">{{ formatHoursMinutes(summary().movingTime) }}</span></div>
-        <div class="stat"><span class="label">Avg Pace</span><span class="value">{{ formatPace(summary().pace, distanceUnit()) }}</span></div>
+        <div class="stat"><span class="label">Avg Pace</span><span class="value">{{ units.pace(summary().pace) }}</span></div>
       </div>
     }
   </header>
@@ -44,11 +44,6 @@
         <button type="button" class="link" (click)="clearSearch()">Clear search</button>
       }
     </form>
-
-    <div class="segmented" role="group" aria-label="Units">
-      <button type="button" [attr.aria-pressed]="distanceUnit() === 'km'" (click)="showUnit('km')">km</button>
-      <button type="button" [attr.aria-pressed]="distanceUnit() === 'mi'" (click)="showUnit('mi')">mi</button>
-    </div>
   </div>
 
   @if (runs.error()) {
@@ -113,11 +108,11 @@
                   <td class="number">
                     <span class="dist">
                       <span class="track mini" aria-hidden="true"><span [style.width.%]="(run.distance / longest()) * 100"></span></span>
-                      {{ formatDistance(run.distance, distanceUnit()) }}
+                      {{ units.distance(run.distance) }}
                     </span>
                   </td>
                   <td class="number">{{ formatDuration(run.movingTime) }}</td>
-                  <td class="number muted">{{ formatPace(run.pace, distanceUnit()) }}</td>
+                  <td class="number muted">{{ units.pace(run.pace) }}</td>
                   <td class="shoe">{{ run.shoeName ?? '–' }}</td>
                 </tr>
               }

@@ -1,0 +1,51 @@
+<div class="page">
+  <header class="page-header">
+    <div class="titles">
+      <span class="eyebrow">Settings</span>
+      <h1>Settings</h1>
+    </div>
+  </header>
+
+  <section class="card">
+    <div class="card-header">
+      <div class="titles">
+        <h2 class="card-title">Units</h2>
+        <p class="card-sub">Shown everywhere: distances, paces, Ride speeds, the Yearly Goal, weekly targets and Shoe wear.
+          Swims and elevation stay in metres.</p>
+      </div>
+    </div>
+    <div class="setting">
+      <span class="label">Distance</span>
+      <div class="segmented" role="group" aria-label="Distance Unit">
+        @for (unit of distanceUnits; track unit) {
+          <button type="button" [attr.aria-pressed]="units.unit() === unit" (click)="units.choose(unit)">{{ unit }}</button>
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="card strava">
+    <div class="card-header">
+      <div class="titles">
+        <h2 class="card-title">Strava</h2>
+        <p class="card-sub">Where all Runs, Rides, Swims and Shoes come from.</p>
+      </div>
+    </div>
+    @if (connection.error()) {
+      <p class="error" role="alert">The backend is not reachable.</p>
+    } @else if (connection.value(); as current) {
+      @if (current.connected && current.athlete; as athlete) {
+        <p class="who">
+          Connected as <strong>{{ athlete.firstName }} {{ athlete.lastName }}</strong>
+          @if (current.connectedAt) {
+            <span class="since">since {{ current.connectedAt | date: 'd MMM y' }}</span>
+          }
+        </p>
+        <div class="sync"><app-sync-indicator /></div>
+      } @else {
+        <p class="who">Not connected yet.</p>
+        <a class="btn btn-primary" href="/api/strava/connect">Connect Strava</a>
+      }
+    }
+  </section>
+</div>

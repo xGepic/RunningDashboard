@@ -120,6 +120,17 @@
   }
 }
 
+/* Settings, below the last Run: pinned to the bottom even without one. */
+.sidebar nav.settings-link {
+  margin-top: auto;
+  padding-top: 12px;
+
+  .last-run + & {
+    margin-top: 12px;
+    border-top: 1px solid var(--shell-border);
+  }
+}
+
 .main {
   display: flex;
   flex: 1;

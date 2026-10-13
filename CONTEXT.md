@@ -42,8 +42,12 @@ The longest Run of a Training Week.
 _Avoid_: LSD, long one
 
 **Pace**:
-Moving Time per kilometre, written as min:ss/km. The Run history can show it per mile instead, written as min:ss/mi.
+Moving Time per kilometre, written as min:ss/km, or per mile (min:ss/mi) when the Distance Unit is miles.
 _Avoid_: Speed (except when talking about Strava's raw data)
+
+**Distance Unit**:
+Kilometres or miles, chosen by the Athlete in Settings: the unit for distances, Pace and Avg Speed wherever the dashboard shows them, and for distances the Athlete types in. Everything is still stored in metres. Swims and elevation stay in metres.
+_Avoid_: Units (on its own), measurement system
 
 **Shoe**:
 A pair of running shoes registered on Strava. Each Run is logged with at most one Shoe.

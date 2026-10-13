@@ -17,6 +17,21 @@ namespace RunningDashboard.Api.Persistence.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.12");
 
+            modelBuilder.Entity("RunningDashboard.Api.Persistence.AthleteSettings", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("DistanceUnit")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AthleteSettings");
+                });
+
             modelBuilder.Entity("RunningDashboard.Api.Persistence.BestEffort", b =>
                 {
                     b.Property<int>("Id")

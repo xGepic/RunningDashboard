@@ -1,0 +1,38 @@
+.page > .card {
+  max-width: 640px;
+}
+
+.setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+
+  .label {
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+}
+
+.who {
+  margin: 0 0 12px;
+  color: var(--text-secondary);
+  font-size: 13.5px;
+
+  strong {
+    color: var(--text);
+    font-weight: 500;
+  }
+}
+
+.since {
+  margin-left: 4px;
+  color: var(--text-faint);
+}
+
+.sync {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}

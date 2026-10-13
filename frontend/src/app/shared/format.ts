@@ -16,9 +16,9 @@ export function formatDistance(metres: number, unit: DistanceUnit = 'km', fracti
 
 const wholeNumber = new Intl.NumberFormat('en', { maximumFractionDigits: 0 });
 
-/** Totals: whole kilometres, e.g. "4,321 km". */
-export function formatTotalDistance(metres: number): string {
-  return `${wholeNumber.format(metres / 1000)} km`;
+/** Totals: whole kilometres or miles, e.g. "4,321 km". */
+export function formatTotalDistance(metres: number, unit: DistanceUnit = 'km'): string {
+  return `${wholeNumber.format(metres / metresPer[unit])} ${unit}`;
 }
 
 /** Hours and minutes, e.g. "7h 17m" or "1h 06m". */

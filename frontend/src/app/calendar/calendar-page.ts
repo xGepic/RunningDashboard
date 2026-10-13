@@ -7,7 +7,8 @@ import { NgxEchartsDirective } from 'ngx-echarts';
 import { ChartTheme } from '../shared/chart-theme';
 import { fullMonthNames, isoDate, today } from '../shared/dates';
 import { monthNames, monthlyDistanceChart } from '../shared/charts';
-import { DistanceUnit, formatDistance, formatHoursMinutes, formatPace } from '../shared/format';
+import { formatHoursMinutes } from '../shared/format';
+import { Units } from '../shared/units';
 import { reloadOnSync } from '../sync/reload-on-sync';
 import { Run, RunMonths, RunPage } from '../runs/run';
 
@@ -40,8 +41,6 @@ export class CalendarPage {
   // From the route and the query string (component input binding).
   /** The year from /calendar/2025; the current year at /calendar or when malformed. */
   readonly year = input<string>();
-  /** "mi" shows distances in miles; kilometres otherwise. */
-  readonly unit = input<string>();
 
   protected readonly selectedYear = computed(() => {
     const year = this.year();
@@ -49,7 +48,8 @@ export class CalendarPage {
   });
   /** /calendar for the current year, /calendar/2025 for another. */
   protected readonly yearPath = computed(() => yearPath(this.selectedYear()));
-  protected readonly distanceUnit = computed<DistanceUnit>(() => (this.unit() === 'mi' ? 'mi' : 'km'));
+  /** Distances and Pace in the Distance Unit from Settings. */
+  protected readonly units = inject(Units);
 
   /** 1 for January, from the fragment; none for the year view. */
   protected readonly selectedMonth = computed(() => {
@@ -170,13 +170,11 @@ export class CalendarPage {
 
   /** The whole year, a point for each month so far, in the unit the boxes show. */
   protected readonly monthlyDistance = computed(() =>
-    monthlyDistanceChart(this.selectedYear(), this.boxes(), this.distanceUnit(), this.theme.colors()),
+    monthlyDistanceChart(this.selectedYear(), this.boxes(), this.units.unit(), this.theme.colors()),
   );
 
   protected readonly weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  protected readonly formatDistance = formatDistance;
   protected readonly formatHoursMinutes = formatHoursMinutes;
-  protected readonly formatPace = formatPace;
 
   constructor() {
     reloadOnSync(() => {
@@ -185,12 +183,12 @@ export class CalendarPage {
     });
   }
 
-  /** The unit stays as it is. */
+  /** The query string stays as it is. */
   protected shiftYear(years: number): void {
     this.router.navigate(yearPath(this.selectedYear() + years), { queryParamsHandling: 'preserve' });
   }
 
-  /** The unit stays as it is; stepping past December or January changes the year. */
+  /** The query string stays as it is; stepping past December or January changes the year. */
   protected shiftMonth(months: number): void {
     const date = new Date(this.selectedYear(), (this.selectedMonth() ?? 1) - 1 + months, 1);
     this.router.navigate(yearPath(date.getFullYear()), { queryParamsHandling: 'preserve', fragment: monthFragments[date.getMonth()] });
@@ -200,16 +198,6 @@ export class CalendarPage {
   protected openChartMonth(index: number): void {
     const box = this.boxes()[index];
     if (box && !box.future) this.router.navigate(this.yearPath(), { queryParamsHandling: 'preserve', fragment: box.fragment });
-  }
-
-  /** Kilometres stay out of the URL. */
-  protected showUnit(unit: DistanceUnit): void {
-    this.navigateHere({ unit: unit === 'km' ? null : unit });
-  }
-
-  /** Changes the query string only, staying on this year and month. */
-  private navigateHere(queryParams: Record<string, string | null>): void {
-    this.router.navigate([], { queryParams, queryParamsHandling: 'merge', preserveFragment: true });
   }
 }
 

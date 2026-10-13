@@ -15,7 +15,7 @@ describe('App', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        provideRouter(['', 'training', 'runs', 'calendar', 'calendar/:year', 'records', 'shoes'].map((path) => ({ path, component: Blank }))),
+        provideRouter(['', 'training', 'runs', 'calendar', 'calendar/:year', 'records', 'shoes', 'settings'].map((path) => ({ path, component: Blank }))),
       ],
     });
   });
@@ -30,12 +30,23 @@ describe('App', () => {
   it('lists the Calendar after the Runs, opened with key 4', async () => {
     const { element } = await render();
 
-    const links = [...element.querySelectorAll('.sidebar nav a')].map((a) => [a.querySelector('.label')!.textContent, a.querySelector('kbd')!.textContent]);
+    const links = [...element.querySelectorAll('.sidebar nav[aria-label="Pages"] a')].map((a) => [a.querySelector('.label')!.textContent, a.querySelector('kbd')!.textContent]);
     expect(links).toEqual([['Overview', '1'], ['Training', '2'], ['Runs', '3'], ['Calendar', '4'], ['Records', '5'], ['Shoes', '6']]);
 
     document.body.dispatchEvent(new KeyboardEvent('keydown', { key: '4', bubbles: true }));
     await new Promise((resolve) => setTimeout(resolve));
     expect(TestBed.inject(Router).url).toBe('/calendar');
+  });
+
+  it('links to Settings at the bottom of the sidebar, without a key, and names it in the breadcrumb', async () => {
+    const { element } = await render('/settings');
+
+    const link = element.querySelector<HTMLAnchorElement>('.sidebar .settings-link a')!;
+    expect(link.getAttribute('href')).toBe('/settings');
+    expect(link.getAttribute('aria-current')).toBe('page');
+    expect(link.querySelector('kbd')).toBeNull();
+    expect([...element.querySelectorAll('.tabs a')].map((a) => a.textContent!.trim())).toContain('Settings');
+    expect([...element.querySelectorAll('.crumbs .current')].map((c) => c.textContent!.trim())).toEqual(['Settings']);
   });
 
   it('names the month shown in the breadcrumb', async () => {
@@ -45,13 +56,13 @@ describe('App', () => {
     };
 
     expect(await crumbs('/calendar/2025')).toEqual(['Calendar']);
-    expect(await crumbs('/calendar/2025?unit=mi#Dec')).toEqual(['Calendar', 'December 2025']);
+    expect(await crumbs('/calendar/2025?ref=mail#Dec')).toEqual(['Calendar', 'December 2025']);
   });
 
-  it('leads from a month back to its year, keeping the filters', async () => {
-    const { element } = await render('/calendar/2025?unit=mi#Dec');
+  it('leads from a month back to its year, keeping the query string', async () => {
+    const { element } = await render('/calendar/2025?ref=mail#Dec');
 
-    expect(element.querySelector('.crumbs a')!.getAttribute('href')).toBe('/calendar/2025?unit=mi');
+    expect(element.querySelector('.crumbs a')!.getAttribute('href')).toBe('/calendar/2025?ref=mail');
   });
 
   it('shows the last Run at the bottom of the sidebar, linked to its details', async () => {

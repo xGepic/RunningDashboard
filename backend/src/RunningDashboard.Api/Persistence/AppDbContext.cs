@@ -22,6 +22,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
     public DbSet<YearlyGoal> YearlyGoals => Set<YearlyGoal>();
 
+    public DbSet<AthleteSettings> AthleteSettings => Set<AthleteSettings>();
+
     /// <summary>The Yearly Goal for <paramref name="year"/>; none if none is set or it is for another year.</summary>
     public Task<YearlyGoal?> GetYearlyGoalAsync(int year, CancellationToken cancellationToken) =>
         YearlyGoals.SingleOrDefaultAsync(g => g.Year == year, cancellationToken);
@@ -84,6 +86,12 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         model.Entity<SyncState>(state => state.Property(s => s.Id).ValueGeneratedNever());
 
         model.Entity<YearlyGoal>(goal => goal.Property(g => g.Id).ValueGeneratedNever());
+
+        model.Entity<AthleteSettings>(settings =>
+        {
+            settings.Property(s => s.Id).ValueGeneratedNever();
+            settings.Property(s => s.DistanceUnit).HasMaxLength(2);
+        });
 
         model.Entity<Shoe>(shoe =>
         {

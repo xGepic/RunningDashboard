@@ -5,6 +5,7 @@ import { OverviewPage } from './overview/overview-page';
 import { RecordsPage } from './records/records-page';
 import { RidesPage } from './rides/rides-page';
 import { RunsPage } from './runs/runs-page';
+import { SettingsPage } from './settings/settings-page';
 import { ShoesPage } from './shoes/shoes-page';
 import { TrainingPage } from './training/training-page';
 
@@ -23,6 +24,7 @@ export const routes: Routes = [
   { path: 'swims', loadComponent: () => import('./swims/swims-page').then((m) => m.SwimsPage), title: 'Swims · Running Dashboard' },
   ...calendarRoutes,
   { path: 'shoes', component: ShoesPage, title: 'Shoes · Running Dashboard' },
+  { path: 'settings', component: SettingsPage, title: 'Settings · Running Dashboard' },
   { path: 'training', component: TrainingPage, title: 'Training · Running Dashboard' },
   { path: 'training/plan/:id', component: TrainingPlanPage, title: 'Training Plan · Running Dashboard' },
 ];

@@ -33,11 +33,12 @@ describe('RunsPage', () => {
 
   afterEach(() => vi.useRealTimers());
 
-  async function open(url: string, page: RunPage = october) {
+  async function open(url: string, page: RunPage = october, unit: 'km' | 'mi' = 'km') {
     const harness = await RouterTestingHarness.create();
     const http = TestBed.inject(HttpTestingController);
     await harness.navigateByUrl(url);
     for (const sync of http.match('/api/sync')) sync.flush({ running: false, importedRuns: 0, lastSyncedAt: null });
+    for (const settings of http.match('/api/settings')) settings.flush({ distanceUnit: unit });
     harness.detectChanges();
     const request = http.expectOne((r) => r.url === '/api/runs');
     request.flush(page);
@@ -69,6 +70,26 @@ describe('RunsPage', () => {
 
     expect(names(element)).toEqual(['Easy Sunday', 'Tempo Tuesday']);
     http.expectNone((r) => r.url === '/api/runs/months');
+  });
+
+  describe('the Distance Unit', () => {
+    const firstRow = (element: HTMLElement) => [...element.querySelectorAll('.runs tbody tr')][0].querySelectorAll('td');
+
+    it('comes from Settings: distances and paces in miles, with no switch of its own', async () => {
+      const { element } = await open('/runs', october, 'mi');
+
+      const cells = firstRow(element);
+      expect(cells[2].textContent!.trim()).toBe('4.97 mi');
+      expect(cells[4].textContent!.trim()).toBe('9:39 /mi');
+      expect(element.querySelector('.summary')!.textContent).toContain('11.2 mi');
+      expect(element.querySelector('[aria-label="Units"]')).toBeNull();
+    });
+
+    it('ignores the unit of an old link', async () => {
+      const { element } = await open('/runs?unit=mi');
+
+      expect(firstRow(element)[2].textContent!.trim()).toBe('8.00 km');
+    });
   });
 
   describe('the Today button', () => {

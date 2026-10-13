@@ -63,7 +63,7 @@ describe('CalendarPage', () => {
   });
 
   /** Opens `url`, answering the monthly totals with `months`, which are of all Runs. */
-  async function open(url: string, months: RunMonths = year2026) {
+  async function open(url: string, months: RunMonths = year2026, unit: 'km' | 'mi' = 'km') {
     const harness = await RouterTestingHarness.create();
     const http = TestBed.inject(HttpTestingController);
     /** Lets a navigation or a response take effect; requests it sets off stay open. */
@@ -73,6 +73,7 @@ describe('CalendarPage', () => {
     };
     await harness.navigateByUrl(url);
     for (const sync of http.match('/api/sync')) sync.flush({ running: false, importedRuns: 0, lastSyncedAt: null });
+    for (const settings of http.match('/api/settings')) settings.flush({ distanceUnit: unit });
     harness.detectChanges();
     http
       .expectOne((r) => r.url === '/api/runs/months' && r.params.get('year') === String(months.year) && !r.params.has('sportType'))
@@ -83,8 +84,8 @@ describe('CalendarPage', () => {
   }
 
   /** Opens a month's `url`, answering its Training Weeks' Runs with `runs` from `from` to `to`. */
-  async function openMonth(url: string, from: string, to: string, runs: Run[] = septemberWeeks) {
-    const page = await open(url, year2026);
+  async function openMonth(url: string, from: string, to: string, runs: Run[] = septemberWeeks, unit: 'km' | 'mi' = 'km') {
+    const page = await open(url, year2026, unit);
     const request = page.http.expectOne((r) => r.url === '/api/runs');
     expect(Object.fromEntries(request.request.params.keys().map((key) => [key, request.request.params.get(key)]))).toEqual({
       from, to, pageSize: '200', sort: 'date', direction: 'asc',
@@ -127,8 +128,8 @@ describe('CalendarPage', () => {
       expect(boxes()[11].getAttribute('href')).toBe('/calendar/2025#Dec');
     });
 
-    it('steps through the years from the first with Runs to the current one, keeping the unit', async () => {
-      const { harness, http, settle } = await open('/calendar?unit=mi');
+    it('steps through the years from the first with Runs to the current one', async () => {
+      const { harness, http, settle } = await open('/calendar');
       // /calendar and /calendar/2025 are different routes: the page is rendered anew.
       const step = (label: string) => harness.routeNativeElement!.querySelector<HTMLButtonElement>(`button[aria-label^="${label}"]`)!;
       const answer = async (year: number) => {
@@ -140,7 +141,7 @@ describe('CalendarPage', () => {
       expect(step('Next year').disabled).toBe(true);
       step('Previous year').click();
       await settle();
-      expect(TestBed.inject(Router).url).toBe('/calendar/2025?unit=mi');
+      expect(TestBed.inject(Router).url).toBe('/calendar/2025');
 
       await answer(2025);
       step('Previous year').click();
@@ -150,13 +151,20 @@ describe('CalendarPage', () => {
 
       step('Next year').click();
       await settle();
-      expect(TestBed.inject(Router).url).toBe('/calendar/2025?unit=mi');
+      expect(TestBed.inject(Router).url).toBe('/calendar/2025');
     });
 
-    it('shows miles when asked', async () => {
-      const { boxes } = await open('/calendar?unit=mi');
+    it('shows miles when they are chosen in Settings, with no switch of its own', async () => {
+      const { boxes, element } = await open('/calendar', year2026, 'mi');
 
       expect(text(boxes()[8])).toBe('September 37.7 mi 7h 17m');
+      expect(element.querySelector('[aria-label="Units"]')).toBeNull();
+    });
+
+    it('ignores the unit of an old link', async () => {
+      const { boxes } = await open('/calendar?unit=mi');
+
+      expect(text(boxes()[8])).toBe('September 60.7 km 7h 17m');
     });
 
     it("draws a trend through the finished months' distances only, carried on to the end of the year", async () => {
@@ -202,7 +210,7 @@ describe('CalendarPage', () => {
     });
 
     it('charts the whole year, with a distance for each month so far, and opens a month from its point', async () => {
-      const { harness, settle } = await open('/calendar?unit=mi');
+      const { harness, settle } = await open('/calendar', year2026, 'mi');
       const chart = harness.fixture.debugElement.query(By.directive(NgxEchartsDirective));
       const options = chart.injector.get(NgxEchartsDirective).options() as { xAxis: { data: string[] }; series: { data: (number | null)[] }[] };
 
@@ -212,7 +220,7 @@ describe('CalendarPage', () => {
 
       chart.triggerEventHandler('chartClick', { dataIndex: 8 });
       await settle();
-      expect(TestBed.inject(Router).url).toBe('/calendar?unit=mi#Sep');
+      expect(TestBed.inject(Router).url).toBe('/calendar#Sep');
     });
   });
 
@@ -248,8 +256,8 @@ describe('CalendarPage', () => {
       expect(element.querySelector('h1')!.textContent!.trim()).toBe('September 2026');
     });
 
-    it('shows the totals in miles when asked', async () => {
-      const { element } = await openMonth('/calendar?unit=mi#Sep', '2026-08-31', '2026-10-04');
+    it('shows the totals in miles when they are chosen in Settings', async () => {
+      const { element } = await openMonth('/calendar#Sep', '2026-08-31', '2026-10-04', septemberWeeks, 'mi');
 
       expect(element.querySelectorAll('.week .week-total')[1].textContent!.trim()).toBe('21.1 mi');
       expect(text(element.querySelectorAll('.summary .stat')[3])).toBe('Avg Pace 11:36 /mi');
@@ -257,13 +265,13 @@ describe('CalendarPage', () => {
 
     it('steps month by month across the turn of the year, keeping the filters', async () => {
       const router = () => TestBed.inject(Router);
-      const page = await open('/calendar/2025?unit=mi#Jan', { ...year2026, year: 2025 });
+      const page = await open('/calendar/2025?from=link#Jan', { ...year2026, year: 2025 });
       const step = (label: string) => page.harness.routeNativeElement!.querySelector<HTMLButtonElement>(`button[aria-label^="${label}"]`)!;
 
       expect(page.element.querySelector('.period-nav h2')!.textContent!.trim()).toBe('January 2025');
       step('Previous month').click();
       await page.settle();
-      expect(router().url).toBe('/calendar/2024?unit=mi#Dec');
+      expect(router().url).toBe('/calendar/2024?from=link#Dec');
     });
 
     it('steps from December into January of the current year', async () => {

@@ -8,9 +8,9 @@
       @if (totals.runs > 0) {
         <div class="stats summary" [attr.aria-label]="'Totals of ' + monthTitle()">
           <div class="stat"><span class="label">Runs</span><span class="value">{{ totals.runs }}</span></div>
-          <div class="stat"><span class="label">Distance</span><span class="value">{{ formatDistance(totals.distance, distanceUnit(), 1) }}</span></div>
+          <div class="stat"><span class="label">Distance</span><span class="value">{{ units.distance(totals.distance, 1) }}</span></div>
           <div class="stat"><span class="label">Moving Time</span><span class="value">{{ formatHoursMinutes(totals.movingTime) }}</span></div>
-          <div class="stat"><span class="label">Avg Pace</span><span class="value">{{ formatPace(totals.pace, distanceUnit()) }}</span></div>
+          <div class="stat"><span class="label">Avg Pace</span><span class="value">{{ units.pace(totals.pace) }}</span></div>
         </div>
       }
     }
@@ -34,11 +34,6 @@
                 [attr.aria-label]="'Next year: ' + (selectedYear() + 1)" [title]="selectedYear() + 1">→</button>
       </nav>
     }
-
-    <div class="segmented units" role="group" aria-label="Units">
-      <button type="button" [attr.aria-pressed]="distanceUnit() === 'km'" (click)="showUnit('km')">km</button>
-      <button type="button" [attr.aria-pressed]="distanceUnit() === 'mi'" (click)="showUnit('mi')">mi</button>
-    </div>
   </div>
 
   @if (months.error()) {
@@ -71,7 +66,7 @@
               </div>
             }
             <div class="week-total" [attr.aria-label]="'Week of ' + (week.start | date: 'd MMM') + ': distance'">
-              {{ week.distance > 0 ? formatDistance(week.distance, distanceUnit(), 1) : '–' }}
+              {{ week.distance > 0 ? units.distance(week.distance, 1) : '–' }}
             </div>
           </div>
         }
@@ -90,7 +85,7 @@
                queryParamsHandling="preserve">
               <span class="name">{{ box.name }}</span>
               @if (box.runs > 0) {
-                <span class="distance">{{ formatDistance(box.distance, distanceUnit(), 1) }}</span>
+                <span class="distance">{{ units.distance(box.distance, 1) }}</span>
                 <span class="time">{{ formatHoursMinutes(box.movingTime) }}</span>
               } @else {
                 <span class="distance">–</span>
@@ -110,7 +105,7 @@
         <div class="card-header">
           <div class="titles">
             <h2 class="card-title">Distance per month</h2>
-            <p class="card-sub">{{ selectedYear() }}, in {{ distanceUnit() }}. Click a point to open its month.</p>
+            <p class="card-sub">{{ selectedYear() }}, in {{ units.unit() }}. Click a point to open its month.</p>
           </div>
         </div>
         <div class="chart" echarts [options]="monthlyDistance()" [autoResize]="true" role="img"

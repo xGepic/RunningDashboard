@@ -3,13 +3,14 @@ import { httpResource } from '@angular/common/http';
 import { Component, computed, inject, input } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { currentMonth, isoDate, lastDayOf, monthDate, monthKey } from '../shared/dates';
-import { DistanceUnit, formatDistance, formatDuration, formatHoursMinutes, formatPace } from '../shared/format';
+import { formatDuration, formatHoursMinutes } from '../shared/format';
 import { SportSwitch } from '../shared/sport-switch';
+import { Units } from '../shared/units';
 import { reloadOnSync } from '../sync/reload-on-sync';
 import { Run, RunPage, RunSortKey } from './run';
 
 /** The list's state, kept in the URL so the back button and shared links work. */
-type ListParams = Partial<Record<'month' | 'search' | 'sort' | 'direction' | 'page' | 'unit', string | null>>;
+type ListParams = Partial<Record<'month' | 'search' | 'sort' | 'direction' | 'page', string | null>>;
 
 /** All Runs of a month fit on one page; the pager only shows up past this. */
 const pageSize = 200;
@@ -33,8 +34,6 @@ export class RunsPage {
   readonly sort = input<RunSortKey>();
   readonly direction = input<'asc' | 'desc'>();
   readonly page = input<string>();
-  /** "mi" shows distances in miles and Pace per mile; kilometres otherwise. */
-  readonly unit = input<string>();
 
   protected readonly selectedMonth = computed(() => {
     const month = this.month();
@@ -45,7 +44,8 @@ export class RunsPage {
   protected readonly nextMonthStart = computed(() => monthDate(this.selectedMonth(), 1));
   protected readonly isCurrentMonth = computed(() => this.selectedMonth() >= currentMonth());
 
-  protected readonly distanceUnit = computed<DistanceUnit>(() => (this.unit() === 'mi' ? 'mi' : 'km'));
+  /** Distances and Pace in the Distance Unit from Settings. */
+  protected readonly units = inject(Units);
 
   protected readonly sortKey = computed(() => this.sort() ?? 'date');
   protected readonly ascending = computed(() => this.direction() === 'asc');
@@ -107,18 +107,11 @@ export class RunsPage {
   /** The longest Run listed, which fills its distance bar. */
   protected readonly longest = computed(() => Math.max(1, ...(this.runs.value()?.items ?? []).map((r) => r.distance)));
 
-  protected readonly formatDistance = formatDistance;
   protected readonly formatDuration = formatDuration;
   protected readonly formatHoursMinutes = formatHoursMinutes;
-  protected readonly formatPace = formatPace;
 
   constructor() {
     reloadOnSync(() => this.runs.reload());
-  }
-
-  /** Kilometres stay out of the URL, like the current month. */
-  protected showUnit(unit: DistanceUnit): void {
-    this.navigate({ unit: unit === 'km' ? null : unit });
   }
 
   /** A changed search or filter starts again at page 1. */
