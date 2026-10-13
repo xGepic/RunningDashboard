@@ -54,6 +54,9 @@ export class RidesPage {
     ),
   }));
 
+  /** Of all Rides, for the page header; none until they are in, or when they could not be loaded. */
+  protected readonly totals = computed(() => (this.rides.hasValue() ? this.rides.value().totals : null));
+
   protected readonly pageCount = computed(() => {
     const page = this.rides.value();
     return page ? Math.max(1, Math.ceil(page.totalCount / page.pageSize)) : 1;

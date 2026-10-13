@@ -42,12 +42,20 @@ export class SyncState {
   }
 
   private refresh(): void {
-    this.http.get<SyncStatus>('/api/sync').subscribe((status) => this.update(status));
+    this.http.get<SyncStatus>('/api/sync').subscribe({
+      next: (status) => this.update(status),
+      // A failed poll keeps the last status and tries again while that one says a sync runs, so it does not freeze there.
+      error: () => this.pollWhileRunning(),
+    });
   }
 
   private update(status: SyncStatus): void {
     this.status.set(status);
+    this.pollWhileRunning();
+  }
+
+  private pollWhileRunning(): void {
     clearTimeout(this.pollTimer);
-    if (status.running) this.pollTimer = setTimeout(() => this.refresh(), pollIntervalMs);
+    if (this.running()) this.pollTimer = setTimeout(() => this.refresh(), pollIntervalMs);
   }
 }

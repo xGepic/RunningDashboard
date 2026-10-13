@@ -77,7 +77,8 @@ export class RunsPage {
 
   /** Totals of the Runs listed: count, distance, Moving Time and their average Pace. */
   protected readonly summary = computed(() => {
-    const parts = (this.runs.value()?.items ?? []).map((r) => ({ runs: 1, distance: r.distance, movingTime: r.movingTime }));
+    // Read in the page header, outside the template's error check: value() throws while the Runs failed to load.
+    const parts = (this.runs.hasValue() ? this.runs.value().items : []).map((r) => ({ runs: 1, distance: r.distance, movingTime: r.movingTime }));
     const distance = parts.reduce((sum, p) => sum + p.distance, 0);
     const movingTime = parts.reduce((sum, p) => sum + p.movingTime, 0);
     return {

@@ -7,7 +7,7 @@
         <app-sport-switch current="swims" />
       </div>
     </div>
-    @if (swims.value()?.totals; as totals) {
+    @if (totals(); as totals) {
       @if (totals.swims > 0) {
         <div class="stats summary" aria-label="Totals of all Swims">
           <div class="stat"><span class="label">Swims</span><span class="value">{{ totals.swims }}</span></div>

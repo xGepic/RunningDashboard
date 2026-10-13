@@ -33,7 +33,8 @@ describe('RunsPage', () => {
 
   afterEach(() => vi.useRealTimers());
 
-  async function open(url: string, page: RunPage = october, unit: 'km' | 'mi' = 'km') {
+  /** `page` 'error' answers the Runs with a server error. */
+  async function open(url: string, page: RunPage | 'error' = october, unit: 'km' | 'mi' = 'km') {
     const harness = await RouterTestingHarness.create();
     const http = TestBed.inject(HttpTestingController);
     await harness.navigateByUrl(url);
@@ -41,7 +42,8 @@ describe('RunsPage', () => {
     for (const settings of http.match('/api/settings')) settings.flush({ distanceUnit: unit });
     harness.detectChanges();
     const request = http.expectOne((r) => r.url === '/api/runs');
-    request.flush(page);
+    if (page === 'error') request.flush(null, { status: 500, statusText: 'Server Error' });
+    else request.flush(page);
     await new Promise((resolve) => setTimeout(resolve));
     harness.detectChanges();
     return { http, element: harness.routeNativeElement!, request: request.request };
@@ -56,6 +58,13 @@ describe('RunsPage', () => {
     expect(names(element)).toEqual(['Easy Sunday', 'Tempo Tuesday']);
     expect([...element.querySelectorAll('button')].map((b) => b.textContent!.trim())).not.toContain('Months');
     http.expectNone((r) => r.url === '/api/runs/months');
+  });
+
+  it('says so when the Runs cannot be loaded, without totals', async () => {
+    const { element } = await open('/runs', 'error');
+
+    expect(element.querySelector('[role="alert"]')!.textContent).toContain('Runs could not be loaded');
+    expect(element.querySelector('.summary')).toBeNull();
   });
 
   it('always lists all Runs, whatever type an old link asks for', async () => {

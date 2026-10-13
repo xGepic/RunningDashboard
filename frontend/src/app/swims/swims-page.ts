@@ -45,6 +45,9 @@ export class SwimsPage {
     ),
   }));
 
+  /** Of all Swims, for the page header; none until they are in, or when they could not be loaded. */
+  protected readonly totals = computed(() => (this.swims.hasValue() ? this.swims.value().totals : null));
+
   protected readonly pageCount = computed(() => {
     const page = this.swims.value();
     return page ? Math.max(1, Math.ceil(page.totalCount / page.pageSize)) : 1;
