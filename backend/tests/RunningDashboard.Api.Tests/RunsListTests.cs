@@ -168,7 +168,7 @@ public sealed class RunsListTests
             new TestActivity(20500000002, "Silvesterlauf", new DateTime(2025, 12, 31, 23, 59, 59), 10000, 3000),
             new TestActivity(20500000003, "Summer jog", new DateTime(2024, 6, 1, 7, 0, 0), 8000, 2900));
         await TestApp.WaitForSyncAsync(browser);
-        var months = async (int year) => (await browser.GetFromJsonAsync<RunMonths>($"/api/runs/months?year={year}"))!;
+        async Task<RunMonths> months(int year) => (await browser.GetFromJsonAsync<RunMonths>($"/api/runs/months?year={year}"))!;
 
         var year2025 = await months(2025);
         var year2026 = await months(2026);

@@ -25,7 +25,7 @@ namespace RunningDashboard.Api.Persistence.Migrations
             migrationBuilder.AddPrimaryKey(
                 name: "PK_Split",
                 table: "Split",
-                columns: new[] { "RunId", "Unit", "Index" });
+                columns: ["RunId", "Unit", "Index"]);
         }
 
         /// <inheritdoc />
@@ -42,7 +42,7 @@ namespace RunningDashboard.Api.Persistence.Migrations
             migrationBuilder.AddPrimaryKey(
                 name: "PK_Split",
                 table: "Split",
-                columns: new[] { "RunId", "Index" });
+                columns: ["RunId", "Index"]);
         }
     }
 }
