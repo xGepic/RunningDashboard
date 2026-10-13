@@ -11,7 +11,7 @@
     cursor: default;
 
     &:hover {
-      background: #182131;
+      background: var(--row-hover);
     }
   }
 

@@ -53,6 +53,10 @@ _Avoid_: Speed (except when talking about Strava's raw data)
 Kilometres or miles, chosen by the Athlete in Settings: the unit for distances, Pace and Avg Speed wherever the dashboard shows them, and for distances the Athlete types in. Everything is still stored in metres. Swims and elevation stay in metres.
 _Avoid_: Units (on its own), measurement system
 
+**Theme**:
+The dashboard's colours, picked by the Athlete in Settings: Blue (unless the Athlete picks another), Teal, Green, Orange, Red, Pink or Purple. It colours buttons, links, bars and charts, and tints the dark background, surfaces and text towards its accent; Phases, and met or missed targets, keep their own colours.
+_Avoid_: Skin, colour scheme, dark/light mode (the dashboard is always dark)
+
 **Shoe**:
 A pair of running shoes registered on Strava. Each Run is logged with at most one Shoe.
 _Avoid_: Gear (when only shoes are meant), sneaker

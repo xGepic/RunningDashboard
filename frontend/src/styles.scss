@@ -1,7 +1,33 @@
-/* Design tokens: one dark theme, from the Running Dashboard design. */
+/* Design tokens: a dark look, from the Running Dashboard design. */
 :root {
   color-scheme: dark;
 
+  /* The same in every Theme. */
+  --teal: #3dd0db;
+  --amber: #f2c46d;
+  --error: #e8857a;
+  --met: #3dd68c;
+  --strava: #fc4c02;
+
+  /* Phase colours, the same wherever a Training Plan's Phases show, whatever the Theme. */
+  --phase-build: #4a9eff;
+  --phase-peak: #f2706b;
+  --phase-taper: #3dd68c;
+
+  --font: 'Geist', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+}
+
+/*
+ * The Themes: Blue unless the Athlete picks another in Settings (AthleteSettings puts it on <html data-theme>). Each
+ * tints the whole page, its surfaces, lines and text, towards its accent; the other Themes' neutrals are Blue's turned
+ * to their accent's hue in OKLCH, so lightness and contrast stay the same. An element with a data-theme of its
+ * own, like a swatch, shows that Theme's colours. --chart-bar-top is the top of a bar's gradient, --chart-bar-hover a
+ * bar under the pointer.
+ */
+:root,
+[data-theme='blue'] {
+  /* Surfaces. */
   --background: #090d14;
   --sidebar: #0b1018;
   --surface: #141b27;
@@ -11,45 +37,371 @@
   --hover: #161f2d;
   --selected: #151e2c;
   --tab-active: #1f2a3c;
+  --row-hover: #182131;
+  --control-hover: #1a2332;
+  --chip: #1c2738;
 
+  /* Lines. */
   --border: #1e2633;
   --border-strong: #263042;
   --border-hover: #2c3850;
+  --border-raised: #2a3648;
+  --border-active: #334055;
   --divider: #1b2330;
   --shell-border: #161d29;
+  --bar-past: #2a3a52;
 
+  /* Text. */
   --text: #e8edf4;
   --text-secondary: #a3aebe;
   --text-muted: #7c889b;
   --text-faint: #566173;
 
+  /* Charts, read by ChartTheme. */
+  --chart-grid: #1c2431;
+  --tooltip: #1c2535;
+
+  /* For see-through layers: rgb(var(--background-rgb) / 86%). */
+  --background-rgb: 9 13 20;
+  --inset-rgb: 15 21 31;
+  --text-muted-rgb: 124 136 155;
+  --backdrop-rgb: 5 8 13;
+
+  /* The accent. */
   --accent: #4a9eff;
+  --accent-rgb: 74 158 255;
   --accent-hover: #6bb0ff;
   --accent-light: #7dbbff;
   --accent-pale: #b5d8ff;
   --accent-deep: #2f6fc4;
   --on-accent: #06101f;
-  --teal: #3dd0db;
-  --amber: #f2c46d;
-  --error: #e8857a;
-  --met: #3dd68c;
-  --strava: #fc4c02;
-
-  /* Phase colours, the same wherever a Training Plan's Phases show. */
-  --phase-build: #4a9eff;
-  --phase-peak: #f2706b;
-  --phase-taper: #3dd68c;
-
-  /* Chart tokens, read by ChartTheme. */
   --chart-series: #4a9eff;
-  /* The top of a bar's gradient, and a bar under the pointer. */
   --chart-bar-top: #5aa9ff;
   --chart-bar-hover: #8cc4ff;
-  --chart-grid: #1c2431;
-  --tooltip: #1c2535;
+}
 
-  --font: 'Geist', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+[data-theme='teal'] {
+  /* Surfaces. */
+  --background: #050f11;
+  --sidebar: #061215;
+  --surface: #0b1e22;
+  --surface-raised: #091c20;
+  --surface-header: #081b1f;
+  --inset: #08171b;
+  --hover: #0b2227;
+  --selected: #0a2126;
+  --tab-active: #112e35;
+  --row-hover: #0b252b;
+  --control-hover: #0f272c;
+  --chip: #0f2b31;
+
+  /* Lines. */
+  --border: #15292e;
+  --border-strong: #19343b;
+  --border-hover: #193e48;
+  --border-raised: #1e3a40;
+  --border-active: #25454c;
+  --divider: #12262b;
+  --shell-border: #0e2024;
+  --bar-past: #174048;
+
+  /* Text. */
+  --text: #e5eff1;
+  --text-secondary: #9bb2b7;
+  --text-muted: #728d93;
+  --text-faint: #4c656c;
+
+  /* Charts, read by ChartTheme. */
+  --chart-grid: #13272c;
+  --tooltip: #10292f;
+
+  /* For see-through layers: rgb(var(--background-rgb) / 86%). */
+  --background-rgb: 5 15 17;
+  --inset-rgb: 8 23 27;
+  --text-muted-rgb: 114 141 147;
+  --backdrop-rgb: 3 9 11;
+
+  /* The accent. */
+  --accent: #22c3d6;
+  --accent-rgb: 34 195 214;
+  --accent-hover: #4dd0df;
+  --accent-light: #66d7e4;
+  --accent-pale: #b0ecf3;
+  --accent-deep: #148a99;
+  --on-accent: #031618;
+  --chart-series: #22c3d6;
+  --chart-bar-top: #36c9da;
+  --chart-bar-hover: #85e0ea;
+}
+
+[data-theme='green'] {
+  /* Surfaces. */
+  --background: #080f0b;
+  --sidebar: #0b120d;
+  --surface: #131e17;
+  --surface-raised: #111c15;
+  --surface-header: #101b14;
+  --inset: #0e1712;
+  --hover: #15221a;
+  --selected: #142119;
+  --tab-active: #1e2e24;
+  --row-hover: #16251c;
+  --control-hover: #19271e;
+  --chip: #1b2b21;
+
+  /* Lines. */
+  --border: #1d2921;
+  --border-strong: #24342a;
+  --border-hover: #273e32;
+  --border-raised: #2a3a2f;
+  --border-active: #324538;
+  --divider: #1a261e;
+  --shell-border: #152019;
+  --bar-past: #293f31;
+
+  /* Text. */
+  --text: #e8eeea;
+  --text-secondary: #a3b1a7;
+  --text-muted: #7b8c81;
+  --text-faint: #55655b;
+
+  /* Charts, read by ChartTheme. */
+  --chart-grid: #1b271f;
+  --tooltip: #1a2920;
+
+  /* For see-through layers: rgb(var(--background-rgb) / 86%). */
+  --background-rgb: 8 15 11;
+  --inset-rgb: 14 23 18;
+  --text-muted-rgb: 123 140 129;
+  --backdrop-rgb: 5 9 6;
+
+  /* The accent. */
+  --accent: #3ccf6e;
+  --accent-rgb: 60 207 110;
+  --accent-hover: #5ddb88;
+  --accent-light: #74e09a;
+  --accent-pale: #b8f0cb;
+  --accent-deep: #23934c;
+  --on-accent: #04170b;
+  --chart-series: #3ccf6e;
+  --chart-bar-top: #4fd57d;
+  --chart-bar-hover: #93e8b0;
+}
+
+[data-theme='orange'] {
+  /* Surfaces. */
+  --background: #110c07;
+  --sidebar: #150e09;
+  --surface: #221911;
+  --surface-raised: #20170f;
+  --surface-header: #1f160e;
+  --inset: #1b130d;
+  --hover: #281c13;
+  --selected: #271b12;
+  --tab-active: #35261b;
+  --row-hover: #2a1e14;
+  --control-hover: #2c2017;
+  --chip: #312319;
+
+  /* Lines. */
+  --border: #2e231b;
+  --border-strong: #3b2d21;
+  --border-hover: #463424;
+  --border-raised: #413227;
+  --border-active: #4d3c2f;
+  --divider: #2b2018;
+  --shell-border: #241b13;
+  --bar-past: #493426;
+
+  /* Text. */
+  --text: #f1ebe7;
+  --text-secondary: #b8aaa1;
+  --text-muted: #948478;
+  --text-faint: #6c5d52;
+
+  /* Charts, read by ChartTheme. */
+  --chart-grid: #2c2119;
+  --tooltip: #2e2218;
+
+  /* For see-through layers: rgb(var(--background-rgb) / 86%). */
+  --background-rgb: 17 12 7;
+  --inset-rgb: 27 19 13;
+  --text-muted-rgb: 148 132 120;
+  --backdrop-rgb: 11 7 5;
+
+  /* The accent. */
+  --accent: #ff8f3f;
+  --accent-rgb: 255 143 63;
+  --accent-hover: #ffa25e;
+  --accent-light: #ffb37d;
+  --accent-pale: #ffd6b8;
+  --accent-deep: #c4621f;
+  --on-accent: #1f0d02;
+  --chart-series: #ff8f3f;
+  --chart-bar-top: #ff9c52;
+  --chart-bar-hover: #ffc196;
+}
+
+[data-theme='red'] {
+  /* Surfaces. */
+  --background: #120b09;
+  --sidebar: #160d0c;
+  --surface: #241715;
+  --surface-raised: #221513;
+  --surface-header: #211412;
+  --inset: #1c1210;
+  --hover: #291a18;
+  --selected: #281917;
+  --tab-active: #372421;
+  --row-hover: #2d1c19;
+  --control-hover: #2e1e1c;
+  --chip: #33211f;
+
+  /* Lines. */
+  --border: #2f221f;
+  --border-strong: #3d2b27;
+  --border-hover: #49312c;
+  --border-raised: #43302d;
+  --border-active: #4f3936;
+  --divider: #2c1f1c;
+  --shell-border: #261917;
+  --bar-past: #4b322e;
+
+  /* Text. */
+  --text: #f2eae9;
+  --text-secondary: #baa8a6;
+  --text-muted: #96827e;
+  --text-faint: #6e5b58;
+
+  /* Charts, read by ChartTheme. */
+  --chart-grid: #2d201d;
+  --tooltip: #31201d;
+
+  /* For see-through layers: rgb(var(--background-rgb) / 86%). */
+  --background-rgb: 18 11 9;
+  --inset-rgb: 28 18 16;
+  --text-muted-rgb: 150 130 126;
+  --backdrop-rgb: 12 6 6;
+
+  /* The accent. */
+  --accent: #ff5c5c;
+  --accent-rgb: 255 92 92;
+  --accent-hover: #ff7a7a;
+  --accent-light: #ff8f8f;
+  --accent-pale: #ffc9c9;
+  --accent-deep: #c43a3a;
+  --on-accent: #2a0505;
+  --chart-series: #ff5c5c;
+  --chart-bar-top: #ff6b6b;
+  --chart-bar-hover: #ffa3a3;
+}
+
+[data-theme='pink'] {
+  /* Surfaces. */
+  --background: #120a0c;
+  --sidebar: #160d0f;
+  --surface: #24161a;
+  --surface-raised: #221418;
+  --surface-header: #211317;
+  --inset: #1d1114;
+  --hover: #2a191e;
+  --selected: #29181d;
+  --tab-active: #382329;
+  --row-hover: #2d1b20;
+  --control-hover: #2e1d22;
+  --chip: #342026;
+
+  /* Lines. */
+  --border: #302125;
+  --border-strong: #3e292e;
+  --border-hover: #4b2f35;
+  --border-raised: #442f35;
+  --border-active: #50383e;
+  --divider: #2d1e22;
+  --shell-border: #26181c;
+  --bar-past: #4c3039;
+
+  /* Text. */
+  --text: #f3eaec;
+  --text-secondary: #bba7ad;
+  --text-muted: #978086;
+  --text-faint: #6f5a5f;
+
+  /* Charts, read by ChartTheme. */
+  --chart-grid: #2e1f23;
+  --tooltip: #311f23;
+
+  /* For see-through layers: rgb(var(--background-rgb) / 86%). */
+  --background-rgb: 18 10 12;
+  --inset-rgb: 29 17 20;
+  --text-muted-rgb: 151 128 134;
+  --backdrop-rgb: 12 6 8;
+
+  /* The accent. */
+  --accent: #ff6fae;
+  --accent-rgb: 255 111 174;
+  --accent-hover: #ff8bbf;
+  --accent-light: #ff9fca;
+  --accent-pale: #ffd0e5;
+  --accent-deep: #c43f7c;
+  --on-accent: #2a0716;
+  --chart-series: #ff6fae;
+  --chart-bar-top: #ff7fb7;
+  --chart-bar-hover: #ffb3d5;
+}
+
+[data-theme='purple'] {
+  /* Surfaces. */
+  --background: #0e0b13;
+  --sidebar: #110e17;
+  --surface: #1d1825;
+  --surface-raised: #1b1623;
+  --surface-header: #1a1522;
+  --inset: #16131e;
+  --hover: #201c2b;
+  --selected: #1f1b2a;
+  --tab-active: #2c263a;
+  --row-hover: #231d2f;
+  --control-hover: #251f30;
+  --chip: #282336;
+
+  /* Lines. */
+  --border: #272331;
+  --border-strong: #332c3f;
+  --border-hover: #3d334c;
+  --border-raised: #373246;
+  --border-active: #423b52;
+  --divider: #24202e;
+  --shell-border: #1e1a27;
+  --bar-past: #3c344f;
+
+  /* Text. */
+  --text: #edebf3;
+  --text-secondary: #aeaabc;
+  --text-muted: #898398;
+  --text-faint: #635d70;
+
+  /* Charts, read by ChartTheme. */
+  --chart-grid: #25212f;
+  --tooltip: #272133;
+
+  /* For see-through layers: rgb(var(--background-rgb) / 86%). */
+  --background-rgb: 14 11 19;
+  --inset-rgb: 22 19 30;
+  --text-muted-rgb: 137 131 152;
+  --backdrop-rgb: 8 7 13;
+
+  /* The accent. */
+  --accent: #9d7bff;
+  --accent-rgb: 157 123 255;
+  --accent-hover: #b095ff;
+  --accent-light: #bba4ff;
+  --accent-pale: #ddd1ff;
+  --accent-deep: #6c4fc9;
+  --on-accent: #12082a;
+  --chart-series: #9d7bff;
+  --chart-bar-top: #a78aff;
+  --chart-bar-hover: #c7b5ff;
 }
 
 @keyframes spin {
@@ -431,7 +783,7 @@ select {
     border-color 0.15s;
 
   &:hover:not(:disabled) {
-    background: #1a2332;
+    background: var(--control-hover);
     color: var(--text);
   }
 
@@ -477,7 +829,7 @@ select {
   cursor: pointer;
 
   &:hover {
-    background: rgb(74 158 255 / 10%);
+    background: rgb(var(--accent-rgb) / 10%);
     color: var(--accent-pale);
   }
 
@@ -485,7 +837,7 @@ select {
     color: var(--text-secondary);
 
     &:hover {
-      background: #1a2332;
+      background: var(--control-hover);
       color: var(--text);
     }
   }
@@ -543,7 +895,7 @@ a.link {
 
   &:hover:not(:disabled) {
     color: var(--text);
-    background: #1a2332;
+    background: var(--control-hover);
   }
 
   &:disabled {
@@ -614,7 +966,7 @@ select {
 
   &:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgb(74 158 255 / 15%);
+    box-shadow: 0 0 0 3px rgb(var(--accent-rgb) / 15%);
   }
 
   &::placeholder {
@@ -668,9 +1020,9 @@ input[type='number'] {
   align-items: center;
   flex-shrink: 0;
   padding: 2px 7px;
-  border: 1px solid rgb(74 158 255 / 22%);
+  border: 1px solid rgb(var(--accent-rgb) / 22%);
   border-radius: 999px;
-  background: rgb(74 158 255 / 10%);
+  background: rgb(var(--accent-rgb) / 10%);
   color: var(--accent-light);
   font-size: 10.5px;
   font-weight: 500;
@@ -857,7 +1209,7 @@ p.error {
 }
 
 .leaflet-control-attribution.leaflet-control {
-  background: rgb(9 13 20 / 75%);
+  background: rgb(var(--background-rgb) / 75%);
   color: var(--text-muted);
 
   a {

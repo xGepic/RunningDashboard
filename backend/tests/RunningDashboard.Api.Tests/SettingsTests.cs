@@ -5,8 +5,8 @@ using RunningDashboard.Api.Tests.Harness;
 namespace RunningDashboard.Api.Tests;
 
 /// <summary>
-/// The Athlete's settings: the Distance Unit (km or mi) and the Shoes' Maximum Distance. Each is changed on its own,
-/// leaving the other as it is.
+/// The Athlete's settings: the Distance Unit (km or mi), the Shoes' Maximum Distance and the Theme. Each is changed on
+/// its own, leaving the others as they are.
 /// </summary>
 public sealed class SettingsTests
 {
@@ -23,9 +23,9 @@ public sealed class SettingsTests
     public async Task TearDownAsync() => await _app.DisposeAsync();
 
     [Test]
-    public async Task Distances_are_in_kilometres_and_shoes_last_700_km_until_the_athlete_chooses_otherwise()
+    public async Task Distances_are_in_kilometres_shoes_last_700_km_and_the_theme_is_blue_until_the_athlete_chooses_otherwise()
     {
-        (await GetSettingsAsync()).ShouldBe(new SettingsResponse("km", 700_000));
+        (await GetSettingsAsync()).ShouldBe(new SettingsResponse("km", 700_000, "blue"));
     }
 
     [Test]
@@ -34,9 +34,9 @@ public sealed class SettingsTests
         var response = await ChangeAsync(new { distanceUnit = "mi" });
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await response.Content.ReadFromJsonAsync<SettingsResponse>()).ShouldBe(new SettingsResponse("mi", 700_000));
+        (await response.Content.ReadFromJsonAsync<SettingsResponse>()).ShouldBe(new SettingsResponse("mi", 700_000, "blue"));
         await using var restarted = new TestApp(_app.DatabasePath);
-        (await restarted.CreateBrowser().GetFromJsonAsync<SettingsResponse>("/api/settings")).ShouldBe(new SettingsResponse("mi", 700_000));
+        (await restarted.CreateBrowser().GetFromJsonAsync<SettingsResponse>("/api/settings")).ShouldBe(new SettingsResponse("mi", 700_000, "blue"));
     }
 
     [Test]
@@ -55,9 +55,9 @@ public sealed class SettingsTests
         var response = await ChangeAsync(new { shoeMaximumDistance = 804_672.0 });
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
-        (await GetSettingsAsync()).ShouldBe(new SettingsResponse("mi", 804_672));
+        (await GetSettingsAsync()).ShouldBe(new SettingsResponse("mi", 804_672, "blue"));
         await ChangeAsync(new { distanceUnit = "km" });
-        (await GetSettingsAsync()).ShouldBe(new SettingsResponse("km", 804_672));
+        (await GetSettingsAsync()).ShouldBe(new SettingsResponse("km", 804_672, "blue"));
     }
 
     [TestCase("")]
@@ -89,12 +89,48 @@ public sealed class SettingsTests
     }
 
     [Test]
+    public async Task A_theme_once_picked_stays_picked_after_a_restart_without_touching_the_other_settings()
+    {
+        await ChangeAsync(new { distanceUnit = "mi" });
+        var response = await ChangeAsync(new { theme = "orange" });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await GetSettingsAsync()).ShouldBe(new SettingsResponse("mi", 700_000, "orange"));
+        await using var restarted = new TestApp(_app.DatabasePath);
+        (await restarted.CreateBrowser().GetFromJsonAsync<SettingsResponse>("/api/settings")).ShouldBe(new SettingsResponse("mi", 700_000, "orange"));
+    }
+
+    [TestCase("")]
+    [TestCase("yellow")]
+    [TestCase("Orange")]
+    public async Task A_theme_that_is_not_one_of_the_seven_is_rejected(string theme)
+    {
+        var response = await ChangeAsync(new { theme });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
+        var problem = await response.Content.ReadFromJsonAsync<ValidationProblem>();
+        problem!.Errors["theme"].ShouldBe(["The Theme is blue, teal, green, orange, red, pink or purple."]);
+        (await GetSettingsAsync()).Theme.ShouldBe("blue");
+    }
+
+    [TestCase("teal")]
+    [TestCase("green")]
+    [TestCase("red")]
+    [TestCase("pink")]
+    public async Task Each_of_the_newer_themes_can_be_picked(string theme)
+    {
+        (await ChangeAsync(new { theme })).StatusCode.ShouldBe(HttpStatusCode.OK);
+
+        (await GetSettingsAsync()).Theme.ShouldBe(theme);
+    }
+
+    [Test]
     public async Task Nothing_is_changed_when_one_of_two_changes_is_rejected()
     {
         var response = await ChangeAsync(new { distanceUnit = "mi", shoeMaximumDistance = 0.0 });
 
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
-        (await GetSettingsAsync()).ShouldBe(new SettingsResponse("km", 700_000));
+        (await GetSettingsAsync()).ShouldBe(new SettingsResponse("km", 700_000, "blue"));
     }
 
     private Task<HttpResponseMessage> ChangeAsync(object changes) => _browser.PatchAsJsonAsync("/api/settings", changes);
@@ -103,7 +139,7 @@ public sealed class SettingsTests
         (await _browser.GetFromJsonAsync<SettingsResponse>("/api/settings"))!;
 
     /// <param name="ShoeMaximumDistance">Metres.</param>
-    private sealed record SettingsResponse(string DistanceUnit, double ShoeMaximumDistance);
+    private sealed record SettingsResponse(string DistanceUnit, double ShoeMaximumDistance, string Theme);
 
     private sealed record ValidationProblem(Dictionary<string, string[]> Errors);
 }

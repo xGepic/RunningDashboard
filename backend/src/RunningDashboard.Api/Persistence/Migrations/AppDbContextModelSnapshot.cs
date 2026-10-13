@@ -30,6 +30,11 @@ namespace RunningDashboard.Api.Persistence.Migrations
                     b.Property<double>("ShoeMaximumDistance")
                         .HasColumnType("REAL");
 
+                    b.Property<string>("Theme")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
                     b.ToTable("AthleteSettings");

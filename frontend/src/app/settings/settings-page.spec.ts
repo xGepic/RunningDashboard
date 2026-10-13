@@ -24,12 +24,14 @@ const idle: SyncStatus = {
 };
 
 describe('SettingsPage', () => {
-  async function render(unit: 'km' | 'mi', connection: Connection = connected, shoeMaximumDistance = 700_000) {
+  afterEach(() => delete document.documentElement.dataset['theme']);
+
+  async function render(unit: 'km' | 'mi', connection: Connection = connected, shoeMaximumDistance = 700_000, theme = 'blue') {
     TestBed.configureTestingModule({ imports: [SettingsPage], providers: [provideHttpClient(), provideHttpClientTesting()] });
     const fixture = TestBed.createComponent(SettingsPage);
     const http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
-    http.expectOne('/api/settings').flush({ distanceUnit: unit, shoeMaximumDistance });
+    http.expectOne('/api/settings').flush({ distanceUnit: unit, shoeMaximumDistance, theme });
     http.expectOne('/api/connection').flush(connection);
     await fixture.whenStable();
     fixture.detectChanges();
@@ -57,6 +59,42 @@ describe('SettingsPage', () => {
 
     expect(pressed(element)).toBe('mi');
     expect(http.expectOne((r) => r.method === 'PATCH' && r.url === '/api/settings').request.body).toEqual({ distanceUnit: 'mi' });
+  });
+
+  describe('the Theme', () => {
+    const themeButtons = (element: HTMLElement) => [...element.querySelectorAll<HTMLButtonElement>('[aria-label="Theme"] button')];
+    const picked = (element: HTMLElement) => themeButtons(element).find((b) => b.getAttribute('aria-pressed') === 'true')?.textContent?.trim();
+
+    it('shows the stored Theme as picked, and on the page', async () => {
+      const { element } = await render('km', connected, 700_000, 'purple');
+
+      expect(themeButtons(element).map((b) => b.textContent!.trim())).toEqual(['Blue', 'Teal', 'Green', 'Orange', 'Red', 'Pink', 'Purple']);
+      expect(picked(element)).toBe('Purple');
+      expect(document.documentElement.dataset['theme']).toBe('purple');
+    });
+
+    it('saves a newly picked Theme and shows it at once', async () => {
+      const { fixture, http, element } = await render('km');
+
+      themeButtons(element)[3].click();
+      fixture.detectChanges();
+
+      expect(picked(element)).toBe('Orange');
+      expect(document.documentElement.dataset['theme']).toBe('orange');
+      expect(http.expectOne((r) => r.method === 'PATCH' && r.url === '/api/settings').request.body).toEqual({ theme: 'orange' });
+    });
+
+    it('goes back to the Theme before when it could not be saved', async () => {
+      const { fixture, http, element } = await render('km');
+
+      themeButtons(element)[3].click();
+      http.expectOne((r) => r.method === 'PATCH').flush('down', { status: 502, statusText: 'Bad Gateway' });
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(picked(element)).toBe('Blue');
+      expect(document.documentElement.dataset['theme']).toBe('blue');
+    });
   });
 
   it('shows who Strava is connected as, since when, and the last sync', async () => {

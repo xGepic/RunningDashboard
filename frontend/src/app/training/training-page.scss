@@ -91,7 +91,7 @@ tr.future td {
 
 th.compared,
 td.compared {
-  background: rgb(15 21 31 / 70%);
+  background: rgb(var(--inset-rgb) / 70%);
 }
 
 /* A divider before the compared block's first column. */
@@ -126,7 +126,7 @@ tr[class*='phase-'] td.to-race {
 }
 
 tr.recovery-week td {
-  background: repeating-linear-gradient(135deg, transparent 0 6px, rgb(124 136 155 / 8%) 6px 12px);
+  background: repeating-linear-gradient(135deg, transparent 0 6px, rgb(var(--text-muted-rgb) / 8%) 6px 12px);
 }
 
 .met {
@@ -182,7 +182,7 @@ tr.recovery-week td {
   border: 1px solid var(--border);
   border-radius: 16px;
   background:
-    radial-gradient(120% 140% at 100% 0%, rgb(74 158 255 / 13%), rgb(74 158 255 / 0%) 55%),
+    radial-gradient(120% 140% at 100% 0%, rgb(var(--accent-rgb) / 13%), rgb(var(--accent-rgb) / 0%) 55%),
     var(--surface);
 }
 
@@ -293,7 +293,7 @@ tr.recovery-week td {
   span {
     flex: 1;
     border-radius: 2px;
-    background: rgb(74 158 255 / var(--alpha));
+    background: rgb(var(--accent-rgb) / var(--alpha));
 
     &.race {
       background: var(--amber);

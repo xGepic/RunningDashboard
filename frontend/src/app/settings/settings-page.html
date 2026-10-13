@@ -24,6 +24,25 @@
     </div>
   </section>
 
+  <section class="card">
+    <div class="card-header">
+      <div class="titles">
+        <h2 class="card-title">Theme</h2>
+        <p class="card-sub">Colours the whole dashboard: buttons, links, bars, charts and the dark background. Phases, and met or missed targets, keep their colours.</p>
+      </div>
+    </div>
+    <div class="setting themes">
+      <span class="label">Colours</span>
+      <div class="segmented" role="group" aria-label="Theme">
+        @for (option of themes; track option.theme) {
+          <button type="button" [attr.aria-pressed]="theme() === option.theme" (click)="pickTheme(option.theme)">
+            <span class="theme-swatch" [attr.data-theme]="option.theme" aria-hidden="true"></span>{{ option.name }}
+          </button>
+        }
+      </div>
+    </div>
+  </section>
+
   <section class="card shoes">
     <div class="card-header">
       <div class="titles">

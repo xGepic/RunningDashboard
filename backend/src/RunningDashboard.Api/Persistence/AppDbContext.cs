@@ -87,6 +87,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         {
             settings.Property(s => s.Id).ValueGeneratedNever();
             settings.Property(s => s.DistanceUnit).HasMaxLength(2);
+            settings.Property(s => s.Theme).HasMaxLength(10);
         });
 
         model.Entity<Shoe>(shoe =>

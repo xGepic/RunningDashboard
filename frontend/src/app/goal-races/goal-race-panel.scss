@@ -10,7 +10,7 @@
   border: 1px solid var(--border);
   border-radius: 18px;
   background:
-    radial-gradient(90% 120% at 0% 0%, rgb(74 158 255 / 16%), rgb(74 158 255 / 0%) 60%),
+    radial-gradient(90% 120% at 0% 0%, rgb(var(--accent-rgb) / 16%), rgb(var(--accent-rgb) / 0%) 60%),
     radial-gradient(70% 90% at 100% 100%, rgb(61 208 219 / 8%), rgb(61 208 219 / 0%) 60%),
     var(--surface-raised);
 
@@ -129,7 +129,7 @@
     height: 28px;
     border: 1px solid var(--border);
     border-radius: 5px;
-    background: rgb(74 158 255 / var(--alpha));
+    background: rgb(var(--accent-rgb) / var(--alpha));
   }
 
   .done .bar {
@@ -188,7 +188,7 @@
   color: var(--text);
 
   &::backdrop {
-    background: rgb(5 8 13 / 70%);
+    background: rgb(var(--backdrop-rgb) / 70%);
     backdrop-filter: blur(3px);
   }
 

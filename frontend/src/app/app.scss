@@ -148,7 +148,7 @@
   min-height: 56px;
   padding: 8px 28px;
   border-bottom: 1px solid var(--shell-border);
-  background: rgb(9 13 20 / 86%);
+  background: rgb(var(--background-rgb) / 86%);
   backdrop-filter: blur(10px);
 }
 
@@ -170,7 +170,7 @@
   }
 
   .sep {
-    color: #334055;
+    color: var(--border-active);
   }
 
   /* The sidebar shows the app's name on wide screens. */

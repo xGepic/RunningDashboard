@@ -4,6 +4,7 @@ import { Component, inject, linkedSignal, signal } from '@angular/core';
 import { Connection } from '../connection/connection';
 import { AthleteSettings } from '../shared/athlete-settings';
 import { DistanceUnit, formatWhole, unitNames } from '../shared/format';
+import { Theme, themes } from '../shared/themes';
 import { Units } from '../shared/units';
 import { SyncIndicator } from '../sync/sync-indicator';
 
@@ -13,7 +14,7 @@ const maxShoeMaximumDistance = 5_000_000;
 /** For "Enter the distance in miles, e.g. 435." */
 const examples: Record<DistanceUnit, string> = { km: '700', mi: '435' };
 
-/** How the dashboard is shown (the Distance Unit), the Shoes' Maximum Distance, and the link to Strava. */
+/** How the dashboard is shown (the Distance Unit and the Theme), the Shoes' Maximum Distance, and the link to Strava. */
 @Component({
   selector: 'app-settings-page',
   imports: [DatePipe, SyncIndicator],
@@ -27,10 +28,18 @@ export class SettingsPage {
 
   protected readonly distanceUnits: DistanceUnit[] = ['km', 'mi'];
 
+  protected readonly themes = themes;
+  protected readonly theme = this.settings.theme;
+
   /** The Maximum Distance as typed, in the Distance Unit; filled again whenever the setting or the unit changes. */
   protected readonly maximumDistance = linkedSignal(() => this.units.inputValue(this.settings.shoeMaximumDistance()));
   protected readonly maximumDistanceError = signal<string | null>(null);
   protected readonly saving = signal(false);
+
+  /** Shown at once; if it cannot be saved, the Theme before comes back, unless another has been picked since. */
+  protected pickTheme(theme: Theme): void {
+    void this.settings.change({ theme });
+  }
 
   protected async saveMaximumDistance(): Promise<void> {
     const distance = this.units.parse(this.maximumDistance(), this.settings.shoeMaximumDistance());

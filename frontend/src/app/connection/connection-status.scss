@@ -46,9 +46,9 @@
   justify-content: center;
   width: 30px;
   height: 30px;
-  border: 1px solid #2a3648;
+  border: 1px solid var(--border-raised);
   border-radius: 50%;
-  background: #1c2738;
+  background: var(--chip);
   color: var(--accent-pale);
   font-size: 11.5px;
   font-weight: 600;

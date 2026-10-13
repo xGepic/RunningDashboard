@@ -1,5 +1,6 @@
 import { DOCUMENT } from '@angular/common';
 import { Injectable, computed, inject } from '@angular/core';
+import { AthleteSettings } from './athlete-settings';
 
 /** Chart colours, read from the CSS tokens in styles.scss so charts and the page share one palette. */
 export interface ChartColors {
@@ -19,12 +20,15 @@ export interface ChartColors {
   fontMono: string;
 }
 
-/** The chart colours of the app's (dark) theme. */
+/** The chart colours of the app's dark look, in the Athlete's Theme. */
 @Injectable({ providedIn: 'root' })
 export class ChartTheme {
   private readonly document = inject(DOCUMENT);
+  private readonly settings = inject(AthleteSettings);
 
   readonly colors = computed<ChartColors>(() => {
+    // Read again for another Theme: AthleteSettings has put it on the page by the time it changes.
+    this.settings.theme();
     const style = getComputedStyle(this.document.documentElement);
     const token = (name: string) => style.getPropertyValue(name).trim();
     return {

@@ -14,6 +14,24 @@
   }
 }
 
+/* Seven Themes are wider than a phone: they go on as many rows as they need. */
+.themes {
+  flex-wrap: wrap;
+
+  .segmented {
+    flex-wrap: wrap;
+  }
+}
+
+/* Its own data-theme gives it that Theme's accent. */
+.theme-swatch {
+  width: 10px;
+  height: 10px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
 .shoes .setting {
   align-items: flex-end;
   justify-content: flex-start;

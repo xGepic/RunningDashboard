@@ -22,6 +22,8 @@ public static class SettingsEndpoints
                 errors["distanceUnit"] = ["The Distance Unit is km or mi."];
             if (request.ShoeMaximumDistance is not null and not (> 0 and <= MaxShoeMaximumDistance))
                 errors["shoeMaximumDistance"] = [$"The Maximum Distance is a positive number of metres, at most {MaxShoeMaximumDistance / 1000:0} km."];
+            if (request.Theme is not null && !AthleteSettings.IsTheme(request.Theme))
+                errors["theme"] = ["The Theme is blue, teal, green, orange, red, pink or purple."];
             if (errors.Count > 0)
                 return Results.ValidationProblem(errors);
 
@@ -34,6 +36,7 @@ public static class SettingsEndpoints
 
             settings.DistanceUnit = request.DistanceUnit ?? settings.DistanceUnit;
             settings.ShoeMaximumDistance = request.ShoeMaximumDistance ?? settings.ShoeMaximumDistance;
+            settings.Theme = request.Theme ?? settings.Theme;
             await db.SaveChangesAsync(cancellationToken);
             return Results.Ok(SettingsResponse.From(settings));
         });

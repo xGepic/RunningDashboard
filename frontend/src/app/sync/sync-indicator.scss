@@ -53,8 +53,8 @@ button {
     border-color 0.15s;
 
   &:hover:not(:disabled) {
-    border-color: #334055;
-    background: #1a2332;
+    border-color: var(--border-active);
+    background: var(--control-hover);
   }
 
   &:disabled {
