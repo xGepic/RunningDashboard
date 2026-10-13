@@ -29,6 +29,10 @@ _Avoid_: Swim workout, session
 A Swim's Moving Time per 100 metres, written as min:ss /100m.
 _Avoid_: Pace (on its own, for Swims), Avg Speed
 
+**Listed Activity**:
+A Ride or a Swim: an Activity the dashboard stores only to list it in its history, never to count it.
+_Avoid_: Other activity, cross-training
+
 **Avg Speed**:
 A Ride's distance per Moving Time, in km/h (mph when the Distance Unit is miles). Rides have it instead of a Pace.
 _Avoid_: Pace (for Rides), velocity

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using RunningDashboard.Api.Lists;
 using RunningDashboard.Api.Persistence;
 using RunningDashboard.Api.Records;
 
@@ -6,11 +7,19 @@ namespace RunningDashboard.Api.Runs;
 
 public static class RunEndpoints
 {
+    /// <summary>What the Runs list sorts by, besides date.</summary>
+    private static readonly Dictionary<string, Func<RunResponse, double?>> Figures = new()
+    {
+        ["distance"] = r => r.Distance,
+        ["movingTime"] = r => r.MovingTime,
+        ["pace"] = r => r.Pace,
+    };
+
     public static void MapRunEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/runs", async ([AsParameters] RunListQuery query, AppDbContext db, CancellationToken cancellationToken) =>
+        app.MapGet("/api/runs", async ([AsParameters] ListQuery query, AppDbContext db, CancellationToken cancellationToken) =>
         {
-            var errors = query.Validate();
+            var errors = query.Validate(Figures.Keys, "Runs");
             if (errors.Count > 0)
                 return Results.ValidationProblem(errors);
 
@@ -25,17 +34,8 @@ public static class RunEndpoints
                     r.ShoeId is null ? null : shoeNames.GetValueOrDefault(r.ShoeId)))
                 .ToList();
 
-            var matching = runs.Where(r =>
-                (string.IsNullOrWhiteSpace(query.Search) || r.Name.Contains(query.Search.Trim(), StringComparison.InvariantCultureIgnoreCase))
-                && (query.From is null || DateOnly.FromDateTime(r.StartLocal) >= query.From)
-                && (query.To is null || DateOnly.FromDateTime(r.StartLocal) <= query.To))
-                .ToList();
-
-            var page = Sorted(matching, query)
-                .Skip((query.PageOrDefault - 1) * query.PageSizeOrDefault)
-                .Take(query.PageSizeOrDefault)
-                .ToList();
-
+            var matching = runs.Where(r => query.Matches(r.Name, r.StartLocal)).ToList();
+            var page = query.PageOf(matching, r => r.StartLocal, Figures);
             return Results.Ok(new RunPageResponse(page, query.PageOrDefault, query.PageSizeOrDefault, matching.Count));
         });
 
@@ -80,22 +80,5 @@ public static class RunEndpoints
             var personalBestDistances = await PersonalBests.DistancesSetByAsync(run, db, cancellationToken);
             return Results.Ok(RunDetailResponse.From(run, shoe?.Name, personalBestDistances));
         });
-    }
-
-    /// <summary>
-    /// In the requested order; equal keys fall back to newest first, and Runs without a Pace go last.
-    /// </summary>
-    private static IOrderedEnumerable<RunResponse> Sorted(IEnumerable<RunResponse> runs, RunListQuery query)
-    {
-        var ascending = query.Ascending;
-        var sorted = query.SortKey switch
-        {
-            "distance" => ascending ? runs.OrderBy(r => r.Distance) : runs.OrderByDescending(r => r.Distance),
-            "movingTime" => ascending ? runs.OrderBy(r => r.MovingTime) : runs.OrderByDescending(r => r.MovingTime),
-            "pace" => runs.OrderBy(r => r.Pace is null)
-                .ThenBy(r => ascending ? r.Pace : -r.Pace),
-            _ => ascending ? runs.OrderBy(r => r.StartLocal) : runs.OrderByDescending(r => r.StartLocal),
-        };
-        return sorted.ThenByDescending(r => r.StartLocal);
     }
 }

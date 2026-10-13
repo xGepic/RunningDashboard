@@ -14,7 +14,7 @@ internal sealed record RideTotalsResponse(int Rides, double Distance, int Moving
     {
         var distance = rides.Sum(r => r.Distance);
         var movingTime = rides.Sum(r => r.MovingTime);
-        return new RideTotalsResponse(rides.Count, distance, movingTime, Ride.SpeedOf(movingTime, distance));
+        return new RideTotalsResponse(rides.Count, distance, movingTime, ListedActivity.AvgSpeedOf(movingTime, distance));
     }
 }
 

@@ -10,9 +10,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
     public DbSet<Run> Runs => Set<Run>();
 
-    public DbSet<Ride> Rides => Set<Ride>();
-
-    public DbSet<Swim> Swims => Set<Swim>();
+    /// <summary>The Rides and Swims.</summary>
+    public DbSet<ListedActivity> ListedActivities => Set<ListedActivity>();
 
     public DbSet<SyncState> SyncStates => Set<SyncState>();
 
@@ -67,18 +66,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             run.HasMany(r => r.Splits).WithOne().HasForeignKey(s => s.RunId).OnDelete(DeleteBehavior.Cascade);
         });
 
-        model.Entity<Ride>(ride =>
+        model.Entity<ListedActivity>(activity =>
         {
-            ride.Property(r => r.Id).ValueGeneratedNever();
-            ride.Property(r => r.SportType).HasMaxLength(50);
-            ride.HasIndex(r => r.StartUtc);
-        });
-
-        model.Entity<Swim>(swim =>
-        {
-            swim.Property(s => s.Id).ValueGeneratedNever();
-            swim.Property(s => s.SportType).HasMaxLength(50);
-            swim.HasIndex(s => s.StartUtc);
+            activity.Property(a => a.Id).ValueGeneratedNever();
+            activity.Property(a => a.SportType).HasMaxLength(50);
+            activity.HasIndex(a => a.StartUtc);
         });
 
         model.Entity<BestEffort>(effort => effort.Property(e => e.Name).HasMaxLength(50));

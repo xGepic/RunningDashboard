@@ -23,7 +23,7 @@ builder.Services.AddOptions<StravaOptions>()
     .ValidateOnStart();
 builder.Services.AddHttpClient<StravaClient>();
 builder.Services.AddSingleton<StravaRateLimits>();
-builder.Services.AddScoped<RunImport>();
+builder.Services.AddScoped<ActivityImport>();
 builder.Services.AddScoped<RunDetailImport>();
 builder.Services.AddScoped<ShoeImport>();
 builder.Services.AddSingleton<SyncWorker>();

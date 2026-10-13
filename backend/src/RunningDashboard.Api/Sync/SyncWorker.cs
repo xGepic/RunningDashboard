@@ -116,7 +116,7 @@ public sealed class SyncWorker(
         {
             SetPhase(SyncPhase.ImportingRuns);
             using (var scope = scopes.CreateScope())
-                await scope.ServiceProvider.GetRequiredService<RunImport>().ImportAsync(stoppingToken);
+                await scope.ServiceProvider.GetRequiredService<ActivityImport>().ImportAsync(stoppingToken);
 
             var shoesRefreshed = await RefreshShoesAsync(stoppingToken);
 

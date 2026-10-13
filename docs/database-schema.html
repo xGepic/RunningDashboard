@@ -161,12 +161,13 @@
 
   // One entry per column; an array stacks its tables.
   const standalone = [
-    { id: 'Rides', kind: 'strava', columns: [
+    { id: 'ListedActivities', kind: 'strava', columns: [
       ['PK', 'Id', 'INTEGER'], ['', 'Name', 'TEXT'], ['', 'SportType', 'TEXT'], ['', 'StartUtc', 'TEXT'], ['', 'StartLocal', 'TEXT'],
       ['', 'Distance', 'REAL'], ['', 'MovingTime', 'INTEGER'], ['', 'ElapsedTime', 'INTEGER'], ['', 'ElevationGain', 'REAL'],
       ['', 'RawSummaryJson', 'TEXT']] },
     [
       { id: 'YearlyGoals', kind: 'you', columns: [['PK', 'Id', 'INTEGER'], ['', 'Year', 'INTEGER'], ['', 'Distance', 'REAL']] },
+      { id: 'AthleteSettings', kind: 'you', columns: [['PK', 'Id', 'INTEGER'], ['', 'DistanceUnit', 'TEXT']] },
       { id: '__EFMigrationsHistory', kind: 'app', columns: [['PK', 'MigrationId', 'TEXT'], ['', 'ProductVersion', 'TEXT']] },
     ],
     { id: 'StravaConnections', kind: 'app', columns: [

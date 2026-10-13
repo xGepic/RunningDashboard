@@ -14,7 +14,7 @@ internal sealed record SwimTotalsResponse(int Swims, double Distance, int Moving
     {
         var distance = swims.Sum(s => s.Distance);
         var movingTime = swims.Sum(s => s.MovingTime);
-        return new SwimTotalsResponse(swims.Count, distance, movingTime, Swim.PaceOf(movingTime, distance));
+        return new SwimTotalsResponse(swims.Count, distance, movingTime, ListedActivity.SwimPaceOf(movingTime, distance));
     }
 }
 
