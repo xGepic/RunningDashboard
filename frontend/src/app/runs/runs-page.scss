@@ -64,6 +64,24 @@
     white-space: nowrap;
   }
 
+  /* Runs of the same day, sorted by date: a bracket down their left edge, the day named once. */
+  tr.same-day td:first-child {
+    box-shadow: inset 3px 0 var(--accent-deep);
+  }
+
+  tr.continues-day td {
+    border-top-color: transparent;
+  }
+
+  /* Still read out, and still as wide, so the times line up. */
+  .continues-day .day {
+    color: transparent;
+  }
+
+  .day-count {
+    margin-left: 8px;
+  }
+
   .time {
     margin-left: 6px;
     color: var(--text-faint);

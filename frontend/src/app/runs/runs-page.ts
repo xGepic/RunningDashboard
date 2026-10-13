@@ -6,7 +6,7 @@ import { currentMonth, isoDate, lastDayOf, monthDate, monthKey } from '../shared
 import { DistanceUnit, formatDistance, formatDuration, formatHoursMinutes, formatPace } from '../shared/format';
 import { SportSwitch } from '../shared/sport-switch';
 import { reloadOnSync } from '../sync/reload-on-sync';
-import { RunPage, RunSortKey } from './run';
+import { Run, RunPage, RunSortKey } from './run';
 
 /** The list's state, kept in the URL so the back button and shared links work. */
 type ListParams = Partial<Record<'month' | 'search' | 'sort' | 'direction' | 'page' | 'unit', string | null>>;
@@ -88,6 +88,22 @@ export class RunsPage {
     };
   });
 
+  /**
+   * The listed Runs, each with how many listed Runs share its day. Sorted by date, the Runs of a shared day are
+   * next to each other: the first one names the day, the others continue it.
+   */
+  protected readonly rows = computed(() => {
+    const items = this.runs.value()?.items ?? [];
+    const runsPerDay = new Map<string, number>();
+    for (const run of items) runsPerDay.set(day(run), (runsPerDay.get(day(run)) ?? 0) + 1);
+    const byDate = this.sortKey() === 'date';
+    return items.map((run, i) => ({
+      run,
+      sameDayRuns: runsPerDay.get(day(run))!,
+      continuesDay: byDate && i > 0 && day(items[i - 1]) === day(run),
+    }));
+  });
+
   /** The longest Run listed, which fills its distance bar. */
   protected readonly longest = computed(() => Math.max(1, ...(this.runs.value()?.items ?? []).map((r) => r.distance)));
 
@@ -153,4 +169,9 @@ export class RunsPage {
     const queryParams = Object.fromEntries(Object.entries(params).map(([key, value]) => [key, value || null]));
     this.router.navigate([], { queryParams, queryParamsHandling: 'merge' });
   }
+}
+
+/** "2026-10-12": the day a Run started, where it happened. */
+function day(run: Run): string {
+  return run.startLocal.slice(0, 10);
 }

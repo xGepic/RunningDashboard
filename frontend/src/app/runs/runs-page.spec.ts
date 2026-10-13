@@ -33,14 +33,14 @@ describe('RunsPage', () => {
 
   afterEach(() => vi.useRealTimers());
 
-  async function open(url: string) {
+  async function open(url: string, page: RunPage = october) {
     const harness = await RouterTestingHarness.create();
     const http = TestBed.inject(HttpTestingController);
     await harness.navigateByUrl(url);
     for (const sync of http.match('/api/sync')) sync.flush({ running: false, importedRuns: 0, lastSyncedAt: null });
     harness.detectChanges();
     const request = http.expectOne((r) => r.url === '/api/runs');
-    request.flush(october);
+    request.flush(page);
     await new Promise((resolve) => setTimeout(resolve));
     harness.detectChanges();
     return { http, element: harness.routeNativeElement!, request: request.request };
@@ -69,5 +69,33 @@ describe('RunsPage', () => {
 
     expect(names(element)).toEqual(['Easy Sunday', 'Tempo Tuesday']);
     http.expectNone((r) => r.url === '/api/runs/months');
+  });
+
+  describe('a day with two Runs', () => {
+    const double: RunPage = {
+      ...october,
+      items: [run(3, 'Evening shakeout', '2026-10-11T18:30:00', 5000, 1650), ...october.items],
+      totalCount: 3,
+    };
+    const rows = (element: HTMLElement) => [...element.querySelectorAll<HTMLElement>('.runs tbody tr')];
+
+    it('groups them, naming the day once with how many Runs it has', async () => {
+      const { element } = await open('/runs', double);
+
+      const [evening, morning, tuesday] = rows(element);
+      expect(evening.classList).toContain('same-day');
+      expect(evening.querySelector('.day-count')!.textContent!.trim()).toBe('2 Runs');
+      expect(morning.classList).toContain('continues-day');
+      expect(morning.querySelector('.day-count')).toBeNull();
+      expect(tuesday.classList).not.toContain('same-day');
+      expect(tuesday.querySelector('.day-count')).toBeNull();
+    });
+
+    it('still tags each of them when sorted by something else', async () => {
+      const { element } = await open('/runs?sort=distance', double);
+
+      expect(rows(element).map((r) => r.querySelector('.day-count')?.textContent!.trim() ?? null)).toEqual(['2 Runs', '2 Runs', null]);
+      expect(element.querySelector('.same-day, .continues-day')).toBeNull();
+    });
   });
 });

@@ -90,9 +90,16 @@
               </tr>
             </thead>
             <tbody>
-              @for (run of page.items; track run.id) {
-                <tr (click)="open(run.id, $event)">
-                  <td class="date">{{ run.startLocal | date: 'EEE d MMM y' }} <span class="time">{{ run.startLocal | date: 'HH:mm' }}</span></td>
+              @for (row of rows(); track row.run.id) {
+                @let run = row.run;
+                <tr (click)="open(run.id, $event)" [class.same-day]="row.sameDayRuns > 1 && sortKey() === 'date'"
+                    [class.continues-day]="row.continuesDay">
+                  <td class="date">
+                    <span class="day">{{ run.startLocal | date: 'EEE d MMM y' }}</span> <span class="time">{{ run.startLocal | date: 'HH:mm' }}</span>
+                    @if (row.sameDayRuns > 1 && !row.continuesDay) {
+                      <span class="badge muted day-count" [title]="row.sameDayRuns + ' Runs on this day'">{{ row.sameDayRuns }} Runs</span>
+                    }
+                  </td>
                   <td>
                     <div class="name">
                       <a [routerLink]="['/runs', run.id]">{{ run.name }}</a>
