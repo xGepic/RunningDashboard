@@ -13,24 +13,28 @@
         <span class="paused">Paused for Strava’s rate limit until {{ status.pausedUntil | date: 'd MMM, HH:mm' }}</span>
       }
     } @else {
-      <span class="last-synced">
-        @if (status.lastSyncedAt) {
-          Last synced {{ status.lastSyncedAt | date: 'd MMM, HH:mm' }}
-        } @else {
-          Not synced yet
+      @if (!compact()) {
+        <span class="last-synced">
+          @if (status.lastSyncedAt) {
+            Last synced {{ status.lastSyncedAt | date: 'd MMM, HH:mm' }}
+          } @else {
+            Not synced yet
+          }
+        </span>
+        @if (status.detailedRuns < status.importedRuns) {
+          <span class="last-synced">{{ status.detailedRuns }} of {{ status.importedRuns }} Runs detailed</span>
         }
-      </span>
-      @if (status.detailedRuns < status.importedRuns) {
-        <span class="last-synced">{{ status.detailedRuns }} of {{ status.importedRuns }} Runs detailed</span>
       }
       @if (status.lastError) {
         <span class="error" role="alert">{{ status.lastError }}</span>
       }
     }
-    <button type="button" (click)="sync.syncNow()" [disabled]="status.running" [class.running]="status.running">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-           stroke-linecap="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4h-4" /></svg>
-      {{ status.running ? 'Syncing…' : 'Sync now' }}
-    </button>
+    @if (!compact()) {
+      <button type="button" (click)="sync.syncNow()" [disabled]="status.running" [class.running]="status.running">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4h-4" /></svg>
+        {{ status.running ? 'Syncing…' : 'Sync now' }}
+      </button>
+    }
   }
 }

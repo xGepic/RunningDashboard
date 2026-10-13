@@ -16,12 +16,13 @@ describe('SyncIndicator', () => {
     reconnectRequired: false,
   };
 
-  async function render(status: SyncStatus): Promise<HTMLElement> {
+  async function render(status: SyncStatus, compact = false): Promise<HTMLElement> {
     TestBed.configureTestingModule({
       imports: [SyncIndicator],
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });
     const fixture = TestBed.createComponent(SyncIndicator);
+    fixture.componentRef.setInput('compact', compact);
     fixture.detectChanges();
     TestBed.inject(HttpTestingController).expectOne('/api/sync').flush(status);
     await fixture.whenStable();
@@ -70,5 +71,29 @@ describe('SyncIndicator', () => {
 
     expect(element.textContent).toContain('Sync failed: Strava answered 500.');
     expect(element.querySelector('button')?.textContent).toContain('Sync now');
+  });
+
+  describe('compact, in the top bar', () => {
+    it('shows nothing while all is well: the last sync and Sync now are on the Settings page', async () => {
+      const element = await render({ ...idle, detailedRuns: 500 }, true);
+
+      expect(element.textContent!.trim()).toBe('');
+      expect(element.querySelector('button')).toBeNull();
+    });
+
+    it('shows the progress while syncing, without a button', async () => {
+      const element = await render({ ...idle, running: true, phase: 'importing-runs', importedRuns: 312 }, true);
+
+      expect(element.textContent).toContain('Importing Runs… 312 Runs');
+      expect(element.querySelector('button')).toBeNull();
+    });
+
+    it('shows the last error, and asks to reconnect Strava when access was lost', async () => {
+      expect((await render({ ...idle, lastError: 'Sync failed: Strava answered 500.' }, true)).textContent).toContain('Sync failed');
+
+      TestBed.resetTestingModule();
+      const lost = await render({ ...idle, reconnectRequired: true, lastError: 'Strava no longer accepts the app’s access.' }, true);
+      expect(lost.querySelector('a')?.getAttribute('href')).toBe('/api/strava/connect');
+    });
   });
 });

@@ -8,7 +8,8 @@
     <span class="pill" [title]="'Strava: connected as ' + athlete.firstName + ' ' + athlete.lastName">
       <span class="dot"></span><span class="who">Connected as {{ athlete.firstName }} {{ athlete.lastName }}</span>
     </span>
-    <app-sync-indicator />
+    <!-- Only while a sync runs or something went wrong; the last sync and Sync now are on the Settings page. -->
+    <app-sync-indicator compact />
     <span class="avatar" aria-hidden="true">{{ initials(athlete) }}</span>
   } @else {
     <a class="connect" href="/api/strava/connect">Connect Strava</a>
