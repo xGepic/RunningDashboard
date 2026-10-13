@@ -1,15 +1,18 @@
-import { DatePipe } from '@angular/common';
-import { httpResource } from '@angular/common/http';
+import { DatePipe, NgTemplateOutlet } from '@angular/common';
+import { HttpResourceRef, httpResource } from '@angular/common/http';
 import { Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
 import { ConnectionStatus } from './connection/connection-status';
 import { monthFragments } from './calendar/calendar-links';
+import { RidePage } from './rides/ride';
 import { RunPage } from './runs/run';
 import { fullMonthNames } from './shared/dates';
-import { formatDuration } from './shared/format';
+import { formatDuration, formatWhole } from './shared/format';
+import { ListPage } from './shared/history-list';
 import { Units } from './shared/units';
+import { SwimPage } from './swims/swim';
 import { reloadOnSync } from './sync/reload-on-sync';
 
 interface NavItem {
@@ -30,6 +33,18 @@ const navItems: NavItem[] = [
   { label: 'Shoes', path: '/shoes', icon: 'M3 17v-6l5-3 3 3 5 1.5c3 .8 5 2 5 4.5H3zM3 20h18' },
 ];
 
+/** The newest activity, of whichever sport, as the sidebar shows it. */
+interface LastActivity {
+  sport: 'Run' | 'Ride' | 'Swim';
+  name: string;
+  startLocal: string;
+  /** Distance and Moving Time. */
+  figures: string;
+  /** A Run's page; a Ride or Swim has none and opens on Strava, as in its history. */
+  route: (string | number)[] | null;
+  stravaUrl: string | null;
+}
+
 /** At the bottom of the sidebar, apart from the pages, and without a key. */
 const settingsItem: NavItem = {
   label: 'Settings',
@@ -38,7 +53,7 @@ const settingsItem: NavItem = {
 };
 
 @Component({
-  imports: [DatePipe, RouterOutlet, RouterLink, ConnectionStatus],
+  imports: [DatePipe, NgTemplateOutlet, RouterOutlet, RouterLink, ConnectionStatus],
   selector: 'app-root',
   styleUrl: './app.scss',
   templateUrl: './app.html',
@@ -46,7 +61,7 @@ const settingsItem: NavItem = {
 })
 export class App {
   private readonly router = inject(Router);
-  /** Loads the Distance Unit as the app starts, and shows the last Run in it. */
+  /** Loads the Distance Unit as the app starts, and shows the last activity in it. */
   private readonly units = inject(Units);
 
   protected readonly nav = navItems;
@@ -91,18 +106,38 @@ export class App {
     return { section, sub, parent: section?.path, dropParams };
   });
 
-  /** The newest Run: the first of the Runs list, which is newest first by default. */
+  /** The newest Run, Ride and Swim: the first of each history, which is newest first by default. */
   private readonly latestRuns = httpResource<RunPage>(() => '/api/runs?pageSize=1');
+  private readonly latestRides = httpResource<RidePage>(() => '/api/rides?pageSize=1');
+  private readonly latestSwims = httpResource<SwimPage>(() => '/api/swims?pageSize=1');
 
-  /** None until there are Runs, or when they could not be loaded. */
-  protected readonly lastRun = computed(() => {
-    if (!this.latestRuns.hasValue()) return null;
-    const run = this.latestRuns.value().items[0];
-    return run ? { ...run, figures: `${this.units.distance(run.distance)} · ${formatDuration(run.movingTime)}` } : null;
+  /** The newest of them; none until there are activities. A history that could not be loaded is left out. */
+  protected readonly lastActivity = computed((): LastActivity | null => {
+    const activities: LastActivity[] = [
+      ...firstOf(this.latestRuns).map((run): LastActivity => ({
+        sport: 'Run', name: run.name, startLocal: run.startLocal, route: ['/runs', run.id], stravaUrl: null,
+        figures: `${this.units.distance(run.distance)} · ${formatDuration(run.movingTime)}`,
+      })),
+      ...firstOf(this.latestRides).map((ride): LastActivity => ({
+        sport: 'Ride', name: ride.name, startLocal: ride.startLocal, route: null, stravaUrl: ride.stravaUrl,
+        figures: `${this.units.distance(ride.distance)} · ${formatDuration(ride.movingTime)}`,
+      })),
+      // Swims stay in metres.
+      ...firstOf(this.latestSwims).map((swim): LastActivity => ({
+        sport: 'Swim', name: swim.name, startLocal: swim.startLocal, route: null, stravaUrl: swim.stravaUrl,
+        figures: `${formatWhole(swim.distance)} m · ${formatDuration(swim.movingTime)}`,
+      })),
+    ];
+    // Newest first; the sort is stable, so a Run wins a tie.
+    return activities.sort((a, b) => b.startLocal.localeCompare(a.startLocal))[0] ?? null;
   });
 
   constructor() {
-    reloadOnSync(() => this.latestRuns.reload());
+    reloadOnSync(() => {
+      this.latestRuns.reload();
+      this.latestRides.reload();
+      this.latestSwims.reload();
+    });
   }
 
   /** Keys 1 to 6 open the pages, as the sidebar shows, unless the Athlete is typing. */
@@ -113,4 +148,9 @@ export class App {
     const item = navItems[Number(event.key) - 1];
     if (item) this.router.navigateByUrl(item.path);
   }
+}
+
+/** The first of a history's page, if it has one and could be loaded. */
+function firstOf<Item>(list: HttpResourceRef<ListPage<Item> | undefined>): Item[] {
+  return list.hasValue() ? list.value().items.slice(0, 1) : [];
 }

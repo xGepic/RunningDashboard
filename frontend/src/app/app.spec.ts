@@ -65,25 +65,56 @@ describe('App', () => {
     expect(element.querySelector('.crumbs a')!.getAttribute('href')).toBe('/calendar/2025?ref=mail');
   });
 
-  it('shows the last Run at the bottom of the sidebar, linked to its details', async () => {
-    const { fixture, element } = await render();
+  describe('the last activity, at the bottom of the sidebar above Settings', () => {
+    const page = <T,>(items: T[]) => ({ items, page: 1, pageSize: 1, totalCount: items.length, totals: {} });
+    const run = { id: 42, name: 'Evening Run', sportType: 'Run', startLocal: '2026-10-12T18:05:00', distance: 10_240, movingTime: 3_125, pace: 305, shoeName: null };
+    const ride = {
+      id: 77, name: 'Gravel loop', sportType: 'GravelRide', startLocal: '2026-10-13T09:30:00', distance: 42_000, movingTime: 5_400, speed: 28,
+      elevationGain: 310, stravaUrl: 'https://www.strava.com/activities/77',
+    };
+    const swim = { id: 88, name: 'Lunch Swim', startLocal: '2026-10-11T12:00:00', distance: 1_500, movingTime: 1_930, pace: 129, stravaUrl: 'https://www.strava.com/activities/88' };
 
-    TestBed.inject(HttpTestingController)
-      .expectOne('/api/runs?pageSize=1')
-      .flush({
-        items: [{ id: 42, name: 'Evening Run', sportType: 'Run', startLocal: '2026-10-12T18:05:00', distance: 10_240, movingTime: 3_125, pace: 305, shoeName: null }],
-        page: 1,
-        pageSize: 1,
-        totalCount: 312,
-      });
-    await new Promise((resolve) => setTimeout(resolve));
-    fixture.detectChanges();
+    async function show(runs: unknown[], rides: unknown[], swims: unknown[]) {
+      const { fixture, element } = await render();
+      const http = TestBed.inject(HttpTestingController);
+      http.expectOne('/api/runs?pageSize=1').flush(page(runs));
+      http.expectOne('/api/rides?pageSize=1').flush(page(rides));
+      http.expectOne('/api/swims?pageSize=1').flush(page(swims));
+      await new Promise((resolve) => setTimeout(resolve));
+      fixture.detectChanges();
+      return element.querySelector('.last-activity')!;
+    }
 
-    const lastRun = element.querySelector('.last-run')!;
-    expect(lastRun.querySelector('.group-label')!.textContent).toBe('Last Run');
-    expect(lastRun.querySelector('a')!.getAttribute('href')).toBe('/runs/42');
-    expect(lastRun.querySelector('.name')!.textContent).toBe('Evening Run');
-    expect(lastRun.querySelector('.when')!.textContent).toBe('12 Oct 2026');
-    expect(lastRun.querySelector('.figures')!.textContent).toBe('10.24 km · 52:05');
+    it('is the newest Run, linked to its details', async () => {
+      const last = await show([run], [], [swim]);
+
+      expect(last.querySelector('.group-label')!.textContent).toBe('Last Activity');
+      expect(last.querySelector('a')!.getAttribute('href')).toBe('/runs/42');
+      expect(last.querySelector('.name')!.textContent).toBe('Evening Run');
+      expect(last.querySelector('.when')!.textContent).toBe('12 Oct 2026 · Run');
+      expect(last.querySelector('.figures')!.textContent).toBe('10.24 km · 52:05');
+    });
+
+    it('is a Ride when that came after the last Run, opened on Strava as in Ride history', async () => {
+      const last = await show([run], [ride], [swim]);
+
+      const link = last.querySelector('a')!;
+      expect(link.getAttribute('href')).toBe('https://www.strava.com/activities/77');
+      expect(link.getAttribute('target')).toBe('_blank');
+      expect(last.querySelector('.name')!.textContent).toBe('Gravel loop');
+      expect(last.querySelector('.when')!.textContent).toBe('13 Oct 2026 · Ride');
+      expect(last.querySelector('.figures')!.textContent).toBe('42.00 km · 1:30:00');
+    });
+
+    it('shows a Swim in metres, as Swim history does', async () => {
+      const last = await show([], [], [swim]);
+
+      expect(last.querySelector('.when')!.textContent).toBe('11 Oct 2026 · Swim');
+      expect(last.querySelector('.figures')!.textContent).toBe('1,500 m · 32:10');
+    });
+
+    it('is left out until there is an activity', async () => {
+      expect(await show([], [], [])).toBeNull();
+    });
   });
 });
