@@ -10,6 +10,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
     public DbSet<Run> Runs => Set<Run>();
 
+    public DbSet<Ride> Rides => Set<Ride>();
+
     public DbSet<SyncState> SyncStates => Set<SyncState>();
 
     public DbSet<Shoe> Shoes => Set<Shoe>();
@@ -57,6 +59,13 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             run.HasIndex(r => r.StartUtc);
             run.HasMany(r => r.BestEfforts).WithOne().HasForeignKey(e => e.RunId).OnDelete(DeleteBehavior.Cascade);
             run.HasMany(r => r.Splits).WithOne().HasForeignKey(s => s.RunId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        model.Entity<Ride>(ride =>
+        {
+            ride.Property(r => r.Id).ValueGeneratedNever();
+            ride.Property(r => r.SportType).HasMaxLength(50);
+            ride.HasIndex(r => r.StartUtc);
         });
 
         model.Entity<BestEffort>(effort => effort.Property(e => e.Name).HasMaxLength(50));

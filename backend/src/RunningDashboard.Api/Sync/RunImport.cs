@@ -5,9 +5,9 @@ using RunningDashboard.Api.Strava;
 namespace RunningDashboard.Api.Sync;
 
 /// <summary>
-/// Brings the stored Runs up to date with the Athlete's Activities on Strava. The first import walks back through the
-/// whole history (resumable, see <see cref="SyncState.ImportCursor"/>); later syncs fetch only Activities that started
-/// after the newest one seen. Every sync then rechecks the most recent Activities for edits and deletions (ADR 0002).
+/// Brings the stored Runs and Rides up to date with the Athlete's Activities on Strava. The first import walks back
+/// through the whole history (resumable, see <see cref="SyncState.ImportCursor"/>); later syncs fetch only Activities
+/// that started after the newest one seen. Every sync then rechecks the most recent Activities for edits and deletions (ADR 0002).
 /// </summary>
 public sealed class RunImport(AppDbContext db, StravaClient strava)
 {
@@ -42,7 +42,7 @@ public sealed class RunImport(AppDbContext db, StravaClient strava)
                 return;
             }
 
-            await StoreRunsAsync(activities, state, cancellationToken);
+            await StoreAsync(activities, state, cancellationToken);
             state.ImportCursor = NextCursor(activities, state.ImportCursor);
             await db.SaveChangesAsync(cancellationToken);
         }
@@ -63,14 +63,14 @@ public sealed class RunImport(AppDbContext db, StravaClient strava)
             if (activities.Count == 0)
                 return;
 
-            await StoreRunsAsync(activities, state, cancellationToken);
+            await StoreAsync(activities, state, cancellationToken);
             await db.SaveChangesAsync(cancellationToken);
         }
     }
 
     /// <summary>
-    /// Updates the Runs among the most recent Activities and removes stored Runs that, within the time those
-    /// Activities span, are no longer Runs or no longer on Strava. Older Runs are never touched.
+    /// Updates the Runs and Rides among the most recent Activities and removes stored ones that, within the time those
+    /// Activities span, have changed sport or are no longer on Strava. Older Runs and Rides are never touched.
     /// </summary>
     private async Task RecheckRecentAsync(SyncState state, CancellationToken cancellationToken)
     {
@@ -78,16 +78,20 @@ public sealed class RunImport(AppDbContext db, StravaClient strava)
         if (recent.Count == 0)
             return;
 
-        var stillRuns = await StoreRunsAsync(recent, state, cancellationToken);
+        var (stillRuns, stillRides) = await StoreAsync(recent, state, cancellationToken);
         var listed = recent.Select(a => a.Id).ToList();
 
         // A Run listed with another sport is gone. One missing from the list is gone only if it started strictly after
-        // the oldest recent Activity: one in that same second may simply be the 21st, unlisted.
+        // the oldest recent Activity: one in that same second may simply be the 21st, unlisted. The same goes for Rides.
         var windowStart = recent.Min(a => a.StartUtc);
         var noLongerRuns = await db.Runs
             .Where(r => !stillRuns.Contains(r.Id) && (listed.Contains(r.Id) || r.StartUtc > windowStart))
             .ToListAsync(cancellationToken);
         db.Runs.RemoveRange(noLongerRuns);
+        var noLongerRides = await db.Rides
+            .Where(r => !stillRides.Contains(r.Id) && (listed.Contains(r.Id) || r.StartUtc > windowStart))
+            .ToListAsync(cancellationToken);
+        db.Rides.RemoveRange(noLongerRides);
         await db.SaveChangesAsync(cancellationToken);
     }
 
@@ -104,10 +108,10 @@ public sealed class RunImport(AppDbContext db, StravaClient strava)
     }
 
     /// <summary>
-    /// Adds or updates the Runs among <paramref name="activities"/> and remembers the newest start seen.
+    /// Adds or updates the Runs and Rides among <paramref name="activities"/> and remembers the newest start seen.
     /// </summary>
-    /// <returns>The ids of the Runs among them.</returns>
-    private async Task<List<long>> StoreRunsAsync(IReadOnlyList<StravaActivity> activities, SyncState state, CancellationToken cancellationToken)
+    /// <returns>The ids of the Runs and of the Rides among them.</returns>
+    private async Task<(List<long> Runs, List<long> Rides)> StoreAsync(IReadOnlyList<StravaActivity> activities, SyncState state, CancellationToken cancellationToken)
     {
         var newest = activities.Max(a => a.StartUtc);
         if (state.LatestActivityStart is null || newest > state.LatestActivityStart)
@@ -125,6 +129,17 @@ public sealed class RunImport(AppDbContext db, StravaClient strava)
                 db.Runs.Add(Run.From(activity));
         }
 
-        return ids;
+        var rides = activities.Where(a => Ride.IsCyclingSportType(a.SportType)).ToList();
+        var rideIds = rides.Select(a => a.Id).ToList();
+        var storedRides = await db.Rides.Where(r => rideIds.Contains(r.Id)).ToDictionaryAsync(r => r.Id, cancellationToken);
+        foreach (var activity in rides)
+        {
+            if (storedRides.TryGetValue(activity.Id, out var ride))
+                ride.UpdateFrom(activity);
+            else
+                db.Rides.Add(Ride.From(activity));
+        }
+
+        return (ids, rideIds);
     }
 }

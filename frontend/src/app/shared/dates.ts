@@ -26,3 +26,24 @@ export function daysUntil(date: string): number {
 export function isoDate(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
+
+/** "2026-10" for today's month, in local time. */
+export function currentMonth(): string {
+  return monthKey(new Date());
+}
+
+/** "2026-10" for a local date's month. */
+export function monthKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/** The first day of the month `offset` months after `month` ("2026-10"). */
+export function monthDate(month: string, offset: number): Date {
+  const [year, monthNumber] = month.split('-').map(Number);
+  return new Date(year, monthNumber - 1 + offset, 1);
+}
+
+/** The last day of the month starting on `monthStart`. */
+export function lastDayOf(monthStart: Date): Date {
+  return new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
+}

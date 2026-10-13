@@ -6,8 +6,8 @@
   <div class="group-label">Workspace</div>
   <nav aria-label="Pages">
     @for (item of nav; track item.path; let i = $index) {
-      <a [routerLink]="item.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: item.path === '/' }"
-         ariaCurrentWhenActive="page">
+      <a [routerLink]="item.path" [class.active]="item === breadcrumb().section"
+         [attr.aria-current]="item === breadcrumb().section ? 'page' : null">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path [attr.d]="item.icon" /></svg>
         <span class="label">{{ item.label }}</span>
@@ -35,7 +35,7 @@
         <span class="sep">/</span>
         @if (breadcrumb().sub; as sub) {
           <!-- Back up keeps the filters, e.g. from a month of the Calendar to its year. -->
-          <a [routerLink]="breadcrumb().parent" queryParamsHandling="preserve">{{ section.label }}</a>
+          <a [routerLink]="breadcrumb().parent" [queryParams]="breadcrumb().dropParams" queryParamsHandling="merge">{{ section.label }}</a>
           <span class="sep">/</span>
           <span class="current">{{ sub }}</span>
         } @else {
@@ -48,8 +48,8 @@
 
   <nav class="tabs" aria-label="Pages">
     @for (item of nav; track item.path) {
-      <a [routerLink]="item.path" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: item.path === '/' }"
-         ariaCurrentWhenActive="page">{{ item.label }}</a>
+      <a [routerLink]="item.path" [class.active]="item === breadcrumb().section"
+         [attr.aria-current]="item === breadcrumb().section ? 'page' : null">{{ item.label }}</a>
     }
   </nav>
 

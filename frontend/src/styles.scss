@@ -153,6 +153,14 @@ select {
     font-weight: 600;
     letter-spacing: -0.025em;
   }
+
+  /* The title with a switch beside it, e.g. Runs | Rides. */
+  .title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 16px;
+  }
 }
 
 .eyebrow {
@@ -541,7 +549,7 @@ a.link {
   }
 }
 
-/* Segmented control: buttons with aria-pressed. */
+/* Segmented control: buttons with aria-pressed, or links with aria-current. */
 .segmented {
   display: inline-flex;
   gap: 2px;
@@ -550,7 +558,10 @@ a.link {
   border-radius: 9px;
   background: var(--inset);
 
-  button {
+  button,
+  a {
+    display: inline-flex;
+    align-items: center;
     height: 26px;
     padding: 0 12px;
     border: 0;
@@ -565,7 +576,8 @@ a.link {
       color: var(--text);
     }
 
-    &[aria-pressed='true'] {
+    &[aria-pressed='true'],
+    &[aria-current='page'] {
       background: var(--tab-active);
       color: var(--text);
     }

@@ -47,6 +47,13 @@ export function formatPace(secondsPerKm: number | null, unit: DistanceUnit = 'km
   return `${Math.floor(total / 60)}:${pad(total % 60)} /${unit}`;
 }
 
+/** Avg Speed as km/h, or as mph for miles, with one decimal; a Ride without Moving Time has none. */
+export function formatSpeed(kilometresPerHour: number | null, unit: DistanceUnit = 'km'): string {
+  if (kilometresPerHour === null) return '–';
+  const speed = (kilometresPerHour * 1000) / metresPer[unit];
+  return `${speed.toFixed(1)} ${unit === 'km' ? 'km/h' : 'mph'}`;
+}
+
 /** Whole seconds per km against the Target Pace: "3 s/km slower", "1:12 /km faster" or "on Target Pace". */
 export function formatPaceDifference(secondsPerKm: number): string {
   const seconds = Math.round(Math.abs(secondsPerKm));

@@ -4,7 +4,7 @@ using RunningDashboard.Api.Strava;
 namespace RunningDashboard.Api.Persistence;
 
 /// <summary>
-/// A Strava activity with a running sport type. Other Activities are never stored.
+/// A Strava activity with a running sport type. Rides are stored apart (see <see cref="Ride"/>); other Activities never.
 /// </summary>
 public sealed class Run
 {

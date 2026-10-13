@@ -3,6 +3,7 @@ import { calendarRoutes } from './calendar/calendar-routes';
 import { TrainingPlanPage } from './goal-races/training-plan-page';
 import { OverviewPage } from './overview/overview-page';
 import { RecordsPage } from './records/records-page';
+import { RidesPage } from './rides/rides-page';
 import { RunsPage } from './runs/runs-page';
 import { ShoesPage } from './shoes/shoes-page';
 import { TrainingPage } from './training/training-page';
@@ -16,6 +17,8 @@ export const routes: Routes = [
   { path: 'runs', component: RunsPage, title: 'Runs · Running Dashboard' },
   // Loaded when first opened: the Run's map brings in Leaflet.
   { path: 'runs/:id', loadComponent: () => import('./runs/run-detail-page').then((m) => m.RunDetailPage), title: 'Run · Running Dashboard' },
+  // Ride history, opened from the Runs | Rides switch; it belongs to the Runs section.
+  { path: 'rides', component: RidesPage, title: 'Rides · Running Dashboard' },
   ...calendarRoutes,
   { path: 'shoes', component: ShoesPage, title: 'Shoes · Running Dashboard' },
   { path: 'training', component: TrainingPage, title: 'Training · Running Dashboard' },

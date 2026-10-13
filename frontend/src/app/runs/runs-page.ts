@@ -2,8 +2,9 @@ import { DatePipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { Component, computed, inject, input } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { isoDate } from '../shared/dates';
+import { currentMonth, isoDate, lastDayOf, monthDate, monthKey } from '../shared/dates';
 import { DistanceUnit, formatDistance, formatDuration, formatHoursMinutes, formatPace } from '../shared/format';
+import { SportSwitch } from '../shared/sport-switch';
 import { reloadOnSync } from '../sync/reload-on-sync';
 import { RunPage, RunSortKey } from './run';
 
@@ -18,7 +19,7 @@ const longRunDistance = 20_000;
 
 @Component({
   selector: 'app-runs-page',
-  imports: [DatePipe, RouterLink],
+  imports: [DatePipe, RouterLink, SportSwitch],
   templateUrl: './runs-page.html',
   styleUrl: './runs-page.scss',
 })
@@ -153,23 +154,3 @@ export class RunsPage {
     this.router.navigate([], { queryParams, queryParamsHandling: 'merge' });
   }
 }
-
-/** "2026-10" for today's month, in local time. */
-function currentMonth(): string {
-  return monthKey(new Date());
-}
-
-function monthKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-}
-
-/** The first day of the month `offset` months after `month` ("2026-10"). */
-function monthDate(month: string, offset: number): Date {
-  const [year, monthNumber] = month.split('-').map(Number);
-  return new Date(year, monthNumber - 1 + offset, 1);
-}
-
-function lastDayOf(monthStart: Date): Date {
-  return new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
-}
-

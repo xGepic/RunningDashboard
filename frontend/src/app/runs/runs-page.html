@@ -2,7 +2,10 @@
   <header class="page-header">
     <div class="titles">
       <span class="eyebrow">Runs</span>
-      <h1>Run history</h1>
+      <div class="title-row">
+        <h1>Run history</h1>
+        <app-sport-switch current="runs" />
+      </div>
     </div>
     @if (summary().runs > 0) {
       <div class="stats summary" aria-label="Totals of the listed Runs">

@@ -1,0 +1,130 @@
+<div class="page">
+  <header class="page-header">
+    <div class="titles">
+      <span class="eyebrow">Rides</span>
+      <div class="title-row">
+        <h1>Ride history</h1>
+        <app-sport-switch current="rides" />
+      </div>
+    </div>
+    @if (summary().rides > 0) {
+      <div class="stats summary" aria-label="Totals of the listed Rides">
+        <div class="stat"><span class="label">Rides</span><span class="value">{{ summary().rides }}</span></div>
+        <div class="stat"><span class="label">Distance</span><span class="value">{{ formatDistance(summary().distance, distanceUnit(), 1) }}</span></div>
+        <div class="stat"><span class="label">Moving Time</span><span class="value">{{ formatHoursMinutes(summary().movingTime) }}</span></div>
+        <div class="stat"><span class="label">Avg Speed</span><span class="value">{{ formatSpeed(summary().speed, distanceUnit()) }}</span></div>
+      </div>
+    }
+  </header>
+
+  <div class="toolbar">
+    <nav class="period-nav" aria-label="Month">
+      <button type="button" class="step" (click)="shiftMonth(-1)" [attr.aria-label]="'Previous month: ' + (previousMonthStart() | date: 'MMMM y')"
+              [title]="previousMonthStart() | date: 'MMM y'">←</button>
+      <h2>{{ monthStart() | date: 'MMMM y' }}</h2>
+      <button type="button" class="step" (click)="shiftMonth(1)" [disabled]="isCurrentMonth()"
+              [attr.aria-label]="'Next month: ' + (nextMonthStart() | date: 'MMMM y')" [title]="nextMonthStart() | date: 'MMM y'">→</button>
+    </nav>
+
+    <form class="filters" role="search" (submit)="$event.preventDefault()">
+      <label class="inline month">
+        <span>Month</span>
+        <input #monthPicker type="month" [value]="selectedMonth()" (change)="showMonth(monthPicker.value)" />
+      </label>
+      <label class="inline search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+             aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4" /></svg>
+        <span class="visually-hidden">Name</span>
+        <input #searchBox type="search" placeholder="Search by name, e.g. Zwift" [value]="search() ?? ''"
+               (change)="filter({ search: searchBox.value.trim() })" />
+      </label>
+      @if (searched()) {
+        <button type="button" class="link" (click)="clearSearch()">Clear search</button>
+      }
+    </form>
+
+    <div class="segmented" role="group" aria-label="Units">
+      <button type="button" [attr.aria-pressed]="distanceUnit() === 'km'" (click)="showUnit('km')">km</button>
+      <button type="button" [attr.aria-pressed]="distanceUnit() === 'mi'" (click)="showUnit('mi')">mi</button>
+    </div>
+  </div>
+
+  @if (rides.error()) {
+    <p class="error" role="alert">
+      Rides could not be loaded with these options.
+      <a routerLink="/rides">Show this month's Rides</a>
+    </p>
+  } @else if (rides.value(); as page) {
+    @if (page.totalCount === 0) {
+      <div class="card empty-card">
+        <p class="empty">
+          @if (page.page > 1) {
+            There are no Rides on page {{ page.page }}.
+            <button type="button" class="link" (click)="goToPage(1)">Go to the first page</button>
+          } @else if (searched()) {
+            No Rides in {{ monthStart() | date: 'MMMM y' }} match this search.
+          } @else {
+            No Rides in {{ monthStart() | date: 'MMMM y' }}.
+          }
+        </p>
+      </div>
+    } @else if (page.items.length === 0) {
+      <div class="card empty-card">
+        <p class="empty">
+          There are only {{ pageCount() }} pages of Rides.
+          <button type="button" class="link" (click)="goToPage(pageCount())">Go to the last page</button>
+        </p>
+      </div>
+    } @else {
+      <section class="card flush">
+        <div class="table-scroll">
+          <table class="data-table runs rides">
+            <thead>
+              <tr>
+                <th [attr.aria-sort]="ariaSort('date')"><button type="button" (click)="sortBy('date')">Date<span class="mono">{{ sortIndicator('date') }}</span></button></th>
+                <th>Name</th>
+                <th class="number" [attr.aria-sort]="ariaSort('distance')"><button type="button" (click)="sortBy('distance')">Distance<span class="mono">{{ sortIndicator('distance') }}</span></button></th>
+                <th class="number" [attr.aria-sort]="ariaSort('movingTime')"><button type="button" (click)="sortBy('movingTime')">Moving Time<span class="mono">{{ sortIndicator('movingTime') }}</span></button></th>
+                <th class="number" [attr.aria-sort]="ariaSort('speed')"><button type="button" (click)="sortBy('speed')">Avg Speed<span class="mono">{{ sortIndicator('speed') }}</span></button></th>
+                <th class="number" [attr.aria-sort]="ariaSort('elevation')"><button type="button" (click)="sortBy('elevation')">Elevation gain<span class="mono">{{ sortIndicator('elevation') }}</span></button></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (ride of page.items; track ride.id) {
+                <tr>
+                  <td class="date">{{ ride.startLocal | date: 'EEE d MMM y' }} <span class="time">{{ ride.startLocal | date: 'HH:mm' }}</span></td>
+                  <td>
+                    <div class="name">
+                      <a [href]="ride.stravaUrl" target="_blank" rel="noopener" title="Open on Strava">{{ ride.name }}</a>
+                      <span class="badge" [class]="kind(ride).tone">{{ kind(ride).label }}</span>
+                    </div>
+                  </td>
+                  <td class="number">
+                    <span class="dist">
+                      <span class="track mini" aria-hidden="true"><span [style.width.%]="(ride.distance / longest()) * 100"></span></span>
+                      {{ formatDistance(ride.distance, distanceUnit()) }}
+                    </span>
+                  </td>
+                  <td class="number">{{ formatDuration(ride.movingTime) }}</td>
+                  <td class="number muted">{{ formatSpeed(ride.speed, distanceUnit()) }}</td>
+                  <td class="number muted">{{ ride.elevationGain | number: '1.0-0' }} m</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <nav class="pager" aria-label="Pages">
+          @if (pageCount() > 1) {
+            <button type="button" class="btn" (click)="goToPage(page.page - 1)" [disabled]="page.page <= 1">← Previous</button>
+            <span>Page {{ page.page }} of {{ pageCount() }} · {{ page.totalCount }} Rides</span>
+            <button type="button" class="btn" (click)="goToPage(page.page + 1)" [disabled]="page.page >= pageCount()">Next →</button>
+          } @else {
+            <span>{{ page.totalCount }} {{ page.totalCount === 1 ? 'Ride' : 'Rides' }}</span>
+          }
+          <span class="note">Avg Speed = distance ÷ Moving Time</span>
+        </nav>
+      </section>
+    }
+  }
+</div>
