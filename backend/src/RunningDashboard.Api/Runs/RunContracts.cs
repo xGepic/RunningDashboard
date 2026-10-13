@@ -61,16 +61,21 @@ internal sealed record RunDetailResponse(
             .OrderBy(e => e.Distance)
             .Select(e => new BestEffortResponse(
                 e.Name, e.Distance, e.ElapsedTime, Run.PerKilometre(e.ElapsedTime, e.Distance), personalBestDistances.Contains(e.Distance)))],
-        [.. run.Splits
-            .OrderBy(s => s.Index)
-            .Select(s => new SplitResponse(s.Index, s.Distance, s.MovingTime, Run.PaceOf(s.MovingTime, s.Distance), s.ElevationDifference))],
-        [.. run.MileSplits
-            .OrderBy(s => s.Index)
-            .Select(s => new SplitResponse(s.Index, s.Distance, s.MovingTime, Run.PaceOf(s.MovingTime, s.Distance), s.ElevationDifference))]);
+        SplitResponse.Of(run, SplitUnit.Kilometre),
+        SplitResponse.Of(run, SplitUnit.Mile));
 }
 
 /// <param name="TimePerKm">Elapsed time per kilometre, in seconds. Not Pace, which is Moving Time based.</param>
 /// <param name="PersonalBest">Whether it was a Personal Best when it was run: faster than every earlier Best Effort.</param>
 internal sealed record BestEffortResponse(string Name, double Distance, int ElapsedTime, double? TimePerKm, bool PersonalBest);
 
-internal sealed record SplitResponse(int Index, double Distance, int MovingTime, double? Pace, double ElevationDifference);
+/// <param name="Pace">Per kilometre, for mile splits too.</param>
+internal sealed record SplitResponse(int Index, double Distance, int MovingTime, double? Pace, double ElevationDifference)
+{
+    /// <summary>The Run's splits of <paramref name="unit"/>, in order.</summary>
+    public static List<SplitResponse> Of(Run run, SplitUnit unit) =>
+        [.. run.Splits
+            .Where(s => s.Unit == unit)
+            .OrderBy(s => s.Index)
+            .Select(s => new SplitResponse(s.Index, s.Distance, s.MovingTime, Run.PaceOf(s.MovingTime, s.Distance), s.ElevationDifference))];
+}

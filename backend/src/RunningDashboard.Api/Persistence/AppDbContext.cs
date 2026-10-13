@@ -60,8 +60,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             run.Property(r => r.SportType).HasMaxLength(50);
             run.Property(r => r.ShoeId).HasMaxLength(50);
             run.HasIndex(r => r.StartUtc);
-            // Read from the stored detail on demand.
-            run.Ignore(r => r.MileSplits);
             run.HasMany(r => r.BestEfforts).WithOne().HasForeignKey(e => e.RunId).OnDelete(DeleteBehavior.Cascade);
             run.HasMany(r => r.Splits).WithOne().HasForeignKey(s => s.RunId).OnDelete(DeleteBehavior.Cascade);
         });
@@ -75,7 +73,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
         model.Entity<BestEffort>(effort => effort.Property(e => e.Name).HasMaxLength(50));
 
-        model.Entity<Split>(split => split.HasKey(s => new { s.RunId, s.Index }));
+        model.Entity<Split>(split =>
+        {
+            split.HasKey(s => new { s.RunId, s.Unit, s.Index });
+            split.Property(s => s.Unit).HasConversion<string>().HasMaxLength(10);
+        });
 
         model.Entity<SyncState>(state => state.Property(s => s.Id).ValueGeneratedNever());
 

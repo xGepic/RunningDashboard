@@ -69,31 +69,6 @@ public sealed class Run
     public string? Route =>
         PolylineIn(RawDetailJson, "polyline") ?? PolylineIn(RawDetailJson, "summary_polyline") ?? PolylineIn(RawSummaryJson, "summary_polyline");
 
-    /// <summary>
-    /// Strava's splits per mile, read from the detailed Activity rather than stored, as only Athletes who read miles
-    /// see them. None while the detail is still to come or when Strava no longer has it.
-    /// </summary>
-    public IReadOnlyList<StravaSplit> MileSplits
-    {
-        get
-        {
-            if (RawDetailJson is null)
-                return [];
-            using var activity = JsonDocument.Parse(RawDetailJson);
-            if (!activity.RootElement.TryGetProperty("splits_standard", out var splits) || splits.ValueKind != JsonValueKind.Array)
-                return [];
-            return
-            [
-                .. splits.EnumerateArray().Select(s => new StravaSplit(
-                    s.GetProperty("split").GetInt32(),
-                    s.GetProperty("distance").GetDouble(),
-                    s.GetProperty("moving_time").GetInt32(),
-                    s.GetProperty("elapsed_time").GetInt32(),
-                    s.TryGetProperty("elevation_difference", out var elevation) && elevation.ValueKind == JsonValueKind.Number ? elevation.GetDouble() : 0)),
-            ];
-        }
-    }
-
     private static string? PolylineIn(string? activityJson, string property)
     {
         if (activityJson is null)
@@ -134,15 +109,20 @@ public sealed class Run
             return;
 
         BestEfforts.AddRange(detail.BestEfforts.Select(e => new BestEffort { Name = e.Name, Distance = e.Distance, ElapsedTime = e.ElapsedTime }));
-        Splits.AddRange(detail.Splits.Select(s => new Split
+        Splits.AddRange(SplitsOf(detail.KilometreSplits, SplitUnit.Kilometre));
+        Splits.AddRange(SplitsOf(detail.MileSplits, SplitUnit.Mile));
+    }
+
+    private static IEnumerable<Split> SplitsOf(IEnumerable<StravaSplit> splits, SplitUnit unit) =>
+        splits.Select(s => new Split
         {
+            Unit = unit,
             Index = s.Index,
             Distance = s.Distance,
             MovingTime = s.MovingTime,
             ElapsedTime = s.ElapsedTime,
             ElevationDifference = s.ElevationDifference,
-        }));
-    }
+        });
 
     /// <summary>
     /// Takes over the summary. If the distance or times changed (e.g. the Athlete cropped the Activity on Strava),

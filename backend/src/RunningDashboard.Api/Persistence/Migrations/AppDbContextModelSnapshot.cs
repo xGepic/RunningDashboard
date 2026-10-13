@@ -217,6 +217,10 @@ namespace RunningDashboard.Api.Persistence.Migrations
                     b.Property<long>("RunId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Unit")
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("Index")
                         .HasColumnType("INTEGER");
 
@@ -232,7 +236,7 @@ namespace RunningDashboard.Api.Persistence.Migrations
                     b.Property<int>("MovingTime")
                         .HasColumnType("INTEGER");
 
-                    b.HasKey("RunId", "Index");
+                    b.HasKey("RunId", "Unit", "Index");
 
                     b.ToTable("Split");
                 });

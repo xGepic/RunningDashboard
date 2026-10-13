@@ -102,7 +102,7 @@ public sealed class StravaClient(
     }
 
     /// <summary>
-    /// The detailed Activity with its Best Efforts and metric splits; null if Strava no longer has it.
+    /// The detailed Activity with its Best Efforts and its splits per kilometre and per mile; null if Strava no longer has it.
     /// </summary>
     public async Task<StravaActivityDetail?> GetActivityDetailAsync(long activityId, CancellationToken cancellationToken)
     {
@@ -123,10 +123,14 @@ public sealed class StravaClient(
             return new StravaActivityDetail(
                 detail.Id,
                 [.. (detail.BestEfforts ?? []).Select(e => new StravaBestEffort(e.Name, e.Distance, e.ElapsedTime))],
-                [.. (detail.SplitsMetric ?? []).Select(s => new StravaSplit(s.Split, s.Distance, s.MovingTime, s.ElapsedTime, s.ElevationDifference ?? 0))],
+                SplitsOf(detail.SplitsMetric),
+                SplitsOf(detail.SplitsStandard),
                 json);
         }
     }
+
+    private static List<StravaSplit> SplitsOf(List<SplitResponse>? splits) =>
+        [.. (splits ?? []).Select(s => new StravaSplit(s.Split, s.Distance, s.MovingTime, s.ElapsedTime, s.ElevationDifference ?? 0))];
 
     /// <summary>
     /// GETs from the API within Strava's rate limits; a 429 waits for the next window and tries again. A refused

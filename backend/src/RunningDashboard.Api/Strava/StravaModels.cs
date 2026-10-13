@@ -17,7 +17,11 @@ internal sealed record ActivityResponse(
 
 internal sealed record ShoeResponse(string Id, string Name, double Distance, bool Retired);
 
-internal sealed record ActivityDetailResponse(long Id, List<BestEffortResponse>? BestEfforts, List<SplitResponse>? SplitsMetric);
+internal sealed record ActivityDetailResponse(
+    long Id,
+    List<BestEffortResponse>? BestEfforts,
+    List<SplitResponse>? SplitsMetric,
+    List<SplitResponse>? SplitsStandard);
 
 internal sealed record BestEffortResponse(string Name, double Distance, int ElapsedTime);
 
@@ -59,7 +63,14 @@ public sealed record StravaActivity(
 /// <summary>
 /// A detailed Activity: what the summary lacks. <see cref="RawJson"/> is the untouched JSON.
 /// </summary>
-public sealed record StravaActivityDetail(long Id, IReadOnlyList<StravaBestEffort> BestEfforts, IReadOnlyList<StravaSplit> Splits, string RawJson);
+/// <param name="KilometreSplits">Strava's splits_metric.</param>
+/// <param name="MileSplits">Strava's splits_standard.</param>
+public sealed record StravaActivityDetail(
+    long Id,
+    IReadOnlyList<StravaBestEffort> BestEfforts,
+    IReadOnlyList<StravaSplit> KilometreSplits,
+    IReadOnlyList<StravaSplit> MileSplits,
+    string RawJson);
 
 /// <param name="Name">Strava's name for the distance, e.g. "5K".</param>
 public sealed record StravaBestEffort(string Name, double Distance, int ElapsedTime);

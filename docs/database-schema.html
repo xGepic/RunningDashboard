@@ -140,7 +140,7 @@
     { id: 'BestEffort', kind: 'strava', at: [37, 36, 236], columns: [
       ['PK', 'Id', 'INTEGER'], ['FK', 'RunId', 'INTEGER'], ['', 'Name', 'TEXT'], ['', 'Distance', 'REAL'], ['', 'ElapsedTime', 'INTEGER']] },
     { id: 'Split', kind: 'strava', at: [37, 202, 236], columns: [
-      ['PK FK', 'RunId', 'INTEGER'], ['PK', 'Index', 'INTEGER'], ['', 'Distance', 'REAL'], ['', 'ElapsedTime', 'INTEGER'],
+      ['PK FK', 'RunId', 'INTEGER'], ['PK', 'Unit', 'TEXT'], ['PK', 'Index', 'INTEGER'], ['', 'Distance', 'REAL'], ['', 'ElapsedTime', 'INTEGER'],
       ['', 'MovingTime', 'INTEGER'], ['', 'ElevationDifference', 'REAL']] },
     { id: 'Runs', kind: 'strava', at: [337, 36, 240], columns: [
       ['PK', 'Id', 'INTEGER'], ['', 'Name', 'TEXT'], ['', 'SportType', 'TEXT'], ['', 'ShoeId', 'TEXT?'], ['', 'StartUtc', 'TEXT'],
