@@ -71,6 +71,27 @@ describe('RunsPage', () => {
     http.expectNone((r) => r.url === '/api/runs/months');
   });
 
+  describe('the Today button', () => {
+    const today = (element: HTMLElement) =>
+      [...element.querySelectorAll<HTMLButtonElement>('.period-nav button')].find((b) => b.textContent!.trim() === 'Today')!;
+
+    it('is off on the current month', async () => {
+      const { element } = await open('/runs');
+
+      expect(today(element).disabled).toBe(true);
+    });
+
+    it('goes back to the current month from an earlier one, keeping the search', async () => {
+      const { http, element } = await open('/runs?month=2026-03&search=Lauf');
+
+      today(element).click();
+      await new Promise((resolve) => setTimeout(resolve));
+      const request = http.expectOne((r) => r.url === '/api/runs');
+
+      expect([request.request.params.get('from'), request.request.params.get('search')]).toEqual(['2026-10-01', 'Lauf']);
+    });
+  });
+
   describe('a day with two Runs', () => {
     const double: RunPage = {
       ...october,

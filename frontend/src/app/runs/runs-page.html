@@ -24,6 +24,8 @@
       <h2>{{ monthStart() | date: 'MMMM y' }}</h2>
       <button type="button" class="step" (click)="shiftMonth(1)" [disabled]="isCurrentMonth()"
               [attr.aria-label]="'Next month: ' + (nextMonthStart() | date: 'MMMM y')" [title]="nextMonthStart() | date: 'MMM y'">→</button>
+      <button type="button" class="step today" (click)="showMonth(thisMonth())" [disabled]="isCurrentMonth()"
+              title="Back to this month">Today</button>
     </nav>
 
     <form class="filters" role="search" (submit)="$event.preventDefault()">

@@ -131,6 +131,10 @@ export class RunsPage {
     this.showMonth(monthKey(monthDate(this.selectedMonth(), months)));
   }
 
+  protected thisMonth(): string {
+    return currentMonth();
+  }
+
   /** The current month stays out of the URL, so "/runs" always opens on it. */
   protected showMonth(month: string): void {
     if (!month) return;
