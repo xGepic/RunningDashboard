@@ -15,12 +15,13 @@
       </a>
     }
   </nav>
-  @if (nextRace(); as next) {
-    <div class="next-up">
-      <div class="group-label">Next up</div>
-      <a routerLink="/training">
-        <span class="name">{{ next.race.name }}</span>
-        <span class="when">{{ next.days }} {{ next.days === 1 ? 'day' : 'days' }} · {{ next.race.date | date: 'd MMM y' }}</span>
+  @if (lastRun(); as run) {
+    <div class="last-run">
+      <div class="group-label">Last Run</div>
+      <a [routerLink]="['/runs', run.id]">
+        <span class="name">{{ run.name }}</span>
+        <span class="when">{{ run.startLocal | date: 'd MMM y' }}</span>
+        <span class="figures">{{ run.figures }}</span>
       </a>
     </div>
   }

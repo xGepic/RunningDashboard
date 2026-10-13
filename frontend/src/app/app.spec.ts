@@ -1,5 +1,5 @@
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
@@ -52,5 +52,27 @@ describe('App', () => {
     const { element } = await render('/calendar/2025?unit=mi#Dec');
 
     expect(element.querySelector('.crumbs a')!.getAttribute('href')).toBe('/calendar/2025?unit=mi');
+  });
+
+  it('shows the last Run at the bottom of the sidebar, linked to its details', async () => {
+    const { fixture, element } = await render();
+
+    TestBed.inject(HttpTestingController)
+      .expectOne('/api/runs?pageSize=1')
+      .flush({
+        items: [{ id: 42, name: 'Evening Run', sportType: 'Run', startLocal: '2026-10-12T18:05:00', distance: 10_240, movingTime: 3_125, pace: 305, shoeName: null }],
+        page: 1,
+        pageSize: 1,
+        totalCount: 312,
+      });
+    await new Promise((resolve) => setTimeout(resolve));
+    fixture.detectChanges();
+
+    const lastRun = element.querySelector('.last-run')!;
+    expect(lastRun.querySelector('.group-label')!.textContent).toBe('Last Run');
+    expect(lastRun.querySelector('a')!.getAttribute('href')).toBe('/runs/42');
+    expect(lastRun.querySelector('.name')!.textContent).toBe('Evening Run');
+    expect(lastRun.querySelector('.when')!.textContent).toBe('12 Oct 2026');
+    expect(lastRun.querySelector('.figures')!.textContent).toBe('10.24 km · 52:05');
   });
 });

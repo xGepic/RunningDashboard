@@ -5,9 +5,11 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
 import { ConnectionStatus } from './connection/connection-status';
-import { GoalRace } from './goal-races/goal-race';
 import { monthFragments } from './calendar/calendar-page';
-import { daysUntil, fullMonthNames } from './shared/dates';
+import { RunPage } from './runs/run';
+import { fullMonthNames } from './shared/dates';
+import { formatDistance, formatDuration } from './shared/format';
+import { reloadOnSync } from './sync/reload-on-sync';
 
 interface NavItem {
   label: string;
@@ -62,21 +64,19 @@ export class App {
     return { section, sub, parent: section?.path };
   });
 
-  /** Goal Races change on the Training page, so the "Next up" card reloads them on every navigation. */
-  private readonly goalRaces = httpResource<GoalRace[]>(() => {
-    this.url();
-    return '/api/goal-races';
+  /** The newest Run: the first of the Runs list, which is newest first by default. */
+  private readonly latestRuns = httpResource<RunPage>(() => '/api/runs?pageSize=1');
+
+  /** None until there are Runs, or when they could not be loaded. */
+  protected readonly lastRun = computed(() => {
+    if (!this.latestRuns.hasValue()) return null;
+    const run = this.latestRuns.value().items[0];
+    return run ? { ...run, figures: `${formatDistance(run.distance)} · ${formatDuration(run.movingTime)}` } : null;
   });
 
-  /** The nearest Goal Race from today on. */
-  protected readonly nextRace = computed(() => {
-    if (!this.goalRaces.hasValue()) return null;
-    const race = this.goalRaces
-      .value()
-      .filter((r) => daysUntil(r.date) >= 0)
-      .sort((a, b) => a.date.localeCompare(b.date))[0];
-    return race ? { race, days: daysUntil(race.date) } : null;
-  });
+  constructor() {
+    reloadOnSync(() => this.latestRuns.reload());
+  }
 
   /** Keys 1 to 6 open the pages, as the sidebar shows, unless the Athlete is typing. */
   protected onKeydown(event: KeyboardEvent): void {
