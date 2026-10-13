@@ -5,7 +5,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { filter, map } from 'rxjs';
 import { ConnectionStatus } from './connection/connection-status';
-import { monthFragments } from './calendar/calendar-page';
+import { monthFragments } from './calendar/calendar-links';
 import { RunPage } from './runs/run';
 import { fullMonthNames } from './shared/dates';
 import { formatDuration } from './shared/format';

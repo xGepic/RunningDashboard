@@ -1,3 +1,5 @@
+import { ListPage } from '../shared/history-list';
+
 /** A Swim as listed by GET /api/swims. Distance in metres, times in seconds, pace in seconds per 100 m. */
 export interface Swim {
   id: number;
@@ -12,12 +14,7 @@ export interface Swim {
 }
 
 /** One page of GET /api/swims. */
-export interface SwimPage {
-  items: Swim[];
-  /** 1-based. */
-  page: number;
-  pageSize: number;
-  totalCount: number;
+export interface SwimPage extends ListPage<Swim> {
   /** Of every Swim, not just this page's. */
   totals: SwimTotals;
 }

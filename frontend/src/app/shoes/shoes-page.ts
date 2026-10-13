@@ -2,15 +2,13 @@ import { DatePipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { Component, computed, inject } from '@angular/core';
 import { AthleteSettings } from '../shared/athlete-settings';
+import { formatOneDecimal, formatWhole } from '../shared/format';
 import { Units } from '../shared/units';
 import { reloadOnSync } from '../sync/reload-on-sync';
 import { Shoe } from './shoe';
 
 /** The Shoes' colours, in list order; they repeat past the last. */
 const shoeColors = ['var(--accent)', 'var(--teal)', 'var(--amber)', 'var(--met)', '#a78bfa'];
-
-const wholeNumber = new Intl.NumberFormat('en', { maximumFractionDigits: 0 });
-const oneDecimal = new Intl.NumberFormat('en', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
 /** From this share of its Maximum Distance on, a Shoe is close to it. */
 const nearMaxShare = 0.9;
@@ -34,9 +32,9 @@ export class ShoesPage {
     const latest = shoes.find((s) => !s.retired && s.lastRun);
     return shoes.map((shoe, i) => ({
       shoe,
-      distance: wholeNumber.format(this.units.fromMetres(shoe.distance)),
+      distance: formatWhole(this.units.fromMetres(shoe.distance)),
       share: total ? Math.round((shoe.distance / total) * 100) : 0,
-      average: shoe.runs ? oneDecimal.format(this.units.fromMetres(shoe.distance / shoe.runs)) : '–',
+      average: shoe.runs ? formatOneDecimal(this.units.fromMetres(shoe.distance / shoe.runs)) : '–',
       latest: shoe === latest,
       color: shoeColors[i % shoeColors.length],
       wear: shoe.retired ? null : this.wear(shoe),

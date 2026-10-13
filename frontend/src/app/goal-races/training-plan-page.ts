@@ -2,7 +2,7 @@ import { DatePipe } from '@angular/common';
 import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/http';
 import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { FieldErrors, formError } from '../shared/field-errors';
+import { FieldErrors, fieldErrorsOf, formError } from '../shared/field-errors';
 import { GoalRace } from './goal-race';
 import { PhaseType, TrainingPlan, TrainingPlanRequest, phaseTypes, phaseWeeks, planLengths } from './training-plan';
 import { TrainingPlanWeeksEditor } from './training-plan-weeks-editor';
@@ -98,7 +98,7 @@ export class TrainingPlanPage {
       },
       error: (response: HttpErrorResponse) => {
         this.saving.set(false);
-        this.errors.set(response.error?.errors ?? { [formError]: ['The Training Plan could not be saved.'] });
+        this.errors.set(fieldErrorsOf(response, 'The Training Plan could not be saved.'));
       },
     });
   }

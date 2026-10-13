@@ -3,7 +3,7 @@ import { httpResource } from '@angular/common/http';
 import { Component, inject, linkedSignal, signal } from '@angular/core';
 import { Connection } from '../connection/connection';
 import { AthleteSettings } from '../shared/athlete-settings';
-import { DistanceUnit } from '../shared/format';
+import { DistanceUnit, formatWhole, unitNames } from '../shared/format';
 import { Units } from '../shared/units';
 import { SyncIndicator } from '../sync/sync-indicator';
 
@@ -11,12 +11,7 @@ import { SyncIndicator } from '../sync/sync-indicator';
 const maxShoeMaximumDistance = 5_000_000;
 
 /** For "Enter the distance in miles, e.g. 435." */
-const unitNames: Record<DistanceUnit, { name: string; example: string }> = {
-  km: { name: 'kilometres', example: '700' },
-  mi: { name: 'miles', example: '435' },
-};
-
-const wholeNumber = new Intl.NumberFormat('en', { maximumFractionDigits: 0 });
+const examples: Record<DistanceUnit, string> = { km: '700', mi: '435' };
 
 /** How the dashboard is shown (the Distance Unit), the Shoes' Maximum Distance, and the link to Strava. */
 @Component({
@@ -41,11 +36,11 @@ export class SettingsPage {
     const distance = this.units.parse(this.maximumDistance(), this.settings.shoeMaximumDistance());
     const unit = this.units.unit();
     if (distance === null) {
-      this.maximumDistanceError.set(`Enter the distance in ${unitNames[unit].name}, e.g. ${unitNames[unit].example}.`);
+      this.maximumDistanceError.set(`Enter the distance in ${unitNames[unit]}, e.g. ${examples[unit]}.`);
       return;
     }
     if (distance > maxShoeMaximumDistance) {
-      this.maximumDistanceError.set(`At most ${wholeNumber.format(this.units.fromMetres(maxShoeMaximumDistance))} ${unit}.`);
+      this.maximumDistanceError.set(`At most ${formatWhole(this.units.fromMetres(maxShoeMaximumDistance))} ${unit}.`);
       return;
     }
     this.maximumDistanceError.set(null);

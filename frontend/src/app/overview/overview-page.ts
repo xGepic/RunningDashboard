@@ -3,16 +3,15 @@ import { httpResource } from '@angular/common/http';
 import { Component, computed, inject, linkedSignal } from '@angular/core';
 import type { EChartsCoreOption } from 'echarts/core';
 import { NgxEchartsDirective } from 'ngx-echarts';
-import { ChartColors, ChartTheme, baseChartOptions, tooltipHtml } from '../shared/chart-theme';
-import { WeekDistance, categoryAxis, monthNames, shortWeekLabel, valueAxis, weekLabel, weeklyDistanceChart } from '../shared/charts';
-import { DistanceUnit, formatDistance, formatPace } from '../shared/format';
+import { ChartColors, ChartTheme, tooltipHtml } from '../shared/chart-theme';
+import { WeekDistance, paceChart, paceLabel, shortWeekLabel, weekLabel, weeklyDistanceChart } from '../shared/charts';
+import { monthNames } from '../shared/dates';
+import { DistanceUnit, formatDistance, formatWhole } from '../shared/format';
 import { Units } from '../shared/units';
 import { reloadOnSync } from '../sync/reload-on-sync';
 import { MonthPace, Overview, Totals, YearTotals } from './overview';
 import { StreakCard } from './streak-card';
 import { YearlyGoalCard } from './yearly-goal-card';
-
-const wholeNumber = new Intl.NumberFormat('en', { maximumFractionDigits: 0 });
 
 /** One all-time total, with the same figure per year for its mini bars. */
 interface Kpi {
@@ -45,6 +44,7 @@ export class OverviewPage {
   protected readonly units = inject(Units);
   protected readonly monthLabel = monthLabel;
   protected readonly weekLabel = weekLabel;
+  protected readonly formatWhole = formatWhole;
   protected readonly thisYear = new Date().getFullYear();
 
   /** The years, oldest first. */
@@ -64,10 +64,10 @@ export class OverviewPage {
         label: kpi.label,
         unit: kpi.unit ?? this.units.unit(),
         icon: kpi.icon,
-        value: wholeNumber.format(kpi.of(totals) / scale),
+        value: formatWhole(kpi.of(totals) / scale),
         years: years.map((y) => ({
           year: y.year,
-          value: wholeNumber.format(kpi.of(y) / scale),
+          value: formatWhole(kpi.of(y) / scale),
           height: Math.max(4, (kpi.of(y) / max) * 100),
           current: y.year === this.thisYear,
         })),
@@ -148,10 +148,6 @@ export class OverviewPage {
   protected goalChanged(): void {
     this.overview.reload();
   }
-
-  protected formatWhole(value: number): string {
-    return wholeNumber.format(value);
-  }
 }
 
 function weekYear(week: WeekDistance): number {
@@ -163,50 +159,20 @@ function monthLabel(month: MonthPace): string {
   return `${monthNames[month.month - 1]} ${month.year}`;
 }
 
-/** Faster is up: the y axis runs from the slowest pace at the bottom to the fastest at the top. Pace per km or mile. */
+/** Pace per month, per km or mile; a dot shows only under the pointer. */
 function monthlyPaceChart(months: MonthPace[], unit: DistanceUnit, colors: ChartColors): EChartsCoreOption {
-  const base = baseChartOptions(colors);
-  const paceLabel = (secondsPerKm: number) => formatPace(secondsPerKm, unit).replace(` /${unit}`, '');
-  return {
-    ...base,
-    tooltip: {
-      ...base.tooltip,
-      axisPointer: { type: 'line', lineStyle: { color: colors.tooltipBorder, type: 'solid' } },
-      formatter: (params: { dataIndex: number }[]) => {
-        const month = months[params[0]?.dataIndex];
-        if (!month) return '';
+  return paceChart(
+    {
+      labels: months.map((m) => monthNames[m.month - 1]),
+      paces: months.map((m) => m.pace),
+      showSymbol: false,
+      tooltip: (index) => {
+        const month = months[index];
         if (month.pace === null) return tooltipHtml(colors, monthLabel(month), 'no Runs');
-        return tooltipHtml(colors, monthLabel(month), paceLabel(month.pace), `/${unit}`, `over ${formatDistance(month.distance, unit)}`);
+        return tooltipHtml(colors, monthLabel(month), paceLabel(month.pace, unit), `/${unit}`, `over ${formatDistance(month.distance, unit)}`);
       },
     },
-    xAxis: { ...categoryAxis(months.map((m) => monthNames[m.month - 1]), colors), boundaryGap: false },
-    yAxis: { ...valueAxis(colors, paceLabel, false), inverse: true },
-    series: [
-      {
-        type: 'line',
-        data: months.map((m) => (m.pace === null ? null : Math.round(m.pace))),
-        connectNulls: false,
-        smooth: false,
-        lineStyle: { width: 2, color: colors.series, join: 'round' },
-        itemStyle: { color: colors.background, borderColor: colors.seriesLight, borderWidth: 2 },
-        symbol: 'circle',
-        symbolSize: 9,
-        showSymbol: false,
-        areaStyle: {
-          origin: 'end',
-          color: {
-            type: 'linear',
-            x: 0,
-            y: 0,
-            x2: 0,
-            y2: 1,
-            colorStops: [
-              { offset: 0, color: 'rgba(74,158,255,0.22)' },
-              { offset: 1, color: 'rgba(74,158,255,0)' },
-            ],
-          },
-        },
-      },
-    ],
-  };
+    unit,
+    colors,
+  );
 }

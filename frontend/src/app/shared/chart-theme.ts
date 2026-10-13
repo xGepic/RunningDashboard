@@ -6,6 +6,8 @@ export interface ChartColors {
   series: string;
   seriesDeep: string;
   seriesLight: string;
+  barTop: string;
+  barHover: string;
   grid: string;
   text: string;
   muted: string;
@@ -29,6 +31,8 @@ export class ChartTheme {
       series: token('--chart-series'),
       seriesDeep: token('--accent-deep'),
       seriesLight: token('--accent-light'),
+      barTop: token('--chart-bar-top'),
+      barHover: token('--chart-bar-hover'),
       grid: token('--chart-grid'),
       text: token('--text'),
       muted: token('--text-muted'),

@@ -15,6 +15,20 @@ export function formatDistance(metres: number, unit: DistanceUnit = 'km', fracti
 }
 
 const wholeNumber = new Intl.NumberFormat('en', { maximumFractionDigits: 0 });
+const oneDecimal = new Intl.NumberFormat('en', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+/** A whole number with thousands separators, e.g. "4,321". */
+export function formatWhole(value: number): string {
+  return wholeNumber.format(value);
+}
+
+/** One decimal with thousands separators, e.g. "1,234.5". */
+export function formatOneDecimal(value: number): string {
+  return oneDecimal.format(value);
+}
+
+/** The Distance Unit's name in a sentence: "Enter the distance in miles". */
+export const unitNames: Record<DistanceUnit, string> = { km: 'kilometres', mi: 'miles' };
 
 /** Totals: whole kilometres or miles, e.g. "4,321 km". */
 export function formatTotalDistance(metres: number, unit: DistanceUnit = 'km'): string {

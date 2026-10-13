@@ -4,14 +4,12 @@ import { Component, computed, inject, input, output, signal } from '@angular/cor
 import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { daysBetween, today } from '../shared/dates';
 import { FieldErrors, formError } from '../shared/field-errors';
+import { DistanceUnit, formatOneDecimal, formatWhole, unitNames } from '../shared/format';
 import { Units } from '../shared/units';
 import { YearlyGoal } from './overview';
 
-const whole = new Intl.NumberFormat('en', { maximumFractionDigits: 0 });
-const oneDecimal = new Intl.NumberFormat('en', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-
 /** For "Enter the goal in miles, e.g. 1200." */
-const unitNames = { km: { name: 'kilometres', example: '2000' }, mi: { name: 'miles', example: '1200' } };
+const examples: Record<DistanceUnit, string> = { km: '2000', mi: '1200' };
 
 /** Metres; the most the API accepts as a goal. */
 const maxDistance = 20_000_000;
@@ -74,11 +72,11 @@ export class YearlyGoalCard {
 
   /** Whole kilometres or miles, without the unit: "1,642". */
   protected whole(metres: number): string {
-    return whole.format(this.units.fromMetres(metres));
+    return formatWhole(this.units.fromMetres(metres));
   }
 
   protected oneDecimal(metres: number): string {
-    return oneDecimal.format(this.units.fromMetres(metres));
+    return formatOneDecimal(this.units.fromMetres(metres));
   }
 
   protected edit(): void {
@@ -97,8 +95,8 @@ export class YearlyGoalCard {
     // A goal saved as it was keeps its metres, though the field shows it rounded.
     const distance = this.units.parse(this.form.getRawValue().distance, this.goal()?.distance ?? null);
     if (distance === null) {
-      const unit = unitNames[this.units.unit()];
-      this.errors.set({ distance: [`Enter the goal in ${unit.name}, e.g. ${unit.example}.`] });
+      const unit = this.units.unit();
+      this.errors.set({ distance: [`Enter the goal in ${unitNames[unit]}, e.g. ${examples[unit]}.`] });
       return;
     }
     if (distance > maxDistance) {

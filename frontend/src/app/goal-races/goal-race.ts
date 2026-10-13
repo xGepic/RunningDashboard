@@ -49,3 +49,8 @@ export const distancePresets = [
   { name: '10K', distance: 10000 },
   { name: '5K', distance: 5000 },
 ] as const;
+
+/** Target Time ÷ distance, in seconds per km; none without a Target Time. */
+export function targetPaceOf(race: { distance: number; targetTime: number | null }): number | null {
+  return race.targetTime === null ? null : race.targetTime / (race.distance / 1000);
+}

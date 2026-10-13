@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, input, linkedSignal, output, signal } from '@angular/core';
-import { FieldErrors, formError } from '../shared/field-errors';
+import { FieldErrors, fieldErrorsOf, formError } from '../shared/field-errors';
 import { DistanceUnit } from '../shared/format';
 import { Units } from '../shared/units';
 import {
@@ -119,7 +119,7 @@ export class TrainingPlanWeeksEditor {
       },
       error: (response: HttpErrorResponse) => {
         this.saving.set(false);
-        this.errors.set(response.error?.errors ?? { [formError]: ['The weeks could not be saved.'] });
+        this.errors.set(fieldErrorsOf(response, 'The weeks could not be saved.'));
       },
     });
   }

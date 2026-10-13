@@ -1,3 +1,5 @@
+export const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 export const fullMonthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 /** Local midnight of a yyyy-MM-dd date (or the date part of a local date-time). */
@@ -46,4 +48,9 @@ export function monthDate(month: string, offset: number): Date {
 /** The last day of the month starting on `monthStart`. */
 export function lastDayOf(monthStart: Date): Date {
   return new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
+}
+
+/** 0 for Monday to 6 for Sunday: days since the Training Week started. */
+export function daysSinceMonday(date: Date): number {
+  return (date.getDay() + 6) % 7;
 }

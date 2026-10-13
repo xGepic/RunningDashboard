@@ -3,7 +3,7 @@ import { httpResource } from '@angular/common/http';
 import { Component, computed, effect, inject, input, signal, untracked, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { NgxEchartsDirective } from 'ngx-echarts';
-import { GoalRace } from '../goal-races/goal-race';
+import { GoalRace, targetPaceOf } from '../goal-races/goal-race';
 import { GoalRacePanel } from '../goal-races/goal-race-panel';
 import { ChartTheme } from '../shared/chart-theme';
 import { weekLabel, weeklyDistanceChart } from '../shared/charts';
@@ -117,7 +117,7 @@ export class TrainingPage {
       to = 'block';
       goalRace = training.countdown.goalRace;
       start = localDate(training.countdown.trainingBlockStart);
-      targetPace = goalRace.targetTime === null ? null : goalRace.targetTime / (goalRace.distance / 1000);
+      targetPace = targetPaceOf(goalRace);
     } else if (training?.block?.weeks.some((w) => w.status === 'current') && localDate(training.block.goalRace.date) >= day) {
       to = 'race';
       goalRace = training.block.goalRace;

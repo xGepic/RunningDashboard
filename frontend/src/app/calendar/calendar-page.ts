@@ -5,15 +5,13 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgxEchartsDirective } from 'ngx-echarts';
 import { ChartTheme } from '../shared/chart-theme';
-import { fullMonthNames, isoDate, today } from '../shared/dates';
-import { monthNames, monthlyDistanceChart } from '../shared/charts';
+import { daysSinceMonday, fullMonthNames, isoDate, today } from '../shared/dates';
+import { monthlyDistanceChart } from '../shared/charts';
 import { formatHoursMinutes } from '../shared/format';
 import { Units } from '../shared/units';
 import { reloadOnSync } from '../sync/reload-on-sync';
 import { Run, RunMonths, RunPage } from '../runs/run';
-
-/** A month as the URL's fragment names it: "Jan" to "Dec". */
-export const monthFragments = monthNames;
+import { monthFragments, yearPath } from './calendar-links';
 
 /** All Runs of a month's Training Weeks fit on one page. */
 const pageSize = 200;
@@ -63,8 +61,8 @@ export class CalendarPage {
     const first = new Date(this.selectedYear(), month - 1, 1);
     const last = new Date(this.selectedYear(), month, 0);
     return {
-      from: new Date(first.getFullYear(), first.getMonth(), first.getDate() - mondayIndex(first)),
-      to: new Date(last.getFullYear(), last.getMonth(), last.getDate() + 6 - mondayIndex(last)),
+      from: new Date(first.getFullYear(), first.getMonth(), first.getDate() - daysSinceMonday(first)),
+      to: new Date(last.getFullYear(), last.getMonth(), last.getDate() + 6 - daysSinceMonday(last)),
     };
   });
 
@@ -102,7 +100,7 @@ export class CalendarPage {
     const todayKey = isoDate(today());
     const weeks: CalendarDay[][] = [];
     for (let date = range.from; date <= range.to; date = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1)) {
-      if (mondayIndex(date) === 0) weeks.push([]);
+      if (daysSinceMonday(date) === 0) weeks.push([]);
       const key = isoDate(date);
       weeks[weeks.length - 1].push({ date, otherMonth: date.getMonth() !== month - 1, isToday: key === todayKey, runs: runsByDay.get(key) ?? [] });
     }
@@ -199,13 +197,4 @@ export class CalendarPage {
     const box = this.boxes()[index];
     if (box && !box.future) this.router.navigate(this.yearPath(), { queryParamsHandling: 'preserve', fragment: box.fragment });
   }
-}
-
-/** 0 for Monday to 6 for Sunday. */
-function mondayIndex(date: Date): number {
-  return (date.getDay() + 6) % 7;
-}
-
-function yearPath(year: number): string[] {
-  return year === new Date().getFullYear() ? ['/calendar'] : ['/calendar', String(year)];
 }

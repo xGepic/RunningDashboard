@@ -4,14 +4,17 @@ import { Component, ElementRef, Injector, afterNextRender, computed, inject, inp
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { formatDuration, parseDuration } from '../shared/format';
+import { DistanceUnit, formatDuration, parseDuration, unitNames } from '../shared/format';
 import { Units } from '../shared/units';
-import { daysBetween, localDate, today } from '../shared/dates';
-import { FieldErrors, formError } from '../shared/field-errors';
-import { GoalRace, GoalRaceRequest, distancePresets } from './goal-race';
+import { daysBetween, daysSinceMonday, localDate, today } from '../shared/dates';
+import { FieldErrors, fieldErrorsOf, formError } from '../shared/field-errors';
+import { GoalRace, GoalRaceRequest, distancePresets, targetPaceOf } from './goal-race';
 
 /** The distance picker's choice for a distance that is not a preset. */
 const custom = 'custom';
+
+/** For "Enter the distance in miles, e.g. 10." */
+const customDistanceExamples: Record<DistanceUnit, string> = { km: '15.5', mi: '10' };
 
 /** The next Goal Race with its countdown and Training Block, the form to add a Goal Race, and a modal to edit one. */
 @Component({
@@ -84,7 +87,7 @@ export class GoalRacePanel {
       daysToStart: daysBetween(now, start),
       currentWeek: weeks.find((w) => w.state === 'current')?.number ?? null,
       weeks,
-      targetPace: race.targetTime === null ? null : race.targetTime / (race.distance / 1000),
+      targetPace: targetPaceOf(race),
     };
   });
 
@@ -96,7 +99,7 @@ export class GoalRacePanel {
     const { date, trainingBlockWeeks } = this.formValue();
     if (!date || !trainingBlockWeeks || trainingBlockWeeks < 1 || !Number.isInteger(trainingBlockWeeks)) return null;
     const race = localDate(date);
-    const monday = new Date(race.getFullYear(), race.getMonth(), race.getDate() - ((race.getDay() + 6) % 7));
+    const monday = new Date(race.getFullYear(), race.getMonth(), race.getDate() - daysSinceMonday(race));
     return { start: new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() - (trainingBlockWeeks - 1) * 7), race };
   });
 
@@ -145,7 +148,7 @@ export class GoalRacePanel {
     if (targetTime === null && value.targetTime.trim() !== '')
       typingErrors['targetTime'] = ['Write the Target Time as h:mm:ss, e.g. 4:59:59.'];
     if (value.distance === custom && distance === null)
-      typingErrors['customDistance'] = [this.units.unit() === 'mi' ? 'Enter the distance in miles, e.g. 10.' : 'Enter the distance in kilometres, e.g. 15.5.'];
+      typingErrors['customDistance'] = [`Enter the distance in ${unitNames[this.units.unit()]}, e.g. ${customDistanceExamples[this.units.unit()]}.`];
     if (weeks !== null && !Number.isInteger(weeks))
       typingErrors['trainingBlockWeeks'] = ['The Training Block is a whole number of weeks.'];
     if (Object.keys(typingErrors).length > 0) {
@@ -168,7 +171,7 @@ export class GoalRacePanel {
       },
       error: (response: HttpErrorResponse) => {
         this.saving.set(false);
-        this.errors.set(response.error?.errors ?? { [formError]: ['The Goal Race could not be saved.'] });
+        this.errors.set(fieldErrorsOf(response, 'The Goal Race could not be saved.'));
       },
     });
   }

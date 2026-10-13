@@ -1,3 +1,5 @@
+import { ListPage } from '../shared/history-list';
+
 /** A Ride as listed by GET /api/rides. Distance and elevation in metres, times in seconds, speed in km/h. */
 export interface Ride {
   id: number;
@@ -15,12 +17,7 @@ export interface Ride {
 }
 
 /** One page of GET /api/rides. */
-export interface RidePage {
-  items: Ride[];
-  /** 1-based. */
-  page: number;
-  pageSize: number;
-  totalCount: number;
+export interface RidePage extends ListPage<Ride> {
   /** Of every Ride, not just this page's. */
   totals: RideTotals;
 }

@@ -1,3 +1,5 @@
+import { ListPage } from '../shared/history-list';
+
 /** A Run as listed by GET /api/runs. Distance in metres, times in seconds, pace in seconds per km. */
 export interface Run {
   id: number;
@@ -13,13 +15,7 @@ export interface Run {
 }
 
 /** One page of GET /api/runs. */
-export interface RunPage {
-  items: Run[];
-  /** 1-based. */
-  page: number;
-  pageSize: number;
-  totalCount: number;
-}
+export type RunPage = ListPage<Run>;
 
 /** GET /api/runs/months: one year's Runs added up per calendar month. Distance in metres, times in seconds. */
 export interface RunMonths {

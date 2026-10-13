@@ -1,0 +1,82 @@
+// The look Run, Ride and Swim history share.
+.summary .value {
+  font-size: 15px;
+}
+
+.history {
+  min-width: 880px;
+
+  // A Ride or Swim has no page of its own, so its row opens nothing; the Runs list makes its rows clickable.
+  tbody tr {
+    cursor: default;
+
+    &:hover {
+      background: #182131;
+    }
+  }
+
+  .date {
+    white-space: nowrap;
+  }
+
+  .time {
+    margin-left: 6px;
+    color: var(--text-faint);
+    font-family: var(--mono);
+    font-size: 11.5px;
+  }
+
+  .name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 360px;
+
+    a {
+      overflow: hidden;
+      color: var(--text);
+      font-weight: 500;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+
+      &:hover {
+        color: var(--accent-pale);
+      }
+    }
+  }
+}
+
+.dist {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.track.mini {
+  display: inline-block;
+  width: 36px;
+  height: 3px;
+
+  span {
+    background: var(--accent);
+  }
+}
+
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--divider);
+  color: var(--text-faint);
+  font-size: 12px;
+
+  .btn {
+    height: 30px;
+  }
+
+  .note {
+    margin-left: auto;
+  }
+}

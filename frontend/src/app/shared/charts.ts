@@ -1,9 +1,7 @@
 import type { EChartsCoreOption } from 'echarts/core';
 import { ChartColors, baseChartOptions, tooltipHtml } from './chart-theme';
-import { fullMonthNames } from './dates';
-import { DistanceUnit, distanceIn } from './format';
-
-export const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+import { fullMonthNames, monthNames } from './dates';
+import { DistanceUnit, distanceIn, formatPace } from './format';
 
 /** Distance (metres) run in the Training Week starting on the Monday <code>start</code> (yyyy-MM-dd). */
 export interface WeekDistance {
@@ -21,6 +19,32 @@ export function weekLabel(start: string): string {
 export function shortWeekLabel(start: string): string {
   const [, month, day] = start.split('-').map(Number);
   return `${day} ${monthNames[month - 1]}`;
+}
+
+/** A #rrggbb colour token at an opacity, e.g. "rgba(74,158,255,0.22)". */
+export function withAlpha(hex: string, alpha: number): string {
+  const [red, green, blue] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  return `rgba(${red},${green},${blue},${alpha})`;
+}
+
+/** A top-to-bottom gradient between two colours. */
+function verticalGradient(top: string, bottom: string) {
+  return {
+    type: 'linear',
+    x: 0,
+    y: 0,
+    x2: 0,
+    y2: 1,
+    colorStops: [
+      { offset: 0, color: top },
+      { offset: 1, color: bottom },
+    ],
+  };
+}
+
+/** The fill under a line: the series colour, fading out towards the bottom. */
+export function areaFill(colors: ChartColors) {
+  return verticalGradient(withAlpha(colors.series, 0.22), withAlpha(colors.series, 0));
 }
 
 export function categoryAxis(labels: string[], colors: ChartColors) {
@@ -42,21 +66,6 @@ export function valueAxis(colors: ChartColors, formatter: (value: number) => str
   };
 }
 
-/** A top-to-bottom gradient of the series colour, as the design's bars use. */
-export function barGradient(colors: ChartColors) {
-  return {
-    type: 'linear',
-    x: 0,
-    y: 0,
-    x2: 0,
-    y2: 1,
-    colorStops: [
-      { offset: 0, color: '#5aa9ff' },
-      { offset: 1, color: colors.seriesDeep },
-    ],
-  };
-}
-
 /** Column chart of distance per Training Week, in kilometres or miles. */
 export function weeklyDistanceChart(weeks: WeekDistance[], unit: DistanceUnit, colors: ChartColors): EChartsCoreOption {
   const base = baseChartOptions(colors);
@@ -64,7 +73,7 @@ export function weeklyDistanceChart(weeks: WeekDistance[], unit: DistanceUnit, c
     ...base,
     tooltip: {
       ...base.tooltip,
-      axisPointer: { type: 'shadow', shadowStyle: { color: 'rgba(74,158,255,0.06)' } },
+      axisPointer: { type: 'shadow', shadowStyle: { color: withAlpha(colors.series, 0.06) } },
       formatter: (params: { dataIndex: number }[]) => {
         const week = weeks[params[0]?.dataIndex];
         if (!week) return '';
@@ -79,8 +88,8 @@ export function weeklyDistanceChart(weeks: WeekDistance[], unit: DistanceUnit, c
         data: weeks.map((w) => Math.round(distanceIn(w.distance, unit) * 10) / 10),
         barMaxWidth: weeks.length > 12 ? 24 : 56,
         barCategoryGap: weeks.length > 12 ? '18%' : '28%',
-        itemStyle: { color: barGradient(colors), borderRadius: [3, 3, 1, 1] },
-        emphasis: { itemStyle: { color: '#8cc4ff' } },
+        itemStyle: { color: verticalGradient(colors.barTop, colors.seriesDeep), borderRadius: [3, 3, 1, 1] },
+        emphasis: { itemStyle: { color: colors.barHover } },
         animationDuration: 700,
         animationEasing: 'cubicOut',
       },
@@ -157,19 +166,7 @@ export function monthlyDistanceChart(year: number, months: MonthDistance[], unit
         symbolSize: 9,
         emphasis: { scale: 1.4 },
         cursor: 'pointer',
-        areaStyle: {
-          color: {
-            type: 'linear',
-            x: 0,
-            y: 0,
-            x2: 0,
-            y2: 1,
-            colorStops: [
-              { offset: 0, color: 'rgba(74,158,255,0.22)' },
-              { offset: 1, color: 'rgba(74,158,255,0)' },
-            ],
-          },
-        },
+        areaStyle: { color: areaFill(colors) },
         animationDuration: 700,
         animationEasing: 'cubicOut',
       },
@@ -188,6 +185,67 @@ export function monthlyDistanceChart(year: number, months: MonthDistance[], unit
             },
           ]
         : []),
+    ],
+  };
+}
+
+/** Pace as "4:58", per km or mile, without the unit: for axis labels and tooltips that show the unit apart. */
+export function paceLabel(secondsPerKm: number, unit: DistanceUnit): string {
+  return formatPace(secondsPerKm, unit).replace(` /${unit}`, '');
+}
+
+/** What a pace chart shows: a Pace (seconds per km) per label, none where there is a gap. */
+export interface PaceChartData {
+  labels: string[];
+  paces: (number | null)[];
+  /** The tooltip of the point at this index. */
+  tooltip: (index: number) => string;
+  /** Whether each point shows a dot, or only the one under the pointer. */
+  showSymbol: boolean;
+  /** A dashed line at this Pace, labelled as the average; none without it. */
+  average?: number | null;
+}
+
+/** Line chart of Pace per km or mile, filled below. Faster is up: the y axis runs from the slowest Pace to the fastest. */
+export function paceChart(data: PaceChartData, unit: DistanceUnit, colors: ChartColors): EChartsCoreOption {
+  const base = baseChartOptions(colors);
+  const label = (seconds: number) => paceLabel(seconds, unit);
+  const average = data.average ?? null;
+  return {
+    ...base,
+    tooltip: {
+      ...base.tooltip,
+      axisPointer: { type: 'line', lineStyle: { color: colors.tooltipBorder, type: 'solid' } },
+      formatter: (params: { dataIndex: number }[]) => {
+        const index = params[0]?.dataIndex;
+        return index === undefined || index >= data.labels.length ? '' : data.tooltip(index);
+      },
+    },
+    xAxis: { ...categoryAxis(data.labels, colors), boundaryGap: false },
+    yAxis: { ...valueAxis(colors, label, false), inverse: true },
+    series: [
+      {
+        type: 'line',
+        data: data.paces.map((pace) => (pace === null ? null : Math.round(pace))),
+        connectNulls: false,
+        smooth: false,
+        lineStyle: { width: 2, color: colors.series, join: 'round' },
+        itemStyle: { color: colors.background, borderColor: colors.seriesLight, borderWidth: 2 },
+        symbol: 'circle',
+        symbolSize: 9,
+        showSymbol: data.showSymbol,
+        areaStyle: { origin: 'end', color: areaFill(colors) },
+        markLine:
+          average === null
+            ? undefined
+            : {
+                silent: true,
+                symbol: 'none',
+                lineStyle: { color: colors.muted, type: 'dashed', width: 1 },
+                label: { color: colors.muted, formatter: () => `avg ${label(average)}`, position: 'insideEndTop' },
+                data: [{ yAxis: Math.round(average) }],
+              },
+      },
     ],
   };
 }

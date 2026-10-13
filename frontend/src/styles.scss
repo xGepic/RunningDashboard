@@ -42,6 +42,9 @@
 
   /* Chart tokens, read by ChartTheme. */
   --chart-series: #4a9eff;
+  /* The top of a bar's gradient, and a bar under the pointer. */
+  --chart-bar-top: #5aa9ff;
+  --chart-bar-hover: #8cc4ff;
   --chart-grid: #1c2431;
   --tooltip: #1c2535;
 

@@ -1,6 +1,6 @@
 import { Component, computed, input } from '@angular/core';
 import { shortWeekLabel, weekLabel } from '../shared/charts';
-import { today } from '../shared/dates';
+import { daysSinceMonday, today } from '../shared/dates';
 import { Streak } from './overview';
 
 /** The Streak: how many Training Weeks in a row have a Run, and what this week still needs to keep it up. */
@@ -21,7 +21,7 @@ export class StreakCard {
     if (thisWeekHasRun) return { text: 'This week ✓', warning: false };
     if (current === 0) return { text: 'Run this week to start a new Streak', warning: false };
     // Days of this Training Week still to come, today included: 7 on Monday, 1 on Sunday.
-    const daysLeft = 7 - ((today().getDay() + 6) % 7);
+    const daysLeft = 7 - daysSinceMonday(today());
     if (daysLeft === 1) return { text: 'Last day to keep the Streak', warning: true };
     return { text: `This week still needs a Run · ${daysLeft} days left`, warning: false };
   });
