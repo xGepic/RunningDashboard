@@ -4,14 +4,10 @@
   grid-template-columns: 2fr 1fr;
   gap: 12px;
 
-  /* Both cards as tall as the row. */
+  /* Each card fills its cell, as wide as its column and as tall as the row. */
   > * {
-    display: flex;
+    display: grid;
     min-width: 0;
-
-    > :first-child {
-      flex: 1;
-    }
   }
 }
 
