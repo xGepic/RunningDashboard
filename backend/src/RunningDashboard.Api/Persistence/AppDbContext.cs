@@ -12,6 +12,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
     public DbSet<Ride> Rides => Set<Ride>();
 
+    public DbSet<Swim> Swims => Set<Swim>();
+
     public DbSet<SyncState> SyncStates => Set<SyncState>();
 
     public DbSet<Shoe> Shoes => Set<Shoe>();
@@ -66,6 +68,13 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             ride.Property(r => r.Id).ValueGeneratedNever();
             ride.Property(r => r.SportType).HasMaxLength(50);
             ride.HasIndex(r => r.StartUtc);
+        });
+
+        model.Entity<Swim>(swim =>
+        {
+            swim.Property(s => s.Id).ValueGeneratedNever();
+            swim.Property(s => s.SportType).HasMaxLength(50);
+            swim.HasIndex(s => s.StartUtc);
         });
 
         model.Entity<BestEffort>(effort => effort.Property(e => e.Name).HasMaxLength(50));

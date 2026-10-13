@@ -54,6 +54,13 @@ export function formatSpeed(kilometresPerHour: number | null, unit: DistanceUnit
   return `${speed.toFixed(1)} ${unit === 'km' ? 'km/h' : 'mph'}`;
 }
 
+/** Swim Pace as min:ss /100m; a Swim without distance has none. */
+export function formatSwimPace(secondsPer100m: number | null): string {
+  if (secondsPer100m === null) return '–';
+  const total = Math.round(secondsPer100m);
+  return `${Math.floor(total / 60)}:${pad(total % 60)} /100m`;
+}
+
 /** Whole seconds per km against the Target Pace: "3 s/km slower", "1:12 /km faster" or "on Target Pace". */
 export function formatPaceDifference(secondsPerKm: number): string {
   const seconds = Math.round(Math.abs(secondsPerKm));

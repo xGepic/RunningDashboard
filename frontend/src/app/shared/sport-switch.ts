@@ -2,11 +2,11 @@ import { Component, computed, inject, input } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
-/** The history page shown: Runs or Rides. */
-export type HistoryPage = 'runs' | 'rides';
+/** The history page shown: Runs, Rides or Swims. */
+export type HistoryPage = 'runs' | 'rides' | 'swims';
 
 /**
- * Switches between Run history and Ride history. The Runs' unit rides along (Rides are always in km), so coming back
+ * Switches between Run, Ride and Swim history. The Runs' unit rides along (Rides and Swims ignore it), so coming back
  * keeps it; the rest (the Runs' month and search, sort order and page) does not carry from one list to the other.
  */
 @Component({
@@ -16,6 +16,7 @@ export type HistoryPage = 'runs' | 'rides';
     <nav class="segmented" aria-label="History">
       <a routerLink="/runs" [queryParams]="kept()" [attr.aria-current]="current() === 'runs' ? 'page' : null">Runs</a>
       <a routerLink="/rides" [queryParams]="kept()" [attr.aria-current]="current() === 'rides' ? 'page' : null">Rides</a>
+      <a routerLink="/swims" [queryParams]="kept()" [attr.aria-current]="current() === 'swims' ? 'page' : null">Swims</a>
     </nav>
   `,
 })

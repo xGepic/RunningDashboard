@@ -1,0 +1,95 @@
+<div class="page">
+  <header class="page-header">
+    <div class="titles">
+      <span class="eyebrow">Swims</span>
+      <div class="title-row">
+        <h1>Swim history</h1>
+        <app-sport-switch current="swims" />
+      </div>
+    </div>
+    @if (swims.value()?.totals; as totals) {
+      @if (totals.swims > 0) {
+        <div class="stats summary" aria-label="Totals of all Swims">
+          <div class="stat"><span class="label">Swims</span><span class="value">{{ totals.swims }}</span></div>
+          <div class="stat"><span class="label">Distance</span><span class="value">{{ formatDistance(totals.distance, 'km', 1) }}</span></div>
+          <div class="stat"><span class="label">Moving Time</span><span class="value">{{ formatHoursMinutes(totals.movingTime) }}</span></div>
+          <div class="stat"><span class="label">Avg Pace</span><span class="value">{{ formatSwimPace(totals.pace) }}</span></div>
+        </div>
+      }
+    }
+  </header>
+
+  @if (swims.error()) {
+    <p class="error" role="alert">
+      Swims could not be loaded with these options.
+      <a routerLink="/swims">Show all Swims</a>
+    </p>
+  } @else if (swims.value(); as page) {
+    @if (page.totalCount === 0) {
+      <div class="card empty-card">
+        <p class="empty">
+          @if (page.page > 1) {
+            There are no Swims on page {{ page.page }}.
+            <button type="button" class="link" (click)="goToPage(1)">Go to the first page</button>
+          } @else {
+            No Swims yet.
+          }
+        </p>
+      </div>
+    } @else if (page.items.length === 0) {
+      <div class="card empty-card">
+        <p class="empty">
+          There are only {{ pageCount() }} pages of Swims.
+          <button type="button" class="link" (click)="goToPage(pageCount())">Go to the last page</button>
+        </p>
+      </div>
+    } @else {
+      <section class="card flush">
+        <div class="table-scroll">
+          <table class="data-table runs rides">
+            <thead>
+              <tr>
+                <th [attr.aria-sort]="ariaSort('date')"><button type="button" (click)="sortBy('date')">Date<span class="mono">{{ sortIndicator('date') }}</span></button></th>
+                <th>Name</th>
+                <th class="number" [attr.aria-sort]="ariaSort('distance')"><button type="button" (click)="sortBy('distance')">Distance<span class="mono">{{ sortIndicator('distance') }}</span></button></th>
+                <th class="number" [attr.aria-sort]="ariaSort('movingTime')"><button type="button" (click)="sortBy('movingTime')">Moving Time<span class="mono">{{ sortIndicator('movingTime') }}</span></button></th>
+                <th class="number" [attr.aria-sort]="ariaSort('pace')"><button type="button" (click)="sortBy('pace')">Pace<span class="mono">{{ sortIndicator('pace') }}</span></button></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (swim of page.items; track swim.id) {
+                <tr>
+                  <td class="date">{{ swim.startLocal | date: 'EEE d MMM y' }} <span class="time">{{ swim.startLocal | date: 'HH:mm' }}</span></td>
+                  <td>
+                    <div class="name">
+                      <a [href]="swim.stravaUrl" target="_blank" rel="noopener" title="Open on Strava">{{ swim.name }}</a>
+                    </div>
+                  </td>
+                  <td class="number">
+                    <span class="dist">
+                      <span class="track mini" aria-hidden="true"><span [style.width.%]="(swim.distance / longest()) * 100"></span></span>
+                      {{ swim.distance | number: '1.0-0' }} m
+                    </span>
+                  </td>
+                  <td class="number">{{ formatDuration(swim.movingTime) }}</td>
+                  <td class="number muted">{{ formatSwimPace(swim.pace) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <nav class="pager" aria-label="Pages">
+          @if (pageCount() > 1) {
+            <button type="button" class="btn" (click)="goToPage(page.page - 1)" [disabled]="page.page <= 1">← Previous</button>
+            <span>Page {{ page.page }} of {{ pageCount() }} · {{ page.totalCount }} Swims</span>
+            <button type="button" class="btn" (click)="goToPage(page.page + 1)" [disabled]="page.page >= pageCount()">Next →</button>
+          } @else {
+            <span>{{ page.totalCount }} {{ page.totalCount === 1 ? 'Swim' : 'Swims' }}</span>
+          }
+          <span class="note">Pace = Moving Time per 100 m</span>
+        </nav>
+      </section>
+    }
+  }
+</div>

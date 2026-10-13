@@ -15,18 +15,26 @@ A Strava activity with a running sport type (road, trail or treadmill). Races ar
 _Avoid_: Activity (when only runs are meant), workout, session
 
 **Activity**:
-Any entry recorded on Strava, of any sport. The dashboard ignores Activities that are neither Runs nor Rides.
+Any entry recorded on Strava, of any sport. The dashboard ignores Activities that are not Runs, Rides or Swims.
 
 **Ride**:
 A Strava activity with a cycling sport type: road, virtual, gravel or mountain bike (e-bike rides are not Rides). Rides are only listed in the Ride history, with their Avg Speed; they never count toward totals, Training Weeks, Streaks, Records or goals.
 _Avoid_: Cycle, bike ride, workout
+
+**Swim**:
+A Strava activity with the swimming sport type, in a pool or open water. Swims are only listed in the Swim history, with their Swim Pace; like Rides, they never count toward totals, Training Weeks, Streaks, Records or goals.
+_Avoid_: Swim workout, session
+
+**Swim Pace**:
+A Swim's Moving Time per 100 metres, written as min:ss /100m.
+_Avoid_: Pace (on its own, for Swims), Avg Speed
 
 **Avg Speed**:
 A Ride's distance per Moving Time, in km/h. Rides have it instead of a Pace.
 _Avoid_: Pace (for Rides), velocity
 
 **Moving Time**:
-The time during a Run (or Ride) when the Athlete was actually moving, without pauses. It is used for Pace, Avg Speed and for weekly time totals.
+The time during a Run (or Ride or Swim) when the Athlete was actually moving, without pauses. It is used for Pace, Avg Speed, Swim Pace and for weekly time totals.
 _Avoid_: Duration, time (on its own)
 
 **Long Run**:

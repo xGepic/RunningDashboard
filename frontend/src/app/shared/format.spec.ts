@@ -1,4 +1,4 @@
-import { formatDifference, formatDistance, formatDuration, formatHours, formatPace, formatPaceDifference, formatTotalDistance, parseDuration } from './format';
+import { formatDifference, formatDistance, formatDuration, formatHours, formatPace, formatPaceDifference, formatSwimPace, formatTotalDistance, parseDuration } from './format';
 
 describe('formatDistance', () => {
   it('shows metres as kilometres with two decimals', () => {
@@ -42,6 +42,17 @@ describe('formatPace', () => {
   it('shows a dash for a Run without a Pace', () => {
     expect(formatPace(null)).toBe('–');
     expect(formatPace(null, 'mi')).toBe('–');
+  });
+});
+
+describe('formatSwimPace', () => {
+  it('shows seconds per 100 m as min:ss /100m', () => {
+    expect(formatSwimPace(115)).toBe('1:55 /100m');
+    expect(formatSwimPace(119.6)).toBe('2:00 /100m');
+  });
+
+  it('shows a dash for a Swim without a Swim Pace', () => {
+    expect(formatSwimPace(null)).toBe('–');
   });
 });
 

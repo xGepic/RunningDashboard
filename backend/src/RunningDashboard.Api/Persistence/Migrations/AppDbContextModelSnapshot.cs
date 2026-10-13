@@ -259,6 +259,46 @@ namespace RunningDashboard.Api.Persistence.Migrations
                     b.ToTable("StravaConnections");
                 });
 
+            modelBuilder.Entity("RunningDashboard.Api.Persistence.Swim", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("Distance")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("ElapsedTime")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("MovingTime")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RawSummaryJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SportType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("StartLocal")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("StartUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StartUtc");
+
+                    b.ToTable("Swims");
+                });
+
             modelBuilder.Entity("RunningDashboard.Api.Persistence.SyncState", b =>
                 {
                     b.Property<int>("Id")

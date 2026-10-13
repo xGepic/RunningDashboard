@@ -7,6 +7,7 @@ using RunningDashboard.Api.Rides;
 using RunningDashboard.Api.Runs;
 using RunningDashboard.Api.Shoes;
 using RunningDashboard.Api.Strava;
+using RunningDashboard.Api.Swims;
 using RunningDashboard.Api.Sync;
 using RunningDashboard.Api.Training;
 
@@ -39,6 +40,7 @@ app.MapStravaAuthEndpoints();
 app.MapSyncEndpoints();
 app.MapRunEndpoints();
 app.MapRideEndpoints();
+app.MapSwimEndpoints();
 app.MapOverviewEndpoints();
 app.MapYearlyGoalEndpoints();
 app.MapShoeEndpoints();
