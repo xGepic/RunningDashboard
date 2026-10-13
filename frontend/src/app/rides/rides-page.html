@@ -7,52 +7,22 @@
         <app-sport-switch current="rides" />
       </div>
     </div>
-    @if (summary().rides > 0) {
-      <div class="stats summary" aria-label="Totals of the listed Rides">
-        <div class="stat"><span class="label">Rides</span><span class="value">{{ summary().rides }}</span></div>
-        <div class="stat"><span class="label">Distance</span><span class="value">{{ formatDistance(summary().distance, distanceUnit(), 1) }}</span></div>
-        <div class="stat"><span class="label">Moving Time</span><span class="value">{{ formatHoursMinutes(summary().movingTime) }}</span></div>
-        <div class="stat"><span class="label">Avg Speed</span><span class="value">{{ formatSpeed(summary().speed, distanceUnit()) }}</span></div>
-      </div>
+    @if (rides.value()?.totals; as totals) {
+      @if (totals.rides > 0) {
+        <div class="stats summary" aria-label="Totals of all Rides">
+          <div class="stat"><span class="label">Rides</span><span class="value">{{ totals.rides }}</span></div>
+          <div class="stat"><span class="label">Distance</span><span class="value">{{ formatDistance(totals.distance, 'km', 1) }}</span></div>
+          <div class="stat"><span class="label">Moving Time</span><span class="value">{{ formatHoursMinutes(totals.movingTime) }}</span></div>
+          <div class="stat"><span class="label">Avg Speed</span><span class="value">{{ formatSpeed(totals.speed) }}</span></div>
+        </div>
+      }
     }
   </header>
-
-  <div class="toolbar">
-    <nav class="period-nav" aria-label="Month">
-      <button type="button" class="step" (click)="shiftMonth(-1)" [attr.aria-label]="'Previous month: ' + (previousMonthStart() | date: 'MMMM y')"
-              [title]="previousMonthStart() | date: 'MMM y'">←</button>
-      <h2>{{ monthStart() | date: 'MMMM y' }}</h2>
-      <button type="button" class="step" (click)="shiftMonth(1)" [disabled]="isCurrentMonth()"
-              [attr.aria-label]="'Next month: ' + (nextMonthStart() | date: 'MMMM y')" [title]="nextMonthStart() | date: 'MMM y'">→</button>
-    </nav>
-
-    <form class="filters" role="search" (submit)="$event.preventDefault()">
-      <label class="inline month">
-        <span>Month</span>
-        <input #monthPicker type="month" [value]="selectedMonth()" (change)="showMonth(monthPicker.value)" />
-      </label>
-      <label class="inline search">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-             aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4" /></svg>
-        <span class="visually-hidden">Name</span>
-        <input #searchBox type="search" placeholder="Search by name, e.g. Zwift" [value]="search() ?? ''"
-               (change)="filter({ search: searchBox.value.trim() })" />
-      </label>
-      @if (searched()) {
-        <button type="button" class="link" (click)="clearSearch()">Clear search</button>
-      }
-    </form>
-
-    <div class="segmented" role="group" aria-label="Units">
-      <button type="button" [attr.aria-pressed]="distanceUnit() === 'km'" (click)="showUnit('km')">km</button>
-      <button type="button" [attr.aria-pressed]="distanceUnit() === 'mi'" (click)="showUnit('mi')">mi</button>
-    </div>
-  </div>
 
   @if (rides.error()) {
     <p class="error" role="alert">
       Rides could not be loaded with these options.
-      <a routerLink="/rides">Show this month's Rides</a>
+      <a routerLink="/rides">Show all Rides</a>
     </p>
   } @else if (rides.value(); as page) {
     @if (page.totalCount === 0) {
@@ -61,10 +31,8 @@
           @if (page.page > 1) {
             There are no Rides on page {{ page.page }}.
             <button type="button" class="link" (click)="goToPage(1)">Go to the first page</button>
-          } @else if (searched()) {
-            No Rides in {{ monthStart() | date: 'MMMM y' }} match this search.
           } @else {
-            No Rides in {{ monthStart() | date: 'MMMM y' }}.
+            No Rides yet.
           }
         </p>
       </div>
@@ -102,11 +70,11 @@
                   <td class="number">
                     <span class="dist">
                       <span class="track mini" aria-hidden="true"><span [style.width.%]="(ride.distance / longest()) * 100"></span></span>
-                      {{ formatDistance(ride.distance, distanceUnit()) }}
+                      {{ formatDistance(ride.distance) }}
                     </span>
                   </td>
                   <td class="number">{{ formatDuration(ride.movingTime) }}</td>
-                  <td class="number muted">{{ formatSpeed(ride.speed, distanceUnit()) }}</td>
+                  <td class="number muted">{{ formatSpeed(ride.speed) }}</td>
                   <td class="number muted">{{ ride.elevationGain | number: '1.0-0' }} m</td>
                 </tr>
               }

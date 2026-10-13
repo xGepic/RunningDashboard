@@ -31,7 +31,8 @@ public static class RideEndpoints
                 .Take(query.PageSizeOrDefault)
                 .ToList();
 
-            return Results.Ok(new RidePageResponse(page, query.PageOrDefault, query.PageSizeOrDefault, rides.Count));
+            return Results.Ok(new RidePageResponse(
+                page, query.PageOrDefault, query.PageSizeOrDefault, rides.Count, RideTotalsResponse.Of(rides)));
         });
     }
 

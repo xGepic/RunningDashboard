@@ -99,6 +99,15 @@ public sealed class RidesListTests
         (page.TotalCount, page.Page, page.PageSize).ShouldBe((4, pageNumber, 3));
     }
 
+    [Test]
+    public async Task The_totals_cover_every_matching_ride_not_just_the_page()
+    {
+        var totals = (await ListAsync("pageSize=1")).Totals;
+
+        (totals.Rides, totals.Distance, totals.MovingTime).ShouldBe((4, 157500, 23760));
+        totals.Speed!.Value.ShouldBe(23.864, 0.0005); // 157.5 km in 6.6 h
+    }
+
     [TestCase("page=0")]
     [TestCase("pageSize=0")]
     [TestCase("pageSize=201")]
@@ -115,10 +124,12 @@ public sealed class RidesListTests
     private async Task<RidePage> ListAsync(string query) =>
         (await _browser.GetFromJsonAsync<RidePage>($"/api/rides?{query}"))!;
 
-    private sealed record RidePage(List<RideItem> Items, int Page, int PageSize, int TotalCount)
+    private sealed record RidePage(List<RideItem> Items, int Page, int PageSize, int TotalCount, RideTotals Totals)
     {
         public List<string> Names => [.. Items.Select(i => i.Name)];
     }
+
+    private sealed record RideTotals(int Rides, double Distance, int MovingTime, double? Speed);
 
     /// <param name="Speed">Kilometres per hour.</param>
     private sealed record RideItem(

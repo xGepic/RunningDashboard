@@ -21,6 +21,16 @@ export interface RidePage {
   page: number;
   pageSize: number;
   totalCount: number;
+  /** Of every Ride, not just this page's. */
+  totals: RideTotals;
+}
+
+/** Distance in metres, Moving Time in seconds, Avg Speed in km/h; none without Moving Time. */
+export interface RideTotals {
+  rides: number;
+  distance: number;
+  movingTime: number;
+  speed: number | null;
 }
 
 export type RideSortKey = 'date' | 'distance' | 'movingTime' | 'speed' | 'elevation';

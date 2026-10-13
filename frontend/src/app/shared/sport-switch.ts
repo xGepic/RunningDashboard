@@ -6,8 +6,8 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 export type HistoryPage = 'runs' | 'rides';
 
 /**
- * Switches between Run history and Ride history. The month, search and unit stay; sort order and page start over,
- * since they do not carry from one list to the other.
+ * Switches between Run history and Ride history. The Runs' unit rides along (Rides are always in km), so coming back
+ * keeps it; the rest (the Runs' month and search, sort order and page) does not carry from one list to the other.
  */
 @Component({
   selector: 'app-sport-switch',
@@ -26,6 +26,7 @@ export class SportSwitch {
 
   protected readonly kept = computed(() => {
     const params = this.queryParams();
-    return Object.fromEntries(['month', 'search', 'unit'].map((key) => [key, params?.get(key) ?? null]).filter(([, value]) => value));
+    const unit = params?.get('unit');
+    return unit ? { unit } : {};
   });
 }
