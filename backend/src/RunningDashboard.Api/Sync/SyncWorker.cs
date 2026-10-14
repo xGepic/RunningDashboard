@@ -54,9 +54,13 @@ public sealed class SyncWorker(
     public async Task<SyncStatus> GetStatusAsync(AppDbContext db, CancellationToken cancellationToken)
     {
         var state = await db.GetSyncStateAsync(cancellationToken);
-        var importedRuns = await db.Runs.CountAsync(cancellationToken);
+        // Both Run counts in one query, so a sync between two queries cannot show more Runs detailed than imported.
+        var runs = await db.Runs
+            .GroupBy(r => 1)
+            .Select(g => new { Imported = g.Count(), Detailed = g.Count(r => r.DetailFetchedAt != null) })
+            .SingleOrDefaultAsync(cancellationToken);
+        var (importedRuns, detailedRuns) = (runs?.Imported ?? 0, runs?.Detailed ?? 0);
         var importedActivities = importedRuns + await db.ListedActivities.CountAsync(cancellationToken);
-        var detailedRuns = await db.Runs.CountAsync(r => r.DetailFetchedAt != null, cancellationToken);
 
         // Read after the counts, so the phase is never older than them.
         bool running;

@@ -42,6 +42,7 @@ public sealed class RunDetailImport(AppDbContext db, StravaClient strava, TimePr
         db.Runs
             .Include(r => r.BestEfforts)
             .Include(r => r.Splits)
+            .AsSplitQuery()
             .Where(r => r.DetailFetchedAt == null && !skip.Contains(r.Id))
             .OrderByDescending(r => r.StartUtc)
             .FirstOrDefaultAsync(cancellationToken);

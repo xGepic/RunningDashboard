@@ -105,6 +105,8 @@ public static class RunEndpoints
             var run = await db.Runs
                 .Include(r => r.BestEfforts)
                 .Include(r => r.Splits)
+                // Joined in one query, each Best Effort times each Split repeats the Run with its raw JSON.
+                .AsSplitQuery()
                 .SingleOrDefaultAsync(r => r.Id == id, cancellationToken);
 
             if (run is null)
