@@ -4,15 +4,8 @@ A local dashboard for one Athlete's Strava running history and marathon training
 
 ## One-time setup
 
-1. Create a Strava API app at <https://www.strava.com/settings/api> and set **Authorization Callback Domain** to `localhost`.
-2. Store its credentials as user secrets (never commit them):
-
-   ```sh
-   dotnet user-secrets set "Strava:ClientId" "<client id>" --project backend/src/RunningDashboard.Api
-   dotnet user-secrets set "Strava:ClientSecret" "<client secret>" --project backend/src/RunningDashboard.Api
-   ```
-
-3. Install frontend packages: `npm install --prefix frontend`
+1. Create a Strava API app at <https://www.strava.com/settings/api> and set **Authorization Callback Domain** to `localhost`. Its Client ID and Client Secret are entered in the dashboard later.
+2. Install frontend packages: `npm install --prefix frontend`
 
 ## Run
 
@@ -28,7 +21,7 @@ Frontend (http://localhost:4200, proxies `/api` to the backend):
 npm start --prefix frontend
 ```
 
-Open http://localhost:4200 and click **Connect Strava**.
+Open http://localhost:4200 and click **Connect Strava**. The first time, it leads to Settings: enter the Strava API app's Client ID and Client Secret there, then connect. They are stored in the database, never in the repository (see [ADR 0004](docs/adr/0004-strava-api-app-entered-on-settings.md)). Credentials in the backend's configuration, such as the user secrets `Strava:ClientId` and `Strava:ClientSecret`, win over the ones entered on Settings.
 
 Everything runs locally, except that the Run map loads its tiles from OpenStreetMap, Esri and OpenTopoMap, so it needs an internet connection. None of them needs an account or API key.
 
