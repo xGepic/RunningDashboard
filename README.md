@@ -45,6 +45,15 @@ It fills `deploy/` (not committed; the apps are over 100 MB):
 - `deploy/win` and `deploy/RunningDashboard-win.zip`: `RunningDashboard.exe` for Windows
 - `deploy/mac` and `deploy/RunningDashboard-mac.tar.gz`: `RunningDashboard` for the Mac
 
+GitHub can build them too: pushing a version tag runs all tests, builds both apps and attaches them to a GitHub Release (in a private repository, only people with access to it can download them there):
+
+```sh
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+(**Actions → Release → Run workflow** builds them without a release, as the run's artifact.)
+
 Send them the zip or the tarball (about 50 MB). It holds no data and no credentials of yours. They:
 
 1. Unpack it anywhere and start the app in the `RunningDashboard` folder. The dashboard opens in the browser at http://localhost:5148; closing the console (Terminal) window stops it.
