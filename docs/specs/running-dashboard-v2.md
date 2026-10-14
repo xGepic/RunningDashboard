@@ -9,7 +9,7 @@ Everything comes from data that is already stored: Strava's raw JSON, the Splits
 | 01 | Shoe badge | done |
 | 02 | Database backup | done |
 | 03 | CSV export | done |
-| 04 | Year in Review | ready |
+| 04 | Year in Review | done |
 | 05 | Fitness page | ready |
 
 ---
@@ -51,11 +51,11 @@ The Athlete can take their history into Excel.
 
 The Athlete looks back on a whole year as a story of highlights, not only as totals.
 
-- A "Review" tab on the Calendar page, using its year switcher. It opens on the current year, labelled "so far". 2024 is labelled "from 28 Apr", when the history starts.
+- A "Months | Review" switch on the Calendar page (`/calendar/2025?view=review`), using its year switcher. It opens on the current year, labelled "so far". 2024 is labelled "from 28 Apr", when the history starts.
 - What it shows for the year:
-  - Totals (Runs, distance, Moving Time, elevation gain) compared with the previous year, with the change in %
+  - Totals (Runs, distance, Moving Time, elevation gain) compared with the previous year, with the change in %. The current year so far is compared with the previous year up to the same day, not with the whole of it
   - The longest Run, the biggest Training Week and the biggest month
-  - The Personal Bests set that year: for each standard distance, the year's fastest Best Effort if it was a Personal Best when it was run (a step on the Records chart)
+  - The Personal Bests set that year: for each standard distance, the year's fastest Best Effort if it was a Personal Best when it was run (a step on the Records chart), with how much faster it was than the Personal Best the year started with
   - The Longest Streak within the year
   - The Goal Races of the year with their Race Results
   - The most-used Shoe: the one with the most distance in that year's Runs (Strava's Shoe distance includes distance entered by hand and can't be split by year)

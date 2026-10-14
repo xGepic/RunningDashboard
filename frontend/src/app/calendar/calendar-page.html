@@ -33,10 +33,16 @@
         <button type="button" class="step" (click)="shiftYear(1)" [disabled]="isCurrentYear()"
                 [attr.aria-label]="'Next year: ' + (selectedYear() + 1)" [title]="selectedYear() + 1">→</button>
       </nav>
+      <div class="segmented" role="group" aria-label="View">
+        <button type="button" [attr.aria-pressed]="!reviewing()" (click)="showView(null)">Months</button>
+        <button type="button" [attr.aria-pressed]="reviewing()" (click)="showView('review')">Review</button>
+      </div>
     }
   </div>
 
-  @if (months.error()) {
+  @if (reviewing()) {
+    <app-year-review [year]="selectedYear()" />
+  } @else if (months.error()) {
     <p class="error" role="alert">The monthly totals could not be loaded.</p>
   } @else if (selectedMonth()) {
     @if (runs.error()) {

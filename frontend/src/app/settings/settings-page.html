@@ -99,7 +99,7 @@
     @if (backup.error()) {
       <p class="error" role="alert">The backups could not be loaded.</p>
     } @else if (backup.value(); as current) {
-      <dl class="facts">
+      <dl class="backup-details">
         <div><dt>Folder</dt><dd class="mono">{{ current.folder }}</dd></div>
         <div><dt>Last backup</dt><dd>{{ current.lastBackupAt ? (current.lastBackupAt | date: 'd MMM y, HH:mm') : 'None yet' }}</dd></div>
       </dl>

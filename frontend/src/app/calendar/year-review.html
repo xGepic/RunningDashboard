@@ -1,0 +1,135 @@
+@if (review.error()) {
+  <p class="error" role="alert">The review of {{ year() }} could not be loaded.</p>
+} @else if (review.value(); as review) {
+  @if (review.totals.runs === 0) {
+    <div class="card empty-card"><p class="empty">No Runs in {{ review.year }}.</p></div>
+  } @else {
+    <section class="card" aria-label="Totals">
+      <div class="card-header">
+        <div class="titles">
+          <h2 class="card-title">{{ review.year }} in Runs</h2>
+          <p class="card-sub">
+            @switch (period()) {
+              @case ('so far') { So far, up to {{ review.until | date: 'd MMM' }}. }
+              @case ('from') { From {{ review.from | date: 'd MMM' }}, when the history starts. }
+              @default { The whole year. }
+            }
+            @if (review.previousYear) {
+              Changes are {{ comparedWith() }}.
+            }
+          </p>
+        </div>
+      </div>
+      <div class="facts totals">
+        @for (figure of totals(); track figure.label) {
+          <div>
+            <span class="label">{{ figure.label }}</span>
+            <span class="value">{{ figure.value }}</span>
+            @if (figure.change; as change) {
+              <span class="change" [class.up]="change.up" [class.down]="!change.up" [title]="comparedWith()">{{ change.text }}</span>
+            }
+          </div>
+        }
+      </div>
+    </section>
+
+    <div class="highlights">
+      @if (review.longestRun; as run) {
+        <a class="card highlight" [routerLink]="['/runs', run.id]">
+          <span class="label">Longest Run</span>
+          <span class="value">{{ units.distance(run.distance, 1) }}</span>
+          <span class="detail">{{ run.name }} · {{ run.startLocal | date: 'd MMM' }} · {{ formatDuration(run.movingTime) }}</span>
+        </a>
+      }
+      @if (review.biggestWeek; as week) {
+        <div class="card highlight">
+          <span class="label">Biggest Training Week</span>
+          <span class="value">{{ units.distance(week.distance, 1) }}</span>
+          <span class="detail">{{ week.start | date: 'd MMM' }} – {{ week.end | date: 'd MMM' }} · {{ week.runs }} {{ week.runs === 1 ? 'Run' : 'Runs' }}</span>
+        </div>
+      }
+      @if (review.biggestMonth; as month) {
+        <div class="card highlight">
+          <span class="label">Biggest month</span>
+          <span class="value">{{ units.distance(month.distance, 1) }}</span>
+          <span class="detail">{{ fullMonthNames[month.month - 1] }} · {{ month.runs }} {{ month.runs === 1 ? 'Run' : 'Runs' }}</span>
+        </div>
+      }
+      @if (review.longestStreak; as streak) {
+        <div class="card highlight">
+          <span class="label">Longest Streak</span>
+          <span class="value">{{ streak.weeks }} {{ streak.weeks === 1 ? 'week' : 'weeks' }}</span>
+          <span class="detail">{{ streak.start | date: 'd MMM' }} – {{ streak.end | date: 'd MMM' }}</span>
+        </div>
+      }
+      @if (review.mostUsedShoe; as shoe) {
+        <div class="card highlight">
+          <span class="label">Most-used Shoe</span>
+          <span class="value shoe">{{ shoe.name }}</span>
+          <span class="detail">{{ units.distance(shoe.distance, 0) }} · {{ shoe.runs }} {{ shoe.runs === 1 ? 'Run' : 'Runs' }}</span>
+        </div>
+      }
+    </div>
+
+    @if (review.personalBests.length) {
+      <section class="card flush personal-bests">
+        <div class="card-header">
+          <div class="titles">
+            <h2 class="card-title">Personal Bests set in {{ review.year }}</h2>
+            <p class="card-sub">The year's fastest Best Effort over each distance that was a Personal Best when it was run.</p>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr><th scope="col">Distance</th><th scope="col">Time</th><th scope="col">Improvement</th><th scope="col">Run</th></tr>
+            </thead>
+            <tbody>
+              @for (best of review.personalBests; track best.distance) {
+                <tr>
+                  <td>{{ best.name }}</td>
+                  <td class="mono">{{ formatDuration(best.elapsedTime) }}</td>
+                  <td class="mono">{{ best.previousElapsedTime === null ? 'first' : improvement(best.elapsedTime, best.previousElapsedTime) }}</td>
+                  <td><a [routerLink]="['/runs', best.runId]">{{ best.runName }}</a> · {{ best.startLocal | date: 'd MMM' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+
+    @if (review.goalRaces.length) {
+      <section class="card goal-races">
+        <div class="card-header">
+          <div class="titles"><h2 class="card-title">Goal Races</h2></div>
+        </div>
+        <ul>
+          @for (race of review.goalRaces; track race.id) {
+            <li>
+              <span class="name">{{ race.name }}</span>
+              <span class="when">{{ race.date | date: 'd MMM y' }} · {{ units.distance(race.distance, 1) }}</span>
+              @if (race.raceResult?.elapsedTime; as time) {
+                <span class="result mono">{{ formatDuration(time) }}
+                  @if (race.raceResult!.differenceFromTarget !== null) {
+                    <span [class.met]="race.raceResult!.differenceFromTarget! <= 0" [class.missed]="race.raceResult!.differenceFromTarget! > 0">
+                      ({{ formatDifference(race.raceResult!.differenceFromTarget!) }})</span>
+                  }
+                </span>
+              } @else {
+                <span class="result muted">No Race Result</span>
+              }
+            </li>
+          }
+        </ul>
+      </section>
+    }
+
+    @if (review.rides + review.swims > 0) {
+      <p class="footnote">
+        Also {{ review.rides }} {{ review.rides === 1 ? 'Ride' : 'Rides' }} and {{ review.swims }} {{ review.swims === 1 ? 'Swim' : 'Swims' }},
+        listed under <a routerLink="/rides">Activities</a> and not counted here.
+      </p>
+    }
+  }
+}

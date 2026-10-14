@@ -12,6 +12,7 @@ import { Units } from '../shared/units';
 import { reloadOnSync } from '../sync/reload-on-sync';
 import { Run, RunMonths, RunPage } from '../runs/run';
 import { monthFragments, yearPath } from './calendar-links';
+import { YearReviewPanel } from './year-review';
 
 /** All Runs of a month's Training Weeks fit on one page. */
 const pageSize = 200;
@@ -27,7 +28,7 @@ interface CalendarDay {
 /** A year of Runs as a box per month; a month's fragment (/calendar#Sep) shows that month's Training Weeks instead. */
 @Component({
   selector: 'app-calendar-page',
-  imports: [DatePipe, NgxEchartsDirective, RouterLink],
+  imports: [DatePipe, NgxEchartsDirective, RouterLink, YearReviewPanel],
   templateUrl: './calendar-page.html',
   styleUrl: './calendar-page.scss',
 })
@@ -39,6 +40,8 @@ export class CalendarPage {
   // From the route and the query string (component input binding).
   /** The year from /calendar/2025; the current year at /calendar or when malformed. */
   readonly year = input<string>();
+  /** "review" shows the year's highlights instead of its months (?view=review); a month is always its Training Weeks. */
+  readonly view = input<string>();
 
   protected readonly selectedYear = computed(() => {
     const year = this.year();
@@ -65,6 +68,8 @@ export class CalendarPage {
       to: new Date(last.getFullYear(), last.getMonth(), last.getDate() + 6 - daysSinceMonday(last)),
     };
   });
+
+  protected readonly reviewing = computed(() => this.view() === 'review' && this.selectedMonth() === null);
 
   protected readonly isCurrentYear = computed(() => this.selectedYear() >= new Date().getFullYear());
 
@@ -179,6 +184,11 @@ export class CalendarPage {
       this.months.reload();
       this.runs.reload();
     });
+  }
+
+  /** Months or Review; the year stays. */
+  protected showView(view: 'review' | null): void {
+    this.router.navigate([], { queryParams: { view }, queryParamsHandling: 'merge' });
   }
 
   /** The query string stays as it is. */

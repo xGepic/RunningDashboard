@@ -13,6 +13,7 @@ namespace RunningDashboard.Api.Tests.Harness;
 /// <param name="ElapsedTime">Seconds; the Moving Time unless a test sets it.</param>
 /// <param name="RelativeEffort">Strava's suffer_score field; none unless a test sets it.</param>
 /// <param name="AverageHeartRate">Beats per minute; none (recorded without heart rate) unless a test sets it.</param>
+/// <param name="GearId">Strava's gear id of the Shoe; none unless a test sets it.</param>
 /// <param name="AverageCadence">As Strava counts it: one foot's steps per minute; none unless a test sets it.</param>
 public sealed record TestActivity(
     long Id,
@@ -27,7 +28,8 @@ public sealed record TestActivity(
     int? ElapsedTime = null,
     int? RelativeEffort = null,
     double? AverageHeartRate = null,
-    double? AverageCadence = null)
+    double? AverageCadence = null,
+    string? GearId = null)
 {
     public static string ToJson(IEnumerable<TestActivity> activities) =>
         JsonSerializer.Serialize(activities.Select(a => a.ToStrava()));
@@ -73,7 +75,7 @@ public sealed record TestActivity(
             ["manual"] = false,
             ["private"] = false,
             ["visibility"] = "everyone",
-            ["gear_id"] = null,
+            ["gear_id"] = GearId,
             ["average_speed"] = MovingTime > 0 ? Distance / MovingTime : 0,
             ["has_heartrate"] = AverageHeartRate is not null,
             ["average_heartrate"] = AverageHeartRate,

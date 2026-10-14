@@ -7,6 +7,7 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import { MonthTotals, Run, RunMonths, RunPage } from '../runs/run';
 import { calendarRoutes } from './calendar-routes';
+import { YearReview } from './review';
 
 const empty = (month: number): MonthTotals => ({ month, runs: 0, distance: 0, movingTime: 0, pace: null });
 
@@ -292,6 +293,106 @@ describe('CalendarPage', () => {
       const element = first.harness.routeNativeElement!;
       expect(element.querySelector<HTMLButtonElement>('button[aria-label^="Next month"]')!.disabled).toBe(true);
       expect(element.querySelector<HTMLButtonElement>('button[aria-label^="Previous month"]')!.disabled).toBe(false);
+    });
+  });
+
+  describe('the Review', () => {
+    const review2025: YearReview = {
+      year: 2025, from: '2025-01-01', until: '2025-12-31',
+      totals: { runs: 5, distance: 78000, movingTime: 27900, elevationGain: 412 },
+      previousYear: { runs: 2, distance: 22000, movingTime: 7920, elevationGain: 500 },
+      longestRun: { id: 6, name: 'Half Race', startLocal: '2025-03-15T09:00:00', distance: 30000, movingTime: 10800 },
+      biggestWeek: { start: '2025-01-06', end: '2025-01-12', runs: 2, distance: 31000 },
+      biggestMonth: { month: 1, runs: 3, distance: 43000 },
+      personalBests: [
+        { name: '5K', distance: 5000, elapsedTime: 1500, previousElapsedTime: 1560, runId: 5, runName: 'Sunday Run', startLocal: '2025-01-12T09:00:00' },
+        { name: 'Half-Marathon', distance: 21097, elapsedTime: 7000, previousElapsedTime: null, runId: 6, runName: 'Half Race', startLocal: '2025-03-15T09:00:00' },
+      ],
+      longestStreak: { weeks: 2, start: '2025-01-01', end: '2025-01-12' },
+      goalRaces: [{
+        id: 1, name: 'Spring Half', date: '2025-03-15', distance: 21097, targetTime: 7200,
+        raceResult: { runId: 6, runName: 'Half Race', elapsedTime: 7000, source: 'bestEffort', differenceFromTarget: -200 },
+      }],
+      mostUsedShoe: { name: 'Nike Pegasus 41', runs: 2, distance: 42000 },
+      rides: 1,
+      swims: 1,
+    };
+    const months2025: RunMonths = { ...year2026, year: 2025 };
+
+    async function openReview(url: string, review: YearReview, months = months2025) {
+      const page = await open(url, months);
+      const request = page.http.expectOne((r) => r.url === '/api/review');
+      expect(request.request.params.get('year')).toBe(String(review.year));
+      request.flush(review);
+      await page.settle();
+      return page;
+    }
+
+    it("shows the year's totals with their change against the year before, instead of its months", async () => {
+      const { element, boxes } = await openReview('/calendar/2025?view=review', review2025);
+
+      expect(boxes()).toEqual([]);
+      expect(element.querySelector('.card-sub')!.textContent).toContain('Changes are vs. 2024.');
+      expect([...element.querySelectorAll('.totals > div')].map(text)).toEqual([
+        'Runs 5 +150%', 'Distance 78 km +255%', 'Moving Time 7h 45m +252%', 'Elevation Gain 412 m −18%',
+      ]);
+    });
+
+    it('shows the highlights, the Personal Bests set, the Goal Races and the Rides and Swims beside', async () => {
+      const { element } = await openReview('/calendar/2025?view=review', review2025);
+
+      expect([...element.querySelectorAll('.highlight')].map(text)).toEqual([
+        'Longest Run 30.0 km Half Race · 15 Mar · 3:00:00',
+        'Biggest Training Week 31.0 km 6 Jan – 12 Jan · 2 Runs',
+        'Biggest month 43.0 km January · 3 Runs',
+        'Longest Streak 2 weeks 1 Jan – 12 Jan',
+        'Most-used Shoe Nike Pegasus 41 42 km · 2 Runs',
+      ]);
+      expect(element.querySelector('.highlight')!.getAttribute('href')).toBe('/runs/6');
+      expect([...element.querySelectorAll('.personal-bests tbody tr')].map(text)).toEqual([
+        '5K 25:00 1:00 faster Sunday Run · 12 Jan',
+        'Half-Marathon 1:56:40 first Half Race · 15 Mar',
+      ]);
+      expect(text(element.querySelector('.goal-races li')!)).toBe('Spring Half 15 Mar 2025 · 21.1 km 1:56:40 (3:20 under)');
+      expect(element.querySelector('.footnote')!.textContent!.replace(/\s+/g, ' ').trim())
+        .toBe('Also 1 Ride and 1 Swim, listed under Activities and not counted here.');
+    });
+
+    it('compares the current year so far with the same time last year', async () => {
+      const { element } = await openReview('/calendar?view=review', { ...review2025, year: 2026, from: '2026-01-01', until: '2026-10-12' }, year2026);
+
+      expect(element.querySelector('.card-sub')!.textContent!.replace(/\s+/g, ' ')).toContain('So far, up to 12 Oct. Changes are vs. the same time in 2025.');
+    });
+
+    it('says when the history starts within the year, which has nothing to compare with', async () => {
+      const { element } = await openReview('/calendar/2025?view=review', { ...review2025, from: '2025-04-28', previousYear: null });
+
+      expect(element.querySelector('.card-sub')!.textContent!.replace(/\s+/g, ' ').trim()).toBe('From 28 Apr, when the history starts.');
+      expect(element.querySelector('.totals .change')).toBeNull();
+    });
+
+    it('says when the year has no Runs', async () => {
+      const { element } = await openReview('/calendar/2025?view=review', {
+        ...review2025, totals: { runs: 0, distance: 0, movingTime: 0, elevationGain: 0 }, previousYear: null, longestRun: null, biggestWeek: null,
+        biggestMonth: null, personalBests: [], longestStreak: null, goalRaces: [], mostUsedShoe: null, rides: 0, swims: 0,
+      });
+
+      expect(element.querySelector('.empty')!.textContent).toBe('No Runs in 2025.');
+    });
+
+    it('switches between the months and the review, keeping the year', async () => {
+      const { element, settle } = await open('/calendar/2025', months2025);
+      const button = (label: string) => [...element.querySelectorAll<HTMLButtonElement>('[aria-label="View"] button')].find((b) => b.textContent === label)!;
+      expect(button('Months').getAttribute('aria-pressed')).toBe('true');
+
+      button('Review').click();
+      await settle();
+
+      expect(TestBed.inject(Router).url).toBe('/calendar/2025?view=review');
+      expect(button('Review').getAttribute('aria-pressed')).toBe('true');
+      button('Months').click();
+      await settle();
+      expect(TestBed.inject(Router).url).toBe('/calendar/2025');
     });
   });
 });
