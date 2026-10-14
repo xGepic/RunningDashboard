@@ -16,5 +16,5 @@ backups/
 .DS_Store
 Thumbs.db
 
-# Packaged app (publish.ps1)
-publish/
+# Packaged apps (publish.ps1)
+deploy/

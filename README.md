@@ -34,18 +34,25 @@ Everything runs locally, except that the Run map loads its tiles from OpenStreet
 
 ## Give it to a friend
 
-A friend on Windows can run the whole dashboard from one `RunningDashboard.exe`, without installing .NET or Node. Build it with:
+A friend on Windows or on a Mac with Apple Silicon (M1 and later) can run the whole dashboard without installing .NET or Node. Build it with:
 
 ```powershell
 ./publish.ps1
 ```
 
-and send them `publish/RunningDashboard.zip` (about 50 MB). It holds no data and no credentials of yours. They:
+It fills `deploy/` (not committed; the apps are over 100 MB):
 
-1. Unzip it anywhere and double-click `RunningDashboard.exe`. Windows SmartScreen may warn about an unknown app: **More info → Run anyway**. The dashboard opens in the browser at http://localhost:5148; closing the console window stops it.
+- `deploy/win` and `deploy/RunningDashboard-win.zip`: `RunningDashboard.exe` for Windows
+- `deploy/mac` and `deploy/RunningDashboard-mac.tar.gz`: `RunningDashboard` for the Mac
+
+Send them the zip or the tarball (about 50 MB). It holds no data and no credentials of yours. They:
+
+1. Unpack it anywhere and start the app in the `RunningDashboard` folder. The dashboard opens in the browser at http://localhost:5148; closing the console (Terminal) window stops it.
+   - **Windows:** double-click `RunningDashboard.exe`. SmartScreen may warn about an unknown app: **More info → Run anyway**.
+   - **Mac:** the app is not from an identified developer, so macOS blocks it the first time. Either double-click `RunningDashboard`, then allow it under **System Settings → Privacy & Security → Open Anyway**, or run once in Terminal: `xattr -dr com.apple.quarantine ~/Downloads/RunningDashboard` (with the folder's path). After that, a double-click starts it.
 2. Click **Connect Strava**. It leads to Settings, which asks for a Strava API app of their own: they create one at <https://www.strava.com/settings/api> with **Authorization Callback Domain** `localhost`, enter its Client ID and Client Secret, and then connect. (Strava lets an app's owner connect only, so yours would not let them in.)
 
-The database and its backups go next to the exe, so to update, they replace `RunningDashboard.exe` and `wwwroot` with the new ones and keep the rest.
+The database and its backups go next to the app, so to update, they replace the app (`RunningDashboard.exe` or `RunningDashboard`) and `wwwroot` with the new ones and keep the rest.
 
 ## Backups
 
