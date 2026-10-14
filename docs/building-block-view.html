@@ -1,0 +1,260 @@
+<!doctype html>
+<!--
+  The building block view (arc42, levels 1 and 2): what the dashboard is made of and what uses what. To render it as an
+  image (from the repo root):
+  msedge --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --window-size=1334,1010
+         --virtual-time-budget=5000 --screenshot=docs/building-block-view.png file:///<repo>/docs/building-block-view.html
+  The blocks follow the folders of frontend/src/app and backend/src/RunningDashboard.Api.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Running Dashboard Building Blocks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --text: #1f2937;
+    --muted: #4b5563;
+    --faint: #6b7280;
+    --border: #d4d8de;
+    --frontend: #d8e7f5;
+    --backend: #dfeedd;
+    --data: #f1ead2;
+    --external: #fde4d6;
+    --link: #2f6fa8;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    background: #f7f8fa;
+    color: var(--text);
+    font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+  }
+
+  .page { width: 1334px; padding: 14px 24px 20px; }
+
+  h1 { margin: 0 0 10px; font-size: 28px; font-weight: 600; letter-spacing: -0.01em; }
+
+  .subtitle, .legend, .footer { color: var(--muted); font-size: 13.5px; }
+
+  .subtitle { margin: 0 0 22px; }
+
+  code { font-family: 'IBM Plex Mono', Consolas, monospace; font-size: 12.5px; }
+
+  .legend { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 26px; margin-bottom: 24px; }
+  .legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .swatch { width: 20px; height: 14px; border: 1px solid var(--border); border-radius: 3px; }
+  .line { width: 36px; border-top: 2px solid var(--text); }
+  .line.http { border-top: 2px dashed var(--link); }
+
+  .card { position: relative; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
+
+  .container {
+    position: absolute;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+  }
+  .container.frontend { background: #f4f8fc; }
+  .container.backend { background: #f5faf4; }
+  .container .label { position: absolute; top: 12px; left: 18px; right: 18px; font-size: 15px; font-weight: 600; }
+  .container .label small { display: block; margin-top: 2px; color: var(--muted); font-size: 11.5px; font-weight: 400; }
+
+  .block {
+    position: absolute;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 4%);
+    overflow: hidden;
+  }
+  .block h3 { margin: 0; padding: 6px 10px; border-bottom: 1px solid var(--border); font-size: 12.5px; font-weight: 600; }
+  .block p { margin: 0; padding: 6px 10px 0; font-size: 11.5px; line-height: 1.45; color: var(--muted); }
+  .block .code { padding: 4px 10px 7px; font-family: 'IBM Plex Mono', Consolas, monospace; font-size: 10.5px; color: var(--faint); }
+  .frontend > h3 { background: var(--frontend); }
+  .backend > h3 { background: var(--backend); }
+  .data > h3 { background: var(--data); }
+  .external > h3 { background: var(--external); }
+
+  svg.arrows { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+  svg text { font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif; font-size: 11px; fill: var(--text); paint-order: stroke; stroke: #fff; stroke-width: 4px; stroke-linejoin: round; }
+  svg text.http { fill: var(--link); }
+
+  .footer { margin-top: 14px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position: absolute">
+  <defs>
+    <marker id="call" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1f2937"/></marker>
+    <marker id="http" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2f6fa8"/></marker>
+  </defs>
+</svg>
+<div class="page">
+  <h1>Running Dashboard Building Blocks</h1>
+  <p class="subtitle">What the dashboard is made of: an Angular app in the browser and an ASP.NET Core backend with a SQLite database, both on the Athlete's own computer, and the services they reach over the internet.</p>
+  <div class="legend">
+    <span><i class="swatch" style="background: var(--frontend)"></i>Frontend</span>
+    <span><i class="swatch" style="background: var(--backend)"></i>Backend</span>
+    <span><i class="swatch" style="background: var(--data)"></i>Files on disk</span>
+    <span><i class="swatch" style="background: var(--external)"></i>Service on the internet</span>
+    <span><i class="line"></i>Uses, in the same process</span>
+    <span><i class="line http"></i>HTTP request</span>
+  </div>
+
+  <div class="card" id="card"></div>
+
+  <p class="footer">Arrows point from the block that uses to the block it uses. The <a href="runtime-view.html">runtime view</a> shows the blocks at work, the <a href="deployment-view.html">deployment view</a> where they run, and the <a href="database-schema.html">database schema</a> the tables behind Persistence.</p>
+</div>
+
+<script>
+  // [id, kind, left, top, width, height, title, description, code]
+  const containers = [
+    ['frontend', 'frontend', 30, 30, 380, 640, 'Frontend', 'Angular 22 single-page app, in the Athlete\'s browser'],
+    ['backend', 'backend', 470, 30, 540, 640, 'Backend', 'ASP.NET Core 10 minimal API, one process'],
+  ];
+
+  const blocks = [
+    ['shell', 'frontend', 50, 96, 340, 92, 'App shell',
+      'The sidebar with the pages on keys 1 to 7, the newest activity and the badge for worn Shoes; routing.',
+      'app.ts, app.routes.ts'],
+    ['pages', 'frontend', 50, 204, 340, 136, 'Pages',
+      'Overview · Training, Goal Races and Training Plans · Runs, Rides and Swims · Calendar and Year in Review · Records · Fitness · Shoes · Settings. Each loads its data with httpResource.',
+      'overview/, training/, goal-races/, runs/, …'],
+    ['sync', 'frontend', 50, 354, 340, 108, 'Sync and connection',
+      'Connect Strava and Sync now. While a sync runs, SyncState asks for its status every 2 s and reloadOnSync reloads the open page as activities arrive.',
+      'sync/, connection/'],
+    ['shared', 'frontend', 50, 476, 340, 80, 'Shared',
+      'Charts on ECharts (loaded with the first chart), formats in the Distance Unit, Settings and Theme, history lists, CSV export.',
+      null],
+    ['map', 'frontend', 50, 570, 340, 70, 'Run map', 'A Run\'s route and replay on Leaflet, loaded with a Run\'s page.', null],
+
+    ['api', 'backend', 490, 96, 500, 132, 'HTTP API',
+      'Minimal API endpoints, one folder per feature: Runs · Rides · Swims · Overview and Yearly Goal · Review · Records · Fitness · Training · Goal Races and Training Plans · Shoes · Settings · Backup · Connection · Sync. They validate the request, query the database and shape the JSON.',
+      '*/*Endpoints.cs, Program.cs'],
+    ['domain', 'backend', 490, 276, 155, 176, 'Domain rules',
+      'Training Weeks and Blocks, planning rules, Fitness figures, Personal Bests, Race Results, list paging.',
+      'Training/, Fitness/, Records/, GoalRaces/, Lists/'],
+    ['worker', 'backend', 662, 276, 155, 176, 'Sync',
+      'SyncWorker runs one sync at a time in the background: ActivityImport, ShoeImport, then RunDetailImport.',
+      'Sync/'],
+    ['strava', 'backend', 835, 276, 155, 176, 'Strava',
+      'StravaClient with token refresh, StravaRateLimits, the Strava API app, the OAuth endpoints.',
+      'Strava/'],
+    ['persistence', 'backend', 490, 492, 300, 150, 'Persistence',
+      'AppDbContext on EF Core 10 and SQLite, the entities, and the migrations that are applied when the backend starts.',
+      'Persistence/'],
+    ['backup', 'backend', 870, 492, 120, 150, 'Backup',
+      'Daily and before migrations; keeps the 7 newest.',
+      'Backup/'],
+
+    ['stravaapi', 'external', 1070, 276, 186, 176, 'Strava API',
+      'www.strava.com: OAuth and the REST API v3, about 100 reads per 15 minutes and 1,000 a day.', null],
+    ['database', 'data', 490, 720, 300, 74, 'running-dashboard.db', 'The SQLite database file, in WAL mode, next to the backend.', null],
+    ['backups', 'data', 870, 720, 120, 74, 'Backup folder', 'backups/, or Backup:Folder', null],
+    ['tiles', 'external', 30, 720, 380, 74, 'Map tile servers', 'OpenStreetMap, Esri and OpenTopoMap, without an account or API key.', null],
+  ];
+
+  // from and to: [id, side, position along that side from 0 to 1]; via: corners on the way, as ['H', x] or ['V', y].
+  const arrows = [
+    { from: ['pages', 'right'], to: ['api', 'left', 0.25], via: [['H', 432]], kind: 'http' },
+    { from: ['sync', 'right'], to: ['api', 'left', 0.55], via: [['H', 450]], kind: 'http' },
+    { from: ['api', 'left', 0.85], to: ['persistence', 'left', 0.3], via: [['H', 480]] },
+    { from: ['api', 'bottom', 0.155], to: ['domain', 'top'] },
+    { from: ['api', 'bottom', 0.499], to: ['worker', 'top'], label: 'Sync now', labelAt: [742, 252], anchor: 'start' },
+    { from: ['api', 'bottom', 0.845], to: ['strava', 'top'], label: 'Connect Strava', labelAt: [915, 252], anchor: 'start' },
+    { from: ['api', 'right', 0.75], to: ['backup', 'right', 0.3], via: [['H', 1000]], label: 'Back up now', labelAt: [1004, 480], anchor: 'start' },
+    { from: ['domain', 'bottom'], to: ['persistence', 'top', 0.258] },
+    { from: ['worker', 'bottom', 0.3], to: ['persistence', 'top', 0.728] },
+    { from: ['worker', 'right'], to: ['strava', 'left'] },
+    { from: ['strava', 'bottom', 0.097], to: ['persistence', 'right', 0.75], label: 'tokens', labelAt: [800, 598], anchor: 'start' },
+    { from: ['strava', 'right'], to: ['stravaapi', 'left'], kind: 'http', label: 'HTTPS', labelAt: [1030, 358] },
+    { from: ['persistence', 'bottom'], to: ['database', 'top'] },
+    { from: ['backup', 'left', 0.9], to: ['database', 'right'], via: [['H', 830]], label: 'SQLite backup API', labelAt: [836, 688], anchor: 'start' },
+    { from: ['backup', 'bottom', 0.7], to: ['backups', 'top', 0.7] },
+    { from: ['map', 'bottom'], to: ['tiles', 'top'], kind: 'http', label: 'HTTPS', labelAt: [228, 698], anchor: 'start' },
+  ];
+  const labels = [[440, 88, 'HTTP /api/*, JSON', 'http', 'middle']];
+
+  const card = document.getElementById('card');
+
+  for (const [id, kind, left, top, width, height, title, description] of containers) {
+    const element = document.createElement('div');
+    element.className = `container ${kind}`;
+    element.id = id;
+    element.innerHTML = `<div class="label">${title}<small>${description}</small></div>`;
+    Object.assign(element.style, { left: `${left}px`, top: `${top}px`, width: `${width}px`, height: `${height}px` });
+    card.appendChild(element);
+  }
+  for (const [id, kind, left, top, width, height, title, description, code] of blocks) {
+    const element = document.createElement('div');
+    element.className = `block ${kind}`;
+    element.id = id;
+    element.innerHTML = `<h3>${title}</h3><p>${description}</p>${code ? `<div class="code">${code}</div>` : ''}`;
+    Object.assign(element.style, { left: `${left}px`, top: `${top}px`, width: `${width}px`, height: `${height}px` });
+    card.appendChild(element);
+  }
+  card.style.height = `${Math.max(...[...card.children].map((c) => c.offsetTop + c.offsetHeight)) + 30}px`;
+
+  const svgNs = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(svgNs, 'svg');
+  svg.setAttribute('class', 'arrows');
+  card.appendChild(svg);
+
+  function point(id, side, at = 0.5) {
+    const origin = card.getBoundingClientRect();
+    const r = document.getElementById(id).getBoundingClientRect();
+    const left = r.left - origin.left - card.clientLeft;
+    const top = r.top - origin.top - card.clientTop;
+    if (side === 'top') return { x: left + r.width * at, y: top };
+    if (side === 'bottom') return { x: left + r.width * at, y: top + r.height };
+    if (side === 'left') return { x: left, y: top + r.height * at };
+    return { x: left + r.width, y: top + r.height * at };
+  }
+
+  function text(x, y, content, className, anchor = 'middle') {
+    const t = document.createElementNS(svgNs, 'text');
+    Object.entries({ x, y, 'text-anchor': anchor }).forEach(([k, v]) => t.setAttribute(k, v));
+    if (className) t.setAttribute('class', className);
+    t.textContent = content;
+    svg.appendChild(t);
+  }
+
+  const sideways = (side) => side === 'left' || side === 'right';
+
+  for (const { from, to, via = [], kind = 'call', label, labelAt, anchor } of arrows) {
+    const s = point(...from);
+    const t = point(...to);
+    // Without corners given, two sides facing each other meet halfway.
+    const corners = via.length ? via
+      : sideways(from[1]) && sideways(to[1]) && Math.abs(s.y - t.y) > 0.5 ? [['H', (s.x + t.x) / 2]]
+      : !sideways(from[1]) && !sideways(to[1]) && Math.abs(s.x - t.x) > 0.5 ? [['V', (s.y + t.y) / 2]]
+      : [];
+    const points = [s];
+    let current = s;
+    for (const [axis, value] of corners) {
+      current = axis === 'H' ? { x: value, y: current.y } : { x: current.x, y: value };
+      points.push(current);
+    }
+    if (sideways(to[1]) && Math.abs(current.y - t.y) > 0.5) points.push({ x: current.x, y: t.y });
+    if (!sideways(to[1]) && Math.abs(current.x - t.x) > 0.5) points.push({ x: t.x, y: current.y });
+    points.push(t);
+
+    const path = document.createElementNS(svgNs, 'path');
+    Object.entries({
+      d: `M${points.map((p) => `${p.x} ${p.y}`).join('L')}`,
+      fill: 'none',
+      'stroke-width': 1.6,
+      stroke: kind === 'http' ? '#2f6fa8' : '#1f2937',
+      'marker-end': `url(#${kind})`,
+      ...(kind === 'http' ? { 'stroke-dasharray': '6 4' } : {}),
+    }).forEach(([k, v]) => path.setAttribute(k, v));
+    svg.appendChild(path);
+    if (label) text(labelAt[0], labelAt[1], label, kind === 'http' ? 'http' : null, anchor);
+  }
+  for (const [x, y, content, className, anchor] of labels) text(x, y, content, className, anchor);
+</script>
+</body>
+</html>

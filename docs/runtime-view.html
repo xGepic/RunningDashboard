@@ -1,0 +1,394 @@
+<!doctype html>
+<!--
+  The runtime view (arc42): the building blocks at work in the four scenarios that matter most. To render it as an
+  image (from the repo root):
+  msedge --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --window-size=1334,3860
+         --virtual-time-budget=5000 --screenshot=docs/runtime-view.png file:///<repo>/docs/runtime-view.html
+  The steps follow Program.cs, Strava/StravaAuthEndpoints.cs, Sync/ and frontend/src/app/sync/.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Running Dashboard Runtime</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --text: #1f2937;
+    --muted: #4b5563;
+    --faint: #6b7280;
+    --border: #d4d8de;
+    --frontend: #d8e7f5;
+    --backend: #dfeedd;
+    --data: #f1ead2;
+    --external: #fde4d6;
+    --link: #2f6fa8;
+    --reply: #6b7280;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    background: #f7f8fa;
+    color: var(--text);
+    font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+  }
+
+  .page { width: 1334px; padding: 14px 24px 20px; }
+
+  h1 { margin: 0 0 10px; font-size: 28px; font-weight: 600; letter-spacing: -0.01em; }
+
+  h2 { margin: 34px 0 6px; font-size: 19px; font-weight: 600; }
+
+  .subtitle, .legend, .footer, .intro, .notes { color: var(--muted); font-size: 13.5px; }
+
+  .subtitle { margin: 0 0 22px; }
+
+  .intro { max-width: 1100px; margin: 0 0 14px; line-height: 1.5; }
+
+  .notes { max-width: 1100px; margin: 12px 0 0; padding-left: 20px; line-height: 1.5; }
+
+  code { font-family: 'IBM Plex Mono', Consolas, monospace; font-size: 12.5px; }
+
+  .legend { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 26px; }
+  .legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .swatch { width: 20px; height: 14px; border: 1px solid var(--border); border-radius: 3px; }
+  .line { width: 36px; border-top: 2px solid var(--text); }
+  .line.http { border-top-color: var(--link); }
+  .line.reply { border-top: 2px dashed var(--reply); }
+
+  .card { position: relative; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
+
+  .participant {
+    position: absolute;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 4%);
+    text-align: center;
+    overflow: hidden;
+  }
+  .participant h3 { margin: 0; padding: 6px 8px; font-size: 12.5px; font-weight: 600; }
+  .participant div { padding: 3px 8px 5px; border-top: 1px solid var(--border); font-family: 'IBM Plex Mono', Consolas, monospace; font-size: 10px; color: var(--faint); }
+  .frontend h3 { background: var(--frontend); }
+  .backend h3 { background: var(--backend); }
+  .data h3 { background: var(--data); }
+  .external h3 { background: var(--external); }
+
+  .card > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+  svg text { font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif; font-size: 11.5px; fill: var(--text); paint-order: stroke; stroke: #fff; stroke-width: 4px; stroke-linejoin: round; }
+  svg text.http { fill: var(--link); }
+  svg text.reply { fill: var(--muted); }
+  svg text.frame { font-weight: 600; font-size: 10.5px; stroke: none; }
+  svg text.condition { font-style: italic; fill: var(--muted); }
+
+  .footer { margin-top: 30px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position: absolute">
+  <defs>
+    <marker id="call" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1f2937"/></marker>
+    <marker id="http" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2f6fa8"/></marker>
+    <marker id="reply" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#6b7280"/></marker>
+    <marker id="async" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#1f2937" stroke-width="1.5"/></marker>
+  </defs>
+</svg>
+<div class="page">
+  <h1>Running Dashboard Runtime</h1>
+  <p class="subtitle">The building blocks at work: starting the backend, connecting Strava, a sync, and opening a page while a sync runs.</p>
+  <div class="legend">
+    <span><i class="swatch" style="background: var(--frontend)"></i>Frontend</span>
+    <span><i class="swatch" style="background: var(--backend)"></i>Backend</span>
+    <span><i class="swatch" style="background: var(--data)"></i>Database</span>
+    <span><i class="swatch" style="background: var(--external)"></i>Service on the internet</span>
+    <span><i class="line"></i>Call</span>
+    <span><i class="line http"></i>HTTP request</span>
+    <span><i class="line reply"></i>Answer or redirect</span>
+    <span><svg width="36" height="12" style="overflow: visible"><path d="M0 6H34" stroke="#1f2937" stroke-width="1.6" marker-end="url(#async)"/></svg>Starts it without waiting</span>
+  </div>
+  <div id="scenarios"></div>
+  <p class="footer">Time runs down. <b>alt</b> shows one of several paths, <b>opt</b> one that may not happen, <b>loop</b> one that repeats. The <a href="building-block-view.html">building block view</a> describes the blocks, the <a href="deployment-view.html">deployment view</a> where they run.</p>
+</div>
+
+<script>
+  // participants: [id, name, detail, kind]. steps: ['msg', from, to, text, kind], ['group', 'alt' | 'opt' | 'loop', condition],
+  // ['else', condition] and ['end']. A \n in a text starts a new line.
+  const scenarios = [
+    {
+      title: '1  Starting the backend',
+      intro: 'What <code>Program.cs</code> does when the backend starts, from <code>dotnet run</code> as from the packaged app. Migrations never run on an existing database without a backup first, and a connected Athlete gets a sync right away.',
+      participants: [
+        ['program', 'Program', 'Program.cs', 'backend'],
+        ['db', 'Database', 'AppDbContext', 'data'],
+        ['backup', 'DatabaseBackup', 'Backup/', 'backend'],
+        ['sync', 'SyncWorker', 'Sync/, in the background', 'backend'],
+        ['backupworker', 'BackupWorker', 'Backup/, in the background', 'backend'],
+        ['browser', 'Browser', 'packaged app only', 'frontend'],
+      ],
+      steps: [
+        ['msg', 'program', 'db', 'applied and pending migrations?'],
+        ['group', 'alt', 'migrations pending on a database that has some applied'],
+        ['msg', 'program', 'backup', 'BackUp(beforeMigration: true)'],
+        ['msg', 'backup', 'backup', 'copy to backups/running-dashboard-…-before-migration.db,\nwhich is never removed'],
+        ['end'],
+        ['msg', 'program', 'db', 'Migrate()'],
+        ['msg', 'program', 'program', 'map the /api endpoints;\npackaged: also wwwroot and the fallback to index.html'],
+        ['msg', 'program', 'sync', 'start', 'async'],
+        ['msg', 'sync', 'db', 'Strava connected?'],
+        ['group', 'opt', 'connected'],
+        ['msg', 'sync', 'sync', 'RequestSync(): a sync runs (scenario 3)'],
+        ['end'],
+        ['msg', 'program', 'backupworker', 'start', 'async'],
+        ['group', 'loop', 'at start, then every hour'],
+        ['msg', 'backupworker', 'backup', 'IsDue: is the newest backup 24 hours old?'],
+        ['group', 'opt', 'due'],
+        ['msg', 'backupworker', 'backup', 'BackUp(): keeps the 7 newest regular backups'],
+        ['end'],
+        ['end'],
+        ['group', 'opt', 'packaged app, once it listens on localhost:5148'],
+        ['msg', 'program', 'browser', 'open http://localhost:5148', 'async'],
+        ['end'],
+      ],
+      notes: [
+        'A failed backup before migrations stops the start: the backend does not migrate a database it could not back up. A failed daily backup is shown on Settings and tried again an hour later.',
+      ],
+    },
+    {
+      title: '2  Connecting Strava',
+      intro: 'Strava\'s OAuth flow. The browser leaves the dashboard for Strava\'s consent page and comes back to the backend with a code, which the backend trades for tokens with the Strava API app\'s Client Secret. A cookie with a random state makes sure the callback answers this browser\'s own request.',
+      participants: [
+        ['browser', 'Browser', 'Angular app', 'frontend'],
+        ['api', 'Backend', 'Strava/ endpoints', 'backend'],
+        ['db', 'Database', 'AppDbContext', 'data'],
+        ['strava', 'Strava', 'www.strava.com', 'external'],
+        ['sync', 'SyncWorker', 'Sync/', 'backend'],
+      ],
+      steps: [
+        ['msg', 'browser', 'browser', 'the Athlete clicks Connect Strava'],
+        ['msg', 'browser', 'api', 'GET /api/strava/connect, as a page', 'http'],
+        ['msg', 'api', 'db', 'Strava API app? From configuration if set, else from Settings'],
+        ['group', 'alt', 'no Strava API app yet'],
+        ['msg', 'api', 'browser', 'redirect to /settings?strava=error&reason=no-strava-app', 'reply'],
+        ['msg', 'browser', 'api', 'PUT /api/strava/app: Client ID and Client Secret', 'http'],
+        ['msg', 'api', 'db', 'store them; then the Athlete clicks Connect Strava again'],
+        ['else', 'a Strava API app'],
+        ['msg', 'api', 'browser', 'redirect to strava.com/oauth/authorize; state cookie for 10 minutes', 'reply'],
+        ['msg', 'browser', 'strava', 'consent page for read, activity:read_all, profile:read_all', 'http'],
+        ['msg', 'strava', 'browser', 'the Athlete approves: redirect to /api/strava/callback?code&state&scope', 'reply'],
+        ['msg', 'browser', 'api', 'GET /api/strava/callback', 'http'],
+        ['msg', 'api', 'api', 'state matches the cookie?\nall three scopes granted?'],
+        ['msg', 'api', 'strava', 'POST /oauth/token: the code, Client ID and Client Secret', 'http'],
+        ['msg', 'strava', 'api', 'access token, refresh token, the Athlete', 'reply'],
+        ['msg', 'api', 'db', 'store the connection (the same Athlete only); Reconnect no longer required'],
+        ['msg', 'api', 'sync', 'RequestSyncAfterReconnect()', 'async'],
+        ['msg', 'api', 'browser', 'redirect to /?strava=connected', 'reply'],
+        ['end'],
+      ],
+      notes: [
+        'A failed check redirects to <code>/?strava=error&amp;reason=…</code> instead (invalid-state, access-denied, missing-permissions, strava-rejected or different-athlete), and the page says what went wrong.',
+        'Strava lets only an API app\'s owner connect to it, so every Athlete enters an API app of their own (ADR 0004).',
+      ],
+    },
+    {
+      title: '3  A sync',
+      intro: 'What SyncWorker does in each sync, one at a time, in the background (ADR 0002). The first import walks back through the whole history and continues where it stopped; later syncs fetch only the new Activities. Every sync rechecks the 20 most recent Activities for edits and deletions.',
+      participants: [
+        ['worker', 'SyncWorker', 'Sync/', 'backend'],
+        ['activities', 'ActivityImport', 'Sync/', 'backend'],
+        ['shoes', 'ShoeImport', 'Sync/', 'backend'],
+        ['details', 'RunDetailImport', 'Sync/', 'backend'],
+        ['client', 'StravaClient', 'Strava/', 'backend'],
+        ['strava', 'Strava API', 'www.strava.com/api/v3', 'external'],
+        ['db', 'Database', 'AppDbContext', 'data'],
+      ],
+      steps: [
+        ['msg', 'worker', 'activities', 'ImportAsync()'],
+        ['group', 'alt', 'the first import is not finished'],
+        ['group', 'loop', 'page by page, newest first, until a page is empty'],
+        ['msg', 'activities', 'client', 'Activities before the cursor'],
+        ['msg', 'client', 'strava', 'GET /athlete/activities?before=…', 'http'],
+        ['msg', 'activities', 'db', 'store the Runs, Rides and Swims with the next cursor'],
+        ['end'],
+        ['else', 'the first import is done'],
+        ['group', 'loop', 'until a page is empty'],
+        ['msg', 'activities', 'client', 'Activities after the newest one seen'],
+        ['msg', 'client', 'strava', 'GET /athlete/activities?after=…', 'http'],
+        ['msg', 'activities', 'db', 'store them'],
+        ['end'],
+        ['end'],
+        ['msg', 'activities', 'client', 'the 20 most recent Activities'],
+        ['msg', 'client', 'strava', 'GET /athlete/activities?per_page=20', 'http'],
+        ['msg', 'activities', 'db', 'update them; remove the ones deleted on Strava\nor changed to another sport, within their time span'],
+        ['msg', 'worker', 'shoes', 'ImportAsync()'],
+        ['msg', 'shoes', 'client', 'the Athlete\'s Shoes'],
+        ['msg', 'client', 'strava', 'GET /athlete', 'http'],
+        ['msg', 'shoes', 'db', 'add, update and remove Shoes'],
+        ['msg', 'worker', 'details', 'ImportAsync()'],
+        ['group', 'loop', 'each Run without its detail, newest first'],
+        ['msg', 'details', 'client', 'the detailed Activity'],
+        ['msg', 'client', 'strava', 'GET /activities/{id}', 'http'],
+        ['msg', 'details', 'db', 'Best Efforts, km and mile Splits; saved Run by Run'],
+        ['end'],
+        ['msg', 'worker', 'db', 'the outcome: last synced, the error, or Reconnect required'],
+      ],
+      notes: [
+        'Every request to Strava goes through StravaClient. It waits while StravaRateLimits says a limit is used up (read from Strava\'s headers; after a 429, until the next quarter hour), refreshes the access token 5 minutes before it expires, and on a 401 refreshes once more before it gives up and asks the Athlete to reconnect.',
+        'A Run whose detail fails to load is tried again by the next sync, so it cannot hold up the older ones. Shoes that fail to refresh do not hold up the details either; the sync reports both afterwards.',
+      ],
+    },
+    {
+      title: '4  Opening a page while a sync runs',
+      intro: 'The Overview as the example; every page loads its data the same way. While a sync runs, the app asks for its status every 2 seconds and reloads the open page whenever more activities are stored, so a first import fills the pages as it goes.',
+      participants: [
+        ['page', 'Overview page', 'overview/, httpResource', 'frontend'],
+        ['echarts', 'ECharts', 'loaded on first use', 'frontend'],
+        ['syncstate', 'SyncState', 'sync/', 'frontend'],
+        ['api', 'Backend', 'Overview/, Sync/', 'backend'],
+        ['db', 'Database', 'AppDbContext', 'data'],
+      ],
+      steps: [
+        ['msg', 'page', 'api', 'GET /api/overview', 'http'],
+        ['msg', 'api', 'db', 'every Run\'s date, distance, Moving Time, elevation; the Yearly Goal'],
+        ['msg', 'api', 'api', 'totals, years, Training Weeks,\nmonths, Streak'],
+        ['msg', 'api', 'page', 'JSON', 'reply'],
+        ['msg', 'page', 'echarts', 'weekly distance and monthly Pace charts'],
+        ['group', 'loop', 'every 2 seconds, while the last status says a sync runs'],
+        ['msg', 'syncstate', 'api', 'GET /api/sync', 'http'],
+        ['msg', 'api', 'db', 'how many Runs, detailed Runs, Rides and Swims; the sync state'],
+        ['msg', 'api', 'syncstate', 'phase, counts, paused until', 'reply'],
+        ['group', 'opt', 'more activities stored, or the sync finished'],
+        ['msg', 'syncstate', 'page', 'reloadOnSync: reload', 'async'],
+        ['msg', 'page', 'api', 'GET /api/overview', 'http'],
+        ['end'],
+        ['end'],
+      ],
+      notes: [
+        'The sidebar\'s newest activity and Shoe badge reload the same way. A Run\'s page also loads Leaflet, and its map loads tiles straight from the tile servers.',
+      ],
+    },
+  ];
+
+  const svgNs = 'http://www.w3.org/2000/svg';
+  const host = document.getElementById('scenarios');
+
+  for (const scenario of scenarios) {
+    const title = document.createElement('h2');
+    title.textContent = scenario.title;
+    const intro = document.createElement('p');
+    intro.className = 'intro';
+    intro.innerHTML = scenario.intro;
+    const card = document.createElement('div');
+    card.className = 'card';
+    host.append(title, intro, card);
+    draw(card, scenario);
+    if (scenario.notes?.length) {
+      const notes = document.createElement('ul');
+      notes.className = 'notes';
+      notes.innerHTML = scenario.notes.map((n) => `<li>${n}</li>`).join('');
+      host.appendChild(notes);
+    }
+  }
+
+  function draw(card, { participants, steps }) {
+    const width = card.clientWidth;
+    const spacing = (width - 120) / participants.length;
+    const x = Object.fromEntries(participants.map(([id], i) => [id, 60 + spacing * (i + 0.5)]));
+
+    let headerBottom = 0;
+    for (const [id, name, detail, kind] of participants) {
+      const element = document.createElement('div');
+      element.className = `participant ${kind}`;
+      element.innerHTML = `<h3>${name}</h3><div>${detail}</div>`;
+      const boxWidth = Math.min(spacing - 18, 190);
+      Object.assign(element.style, { left: `${x[id] - boxWidth / 2}px`, top: '18px', width: `${boxWidth}px` });
+      card.appendChild(element);
+      headerBottom = Math.max(headerBottom, element.offsetTop + element.offsetHeight);
+    }
+
+    const svg = document.createElementNS(svgNs, 'svg');
+    const lifelines = document.createElementNS(svgNs, 'g');
+    const frames = document.createElementNS(svgNs, 'g');
+    const messages = document.createElementNS(svgNs, 'g');
+    // Frames first, so the lifelines show through them.
+    svg.append(frames, lifelines, messages);
+    card.appendChild(svg);
+
+    function add(parent, tag, attributes, content) {
+      const element = document.createElementNS(svgNs, tag);
+      Object.entries(attributes).forEach(([k, v]) => element.setAttribute(k, v));
+      if (content !== undefined) element.textContent = content;
+      parent.appendChild(element);
+      return element;
+    }
+
+    // Lines of text upwards from y, the last one at y.
+    function label(lines, tx, y, anchor, className) {
+      lines.forEach((line, i) => add(messages, 'text', { x: tx, y: y - (lines.length - 1 - i) * 14, 'text-anchor': anchor, class: className ?? '' }, line));
+    }
+
+    const strokes = {
+      call: { stroke: '#1f2937' },
+      http: { stroke: '#2f6fa8' },
+      reply: { stroke: '#6b7280', 'stroke-dasharray': '5 4' },
+      async: { stroke: '#1f2937' },
+    };
+
+    let y = headerBottom + 20;
+    const open = [];
+    for (const [type, ...rest] of steps) {
+      if (type === 'msg') {
+        const [from, to, content, kind = 'call'] = rest;
+        const lines = content.split('\n');
+        const style = { fill: 'none', 'stroke-width': 1.5, 'marker-end': `url(#${kind})`, ...strokes[kind] };
+        if (from === to) {
+          y += 14 * (lines.length - 1) + 8;
+          add(messages, 'path', { d: `M${x[from]} ${y - 6}H${x[from] + 26}V${y + 10}H${x[from] + 2}`, ...style });
+          label(lines, x[from] + 34, y + 6, 'start', kind);
+          y += 32;
+        } else {
+          y += 14 * (lines.length - 1) + 18;
+          const direction = x[to] > x[from] ? 1 : -1;
+          add(messages, 'path', { d: `M${x[from]} ${y}H${x[to] - direction}`, ...style });
+          label(lines, (x[from] + x[to]) / 2, y - 7, 'middle', kind);
+          y += 12;
+        }
+      } else if (type === 'group') {
+        const [kind, condition] = rest;
+        y += 10;
+        open.push({ kind, condition, top: y, elses: [] });
+        y += 22;
+      } else if (type === 'else') {
+        y += 8;
+        open.at(-1).elses.push({ y, condition: rest[0] });
+        y += 22;
+      } else if (type === 'end') {
+        y += 10;
+        const group = open.pop();
+        const inset = 14 + open.length * 12;
+        // A group ends after the groups inside it, so it goes underneath them.
+        const g = document.createElementNS(svgNs, 'g');
+        frames.prepend(g);
+        const [left, right] = [inset, width - inset];
+        add(g, 'rect', { x: left, y: group.top, width: right - left, height: y - group.top, rx: 4, fill: open.length % 2 ? '#f3f5f8' : '#fafbfc', stroke: '#c3c9d1' });
+        const tab = group.kind.length * 7 + 18;
+        add(g, 'path', { d: `M${left} ${group.top}h${tab}v12l-6 6H${left}z`, fill: '#e3e7ec', stroke: '#c3c9d1' });
+        add(g, 'text', { x: left + 7, y: group.top + 13, class: 'frame' }, group.kind);
+        add(g, 'text', { x: left + tab + 8, y: group.top + 14, class: 'condition' }, `[${group.condition}]`);
+        for (const branch of group.elses) {
+          add(g, 'path', { d: `M${left} ${branch.y}H${right}`, stroke: '#c3c9d1', 'stroke-dasharray': '5 4' });
+          add(g, 'text', { x: left + 8, y: branch.y + 15, class: 'condition' }, `[${branch.condition}]`);
+        }
+        y += 4;
+      }
+    }
+
+    y += 18;
+    for (const [id] of participants)
+      add(lifelines, 'path', { d: `M${x[id]} ${headerBottom}V${y}`, stroke: '#b8bfc8', 'stroke-dasharray': '4 4' });
+    card.style.height = `${y + 16}px`;
+  }
+</script>
+</body>
+</html>
