@@ -1,9 +1,10 @@
 <!doctype html>
 <!--
   Source of database-schema.png. After changing the tables below, render it again (from the repo root):
-  msedge --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --window-size=1334,1075
+  msedge --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --window-size=1334,1270
          --virtual-time-budget=5000 --screenshot=docs/database-schema.png file:///<repo>/docs/database-schema.html
-  The tables follow backend/src/RunningDashboard.Api/Persistence/Migrations/AppDbContextModelSnapshot.cs.
+  The tables follow backend/src/RunningDashboard.Api/Persistence/Migrations/AppDbContextModelSnapshot.cs, besides EF Core's
+  own __EFMigrationsHistory and __EFMigrationsLock, which are not in the model.
 -->
 <html lang="en">
 <head>
@@ -141,11 +142,12 @@
       ['PK', 'Id', 'INTEGER'], ['FK', 'RunId', 'INTEGER'], ['', 'Name', 'TEXT'], ['', 'Distance', 'REAL'], ['', 'ElapsedTime', 'INTEGER']] },
     { id: 'Split', kind: 'strava', at: [37, 202, 236], columns: [
       ['PK FK', 'RunId', 'INTEGER'], ['PK', 'Unit', 'TEXT'], ['PK', 'Index', 'INTEGER'], ['', 'Distance', 'REAL'], ['', 'ElapsedTime', 'INTEGER'],
-      ['', 'MovingTime', 'INTEGER'], ['', 'ElevationDifference', 'REAL']] },
+      ['', 'MovingTime', 'INTEGER'], ['', 'ElevationDifference', 'REAL'], ['', 'HeartRate', 'REAL?'], ['', 'GradeAdjustedSpeed', 'REAL?']] },
     { id: 'Runs', kind: 'strava', at: [337, 36, 240], columns: [
       ['PK', 'Id', 'INTEGER'], ['', 'Name', 'TEXT'], ['', 'SportType', 'TEXT'], ['', 'ShoeId', 'TEXT?'], ['', 'StartUtc', 'TEXT'],
       ['', 'StartLocal', 'TEXT'], ['', 'Distance', 'REAL'], ['', 'MovingTime', 'INTEGER'], ['', 'ElapsedTime', 'INTEGER'],
-      ['', 'ElevationGain', 'REAL'], ['', 'RelativeEffort', 'REAL?'], ['', 'DetailFetchedAt', 'TEXT?'], ['', 'RawSummaryJson', 'TEXT'],
+      ['', 'ElevationGain', 'REAL'], ['', 'RelativeEffort', 'REAL?'], ['', 'AverageHeartRate', 'REAL?'], ['', 'Cadence', 'REAL?'],
+      ['', 'Trainer', 'INTEGER'], ['', 'DetailFetchedAt', 'TEXT?'], ['', 'RawSummaryJson', 'TEXT'],
       ['', 'RawDetailJson', 'TEXT?']] },
     { id: 'Shoes', kind: 'strava', at: [713, 36, 240], columns: [
       ['PK', 'Id', 'TEXT'], ['', 'Name', 'TEXT'], ['', 'Distance', 'REAL'], ['', 'Retired', 'INTEGER'], ['', 'RawJson', 'TEXT']] },
@@ -169,6 +171,7 @@
       { id: 'YearlyGoals', kind: 'you', columns: [['PK', 'Id', 'INTEGER'], ['', 'Year', 'INTEGER'], ['', 'Distance', 'REAL']] },
       { id: 'AthleteSettings', kind: 'you', columns: [['PK', 'Id', 'INTEGER'], ['', 'DistanceUnit', 'TEXT'], ['', 'ShoeMaximumDistance', 'REAL'], ['', 'Theme', 'TEXT']] },
       { id: '__EFMigrationsHistory', kind: 'app', columns: [['PK', 'MigrationId', 'TEXT'], ['', 'ProductVersion', 'TEXT']] },
+      { id: '__EFMigrationsLock', kind: 'app', columns: [['PK', 'Id', 'INTEGER'], ['', 'Timestamp', 'TEXT']] },
     ],
     [
       { id: 'StravaConnections', kind: 'app', columns: [
