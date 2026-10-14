@@ -10,7 +10,7 @@ Everything comes from data that is already stored: Strava's raw JSON, the Splits
 | 02 | Database backup | done |
 | 03 | CSV export | done |
 | 04 | Year in Review | done |
-| 05 | Fitness page | ready |
+| 05 | Fitness page | done |
 
 ---
 
@@ -67,10 +67,12 @@ The Athlete looks back on a whole year as a story of highlights, not only as tot
 The Athlete sees whether they are getting fitter, from the heart rate and cadence that every Run already has.
 
 - A new **Fitness** page in the sidebar with three charts over the whole history, with no year picker: Aerobic Efficiency, Cardiac Drift and Cadence.
+- The Long Run is chosen as on the Training page: the week's longest Run, of equally long ones the one that took longer. A week whose Long Run was on a treadmill has no Cardiac Drift.
+- A table view under the charts lists the monthly averages.
 - Each chart shows one dot per Fitness Run (for Cardiac Drift, per Long Run that has one) and a line for the monthly average. The Cardiac Drift chart shades the good band up to 5%.
 - Run details show Aerobic Efficiency and Cadence for every Fitness Run, and Cardiac Drift for a Long Run that has one.
 - Calculations:
   - **Aerobic Efficiency:** grade-adjusted distance per minute ÷ average heart rate, with grade-adjusted speed from the km Splits.
   - **Cardiac Drift:** only for Long Runs of at least 10 km. The km Splits are halved by distance: the shorter last Split counts with its distance, and a Split that straddles the middle is shared between both halves in proportion. Drift is (heart rate ÷ grade-adjusted speed in the second half) ÷ (the same in the first half) − 1. A Split without heart rate or grade-adjusted speed leaves the whole Run without Cardiac Drift.
   - **Cadence:** Strava's per-foot value × 2.
-- **Storage:** a migration adds heart rate and grade-adjusted speed as columns on the Split, filled from the stored raw JSON. Import fills them from now on, the same way the mile splits got their own columns instead of being read from JSON on every request. The migration is preceded by a backup (02).
+- **Storage:** a migration adds heart rate and grade-adjusted speed as columns on the Split, and Strava's `trainer` flag (treadmill) on the Run, filled from the stored raw JSON. Import fills them from now on, the same way the mile splits got their own columns instead of being read from JSON on every request. The migration is preceded by a backup (02).

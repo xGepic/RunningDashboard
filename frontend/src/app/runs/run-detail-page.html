@@ -21,6 +21,13 @@
       <div><dt class="label">Elevation gain</dt><dd class="value">{{ run.elevationGain | number: '1.0-0' }} m</dd></div>
       <div><dt class="label">Relative Effort</dt><dd class="value">{{ run.relativeEffort ?? '–' }}</dd></div>
       <div><dt class="label">Shoe</dt><dd class="value shoe">{{ run.shoeName ?? '–' }}</dd></div>
+      @if (run.fitness; as fitness) {
+        <div><dt class="label">Aerobic Efficiency</dt><dd class="value">{{ fitness.aerobicEfficiency === null ? '–' : formatEfficiency(fitness.aerobicEfficiency) }}</dd></div>
+        <div><dt class="label">Cadence</dt><dd class="value">{{ fitness.cadence === null ? '–' : formatCadence(fitness.cadence) }}</dd></div>
+        @if (fitness.cardiacDrift !== null) {
+          <div><dt class="label">Cardiac Drift</dt><dd class="value">{{ formatDrift(fitness.cardiacDrift) }}</dd></div>
+        }
+      }
     </dl>
 
     @if (run.route; as route) {

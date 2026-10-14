@@ -1,0 +1,89 @@
+<div class="page">
+  <header class="page-header">
+    <div class="titles">
+      <span class="eyebrow">Fitness</span>
+      <h1>Getting fitter?</h1>
+      <p class="subtitle">From every Fitness Run: all Runs except treadmill ones and those on a Goal Race's race day. A dot is a Run,
+        the line the monthly average.</p>
+    </div>
+  </header>
+
+  @if (fitness.error()) {
+    <p class="error" role="alert">The fitness figures could not be loaded.</p>
+  } @else if (fitness.value(); as current) {
+    @if (current.runs.length === 0) {
+      <div class="card empty-card"><p class="empty">No Fitness Runs yet.</p></div>
+    } @else {
+      <section class="card efficiency">
+        <div class="card-header">
+          <div class="titles">
+            <h2 class="card-title">Aerobic Efficiency</h2>
+            <p class="card-sub">Metres per heartbeat: grade-adjusted distance per minute ÷ average heart rate. Higher is fitter.</p>
+          </div>
+          <span class="direction"><span class="mono">↑</span> Fitter</span>
+        </div>
+        @if (efficiencyChart(); as options) {
+          <div class="chart" echarts [options]="options" [autoResize]="true" role="img"
+               aria-label="Aerobic Efficiency of each Fitness Run and its monthly average; the table below has the averages"></div>
+        } @else {
+          <p class="empty">No Run with heart rate yet.</p>
+        }
+      </section>
+
+      <section class="card drift">
+        <div class="card-header">
+          <div class="titles">
+            <h2 class="card-title">Cardiac Drift</h2>
+            <p class="card-sub">How much heart rate per grade-adjusted speed rose from the first half of each week's Long Run to the second,
+              for Long Runs of 10 km or more. Up to {{ goodCardiacDrift() }} is good.</p>
+          </div>
+          <span class="direction"><span class="mono">↓</span> Fitter</span>
+        </div>
+        @if (driftChart(); as options) {
+          <div class="chart" echarts [options]="options" [autoResize]="true" role="img"
+               aria-label="Cardiac Drift of each Long Run and its monthly average; the table below has the averages"></div>
+        } @else {
+          <p class="empty">No Long Run of 10 km or more yet.</p>
+        }
+      </section>
+
+      <section class="card cadence">
+        <div class="card-header">
+          <div class="titles">
+            <h2 class="card-title">Cadence</h2>
+            <p class="card-sub">Steps per minute, both feet together.</p>
+          </div>
+        </div>
+        @if (cadenceChart(); as options) {
+          <div class="chart" echarts [options]="options" [autoResize]="true" role="img"
+               aria-label="Cadence of each Fitness Run and its monthly average; the table below has the averages"></div>
+        } @else {
+          <p class="empty">No Run with Cadence yet.</p>
+        }
+      </section>
+
+      <section class="card">
+        <details class="as-table months">
+          <summary>Show the monthly averages as a table</summary>
+          <div class="table-box">
+            <table class="data-table">
+              <thead>
+                <tr><th>Month</th><th class="number">Aerobic Efficiency</th><th class="number">Cardiac Drift</th><th class="number">Cadence</th></tr>
+              </thead>
+              <tbody>
+                @for (month of months(); track month.label) {
+                  <tr>
+                    <td class="muted">{{ month.label }}</td>
+                    <td class="number">{{ month.aerobicEfficiency === null ? '–' : formatEfficiency(month.aerobicEfficiency) }}</td>
+                    <td class="number">{{ month.cardiacDrift === null ? '–' : formatDrift(month.cardiacDrift) }}</td>
+                    <td class="number">{{ month.cadence === null ? '–' : formatCadence(month.cadence) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </details>
+      </section>
+    }
+  }
+</div>

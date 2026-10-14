@@ -18,6 +18,8 @@ export interface ChartColors {
   tooltip: string;
   tooltipBorder: string;
   fontMono: string;
+  /** For what is good, e.g. the Cardiac Drift band up to 5%. */
+  good: string;
 }
 
 /** The chart colours of the app's dark look, in the Athlete's Theme. */
@@ -46,6 +48,7 @@ export class ChartTheme {
       tooltip: token('--tooltip'),
       tooltipBorder: token('--border-hover'),
       fontMono: token('--mono'),
+      good: token('--met'),
     };
   });
 }
@@ -78,4 +81,9 @@ export function tooltipHtml(colors: ChartColors, title: string, value: string, u
     `<div style="font-size:15px;font-family:${colors.fontMono};font-weight:500;margin-top:2px">${value}${unitHtml}</div>` +
     noteHtml
   );
+}
+
+/** Run names come from Strava and end up in a tooltip's HTML. */
+export function escapeHtml(text: string): string {
+  return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }

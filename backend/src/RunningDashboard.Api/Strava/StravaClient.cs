@@ -81,6 +81,7 @@ public sealed class StravaClient(
                 activity.GearId,
                 activity.AverageHeartrate,
                 activity.AverageCadence,
+                activity.Trainer,
                 element.GetRawText());
         })];
     }
@@ -132,7 +133,7 @@ public sealed class StravaClient(
     }
 
     private static List<StravaSplit> SplitsOf(List<SplitResponse>? splits) =>
-        [.. (splits ?? []).Select(s => new StravaSplit(s.Split, s.Distance, s.MovingTime, s.ElapsedTime, s.ElevationDifference ?? 0))];
+        [.. (splits ?? []).Select(s => new StravaSplit(s.Split, s.Distance, s.MovingTime, s.ElapsedTime, s.ElevationDifference ?? 0, s.AverageHeartrate, s.AverageGradeAdjustedSpeed))];
 
     /// <summary>
     /// GETs from the API within Strava's rate limits; a 429 waits for the next window and tries again. A refused

@@ -13,6 +13,8 @@ namespace RunningDashboard.Api.Tests.Harness;
 /// <param name="ElapsedTime">Seconds; the Moving Time unless a test sets it.</param>
 /// <param name="RelativeEffort">Strava's suffer_score field; none unless a test sets it.</param>
 /// <param name="AverageHeartRate">Beats per minute; none (recorded without heart rate) unless a test sets it.</param>
+/// <param name="Splits">Strava's km splits in the detail; none unless a test sets them.</param>
+/// <param name="Trainer">Recorded indoors, e.g. on a treadmill.</param>
 /// <param name="GearId">Strava's gear id of the Shoe; none unless a test sets it.</param>
 /// <param name="AverageCadence">As Strava counts it: one foot's steps per minute; none unless a test sets it.</param>
 public sealed record TestActivity(
@@ -29,7 +31,9 @@ public sealed record TestActivity(
     int? RelativeEffort = null,
     double? AverageHeartRate = null,
     double? AverageCadence = null,
-    string? GearId = null)
+    string? GearId = null,
+    TestSplit[]? Splits = null,
+    bool Trainer = false)
 {
     public static string ToJson(IEnumerable<TestActivity> activities) =>
         JsonSerializer.Serialize(activities.Select(a => a.ToStrava()));
@@ -45,7 +49,16 @@ public sealed record TestActivity(
             ["elapsed_time"] = e.ElapsedTime,
             ["moving_time"] = e.ElapsedTime,
         });
-        detail["splits_metric"] = Array.Empty<object>();
+        detail["splits_metric"] = (Splits ?? []).Select((s, i) => new Dictionary<string, object?>
+        {
+            ["split"] = i + 1,
+            ["distance"] = s.Distance,
+            ["moving_time"] = s.MovingTime,
+            ["elapsed_time"] = s.MovingTime,
+            ["elevation_difference"] = 0,
+            ["average_heartrate"] = s.HeartRate,
+            ["average_grade_adjusted_speed"] = s.GradeAdjustedSpeed,
+        });
         return JsonSerializer.Serialize(detail);
     }
 
@@ -70,7 +83,7 @@ public sealed record TestActivity(
             ["start_date_local"] = StartLocal.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture),
             ["timezone"] = $"(GMT{UtcOffsetHours:+00;-00}:00) Test/Zone",
             ["utc_offset"] = UtcOffsetHours * 3600,
-            ["trainer"] = SportType == "VirtualRun",
+            ["trainer"] = Trainer || SportType == "VirtualRun",
             ["commute"] = false,
             ["manual"] = false,
             ["private"] = false,
@@ -89,3 +102,10 @@ public sealed record TestActivity(
 /// <summary>Strava's fastest time over a standard distance within a <see cref="TestActivity"/>.</summary>
 /// <param name="Name">Strava's name for the distance, e.g. "5K" or "Half-Marathon".</param>
 public sealed record TestBestEffort(string Name, double Distance, int ElapsedTime);
+
+/// <summary>One km split of a <see cref="TestActivity"/>'s detail.</summary>
+/// <param name="Distance">Metres.</param>
+/// <param name="MovingTime">Seconds.</param>
+/// <param name="HeartRate">Beats per minute.</param>
+/// <param name="GradeAdjustedSpeed">Metres per second.</param>
+public sealed record TestSplit(double Distance, int MovingTime, double? HeartRate, double? GradeAdjustedSpeed);

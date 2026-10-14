@@ -4,7 +4,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import type { EChartsCoreOption } from 'echarts/core';
 import { NgxEchartsDirective } from 'ngx-echarts';
-import { ChartColors, ChartTheme, baseChartOptions, tooltipHtml } from '../shared/chart-theme';
+import { ChartColors, ChartTheme, baseChartOptions, escapeHtml, tooltipHtml } from '../shared/chart-theme';
 import { daysBetween, localDate, today } from '../shared/dates';
 import { DistanceUnit, formatDuration, formatPace } from '../shared/format';
 import { Units } from '../shared/units';
@@ -148,9 +148,4 @@ function progressionChart(record: RecordDistance, unit: DistanceUnit, colors: Ch
       },
     ],
   };
-}
-
-/** Run names come from Strava and end up in the tooltip's HTML. */
-function escapeHtml(text: string): string {
-  return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }

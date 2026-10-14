@@ -52,6 +52,20 @@ export interface RunDetail extends Run {
   splits: Split[];
   /** Strava's splits per mile, for an Athlete who reads miles; their pace is still per km. */
   mileSplits: Split[];
+  /** None unless it is a Fitness Run: not on a treadmill and not on a Goal Race's race day. */
+  fitness: RunFitness | null;
+}
+
+/** A Fitness Run's figures. */
+export interface RunFitness {
+  /** Metres per heartbeat; none without heart rate. */
+  aerobicEfficiency: number | null;
+  /** Steps per minute, both feet together. */
+  cadence: number | null;
+  /** Whether it is its Training Week's Long Run. */
+  isLongRun: boolean;
+  /** A fraction, 0.05 being 5%; only for a Long Run of at least 10 km. */
+  cardiacDrift: number | null;
 }
 
 /** Strava's fastest time over a standard distance within this Run. */

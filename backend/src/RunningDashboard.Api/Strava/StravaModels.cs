@@ -15,7 +15,8 @@ internal sealed record ActivityResponse(
     double? SufferScore,
     string? GearId,
     double? AverageHeartrate,
-    double? AverageCadence);
+    double? AverageCadence,
+    bool Trainer);
 
 internal sealed record ShoeResponse(string Id, string Name, double Distance, bool Retired);
 
@@ -27,7 +28,14 @@ internal sealed record ActivityDetailResponse(
 
 internal sealed record BestEffortResponse(string Name, double Distance, int ElapsedTime);
 
-internal sealed record SplitResponse(int Split, double Distance, int MovingTime, int ElapsedTime, double? ElevationDifference);
+internal sealed record SplitResponse(
+    int Split,
+    double Distance,
+    int MovingTime,
+    int ElapsedTime,
+    double? ElevationDifference,
+    double? AverageHeartrate,
+    double? AverageGradeAdjustedSpeed);
 
 /// <param name="Athlete">Only sent when exchanging an authorization code, not when refreshing.</param>
 internal sealed record TokenResponse(string AccessToken, string RefreshToken, long ExpiresAt, AthleteResponse? Athlete);
@@ -50,6 +58,7 @@ public sealed record ActivityQuery(DateTime? Before = null, DateTime? After = nu
 /// </summary>
 /// <param name="AverageHeartRate">Beats per minute; none without a heart-rate recording.</param>
 /// <param name="AverageCadence">As Strava counts it for Runs: steps per minute of one foot.</param>
+/// <param name="Trainer">Recorded indoors, e.g. on a treadmill.</param>
 public sealed record StravaActivity(
     long Id,
     string Name,
@@ -64,6 +73,7 @@ public sealed record StravaActivity(
     string? GearId,
     double? AverageHeartRate,
     double? AverageCadence,
+    bool Trainer,
     string RawJson);
 
 /// <summary>
@@ -82,7 +92,9 @@ public sealed record StravaActivityDetail(
 public sealed record StravaBestEffort(string Name, double Distance, int ElapsedTime);
 
 /// <param name="Index">1-based.</param>
-public sealed record StravaSplit(int Index, double Distance, int MovingTime, int ElapsedTime, double ElevationDifference);
+/// <param name="HeartRate">Average beats per minute; none without a heart-rate recording.</param>
+/// <param name="GradeAdjustedSpeed">Metres per second, as if run on the flat.</param>
+public sealed record StravaSplit(int Index, double Distance, int MovingTime, int ElapsedTime, double ElevationDifference, double? HeartRate, double? GradeAdjustedSpeed);
 
 /// <param name="Id">Strava's gear id.</param>
 /// <param name="Distance">Metres, as Strava counts them.</param>

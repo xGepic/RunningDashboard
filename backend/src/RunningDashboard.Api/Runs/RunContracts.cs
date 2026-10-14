@@ -61,10 +61,12 @@ internal sealed record RunDetailResponse(
     string? Route,
     IReadOnlyList<BestEffortResponse> BestEfforts,
     IReadOnlyList<SplitResponse> Splits,
-    IReadOnlyList<SplitResponse> MileSplits)
+    IReadOnlyList<SplitResponse> MileSplits,
+    RunFitnessResponse? Fitness)
 {
     /// <param name="personalBestDistances">Distances at which the Run's Best Effort was a Personal Best at the time.</param>
-    public static RunDetailResponse From(Run run, string? shoeName, HashSet<double> personalBestDistances) => new(
+    /// <param name="fitness">None unless it is a Fitness Run.</param>
+    public static RunDetailResponse From(Run run, string? shoeName, HashSet<double> personalBestDistances, RunFitnessResponse? fitness) => new(
         run.Id,
         run.Name,
         run.SportType,
@@ -84,8 +86,16 @@ internal sealed record RunDetailResponse(
             .Select(e => new BestEffortResponse(
                 e.Name, e.Distance, e.ElapsedTime, Run.PerKilometre(e.ElapsedTime, e.Distance), personalBestDistances.Contains(e.Distance)))],
         SplitResponse.Of(run, SplitUnit.Kilometre),
-        SplitResponse.Of(run, SplitUnit.Mile));
+        SplitResponse.Of(run, SplitUnit.Mile),
+        fitness);
 }
+
+/// <summary>A Fitness Run's figures.</summary>
+/// <param name="AerobicEfficiency">Metres per heartbeat; none without heart rate.</param>
+/// <param name="Cadence">Steps per minute, both feet together.</param>
+/// <param name="IsLongRun">Whether it is its Training Week's Long Run.</param>
+/// <param name="CardiacDrift">A fraction, 0.05 being 5%; only for a Long Run of at least 10 km.</param>
+internal sealed record RunFitnessResponse(double? AerobicEfficiency, double? Cadence, bool IsLongRun, double? CardiacDrift);
 
 /// <param name="TimePerKm">Elapsed time per kilometre, in seconds. Not Pace, which is Moving Time based.</param>
 /// <param name="PersonalBest">Whether it was a Personal Best when it was run: faster than every earlier Best Effort.</param>

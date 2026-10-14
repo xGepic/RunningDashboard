@@ -193,6 +193,9 @@ namespace RunningDashboard.Api.Persistence.Migrations
                     b.Property<DateTime>("StartUtc")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("Trainer")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
                     b.HasIndex("StartUtc");
@@ -245,6 +248,12 @@ namespace RunningDashboard.Api.Persistence.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<double>("ElevationDifference")
+                        .HasColumnType("REAL");
+
+                    b.Property<double?>("GradeAdjustedSpeed")
+                        .HasColumnType("REAL");
+
+                    b.Property<double?>("HeartRate")
                         .HasColumnType("REAL");
 
                     b.Property<int>("MovingTime")

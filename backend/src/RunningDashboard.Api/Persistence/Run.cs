@@ -42,6 +42,14 @@ public sealed class Run
     /// <summary>Cadence: steps per minute, both feet together; none for a Run recorded without it.</summary>
     public double? Cadence { get; set; }
 
+    /// <summary>Recorded indoors, as Strava marks it, e.g. on a treadmill.</summary>
+    public bool Trainer { get; set; }
+
+    /// <summary>On a treadmill or virtual: its Pace is unreliable, so it is no Fitness Run.</summary>
+    public bool IsTreadmill => IsTreadmillRun(Trainer, SportType);
+
+    public static bool IsTreadmillRun(bool trainer, string sportType) => trainer || sportType == "VirtualRun";
+
     /// <summary>Strava's gear id of the Shoe, if one was logged.</summary>
     public string? ShoeId { get; set; }
 
@@ -128,6 +136,8 @@ public sealed class Run
             MovingTime = s.MovingTime,
             ElapsedTime = s.ElapsedTime,
             ElevationDifference = s.ElevationDifference,
+            HeartRate = s.HeartRate,
+            GradeAdjustedSpeed = s.GradeAdjustedSpeed,
         });
 
     /// <summary>
@@ -151,6 +161,7 @@ public sealed class Run
         AverageHeartRate = activity.AverageHeartRate;
         // Strava counts one foot's steps.
         Cadence = activity.AverageCadence * 2;
+        Trainer = activity.Trainer;
         ShoeId = activity.GearId;
         RawSummaryJson = activity.RawJson;
     }

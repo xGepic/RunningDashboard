@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using RunningDashboard.Api.Fitness;
 using RunningDashboard.Api.Lists;
 using RunningDashboard.Api.Persistence;
 using RunningDashboard.Api.Records;
+using RunningDashboard.Api.Training;
 
 namespace RunningDashboard.Api.Runs;
 
@@ -110,7 +112,29 @@ public static class RunEndpoints
 
             var shoe = run.ShoeId is null ? null : await db.Shoes.FindAsync([run.ShoeId], cancellationToken);
             var personalBestDistances = await PersonalBests.DistancesSetByAsync(run, db, cancellationToken);
-            return Results.Ok(RunDetailResponse.From(run, shoe?.Name, personalBestDistances));
+            return Results.Ok(RunDetailResponse.From(run, shoe?.Name, personalBestDistances, await FitnessOfAsync(run, db, cancellationToken)));
         });
+    }
+
+    /// <summary>The Run's Aerobic Efficiency, Cadence and, as its week's Long Run, Cardiac Drift; none unless it is a Fitness Run.</summary>
+    private static async Task<RunFitnessResponse?> FitnessOfAsync(Run run, AppDbContext db, CancellationToken cancellationToken)
+    {
+        if (!FitnessFigures.IsFitnessRun(run.IsTreadmill, run.StartLocal, await FitnessEndpoints.RaceDaysAsync(db, cancellationToken)))
+            return null;
+
+        var week = TrainingWeek.Of(run.StartLocal);
+        var (weekStart, weekEnd) = (week.Start.ToDateTime(TimeOnly.MinValue), week.Next.Start.ToDateTime(TimeOnly.MinValue));
+        var weekRuns = await db.Runs
+            .Where(r => r.StartLocal >= weekStart && r.StartLocal < weekEnd)
+            .Select(r => new RunSummary(r.Id, r.Name, r.StartLocal, r.Distance, r.MovingTime, null))
+            .ToListAsync(cancellationToken);
+        var isLongRun = TrainingCalendar.LongRunOf(weekRuns)?.Id == run.Id;
+
+        var splits = run.Splits.Where(s => s.Unit == SplitUnit.Kilometre).Select(FitnessFigures.From).ToList();
+        return new RunFitnessResponse(
+            FitnessFigures.AerobicEfficiency(run.AverageHeartRate, splits),
+            run.Cadence,
+            isLongRun,
+            FitnessFigures.HasCardiacDrift(isLongRun, run.Distance) ? FitnessFigures.CardiacDrift(splits) : null);
     }
 }

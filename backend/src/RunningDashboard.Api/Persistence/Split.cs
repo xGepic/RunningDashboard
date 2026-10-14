@@ -23,6 +23,12 @@ public sealed class Split
 
     /// <summary>Metres, negative when the split went downhill overall.</summary>
     public double ElevationDifference { get; set; }
+
+    /// <summary>Average beats per minute; none without a heart-rate recording.</summary>
+    public double? HeartRate { get; set; }
+
+    /// <summary>Metres per second, as Strava reckons the split would have been run on the flat.</summary>
+    public double? GradeAdjustedSpeed { get; set; }
 }
 
 /// <summary>What a Split is one of: Strava splits every Run both ways.</summary>

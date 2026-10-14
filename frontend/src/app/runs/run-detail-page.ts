@@ -4,6 +4,7 @@ import { Component, computed, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import type { EChartsCoreOption } from 'echarts/core';
 import { NgxEchartsDirective } from 'ngx-echarts';
+import { formatCadence, formatDrift, formatEfficiency } from '../fitness/fitness';
 import { ChartColors, ChartTheme, tooltipHtml } from '../shared/chart-theme';
 import { paceChart, paceLabel } from '../shared/charts';
 import { DistanceUnit, formatDistance, formatDuration } from '../shared/format';
@@ -26,6 +27,9 @@ export class RunDetailPage {
 
   protected readonly run = httpResource<RunDetail>(() => `/api/runs/${this.id()}`);
   protected readonly formatDuration = formatDuration;
+  protected readonly formatEfficiency = formatEfficiency;
+  protected readonly formatCadence = formatCadence;
+  protected readonly formatDrift = formatDrift;
   /** Distances, Pace and Splits in the Distance Unit; elevation stays in metres. */
   protected readonly units = inject(Units);
 

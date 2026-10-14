@@ -36,6 +36,7 @@ const navItems: NavItem[] = [
   { label: 'Activities', path: '/runs', icon: 'M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01', also: ['/rides', '/swims'] },
   { label: 'Calendar', path: '/calendar', icon: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4' },
   { label: 'Records', path: '/records', icon: 'M8 4h8v5a4 4 0 0 1-8 0zM12 13v4M8 20h8M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4' },
+  { label: 'Fitness', path: '/fitness', icon: 'M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z' },
   { label: 'Shoes', path: shoesPath, icon: 'M3 17v-6l5-3 3 3 5 1.5c3 .8 5 2 5 4.5H3zM3 20h18' },
 ];
 
@@ -165,7 +166,7 @@ export class App {
     });
   }
 
-  /** Keys 1 to 6 open the pages, as the sidebar shows, unless the Athlete is typing. */
+  /** Keys 1 to 7 open the pages, as the sidebar shows, unless the Athlete is typing. */
   protected onKeydown(event: KeyboardEvent): void {
     if (event.ctrlKey || event.metaKey || event.altKey) return;
     const target = event.target as HTMLElement | null;
