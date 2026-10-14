@@ -8,10 +8,13 @@ import { ConnectionStatus } from './connection/connection-status';
 import { monthFragments } from './calendar/calendar-links';
 import { RidePage } from './rides/ride';
 import { RunPage } from './runs/run';
+import { AthleteSettings } from './shared/athlete-settings';
 import { fullMonthNames } from './shared/dates';
 import { formatDuration, formatWhole } from './shared/format';
 import { ListPage } from './shared/history-list';
+import { shoeWear } from './shared/shoe-wear';
 import { Units } from './shared/units';
+import { Shoe } from './shoes/shoe';
 import { SwimPage } from './swims/swim';
 import { reloadOnSync } from './sync/reload-on-sync';
 
@@ -24,13 +27,16 @@ interface NavItem {
   also?: string[];
 }
 
+/** The Shoes' page, whose link carries the badge for worn Shoes. */
+const shoesPath = '/shoes';
+
 const navItems: NavItem[] = [
   { label: 'Overview', path: '/', icon: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z' },
   { label: 'Training', path: '/training', icon: 'M3 12h4l3-7 4 14 3-7h4' },
   { label: 'Activities', path: '/runs', icon: 'M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01', also: ['/rides', '/swims'] },
   { label: 'Calendar', path: '/calendar', icon: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4' },
   { label: 'Records', path: '/records', icon: 'M8 4h8v5a4 4 0 0 1-8 0zM12 13v4M8 20h8M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4' },
-  { label: 'Shoes', path: '/shoes', icon: 'M3 17v-6l5-3 3 3 5 1.5c3 .8 5 2 5 4.5H3zM3 20h18' },
+  { label: 'Shoes', path: shoesPath, icon: 'M3 17v-6l5-3 3 3 5 1.5c3 .8 5 2 5 4.5H3zM3 20h18' },
 ];
 
 /** The newest activity, of whichever sport, as the sidebar shows it. */
@@ -63,6 +69,9 @@ export class App {
   private readonly router = inject(Router);
   /** Loads the Distance Unit as the app starts, and shows the last activity in it. */
   private readonly units = inject(Units);
+  private readonly athleteSettings = inject(AthleteSettings);
+
+  protected readonly shoesPath = shoesPath;
 
   protected readonly nav = navItems;
   protected readonly settings = settingsItem;
@@ -132,11 +141,27 @@ export class App {
     return activities.sort((a, b) => b.startLocal.localeCompare(a.startLocal))[0] ?? null;
   });
 
+  private readonly shoes = httpResource<Shoe[]>(() => '/api/shoes');
+
+  /**
+   * How many active Shoes are near or over the Maximum Distance, judged as on the Shoes page: red once one is over.
+   * None while there are none, or when the Shoes could not be loaded.
+   */
+  protected readonly shoeBadge = computed(() => {
+    if (!this.shoes.hasValue()) return null;
+    const maximumDistance = this.athleteSettings.shoeMaximumDistance();
+    const worn = this.shoes.value().filter((s) => !s.retired).map((s) => shoeWear(s.distance, maximumDistance)).filter((w) => w !== 'ok');
+    if (!worn.length) return null;
+    const shoes = worn.length === 1 ? '1 Shoe' : `${worn.length} Shoes`;
+    return { count: worn.length, color: worn.includes('over') ? 'red' : 'amber', title: `${shoes} near or over the Maximum Distance` };
+  });
+
   constructor() {
     reloadOnSync(() => {
       this.latestRuns.reload();
       this.latestRides.reload();
       this.latestSwims.reload();
+      this.shoes.reload();
     });
   }
 

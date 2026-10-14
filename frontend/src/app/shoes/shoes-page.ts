@@ -3,15 +3,13 @@ import { httpResource } from '@angular/common/http';
 import { Component, computed, inject } from '@angular/core';
 import { AthleteSettings } from '../shared/athlete-settings';
 import { formatOneDecimal, formatWhole } from '../shared/format';
+import { shoeWear } from '../shared/shoe-wear';
 import { Units } from '../shared/units';
 import { reloadOnSync } from '../sync/reload-on-sync';
 import { Shoe } from './shoe';
 
 /** The Shoes' colours, in list order; they repeat past the last. */
 const shoeColors = ['var(--accent)', 'var(--teal)', 'var(--amber)', 'var(--met)', '#a78bfa'];
-
-/** From this share of its Maximum Distance on, a Shoe is close to it. */
-const nearMaxShare = 0.9;
 
 @Component({
   selector: 'app-shoes-page',
@@ -66,12 +64,11 @@ export class ShoesPage {
   /** How far a Shoe is towards the Maximum Distance, the same for every Shoe and set in Settings. */
   private wear(shoe: Shoe) {
     const maxDistance = this.settings.shoeMaximumDistance();
-    const share = shoe.distance / maxDistance;
     const left = maxDistance - shoe.distance;
     return {
       max: this.units.totalDistance(maxDistance),
-      percent: Math.min(100, share * 100),
-      status: left < 0 ? 'over' : share >= nearMaxShare ? 'near' : 'ok',
+      percent: Math.min(100, (shoe.distance / maxDistance) * 100),
+      status: shoeWear(shoe.distance, maxDistance),
       note: left < 0 ? `${this.units.totalDistance(-left)} over` : `${this.units.totalDistance(left)} left`,
     };
   }

@@ -207,6 +207,11 @@ app-connection-status {
     font-weight: 500;
     line-height: 32px;
 
+    .badge {
+      margin-left: 6px;
+      line-height: normal;
+    }
+
     &.active {
       background: var(--selected);
       color: var(--text);

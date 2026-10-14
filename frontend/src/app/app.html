@@ -11,6 +11,9 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path [attr.d]="item.icon" /></svg>
         <span class="label">{{ item.label }}</span>
+        @if (item.path === shoesPath && shoeBadge(); as badge) {
+          <span class="badge" [class]="badge.color" [title]="badge.title" [attr.aria-label]="badge.title">{{ badge.count }}</span>
+        }
         <kbd>{{ i + 1 }}</kbd>
       </a>
     }
@@ -62,7 +65,12 @@
   <nav class="tabs" aria-label="Pages">
     @for (item of tabs; track item.path) {
       <a [routerLink]="item.path" [class.active]="item === breadcrumb().section"
-         [attr.aria-current]="item === breadcrumb().section ? 'page' : null">{{ item.label }}</a>
+         [attr.aria-current]="item === breadcrumb().section ? 'page' : null">
+        {{ item.label }}
+        @if (item.path === shoesPath && shoeBadge(); as badge) {
+          <span class="badge" [class]="badge.color" [title]="badge.title" [attr.aria-label]="badge.title">{{ badge.count }}</span>
+        }
+      </a>
     }
   </nav>
 

@@ -1040,6 +1040,12 @@ input[type='number'] {
     color: var(--amber);
   }
 
+  &.red {
+    border-color: rgb(232 133 122 / 22%);
+    background: rgb(232 133 122 / 10%);
+    color: var(--error);
+  }
+
   &.muted {
     border-color: var(--border-strong);
     background: transparent;

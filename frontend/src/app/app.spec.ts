@@ -65,6 +65,54 @@ describe('App', () => {
     expect(element.querySelector('.crumbs a')!.getAttribute('href')).toBe('/calendar/2025?ref=mail');
   });
 
+  describe('the badge on the Shoes link', () => {
+    const shoe = (name: string, distance: number, retired = false) => ({ id: name, name, distance, retired, runs: 10, lastRun: null });
+
+    /** The Maximum Distance stays at its default of 700 km unless given. */
+    async function badges(shoes: unknown[], shoeMaximumDistance?: number) {
+      const { fixture, element } = await render();
+      const http = TestBed.inject(HttpTestingController);
+      http.expectOne('/api/settings').flush(shoeMaximumDistance ? { shoeMaximumDistance } : {});
+      http.expectOne('/api/shoes').flush(shoes);
+      await new Promise((resolve) => setTimeout(resolve));
+      fixture.detectChanges();
+      return {
+        sidebar: element.querySelector('.sidebar a[href="/shoes"] .badge'),
+        tab: element.querySelector('.tabs a[href="/shoes"] .badge'),
+      };
+    }
+
+    it('counts the active Shoes from 90% of the Maximum Distance on, amber while none is over it', async () => {
+      const { sidebar, tab } = await badges([shoe('Novablast', 630_000), shoe('Pegasus', 629_000), shoe('Old', 900_000, true)]);
+
+      expect(sidebar!.textContent).toBe('1');
+      expect(sidebar!.classList).toContain('amber');
+      expect(sidebar!.getAttribute('title')).toBe('1 Shoe near or over the Maximum Distance');
+      expect(tab!.textContent).toBe('1');
+    });
+
+    it('is red once a Shoe is over the Maximum Distance', async () => {
+      const { sidebar } = await badges([shoe('Novablast', 701_000), shoe('Pegasus', 650_000)]);
+
+      expect(sidebar!.textContent).toBe('2');
+      expect(sidebar!.classList).toContain('red');
+      expect(sidebar!.getAttribute('title')).toBe('2 Shoes near or over the Maximum Distance');
+    });
+
+    it('measures against the Maximum Distance set in Settings', async () => {
+      const { sidebar } = await badges([shoe('Novablast', 630_000)], 800_000);
+
+      expect(sidebar).toBeNull();
+    });
+
+    it('is left out while no Shoe is near the Maximum Distance', async () => {
+      const { sidebar, tab } = await badges([shoe('Novablast', 400_000)]);
+
+      expect(sidebar).toBeNull();
+      expect(tab).toBeNull();
+    });
+  });
+
   describe('the last activity, at the bottom of the sidebar above Settings', () => {
     const page = <T,>(items: T[]) => ({ items, page: 1, pageSize: 1, totalCount: items.length, totals: {} });
     const run = { id: 42, name: 'Evening Run', sportType: 'Run', startLocal: '2026-10-12T18:05:00', distance: 10_240, movingTime: 3_125, pace: 305, shoeName: null };
