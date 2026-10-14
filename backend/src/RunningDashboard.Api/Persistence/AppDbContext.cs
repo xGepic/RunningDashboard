@@ -8,6 +8,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 {
     public DbSet<StravaConnection> StravaConnections => Set<StravaConnection>();
 
+    public DbSet<StravaApp> StravaApps => Set<StravaApp>();
+
     public DbSet<Run> Runs => Set<Run>();
 
     /// <summary>The Rides and Swims.</summary>
@@ -52,6 +54,13 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             connection.Property(c => c.Id).ValueGeneratedNever();
             connection.Property(c => c.FirstName).HasMaxLength(200);
             connection.Property(c => c.LastName).HasMaxLength(200);
+        });
+
+        model.Entity<StravaApp>(stravaApp =>
+        {
+            stravaApp.Property(a => a.Id).ValueGeneratedNever();
+            stravaApp.Property(a => a.ClientId).HasMaxLength(20);
+            stravaApp.Property(a => a.ClientSecret).HasMaxLength(100);
         });
 
         model.Entity<Run>(run =>

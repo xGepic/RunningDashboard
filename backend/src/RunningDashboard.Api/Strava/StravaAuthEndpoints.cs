@@ -21,8 +21,15 @@ public static class StravaAuthEndpoints
 
     public static void MapStravaAuthEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/strava/connect", (HttpContext http, IOptions<StravaOptions> options) =>
+        app.MapGet("/api/strava/connect", async (
+            HttpContext http,
+            IOptions<StravaOptions> options,
+            StravaAppCredentials stravaApp,
+            CancellationToken cancellationToken) =>
         {
+            if (await stravaApp.GetAsync(cancellationToken) is not { } credential)
+                return Results.Redirect($"/settings?strava=error&reason={ConnectError.NoStravaApp}");
+
             var state = RandomNumberGenerator.GetHexString(32, lowercase: true);
             http.Response.Cookies.Append(StateCookie, state, new CookieOptions
             {
@@ -34,8 +41,8 @@ public static class StravaAuthEndpoints
 
             var url = QueryHelpers.AddQueryString(AuthorizeUrl, new Dictionary<string, string?>
             {
-                ["client_id"] = options.Value.ClientId,
-                ["redirect_uri"] = options.Value.RedirectUri,
+                ["client_id"] = credential.ClientId,
+                ["redirect_uri"] = RedirectUri(http, options.Value),
                 ["response_type"] = "code",
                 ["approval_prompt"] = "auto",
                 ["scope"] = string.Join(',', RequiredScopes),
@@ -93,6 +100,11 @@ public static class StravaAuthEndpoints
         });
     }
 
+    private static string RedirectUri(HttpContext http, StravaOptions options) =>
+        string.IsNullOrEmpty(options.RedirectUri)
+            ? $"{http.Request.Scheme}://{http.Request.Host}/api/strava/callback"
+            : options.RedirectUri;
+
     private static bool StatesMatch(string? expected, string? actual) =>
         !string.IsNullOrEmpty(expected)
         && actual is not null
@@ -119,5 +131,6 @@ public static class StravaAuthEndpoints
         public const string MissingPermissions = "missing-permissions";
         public const string StravaRejected = "strava-rejected";
         public const string DifferentAthlete = "different-athlete";
+        public const string NoStravaApp = "no-strava-app";
     }
 }

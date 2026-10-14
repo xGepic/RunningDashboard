@@ -2,7 +2,6 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using RunningDashboard.Api.Persistence;
 
 namespace RunningDashboard.Api.Strava;
@@ -13,7 +12,7 @@ namespace RunningDashboard.Api.Strava;
 /// </summary>
 public sealed class StravaClient(
     HttpClient http,
-    IOptions<StravaOptions> options,
+    StravaAppCredentials stravaApp,
     AppDbContext db,
     TimeProvider clock,
     StravaRateLimits rateLimits)
@@ -209,8 +208,10 @@ public sealed class StravaClient(
     /// </summary>
     private async Task<TokenResponse> RequestTokenAsync(Dictionary<string, string> grant, CancellationToken cancellationToken)
     {
-        grant["client_id"] = options.Value.ClientId;
-        grant["client_secret"] = options.Value.ClientSecret;
+        var credential = await stravaApp.GetAsync(cancellationToken)
+            ?? throw new InvalidOperationException("No Strava API app is set up.");
+        grant["client_id"] = credential.ClientId;
+        grant["client_secret"] = credential.ClientSecret;
         using var response = await http.PostAsync(TokenUrl, new FormUrlEncodedContent(grant), cancellationToken);
         response.EnsureSuccessStatusCode();
 

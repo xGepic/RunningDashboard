@@ -10,7 +10,10 @@ const connected: Connection = {
   connected: true,
   athlete: { id: 1, firstName: 'Stefan', lastName: 'Simanek' },
   connectedAt: '2026-10-09T08:00:00+00:00',
+  stravaApp: { clientId: '12345', inConfiguration: true },
 };
+
+const notConnected: Connection = { connected: false, athlete: null, connectedAt: null, stravaApp: { clientId: '12345', inConfiguration: true } };
 
 const idle: SyncStatus = {
   running: false,
@@ -111,9 +114,69 @@ describe('SettingsPage', () => {
   });
 
   it('offers to connect Strava when it is not connected', async () => {
-    const { element } = await render('km', { connected: false, athlete: null, connectedAt: null });
+    const { element } = await render('km', notConnected);
 
     expect(element.querySelector<HTMLAnchorElement>('.strava a[href="/api/strava/connect"]')?.textContent?.trim()).toBe('Connect Strava');
+    // The Strava API app is in the backend's configuration: nothing to enter.
+    expect(element.querySelector('.strava form')).toBeNull();
+  });
+
+  describe('the Strava API app', () => {
+    const connectLink = (element: HTMLElement) => element.querySelector('.strava a[href="/api/strava/connect"]');
+    const input = (element: HTMLElement, label: string) =>
+      [...element.querySelectorAll<HTMLLabelElement>('.strava label')].find((l) => l.textContent!.includes(label))!.querySelector('input')!;
+    const enter = (element: HTMLElement, clientId: string, clientSecret: string) => {
+      input(element, 'Client ID').value = clientId;
+      input(element, 'Client ID').dispatchEvent(new Event('input'));
+      input(element, 'Client Secret').value = clientSecret;
+      input(element, 'Client Secret').dispatchEvent(new Event('input'));
+      element.querySelector<HTMLFormElement>('.strava form')!.dispatchEvent(new Event('submit'));
+    };
+
+    it('asks for one before Strava can be connected', async () => {
+      const { element } = await render('km', { ...notConnected, stravaApp: null });
+
+      expect(element.querySelector('.strava')!.textContent).toContain('localhost');
+      expect(input(element, 'Client ID').value).toBe('');
+      expect(connectLink(element)).toBeNull();
+    });
+
+    it('saves the one entered, then offers to connect Strava', async () => {
+      const { fixture, http, element } = await render('km', { ...notConnected, stravaApp: null });
+
+      enter(element, '67890', 'entered-secret');
+      fixture.detectChanges();
+      const put = http.expectOne((r) => r.method === 'PUT' && r.url === '/api/strava/app');
+      expect(put.request.body).toEqual({ clientId: '67890', clientSecret: 'entered-secret' });
+      put.flush({ clientId: '67890', inConfiguration: false });
+      fixture.detectChanges();
+
+      expect(connectLink(element)?.textContent?.trim()).toBe('Connect Strava');
+      expect(input(element, 'Client ID').value).toBe('67890');
+      expect(input(element, 'Client Secret').value).toBe('');
+    });
+
+    it('shows the one entered before, to change it if Strava does not accept it', async () => {
+      const { element } = await render('km', { ...notConnected, stravaApp: { clientId: '67890', inConfiguration: false } });
+
+      expect(input(element, 'Client ID').value).toBe('67890');
+      expect(input(element, 'Client Secret').placeholder).toContain('Saved');
+      expect(connectLink(element)).not.toBeNull();
+    });
+
+    it('shows what the backend refused, by field', async () => {
+      const { fixture, http, element } = await render('km', { ...notConnected, stravaApp: null });
+
+      enter(element, 'my app', '');
+      http.expectOne((r) => r.method === 'PUT').flush(
+        { errors: { clientId: ['The Client ID is the number Strava shows for the API app.'] } },
+        { status: 400, statusText: 'Bad Request' },
+      );
+      fixture.detectChanges();
+
+      expect(input(element, 'Client ID').closest('label')!.textContent).toContain('The Client ID is the number Strava shows');
+      expect(connectLink(element)).toBeNull();
+    });
   });
 
   describe('the Maximum Distance of the Shoes', () => {

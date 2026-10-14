@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using RunningDashboard.Api.Backup;
 using RunningDashboard.Api.Fitness;
@@ -15,15 +16,21 @@ using RunningDashboard.Api.Swims;
 using RunningDashboard.Api.Sync;
 using RunningDashboard.Api.Training;
 
+// The packaged app (see publish.ps1) brings the built frontend along in wwwroot and keeps its database next to the exe,
+// wherever it is started from.
+var packaged = Directory.Exists(Path.Combine(AppContext.BaseDirectory, "wwwroot"));
+if (packaged)
+    Directory.SetCurrentDirectory(AppContext.BaseDirectory);
+
 var builder = WebApplication.CreateBuilder(args);
+if (packaged && builder.Configuration["urls"] is null)
+    builder.WebHost.UseUrls("http://localhost:5148");
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("RunningDashboard")));
-builder.Services.AddOptions<StravaOptions>()
-    .Bind(builder.Configuration.GetSection(StravaOptions.Section))
-    .ValidateDataAnnotations()
-    .ValidateOnStart();
+builder.Services.AddOptions<StravaOptions>().Bind(builder.Configuration.GetSection(StravaOptions.Section));
+builder.Services.AddScoped<StravaAppCredentials>();
 builder.Services.AddHttpClient<StravaClient>();
 builder.Services.AddSingleton<StravaRateLimits>();
 builder.Services.AddScoped<ActivityImport>();
@@ -63,5 +70,19 @@ app.MapReviewEndpoints();
 app.MapGoalRaceEndpoints();
 app.MapTrainingPlanEndpoints();
 app.MapTrainingEndpoints();
+
+if (packaged)
+{
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
+    // Angular's routes, e.g. a Run's page opened from a bookmark; files and unknown API routes stay a 404.
+    app.MapFallbackToFile("{*path:nonfile:regex(^(?!api/).*$)}", "index.html");
+    app.Lifetime.ApplicationStarted.Register(() =>
+    {
+        var url = app.Urls.First();
+        app.Logger.LogInformation("Running Dashboard is open at {Url}. Close this window to stop it.", url);
+        Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+    });
+}
 
 app.Run();

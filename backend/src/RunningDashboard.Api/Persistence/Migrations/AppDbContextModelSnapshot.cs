@@ -264,6 +264,26 @@ namespace RunningDashboard.Api.Persistence.Migrations
                     b.ToTable("Split");
                 });
 
+            modelBuilder.Entity("RunningDashboard.Api.Persistence.StravaApp", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ClientId")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ClientSecret")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("StravaApps");
+                });
+
             modelBuilder.Entity("RunningDashboard.Api.Persistence.StravaConnection", b =>
                 {
                     b.Property<int>("Id")

@@ -32,6 +32,21 @@ Open http://localhost:4200 and click **Connect Strava**.
 
 Everything runs locally, except that the Run map loads its tiles from OpenStreetMap, Esri and OpenTopoMap, so it needs an internet connection. None of them needs an account or API key.
 
+## Give it to a friend
+
+A friend on Windows can run the whole dashboard from one `RunningDashboard.exe`, without installing .NET or Node. Build it with:
+
+```powershell
+./publish.ps1
+```
+
+and send them `publish/RunningDashboard.zip` (about 50 MB). It holds no data and no credentials of yours. They:
+
+1. Unzip it anywhere and double-click `RunningDashboard.exe`. Windows SmartScreen may warn about an unknown app: **More info → Run anyway**. The dashboard opens in the browser at http://localhost:5148; closing the console window stops it.
+2. Click **Connect Strava**. It leads to Settings, which asks for a Strava API app of their own: they create one at <https://www.strava.com/settings/api> with **Authorization Callback Domain** `localhost`, enter its Client ID and Client Secret, and then connect. (Strava lets an app's owner connect only, so yours would not let them in.)
+
+The database and its backups go next to the exe, so to update, they replace `RunningDashboard.exe` and `wwwroot` with the new ones and keep the rest.
+
 ## Backups
 
 The backend backs up `running-dashboard.db` when it starts and every 24 hours while it runs (a restart within 24 hours of the last backup makes none), and always right before it applies new migrations. It keeps the 7 most recent backups; those made before migrations are never removed. Settings shows the folder and the last backup, and has **Back up now**.
@@ -42,7 +57,7 @@ Backups go to `backups/` next to the database. To keep them off the PC, point `B
 dotnet user-secrets set "Backup:Folder" "C:\Users\<you>\OneDrive\RunningDashboard" --project backend/src/RunningDashboard.Api
 ```
 
-A backup holds everything in the database, the Strava refresh token too, so keep the folder private. To restore one, stop the backend, copy the backup over `running-dashboard.db` (deleting any `running-dashboard.db-wal` and `running-dashboard.db-shm` next to it), and start the backend again.
+A backup holds everything in the database, the Strava refresh token and any Strava API app entered on Settings too, so keep the folder private. To restore one, stop the backend, copy the backup over `running-dashboard.db` (deleting any `running-dashboard.db-wal` and `running-dashboard.db-shm` next to it), and start the backend again.
 
 ## Test
 

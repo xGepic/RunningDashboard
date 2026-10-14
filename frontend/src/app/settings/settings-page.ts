@@ -1,8 +1,9 @@
 import { DatePipe } from '@angular/common';
 import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/http';
 import { Component, inject, linkedSignal, signal } from '@angular/core';
-import { Connection } from '../connection/connection';
+import { Connection, StravaApp } from '../connection/connection';
 import { AthleteSettings } from '../shared/athlete-settings';
+import { FieldErrors, fieldErrorsOf, formError } from '../shared/field-errors';
 import { DistanceUnit, formatWhole, unitNames } from '../shared/format';
 import { Theme, themes } from '../shared/themes';
 import { Units } from '../shared/units';
@@ -39,6 +40,13 @@ export class SettingsPage {
   protected readonly maximumDistanceError = signal<string | null>(null);
   protected readonly saving = signal(false);
 
+  /** The Strava API app as typed; the Client ID starts as the one entered before, the secret is never sent back. */
+  protected readonly clientId = linkedSignal(() => this.connection.hasValue() ? (this.connection.value().stravaApp?.clientId ?? '') : '');
+  protected readonly clientSecret = signal('');
+  protected readonly stravaAppErrors = signal<FieldErrors>({});
+  protected readonly savingStravaApp = signal(false);
+  protected readonly formError = formError;
+
   protected readonly backingUp = signal(false);
   /** Why "Back up now" failed, as the backend says; until the next try. */
   protected readonly backupError = signal<string | null>(null);
@@ -64,6 +72,22 @@ export class SettingsPage {
     const saved = await this.settings.change({ shoeMaximumDistance: distance });
     this.saving.set(false);
     if (!saved) this.maximumDistanceError.set('The Maximum Distance could not be saved.');
+  }
+
+  protected saveStravaApp(): void {
+    this.savingStravaApp.set(true);
+    this.stravaAppErrors.set({});
+    this.http.put<StravaApp>('/api/strava/app', { clientId: this.clientId(), clientSecret: this.clientSecret() }).subscribe({
+      next: (stravaApp) => {
+        this.savingStravaApp.set(false);
+        this.clientSecret.set('');
+        this.connection.update((current) => current && { ...current, stravaApp });
+      },
+      error: (response: HttpErrorResponse) => {
+        this.savingStravaApp.set(false);
+        this.stravaAppErrors.set(fieldErrorsOf(response, 'The Strava API app could not be saved.'));
+      },
+    });
   }
 
   protected backUpNow(): void {

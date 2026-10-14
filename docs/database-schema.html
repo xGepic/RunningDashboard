@@ -170,9 +170,12 @@
       { id: 'AthleteSettings', kind: 'you', columns: [['PK', 'Id', 'INTEGER'], ['', 'DistanceUnit', 'TEXT'], ['', 'ShoeMaximumDistance', 'REAL'], ['', 'Theme', 'TEXT']] },
       { id: '__EFMigrationsHistory', kind: 'app', columns: [['PK', 'MigrationId', 'TEXT'], ['', 'ProductVersion', 'TEXT']] },
     ],
-    { id: 'StravaConnections', kind: 'app', columns: [
-      ['PK', 'Id', 'INTEGER'], ['', 'AthleteId', 'INTEGER'], ['', 'FirstName', 'TEXT'], ['', 'LastName', 'TEXT'], ['', 'AccessToken', 'TEXT'],
-      ['', 'RefreshToken', 'TEXT'], ['', 'AccessTokenExpiresAt', 'TEXT'], ['', 'ConnectedAt', 'TEXT']] },
+    [
+      { id: 'StravaConnections', kind: 'app', columns: [
+        ['PK', 'Id', 'INTEGER'], ['', 'AthleteId', 'INTEGER'], ['', 'FirstName', 'TEXT'], ['', 'LastName', 'TEXT'], ['', 'AccessToken', 'TEXT'],
+        ['', 'RefreshToken', 'TEXT'], ['', 'AccessTokenExpiresAt', 'TEXT'], ['', 'ConnectedAt', 'TEXT']] },
+      { id: 'StravaApps', kind: 'you', columns: [['PK', 'Id', 'INTEGER'], ['', 'ClientId', 'TEXT'], ['', 'ClientSecret', 'TEXT']] },
+    ],
     { id: 'SyncStates', kind: 'app', columns: [
       ['PK', 'Id', 'INTEGER'], ['', 'InitialImportCompleted', 'INTEGER'], ['', 'ImportCursor', 'TEXT?'], ['', 'LatestActivityStart', 'TEXT?'],
       ['', 'LastSyncedAt', 'TEXT?'], ['', 'LastError', 'TEXT?'], ['', 'ReconnectRequired', 'INTEGER']] },

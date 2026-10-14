@@ -58,6 +58,15 @@ describe('ConnectionStatus', () => {
     expect(element.querySelector('a')?.textContent).toContain('Connect Strava');
   });
 
+  it('asks for the Strava API app when connecting found none', async () => {
+    const element = await answerConnection(
+      await render({ strava: 'error', reason: 'no-strava-app' }),
+      { connected: false, athlete: null, connectedAt: null, stravaApp: null },
+    );
+
+    expect(element.querySelector('[role="alert"]')?.textContent).toContain('Enter your Strava API app');
+  });
+
   it('explains a refused different athlete while staying connected as the first one', async () => {
     const element = await answerConnection(await render({ strava: 'error', reason: 'different-athlete' }), {
       connected: true,

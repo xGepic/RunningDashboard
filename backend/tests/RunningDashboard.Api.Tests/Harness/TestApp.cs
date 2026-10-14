@@ -33,6 +33,9 @@ public sealed class TestApp(string? databasePath = null) : WebApplicationFactory
 
     private readonly string? _backupFolder;
 
+    /// <summary>False for a PC without the Strava API app in its configuration, as the packaged app runs.</summary>
+    public bool StravaInConfiguration { get; init; } = true;
+
     public FakeStrava Strava { get; } = new();
 
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 10, 9, 18, 0, 0, TimeSpan.Zero));
@@ -42,9 +45,12 @@ public sealed class TestApp(string? databasePath = null) : WebApplicationFactory
         builder.UseEnvironment("Testing");
         builder.UseSetting("ConnectionStrings:RunningDashboard", $"Data Source={DatabasePath};Pooling=False");
         builder.UseSetting("Backup:Folder", BackupFolder);
-        builder.UseSetting("Strava:ClientId", ClientId);
-        builder.UseSetting("Strava:ClientSecret", ClientSecret);
-        builder.UseSetting("Strava:RedirectUri", RedirectUri);
+        if (StravaInConfiguration)
+        {
+            builder.UseSetting("Strava:ClientId", ClientId);
+            builder.UseSetting("Strava:ClientSecret", ClientSecret);
+            builder.UseSetting("Strava:RedirectUri", RedirectUri);
+        }
 
         builder.ConfigureTestServices(services =>
         {

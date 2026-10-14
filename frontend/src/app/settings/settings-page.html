@@ -83,7 +83,40 @@
         <div class="sync"><app-sync-indicator /></div>
       } @else {
         <p class="who">Not connected yet.</p>
-        <a class="btn btn-primary" href="/api/strava/connect">Connect Strava</a>
+        @if (!current.stravaApp?.inConfiguration) {
+          <p class="strava-app-intro">
+            Strava lets the dashboard read your activities through an API app of your own. Create one at
+            <a href="https://www.strava.com/settings/api" target="_blank" rel="noopener">strava.com/settings/api</a>
+            (any name and website will do) with <strong>localhost</strong> as its Authorization Callback Domain, then copy its
+            Client ID and Client Secret here.
+          </p>
+          <form class="strava-app" (submit)="$event.preventDefault(); saveStravaApp()" novalidate>
+            <label class="field">
+              Client ID
+              <input class="mono" inputmode="numeric" autocomplete="off" [value]="clientId()"
+                     (input)="clientId.set($any($event.target).value)" [attr.aria-invalid]="!!stravaAppErrors()['clientId']" />
+              @for (error of stravaAppErrors()['clientId']; track error) {
+                <span class="field-error">{{ error }}</span>
+              }
+            </label>
+            <label class="field">
+              Client Secret
+              <input class="mono" type="password" autocomplete="off" [value]="clientSecret()"
+                     [placeholder]="current.stravaApp ? 'Saved; enter it again to change it' : ''"
+                     (input)="clientSecret.set($any($event.target).value)" [attr.aria-invalid]="!!stravaAppErrors()['clientSecret']" />
+              @for (error of stravaAppErrors()['clientSecret']; track error) {
+                <span class="field-error">{{ error }}</span>
+              }
+            </label>
+            <button type="submit" class="btn" [disabled]="savingStravaApp()">Save</button>
+          </form>
+          @for (error of stravaAppErrors()[formError]; track error) {
+            <p class="field-error" role="alert">{{ error }}</p>
+          }
+        }
+        @if (current.stravaApp) {
+          <a class="btn btn-primary" href="/api/strava/connect">Connect Strava</a>
+        }
       }
     }
   </section>

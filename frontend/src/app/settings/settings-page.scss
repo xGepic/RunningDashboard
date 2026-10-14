@@ -56,6 +56,25 @@
   }
 }
 
+.strava-app-intro {
+  margin: 0 0 14px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.strava-app {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 16px;
+
+  .field {
+    flex: 1 1 180px;
+  }
+}
+
 .since {
   margin-left: 4px;
   color: var(--text-faint);
