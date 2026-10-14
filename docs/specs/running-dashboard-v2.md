@@ -7,7 +7,7 @@ Everything comes from data that is already stored: Strava's raw JSON, the Splits
 | # | Feature | Status |
 |---|---|---|
 | 01 | Shoe badge | done |
-| 02 | Database backup | ready |
+| 02 | Database backup | done |
 | 03 | CSV export | ready |
 | 04 | Year in Review | ready |
 | 05 | Fitness page | ready |
@@ -26,7 +26,7 @@ The Athlete sees, without opening the Shoes page, when a Shoe is due to be retir
 
 The Athlete never loses their data or their Training Plans to a broken disk or a failed migration.
 
-- The backend backs up the SQLite database when it starts, then every 24 hours while it runs, using SQLite's backup API (safe while the app is running).
+- The backend backs up the SQLite database when it starts, then every 24 hours while it runs, using SQLite's backup API (safe while the app is running). A restart within 24 hours of the last backup makes none, so frequent restarts don't push older backups out.
 - It always backs up right before applying pending migrations.
 - Backups go to the folder in `Backup:Folder` in `appsettings`, `backups/` next to the database unless set (and in `.gitignore`). Pointing it at a synced folder (e.g. OneDrive) keeps a copy off the PC.
 - The 7 most recent backups are kept; backups made before migrations are kept on top of those.

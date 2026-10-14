@@ -24,6 +24,15 @@ public sealed class TestApp(string? databasePath = null) : WebApplicationFactory
 
     public string DatabasePath { get; } = databasePath ?? Path.Combine(Path.GetTempPath(), $"running-dashboard-test-{Guid.NewGuid():N}.db");
 
+    /// <summary>Next to the database, so each test (and a restart of its backend) has its own.</summary>
+    public string BackupFolder
+    {
+        get => _backupFolder ?? DatabasePath + "-backups";
+        init => _backupFolder = value;
+    }
+
+    private readonly string? _backupFolder;
+
     public FakeStrava Strava { get; } = new();
 
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 10, 9, 18, 0, 0, TimeSpan.Zero));
@@ -32,6 +41,7 @@ public sealed class TestApp(string? databasePath = null) : WebApplicationFactory
     {
         builder.UseEnvironment("Testing");
         builder.UseSetting("ConnectionStrings:RunningDashboard", $"Data Source={DatabasePath};Pooling=False");
+        builder.UseSetting("Backup:Folder", BackupFolder);
         builder.UseSetting("Strava:ClientId", ClientId);
         builder.UseSetting("Strava:ClientSecret", ClientSecret);
         builder.UseSetting("Strava:RedirectUri", RedirectUri);
@@ -115,7 +125,11 @@ public sealed class TestApp(string? databasePath = null) : WebApplicationFactory
     {
         await base.DisposeAsync();
         if (_ownsDatabase)
+        {
             File.Delete(DatabasePath);
+            if (Directory.Exists(BackupFolder))
+                Directory.Delete(BackupFolder, recursive: true);
+        }
     }
 }
 

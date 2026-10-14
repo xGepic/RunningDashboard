@@ -87,4 +87,26 @@
       }
     }
   </section>
+
+  <section class="card backup">
+    <div class="card-header">
+      <div class="titles">
+        <h2 class="card-title">Backup</h2>
+        <p class="card-sub">The database is backed up when the backend starts and every 24 hours, keeping the 7 most recent, and also
+          right before an update changes its structure. The folder is set as Backup:Folder in the backend's appsettings.json.</p>
+      </div>
+    </div>
+    @if (backup.error()) {
+      <p class="error" role="alert">The backups could not be loaded.</p>
+    } @else if (backup.value(); as current) {
+      <dl class="facts">
+        <div><dt>Folder</dt><dd class="mono">{{ current.folder }}</dd></div>
+        <div><dt>Last backup</dt><dd>{{ current.lastBackupAt ? (current.lastBackupAt | date: 'd MMM y, HH:mm') : 'None yet' }}</dd></div>
+      </dl>
+      @if (backupError() ?? current.lastError; as error) {
+        <p class="field-error" role="alert">{{ error }}</p>
+      }
+      <button type="button" class="btn" [disabled]="backingUp()" (click)="backUpNow()">Back up now</button>
+    }
+  </section>
 </div>

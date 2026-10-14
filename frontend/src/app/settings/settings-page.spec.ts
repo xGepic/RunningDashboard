@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { Connection } from '../connection/connection';
 import { SyncStatus } from '../sync/sync-state';
+import { Backup } from './backup';
 import { SettingsPage } from './settings-page';
 
 const connected: Connection = {
@@ -23,16 +24,19 @@ const idle: SyncStatus = {
   reconnectRequired: false,
 };
 
+const backedUp: Backup = { folder: 'E:\Backups\RunningDashboard', lastBackupAt: '2026-10-14T07:05:00+00:00', lastError: null };
+
 describe('SettingsPage', () => {
   afterEach(() => delete document.documentElement.dataset['theme']);
 
-  async function render(unit: 'km' | 'mi', connection: Connection = connected, shoeMaximumDistance = 700_000, theme = 'blue') {
+  async function render(unit: 'km' | 'mi', connection: Connection = connected, shoeMaximumDistance = 700_000, theme = 'blue', backup = backedUp) {
     TestBed.configureTestingModule({ imports: [SettingsPage], providers: [provideHttpClient(), provideHttpClientTesting()] });
     const fixture = TestBed.createComponent(SettingsPage);
     const http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
     http.expectOne('/api/settings').flush({ distanceUnit: unit, shoeMaximumDistance, theme });
     http.expectOne('/api/connection').flush(connection);
+    http.expectOne('/api/backup').flush(backup);
     await fixture.whenStable();
     fixture.detectChanges();
     // The sync status is asked for once the connection shows.
@@ -166,6 +170,59 @@ describe('SettingsPage', () => {
 
       expect(element.querySelector('.shoes [role="alert"]')?.textContent).toContain('could not be saved');
       expect(field(element).value).toBe('700');
+    });
+  });
+
+  describe('the backups', () => {
+    async function showBackups(backup: Backup) {
+      const rendered = await render('km', connected, 700_000, 'blue', backup);
+      return { ...rendered, card: rendered.element.querySelector('.backup')! };
+    }
+
+    const facts = (card: Element) => [...card.querySelectorAll('.facts div')].map((d) => [d.querySelector('dt')!.textContent, d.querySelector('dd')!.textContent]);
+    const button = (card: Element) => card.querySelector<HTMLButtonElement>('button')!;
+
+    it('shows the folder and when the last backup was made', async () => {
+      const { card } = await showBackups(backedUp);
+
+      expect(facts(card)[0]).toEqual(['Folder', 'E:\Backups\RunningDashboard']);
+      expect(facts(card)[1][0]).toBe('Last backup');
+      expect(facts(card)[1][1]).toContain('14 Oct 2026');
+      expect(card.querySelector('[role="alert"]')).toBeNull();
+    });
+
+    it('says when there is none yet, and why the last one failed', async () => {
+      const { card } = await showBackups({ ...backedUp, lastBackupAt: null, lastError: 'The backup could not be written to E:\Backups: Access denied.' });
+
+      expect(facts(card)[1]).toEqual(['Last backup', 'None yet']);
+      expect(card.querySelector('[role="alert"]')!.textContent).toBe('The backup could not be written to E:\Backups: Access denied.');
+    });
+
+    it('backs up now, and shows the new backup', async () => {
+      const { fixture, http, card } = await showBackups({ ...backedUp, lastBackupAt: null });
+
+      button(card).click();
+      fixture.detectChanges();
+      expect(button(card).disabled).toBe(true);
+      http.expectOne((r) => r.method === 'POST' && r.url === '/api/backup').flush(backedUp);
+      fixture.detectChanges();
+
+      expect(button(card).disabled).toBe(false);
+      expect(facts(card)[1][1]).toContain('14 Oct 2026');
+    });
+
+    it('says why backing up now failed, as the backend tells', async () => {
+      const { fixture, http, card } = await showBackups(backedUp);
+
+      button(card).click();
+      http.expectOne((r) => r.method === 'POST' && r.url === '/api/backup').flush(
+        { detail: 'The backup could not be written to E:\Backups: Disk full.' },
+        { status: 500, statusText: 'Internal Server Error' },
+      );
+      fixture.detectChanges();
+
+      expect(card.querySelector('[role="alert"]')!.textContent).toBe('The backup could not be written to E:\Backups: Disk full.');
+      expect(button(card).disabled).toBe(false);
     });
   });
 });

@@ -67,3 +67,31 @@
   align-items: center;
   gap: 8px 12px;
 }
+
+.facts {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 14px;
+
+  div {
+    display: flex;
+    gap: 16px;
+    font-size: 13px;
+  }
+
+  dt {
+    flex-shrink: 0;
+    width: 90px;
+    color: var(--text-secondary);
+  }
+
+  dd {
+    margin: 0;
+    color: var(--text);
+    overflow-wrap: anywhere;
+  }
+}
+
+.backup .field-error {
+  margin: 0 0 12px;
+}

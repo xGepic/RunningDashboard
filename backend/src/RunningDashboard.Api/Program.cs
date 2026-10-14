@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using RunningDashboard.Api.Backup;
 using RunningDashboard.Api.GoalRaces;
 using RunningDashboard.Api.Overview;
 using RunningDashboard.Api.Persistence;
@@ -28,12 +29,19 @@ builder.Services.AddScoped<RunDetailImport>();
 builder.Services.AddScoped<ShoeImport>();
 builder.Services.AddSingleton<SyncWorker>();
 builder.Services.AddHostedService(services => services.GetRequiredService<SyncWorker>());
+builder.Services.AddOptions<BackupOptions>().Bind(builder.Configuration.GetSection(BackupOptions.Section));
+builder.Services.AddSingleton<DatabaseBackup>();
+builder.Services.AddHostedService<BackupWorker>();
 
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
+    var database = scope.ServiceProvider.GetRequiredService<AppDbContext>().Database;
+    // A migration that goes wrong must not take the data with it; a new, empty database has nothing to keep.
+    if (database.GetAppliedMigrations().Any() && database.GetPendingMigrations().Any())
+        app.Services.GetRequiredService<DatabaseBackup>().BackUp(beforeMigration: true);
+    database.Migrate();
 }
 
 app.MapConnectionEndpoints();
@@ -45,6 +53,7 @@ app.MapSwimEndpoints();
 app.MapOverviewEndpoints();
 app.MapYearlyGoalEndpoints();
 app.MapSettingsEndpoints();
+app.MapBackupEndpoints();
 app.MapShoeEndpoints();
 app.MapRecordEndpoints();
 app.MapGoalRaceEndpoints();
