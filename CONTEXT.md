@@ -150,3 +150,21 @@ _Avoid_: Workout, session, workout type
 **Yearly Goal**:
 The distance the Athlete wants to run in the current calendar year. There is at most one; once its year is over, it no longer counts. Progress is measured against the goal spread evenly over the days of the year.
 _Avoid_: Annual target, mileage goal
+
+### Fitness
+
+**Fitness Run**:
+A Run that counts toward the fitness trends: any Run except treadmill and virtual Runs (their Pace is unreliable) and Runs on a Goal Race's race day.
+_Avoid_: Easy Run (Easy is a Run Type), qualifying Run
+
+**Aerobic Efficiency**:
+How far a Fitness Run carried the Athlete per heartbeat: its grade-adjusted distance per minute divided by its average heart rate, in metres per beat. Higher is better.
+_Avoid_: Efficiency Factor, EF
+
+**Cardiac Drift**:
+How much heart rate per grade-adjusted speed rises from the first half of a Long Run to the second, in %, with the km Splits halved by distance. Only Long Runs of at least 10 km that are Fitness Runs have one; up to 5% is good.
+_Avoid_: Decoupling, Pa:HR
+
+**Cadence**:
+Steps per minute, both feet together: twice the per-foot value Strava stores.
+_Avoid_: SPM, stride rate
