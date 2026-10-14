@@ -54,3 +54,13 @@ export function lastDayOf(monthStart: Date): Date {
 export function daysSinceMonday(date: Date): number {
   return (date.getDay() + 6) % 7;
 }
+
+/** The local date `days` days after `date`; earlier for a negative number. */
+export function addDays(date: Date, days: number): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
+}
+
+/** The Monday starting the Training Week that `date` falls in. */
+export function mondayOf(date: Date): Date {
+  return addDays(date, -daysSinceMonday(date));
+}

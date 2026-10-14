@@ -2,7 +2,7 @@ import { DatePipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { Component, computed, inject } from '@angular/core';
 import { AthleteSettings } from '../shared/athlete-settings';
-import { formatOneDecimal, formatWhole } from '../shared/format';
+import { formatOneDecimal } from '../shared/format';
 import { shoeWear } from '../shared/shoe-wear';
 import { Units } from '../shared/units';
 import { reloadOnSync } from '../sync/reload-on-sync';
@@ -30,7 +30,7 @@ export class ShoesPage {
     const latest = shoes.find((s) => !s.retired && s.lastRun);
     return shoes.map((shoe, i) => ({
       shoe,
-      distance: formatWhole(this.units.fromMetres(shoe.distance)),
+      distance: formatOneDecimal(this.units.fromMetres(shoe.distance)),
       share: total ? Math.round((shoe.distance / total) * 100) : 0,
       average: shoe.runs ? formatOneDecimal(this.units.fromMetres(shoe.distance / shoe.runs)) : '–',
       latest: shoe === latest,
@@ -51,7 +51,7 @@ export class ShoesPage {
       };
     };
     return [
-      metric('Distance', (s) => s.distance, (v) => this.units.totalDistance(v)),
+      metric('Distance', (s) => s.distance, (v) => `${formatOneDecimal(this.units.fromMetres(v))} ${this.units.unit()}`),
       metric('Runs', (s) => s.runs, (v) => String(v)),
       metric('Avg per Run', (s) => (s.runs ? s.distance / s.runs : 0), (v) => this.units.distance(v, 1)),
     ];

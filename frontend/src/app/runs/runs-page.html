@@ -8,7 +8,7 @@
         <details class="export-menu" #exportMenu>
           <summary class="btn" [class.busy]="exporting()">Export CSV</summary>
           <div class="menu">
-            <button type="button" [disabled]="exporting()" (click)="exportMenu.open = false; exportRuns('month')">This month</button>
+            <button type="button" [disabled]="exporting()" (click)="exportMenu.open = false; exportRuns('period')">{{ weekStart() ? 'This week' : 'This month' }}</button>
             <button type="button" [disabled]="exporting()" (click)="exportMenu.open = false; exportRuns('all')">All Runs</button>
           </div>
         </details>
@@ -28,20 +28,31 @@
   }
 
   <div class="toolbar">
-    <nav class="period-nav" aria-label="Month">
-      <button type="button" class="step" (click)="shiftMonth(-1)" [attr.aria-label]="'Previous month: ' + (previousMonthStart() | date: 'MMMM y')"
-              [title]="previousMonthStart() | date: 'MMM y'">←</button>
-      <h2>{{ monthStart() | date: 'MMMM y' }}</h2>
-      <button type="button" class="step" (click)="shiftMonth(1)" [disabled]="isCurrentMonth()"
-              [attr.aria-label]="'Next month: ' + (nextMonthStart() | date: 'MMMM y')" [title]="nextMonthStart() | date: 'MMM y'">→</button>
-      <button type="button" class="step today" (click)="showMonth(thisMonth())" [disabled]="isCurrentMonth()"
-              title="Back to this month">Today</button>
-    </nav>
+    @if (weekStart(); as monday) {
+      <nav class="period-nav" aria-label="Training Week">
+        <button type="button" class="step" (click)="shiftWeek(-1)" aria-label="Previous week" title="Previous week">←</button>
+        <h2>{{ monday | date: 'd MMM' }} – {{ period().to | date: 'd MMM y' }}</h2>
+        <button type="button" class="step" (click)="shiftWeek(1)" [disabled]="isCurrentWeek()" aria-label="Next week" title="Next week">→</button>
+        <button type="button" class="step today" (click)="showWeek(thisWeek())" [disabled]="isCurrentWeek()"
+                title="Back to this week">Today</button>
+        <button type="button" class="link" (click)="showMonth(weeksMonth())">All of {{ monday | date: 'MMMM' }}</button>
+      </nav>
+    } @else {
+      <nav class="period-nav" aria-label="Month">
+        <button type="button" class="step" (click)="shiftMonth(-1)" [attr.aria-label]="'Previous month: ' + (previousMonthStart() | date: 'MMMM y')"
+                [title]="previousMonthStart() | date: 'MMM y'">←</button>
+        <h2>{{ monthStart() | date: 'MMMM y' }}</h2>
+        <button type="button" class="step" (click)="shiftMonth(1)" [disabled]="isCurrentMonth()"
+                [attr.aria-label]="'Next month: ' + (nextMonthStart() | date: 'MMMM y')" [title]="nextMonthStart() | date: 'MMM y'">→</button>
+        <button type="button" class="step today" (click)="showMonth(thisMonth())" [disabled]="isCurrentMonth()"
+                title="Back to this month">Today</button>
+      </nav>
+    }
 
     <form class="filters" role="search" (submit)="$event.preventDefault()">
       <label class="inline month">
         <span>Month</span>
-        <input #monthPicker type="month" [value]="selectedMonth()" (change)="showMonth(monthPicker.value)" />
+        <input #monthPicker type="month" [value]="weekStart() ? weeksMonth() : selectedMonth()" (change)="showMonth(monthPicker.value)" />
       </label>
       <label class="inline search">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -68,6 +79,8 @@
           @if (page.page > 1) {
             There are no Runs on page {{ page.page }}.
             <button type="button" class="link" (click)="goToPage(1)">Go to the first page</button>
+          } @else if (weekStart(); as monday) {
+            No Runs in the week of {{ monday | date: 'd MMM y' }}{{ searched() ? ' match this search' : '' }}.
           } @else if (searched()) {
             No Runs in {{ monthStart() | date: 'MMMM y' }} match this search.
           } @else {

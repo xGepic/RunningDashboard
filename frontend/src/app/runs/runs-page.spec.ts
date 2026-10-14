@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter, withComponentInputBinding } from '@angular/router';
+import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { ApplicationRef } from '@angular/core';
 import { Run, RunPage } from './run';
@@ -121,6 +121,75 @@ describe('RunsPage', () => {
       const request = http.expectOne((r) => r.url === '/api/runs');
 
       expect([request.request.params.get('from'), request.request.params.get('search')]).toEqual(['2026-10-01', 'Lauf']);
+    });
+  });
+
+  describe('a Training Week', () => {
+    const period = (request: { params: { get(name: string): string | null } }) => [request.params.get('from'), request.params.get('to')];
+    const navButton = (element: HTMLElement, label: string) =>
+      [...element.querySelectorAll<HTMLButtonElement>('.period-nav button')].find((b) => (b.getAttribute('aria-label') ?? b.textContent!.trim()) === label)!;
+    const next = async (http: HttpTestingController) => {
+      await new Promise((resolve) => setTimeout(resolve));
+      TestBed.inject(ApplicationRef).tick();
+      return http.expectOne((r) => r.url === '/api/runs');
+    };
+
+    it('lists its Runs Monday to Sunday', async () => {
+      const { element, request } = await open('/runs?week=2026-10-05');
+
+      expect(period(request)).toEqual(['2026-10-05', '2026-10-11']);
+      expect(element.querySelector('.period-nav h2')!.textContent!.trim()).toBe('5 Oct – 11 Oct 2026');
+      expect(element.querySelector('.period-nav')!.getAttribute('aria-label')).toBe('Training Week');
+    });
+
+    it('is the week of any day it is given', async () => {
+      const { request } = await open('/runs?week=2026-10-01');
+
+      expect(period(request)).toEqual(['2026-09-28', '2026-10-04']);
+    });
+
+    it('falls back to the month for a malformed week', async () => {
+      const { request } = await open('/runs?week=2026-02-31');
+
+      expect(period(request)).toEqual(['2026-10-01', '2026-10-31']);
+    });
+
+    it('steps a week at a time, keeping the search, up to the current week', async () => {
+      const { http, element } = await open('/runs?week=2026-10-05&search=Lauf');
+
+      navButton(element, 'Next week').click();
+      const request = await next(http);
+      expect([...period(request.request), request.request.params.get('search')]).toEqual(['2026-10-12', '2026-10-18', 'Lauf']);
+      request.flush(october);
+      await new Promise((resolve) => setTimeout(resolve));
+      TestBed.inject(ApplicationRef).tick();
+      expect(navButton(element, 'Next week').disabled).toBe(true);
+      expect(navButton(element, 'Today').disabled).toBe(true);
+
+      navButton(element, 'Previous week').click();
+      expect(period((await next(http)).request)).toEqual(['2026-10-05', '2026-10-11']);
+    });
+
+    it('opens the whole month it starts in', async () => {
+      const { http, element } = await open('/runs?week=2026-09-28');
+
+      navButton(element, 'All of September').click();
+      expect(period((await next(http)).request)).toEqual(['2026-09-01', '2026-09-30']);
+      expect(TestBed.inject(Router).url).toBe('/runs?month=2026-09');
+    });
+
+    it('exports as the week, named after its Monday', async () => {
+      const saves = captureSaves();
+      const { http, element } = await open('/runs?week=2026-10-05');
+
+      const button = [...element.querySelectorAll<HTMLButtonElement>('.export-menu button')].find((b) => b.textContent!.trim() === 'This week')!;
+      button.click();
+      const request = http.expectOne((r) => r.url === '/api/runs/export');
+      request.flush([]);
+
+      expect(period(request.request)).toEqual(['2026-10-05', '2026-10-11']);
+      expect(saves.map((s) => s.name)).toEqual(['runs-week-2026-10-05.csv']);
+      vi.restoreAllMocks();
     });
   });
 

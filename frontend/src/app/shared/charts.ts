@@ -66,7 +66,7 @@ export function valueAxis(colors: ChartColors, formatter: (value: number) => str
   };
 }
 
-/** Column chart of distance per Training Week, in kilometres or miles. */
+/** Column chart of distance per Training Week, in kilometres or miles; a column can be clicked. */
 export function weeklyDistanceChart(weeks: WeekDistance[], unit: DistanceUnit, colors: ChartColors): EChartsCoreOption {
   const base = baseChartOptions(colors);
   return {
@@ -90,6 +90,7 @@ export function weeklyDistanceChart(weeks: WeekDistance[], unit: DistanceUnit, c
         barCategoryGap: weeks.length > 12 ? '18%' : '28%',
         itemStyle: { color: verticalGradient(colors.barTop, colors.seriesDeep), borderRadius: [3, 3, 1, 1] },
         emphasis: { itemStyle: { color: colors.barHover } },
+        cursor: 'pointer',
         animationDuration: 700,
         animationEasing: 'cubicOut',
       },

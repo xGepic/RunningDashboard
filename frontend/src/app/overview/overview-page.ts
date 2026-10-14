@@ -1,6 +1,7 @@
 import { DecimalPipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { Component, computed, inject, linkedSignal } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import type { EChartsCoreOption } from 'echarts/core';
 import { NgxEchartsDirective } from 'ngx-echarts';
 import { ChartColors, ChartTheme, tooltipHtml } from '../shared/chart-theme';
@@ -32,12 +33,13 @@ const kpiDefinitions: { label: string; unit: string | null; icon: string; of: (t
 
 @Component({
   selector: 'app-overview-page',
-  imports: [DecimalPipe, NgxEchartsDirective, StreakCard, YearlyGoalCard],
+  imports: [DecimalPipe, NgxEchartsDirective, RouterLink, StreakCard, YearlyGoalCard],
   templateUrl: './overview-page.html',
   styleUrl: './overview-page.scss',
 })
 export class OverviewPage {
   private readonly theme = inject(ChartTheme);
+  private readonly router = inject(Router);
 
   protected readonly overview = httpResource<Overview>(() => '/api/overview');
   /** Distances and Pace in the Distance Unit; elevation stays in metres. */
@@ -142,6 +144,12 @@ export class OverviewPage {
 
   constructor() {
     reloadOnSync(() => this.overview.reload());
+  }
+
+  /** A column opens its Training Week's Runs. */
+  protected openWeek(index: number): void {
+    const week = this.selectedWeeks()[index];
+    if (week) this.router.navigate(['/runs'], { queryParams: { week: week.start } });
   }
 
   /** The Yearly Goal was set, changed or removed. */

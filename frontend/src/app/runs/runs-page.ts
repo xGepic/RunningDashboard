@@ -2,7 +2,7 @@ import { DatePipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { Component, computed, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { currentMonth, isoDate, lastDayOf, monthDate, monthKey } from '../shared/dates';
+import { addDays, currentMonth, isoDate, lastDayOf, localDate, mondayOf, monthDate, monthKey, today } from '../shared/dates';
 import { formatDuration, formatHoursMinutes } from '../shared/format';
 import { HistoryList, ListParams, requestParams } from '../shared/history-list';
 import { SportSwitch } from '../shared/sport-switch';
@@ -27,6 +27,8 @@ export class RunsPage extends HistoryList<RunSortKey, Run> {
   /** "2026-10"; the current month when missing or malformed. */
   readonly month = input<string>();
   readonly search = input<string>();
+  /** "2026-10-05": shows that Training Week instead of a month; any day of it will do. */
+  readonly week = input<string>();
 
   protected readonly selectedMonth = computed(() => {
     const month = this.month();
@@ -37,15 +39,29 @@ export class RunsPage extends HistoryList<RunSortKey, Run> {
   protected readonly nextMonthStart = computed(() => monthDate(this.selectedMonth(), 1));
   protected readonly isCurrentMonth = computed(() => this.selectedMonth() >= currentMonth());
 
+  /** The Monday of the Training Week asked for; null for a month, also when the week is malformed. */
+  protected readonly weekStart = computed(() => {
+    const week = this.week();
+    if (!week || !/^\d{4}-\d{2}-\d{2}$/.test(week) || isoDate(localDate(week)) !== week) return null;
+    return mondayOf(localDate(week));
+  });
+  protected readonly isCurrentWeek = computed(() => this.weekStart()! >= mondayOf(today()));
+
+  /** The days listed: the Training Week asked for, or else the month. */
+  protected readonly period = computed(() => {
+    const monday = this.weekStart();
+    return monday ? { from: monday, to: addDays(monday, 6) } : { from: this.monthStart(), to: lastDayOf(this.monthStart()) };
+  });
+
   /** Distances and Pace in the Distance Unit from Settings. */
   protected readonly units = inject(Units);
 
-  /** A month's Runs. */
+  /** A month's or Training Week's Runs. */
   protected readonly runs = httpResource<RunPage>(() => ({
     url: '/api/runs',
     params: requestParams({
-      from: isoDate(this.monthStart()),
-      to: isoDate(lastDayOf(this.monthStart())),
+      from: isoDate(this.period().from),
+      to: isoDate(this.period().to),
       search: this.search(),
       sort: this.sort(),
       direction: this.direction(),
@@ -111,7 +127,25 @@ export class RunsPage extends HistoryList<RunSortKey, Run> {
   /** The current month stays out of the URL, so "/runs" always opens on it. */
   protected showMonth(month: string): void {
     if (!month) return;
-    this.navigate({ month: month === currentMonth() ? null : month, page: null });
+    this.navigate({ month: month === currentMonth() ? null : month, week: null, page: null });
+  }
+
+  /** Steps a Training Week back or forward; the filters and sort order stay. */
+  protected shiftWeek(weeks: number): void {
+    this.showWeek(addDays(this.weekStart()!, weeks * 7));
+  }
+
+  protected showWeek(monday: Date): void {
+    this.navigate({ week: isoDate(monday), month: null, page: null });
+  }
+
+  protected thisWeek(): Date {
+    return mondayOf(today());
+  }
+
+  /** The month the shown Training Week starts in. */
+  protected weeksMonth(): string {
+    return monthKey(this.weekStart()!);
   }
 
   /** The whole row opens the Run; its name stays a link of its own. */
@@ -120,13 +154,16 @@ export class RunsPage extends HistoryList<RunSortKey, Run> {
     this.router.navigate(['/runs', runId]);
   }
 
-  /** The month as listed, search and sort order included, or every Run in the list's sort order. */
-  protected exportRuns(scope: 'month' | 'all'): void {
+  /** The month or Training Week as listed, search and sort order included, or every Run in the list's sort order. */
+  protected exportRuns(scope: 'period' | 'all'): void {
     const order = { sort: this.sort(), direction: this.direction() };
-    const params = scope === 'month'
-      ? requestParams({ from: isoDate(this.monthStart()), to: isoDate(lastDayOf(this.monthStart())), search: this.search(), ...order })
+    const { from, to } = this.period();
+    const params = scope === 'period'
+      ? requestParams({ from: isoDate(from), to: isoDate(to), search: this.search(), ...order })
       : requestParams(order);
-    this.exportCsv<RunExport>('/api/runs/export', params, scope === 'month' ? `runs-${this.selectedMonth()}.csv` : this.datedFileName('runs'), (runs) => runTable(runs, this.units.unit()));
+    const monday = this.weekStart();
+    const fileName = scope === 'all' ? this.datedFileName('runs') : monday ? `runs-week-${isoDate(monday)}.csv` : `runs-${this.selectedMonth()}.csv`;
+    this.exportCsv<RunExport>('/api/runs/export', params, fileName, (runs) => runTable(runs, this.units.unit()));
   }
 
   protected clearSearch(): void {
