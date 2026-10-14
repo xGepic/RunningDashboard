@@ -10,6 +10,6 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes, withComponentInputBinding()),
     provideHttpClient(withFetch()),
     // ECharts is loaded on first use, so it stays out of the initial bundle.
-    provideEchartsCore({ echarts: () => import('echarts') }),
+    provideEchartsCore({ echarts: () => import('./shared/echarts').then((m) => m.echarts) }),
   ]
 };
