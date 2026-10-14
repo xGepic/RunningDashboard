@@ -43,13 +43,12 @@ public static class SwimEndpoints
     /// search case-insensitive beyond ASCII.
     /// </summary>
     private static async Task<List<SwimResponse>> MatchingAsync(ListQuery query, AppDbContext db, CancellationToken cancellationToken) =>
-        (await db.ListedActivities
+        [.. (await db.ListedActivities
             .Where(a => Sports.Swims.Contains(a.SportType))
             .Select(a => new { a.Id, a.Name, a.StartLocal, a.Distance, a.MovingTime })
             .ToListAsync(cancellationToken))
         .Select(a => new SwimResponse(
             a.Id, a.Name, a.StartLocal, a.Distance, a.MovingTime, ListedActivity.SwimPaceOf(a.MovingTime, a.Distance),
             $"https://www.strava.com/activities/{a.Id}"))
-        .Where(s => query.Matches(s.Name, s.StartLocal))
-        .ToList();
+        .Where(s => query.Matches(s.Name, s.StartLocal))];
 }

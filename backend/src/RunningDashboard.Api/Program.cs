@@ -80,9 +80,16 @@ if (packaged)
     app.Lifetime.ApplicationStarted.Register(() =>
     {
         var url = app.Urls.First();
-        app.Logger.LogInformation("Running Dashboard is open at {Url}. Close this window to stop it.", url);
+        LogOpenAt(app.Logger, url);
         Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
     });
 }
 
 app.Run();
+
+// Public, for the tests' WebApplicationFactory<Program>.
+public partial class Program
+{
+    [LoggerMessage(Level = LogLevel.Information, Message = "Running Dashboard is open at {Url}. Close this window to stop it.")]
+    private static partial void LogOpenAt(ILogger logger, string url);
+}

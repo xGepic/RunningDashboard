@@ -44,13 +44,12 @@ public static class RideEndpoints
     /// search case-insensitive beyond ASCII.
     /// </summary>
     private static async Task<List<RideResponse>> MatchingAsync(ListQuery query, AppDbContext db, CancellationToken cancellationToken) =>
-        (await db.ListedActivities
+        [.. (await db.ListedActivities
             .Where(a => Sports.Rides.Contains(a.SportType))
             .Select(a => new { a.Id, a.Name, a.SportType, a.StartLocal, a.Distance, a.MovingTime, a.ElevationGain })
             .ToListAsync(cancellationToken))
         .Select(a => new RideResponse(
             a.Id, a.Name, a.SportType, a.StartLocal, a.Distance, a.MovingTime, ListedActivity.AvgSpeedOf(a.MovingTime, a.Distance), a.ElevationGain,
             $"https://www.strava.com/activities/{a.Id}"))
-        .Where(r => query.Matches(r.Name, r.StartLocal))
-        .ToList();
+        .Where(r => query.Matches(r.Name, r.StartLocal))];
 }

@@ -10,7 +10,7 @@ namespace RunningDashboard.Api.Backup;
 /// The <see cref="RegularBackupsKept"/> most recent regular backups are kept; those made before migrations are never
 /// removed. A backup holds everything in the database, the Strava refresh token too.
 /// </summary>
-public sealed class DatabaseBackup
+public sealed partial class DatabaseBackup
 {
     public const int RegularBackupsKept = 7;
 
@@ -72,7 +72,7 @@ public sealed class DatabaseBackup
                 Copy(Path.Combine(Folder, name));
                 RemoveOldBackups();
                 _lastError = null;
-                _logger.LogInformation("Backed up the database to {Backup}", name);
+                LogBackedUp(_logger, name);
             }
             catch (Exception exception)
             {
@@ -128,6 +128,9 @@ public sealed class DatabaseBackup
                 yield return new BackupFile(path, new DateTimeOffset(local, _clock.LocalTimeZone.GetUtcOffset(local)), beforeMigration);
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Backed up the database to {Backup}")]
+    private static partial void LogBackedUp(ILogger logger, string backup);
 
     private sealed record BackupFile(string Path, DateTimeOffset MadeAt, bool BeforeMigration);
 }
