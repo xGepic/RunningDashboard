@@ -7,6 +7,7 @@ import { HistoryList, requestParams } from '../shared/history-list';
 import { SportSwitch } from '../shared/sport-switch';
 import { Units } from '../shared/units';
 import { Ride, RidePage, RideSortKey } from './ride';
+import { rideTable } from './ride-export';
 
 /** Rides per page. */
 const pageSize = 10;
@@ -46,5 +47,10 @@ export class RidesPage extends HistoryList<RideSortKey, Ride> {
 
   protected kind(ride: Ride): { label: string; tone: string } {
     return kinds[ride.sportType] ?? { label: ride.sportType, tone: 'muted' };
+  }
+
+  /** Every Ride, in the list's sort order. */
+  protected exportRides(): void {
+    this.exportCsv<Ride>('/api/rides/export', requestParams({ sort: this.sort(), direction: this.direction() }), this.datedFileName('rides'), (rides) => rideTable(rides, this.units.unit()));
   }
 }

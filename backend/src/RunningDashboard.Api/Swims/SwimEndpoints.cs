@@ -22,19 +22,34 @@ public static class SwimEndpoints
             if (errors.Count > 0)
                 return Results.ValidationProblem(errors);
 
-            // Filtered and sorted in memory, as the Runs are: it keeps the name search case-insensitive beyond ASCII.
-            var swims = (await db.ListedActivities
-                    .Where(a => Sports.Swims.Contains(a.SportType))
-                    .Select(a => new { a.Id, a.Name, a.StartLocal, a.Distance, a.MovingTime })
-                    .ToListAsync(cancellationToken))
-                .Select(a => new SwimResponse(
-                    a.Id, a.Name, a.StartLocal, a.Distance, a.MovingTime, ListedActivity.SwimPaceOf(a.MovingTime, a.Distance),
-                    $"https://www.strava.com/activities/{a.Id}"))
-                .Where(s => query.Matches(s.Name, s.StartLocal))
-                .ToList();
-
+            var swims = await MatchingAsync(query, db, cancellationToken);
             return Results.Ok(new SwimPageResponse(
                 query.PageOf(swims, s => s.StartLocal, Figures), query.PageOrDefault, query.PageSizeOrDefault, swims.Count, SwimTotalsResponse.Of(swims)));
         });
+
+        // Every Swim the list would show, on one "page"; the page and its size are ignored.
+        app.MapGet("/api/swims/export", async ([AsParameters] ListQuery query, AppDbContext db, CancellationToken cancellationToken) =>
+        {
+            var errors = query.Validate(Figures.Keys, "Swims");
+            if (errors.Count > 0)
+                return Results.ValidationProblem(errors);
+
+            return Results.Ok(query.Sorted(await MatchingAsync(query, db, cancellationToken), s => s.StartLocal, Figures).ToList());
+        });
     }
+
+    /// <summary>
+    /// The Swims matching the search and date range, unsorted. Filtered in memory, as the Runs are: it keeps the name
+    /// search case-insensitive beyond ASCII.
+    /// </summary>
+    private static async Task<List<SwimResponse>> MatchingAsync(ListQuery query, AppDbContext db, CancellationToken cancellationToken) =>
+        (await db.ListedActivities
+            .Where(a => Sports.Swims.Contains(a.SportType))
+            .Select(a => new { a.Id, a.Name, a.StartLocal, a.Distance, a.MovingTime })
+            .ToListAsync(cancellationToken))
+        .Select(a => new SwimResponse(
+            a.Id, a.Name, a.StartLocal, a.Distance, a.MovingTime, ListedActivity.SwimPaceOf(a.MovingTime, a.Distance),
+            $"https://www.strava.com/activities/{a.Id}"))
+        .Where(s => query.Matches(s.Name, s.StartLocal))
+        .ToList();
 }

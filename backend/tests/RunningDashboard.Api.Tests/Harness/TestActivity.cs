@@ -12,6 +12,8 @@ namespace RunningDashboard.Api.Tests.Harness;
 /// <param name="UtcOffsetHours">Offset of that place from UTC, e.g. 2 for Vienna in summer, -4 for New York.</param>
 /// <param name="ElapsedTime">Seconds; the Moving Time unless a test sets it.</param>
 /// <param name="RelativeEffort">Strava's suffer_score field; none unless a test sets it.</param>
+/// <param name="AverageHeartRate">Beats per minute; none (recorded without heart rate) unless a test sets it.</param>
+/// <param name="AverageCadence">As Strava counts it: one foot's steps per minute; none unless a test sets it.</param>
 public sealed record TestActivity(
     long Id,
     string Name,
@@ -23,7 +25,9 @@ public sealed record TestActivity(
     double ElevationGain = 0,
     TestBestEffort[]? BestEfforts = null,
     int? ElapsedTime = null,
-    int? RelativeEffort = null)
+    int? RelativeEffort = null,
+    double? AverageHeartRate = null,
+    double? AverageCadence = null)
 {
     public static string ToJson(IEnumerable<TestActivity> activities) =>
         JsonSerializer.Serialize(activities.Select(a => a.ToStrava()));
@@ -71,7 +75,9 @@ public sealed record TestActivity(
             ["visibility"] = "everyone",
             ["gear_id"] = null,
             ["average_speed"] = MovingTime > 0 ? Distance / MovingTime : 0,
-            ["has_heartrate"] = false,
+            ["has_heartrate"] = AverageHeartRate is not null,
+            ["average_heartrate"] = AverageHeartRate,
+            ["average_cadence"] = AverageCadence,
             ["pr_count"] = 0,
             ["suffer_score"] = RelativeEffort,
         };

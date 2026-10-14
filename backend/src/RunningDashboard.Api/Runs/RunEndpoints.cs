@@ -15,6 +15,13 @@ public static class RunEndpoints
         ["pace"] = r => r.Pace,
     };
 
+    private static readonly Dictionary<string, Func<RunExportResponse, double?>> ExportFigures = new()
+    {
+        ["distance"] = r => r.Distance,
+        ["movingTime"] = r => r.MovingTime,
+        ["pace"] = r => r.Pace,
+    };
+
     public static void MapRunEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapGet("/api/runs", async ([AsParameters] ListQuery query, AppDbContext db, CancellationToken cancellationToken) =>
@@ -37,6 +44,30 @@ public static class RunEndpoints
             var matching = runs.Where(r => query.Matches(r.Name, r.StartLocal)).ToList();
             var page = query.PageOf(matching, r => r.StartLocal, Figures);
             return Results.Ok(new RunPageResponse(page, query.PageOrDefault, query.PageSizeOrDefault, matching.Count));
+        });
+
+        // Every Run the list would show, on one "page", with what a spreadsheet wants besides; the page and its size
+        // are ignored.
+        app.MapGet("/api/runs/export", async ([AsParameters] ListQuery query, AppDbContext db, CancellationToken cancellationToken) =>
+        {
+            var errors = query.Validate(Figures.Keys, "Runs");
+            if (errors.Count > 0)
+                return Results.ValidationProblem(errors);
+
+            var shoeNames = await db.Shoes.ToDictionaryAsync(s => s.Id, s => s.Name, cancellationToken);
+            var runs = (await db.Runs
+                    .Select(r => new
+                    {
+                        r.Id, r.Name, r.SportType, r.StartLocal, r.Distance, r.MovingTime, r.ElevationGain, r.AverageHeartRate, r.Cadence,
+                        r.RelativeEffort, r.ShoeId,
+                    })
+                    .ToListAsync(cancellationToken))
+                .Where(r => query.Matches(r.Name, r.StartLocal))
+                .Select(r => new RunExportResponse(
+                    r.Id, r.Name, r.SportType, r.StartLocal, r.Distance, r.MovingTime, Run.PaceOf(r.MovingTime, r.Distance), r.ElevationGain,
+                    r.AverageHeartRate, r.Cadence, r.RelativeEffort, r.ShoeId is null ? null : shoeNames.GetValueOrDefault(r.ShoeId),
+                    $"https://www.strava.com/activities/{r.Id}"));
+            return Results.Ok(query.Sorted(runs, r => r.StartLocal, ExportFigures).ToList());
         });
 
         // One year's Runs, road, trail and treadmill alike, added up per calendar month, by local start; all twelve

@@ -36,6 +36,12 @@ public sealed class Run
 
     public double? RelativeEffort { get; set; }
 
+    /// <summary>Beats per minute; none for a Run recorded without heart rate.</summary>
+    public double? AverageHeartRate { get; set; }
+
+    /// <summary>Cadence: steps per minute, both feet together; none for a Run recorded without it.</summary>
+    public double? Cadence { get; set; }
+
     /// <summary>Strava's gear id of the Shoe, if one was logged.</summary>
     public string? ShoeId { get; set; }
 
@@ -142,6 +148,9 @@ public sealed class Run
         ElapsedTime = activity.ElapsedTime;
         ElevationGain = activity.ElevationGain;
         RelativeEffort = activity.RelativeEffort;
+        AverageHeartRate = activity.AverageHeartRate;
+        // Strava counts one foot's steps.
+        Cadence = activity.AverageCadence * 2;
         ShoeId = activity.GearId;
         RawSummaryJson = activity.RawJson;
     }

@@ -3,7 +3,9 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
+import { ApplicationRef } from '@angular/core';
 import { Run, RunPage } from './run';
+import { RunExport } from './run-export';
 import { RunsPage } from './runs-page';
 
 const run = (id: number, name: string, startLocal: string, distance: number, movingTime: number): Run => ({
@@ -147,6 +149,75 @@ describe('RunsPage', () => {
 
       expect(rows(element).map((r) => r.querySelector('.day-count')?.textContent!.trim() ?? null)).toEqual(['2 Runs', '2 Runs', null]);
       expect(element.querySelector('.same-day, .continues-day')).toBeNull();
+    });
+  });
+
+  /** What the page handed the browser to save: the file's name and its bytes. */
+  function captureSaves(): { name: string; blob: Blob }[] {
+    const saves: { name: string; blob: Blob }[] = [];
+    URL.createObjectURL = vi.fn((blob: Blob) => {
+      saves.push({ name: '', blob });
+      return 'blob:csv';
+    });
+    URL.revokeObjectURL = vi.fn();
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      saves.at(-1)!.name = this.download;
+    });
+    return saves;
+  }
+
+  describe('Export CSV', () => {
+    afterEach(() => vi.restoreAllMocks());
+
+    const exported: RunExport = {
+      id: 1, name: 'Lauf im Prater', sportType: 'Run', startLocal: '2026-09-28T09:00:00', distance: 10020, movingTime: 3300, pace: 329.34,
+      elevationGain: 8, averageHeartRate: 148, cadence: 168, relativeEffort: 35, shoeName: null, stravaUrl: 'https://www.strava.com/activities/1',
+    };
+    const menuButton = (element: HTMLElement, label: string) =>
+      [...element.querySelectorAll<HTMLButtonElement>('.export-menu button')].find((b) => b.textContent!.trim() === label)!;
+
+    it('saves the month shown, with its search and sort order, named after the month', async () => {
+      const saves = captureSaves();
+      const { http, element } = await open('/runs?month=2026-09&search=lauf&sort=pace&direction=asc');
+
+      menuButton(element, 'This month').click();
+      const request = http.expectOne((r) => r.url === '/api/runs/export');
+      request.flush([exported]);
+
+      expect(request.request.params.keys().sort()).toEqual(['direction', 'from', 'search', 'sort', 'to']);
+      expect([request.request.params.get('from'), request.request.params.get('to'), request.request.params.get('search')])
+        .toEqual(['2026-09-01', '2026-09-30', 'lauf']);
+      expect(saves.map((s) => s.name)).toEqual(['runs-2026-09.csv']);
+      const bytes = new Uint8Array(await saves[0].blob.arrayBuffer());
+      expect([...bytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
+      const lines = new TextDecoder().decode(bytes).split('\r\n');
+      expect(lines[0]).toBe('Date;Name;Sport Type;Distance (km);Moving Time;Pace (min/km);Elevation Gain (m);Avg Heart Rate (bpm);Cadence (spm);Relative Effort;Shoe;Strava');
+      expect(lines[1]).toBe('2026-09-28 09:00;Lauf im Prater;Run;10,02;0:55:00;5:29;8;148;168;35;;https://www.strava.com/activities/1');
+    });
+
+    it('saves every Run, whatever the month or search, named after today', async () => {
+      const saves = captureSaves();
+      const { http, element } = await open('/runs?month=2026-09&search=lauf');
+
+      menuButton(element, 'All Runs').click();
+      const request = http.expectOne((r) => r.url === '/api/runs/export');
+      request.flush([exported]);
+
+      expect(request.request.params.keys()).toEqual([]);
+      expect(saves.map((s) => s.name)).toEqual(['runs-2026-10-12.csv']);
+    });
+
+    it('says when the export could not be made', async () => {
+      const saves = captureSaves();
+      const { http, element } = await open('/runs');
+
+      menuButton(element, 'All Runs').click();
+      http.expectOne((r) => r.url === '/api/runs/export').flush(null, { status: 500, statusText: 'Server Error' });
+      await new Promise((resolve) => setTimeout(resolve));
+      TestBed.inject(ApplicationRef).tick();
+
+      expect(saves).toEqual([]);
+      expect(element.querySelector('[role="alert"]')!.textContent).toContain('The export could not be made.');
     });
   });
 });

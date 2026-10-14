@@ -8,7 +8,7 @@ Everything comes from data that is already stored: Strava's raw JSON, the Splits
 |---|---|---|
 | 01 | Shoe badge | done |
 | 02 | Database backup | done |
-| 03 | CSV export | ready |
+| 03 | CSV export | done |
 | 04 | Year in Review | ready |
 | 05 | Fitness page | ready |
 
@@ -37,13 +37,15 @@ The Athlete never loses their data or their Training Plans to a broken disk or a
 
 The Athlete can take their history into Excel.
 
-- The Runs, Rides and Swims lists each get an "Export CSV" button. It exports every row that matches the current search and date range, not only the page shown.
-- Format for Excel with Austrian/German settings: `;` as the separator, `,` as the decimal separator, UTF-8 with a BOM. File names like `runs-2026-10-14.csv`.
+- The Runs page shows one month at a time, so its "Export CSV" is a menu: **This month** exports what the page lists (the month, its search and sort order) as `runs-2026-09.csv`, and **All Runs** exports every Run in the list's sort order.
+- The Rides and Swims lists, which have no filters, each get an "Export CSV" button that exports every Ride or Swim in the list's sort order, not only the page shown.
+- Format for Excel with Austrian/German settings: `;` as the separator, `,` as the decimal separator, UTF-8 with a BOM. Exports of everything are named after the day, like `runs-2026-10-14.csv`. Moving Time is `h:mm:ss`.
 - Distances and Avg Speed are plain numbers in the Distance Unit; Pace is `m:ss`. Swims stay in metres.
 - Columns:
   - **Runs:** Date, Name, Sport Type, Distance, Moving Time, Pace, Elevation Gain, Avg Heart Rate, Cadence (steps per minute), Relative Effort, Shoe, Strava link
   - **Rides:** Date, Name, Sport Type, Distance, Moving Time, Avg Speed, Elevation Gain, Strava link
   - **Swims:** Date, Name, Distance (m), Moving Time, Swim Pace, Strava link
+- Each Run stores its average heart rate and Cadence in their own columns (filled from the stored summaries by a migration), rather than reading them from the raw JSON on every export. The Fitness page (05) uses them too.
 
 ## 04: Year in Review
 

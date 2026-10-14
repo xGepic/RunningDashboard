@@ -13,7 +13,9 @@ internal sealed record ActivityResponse(
     int ElapsedTime,
     double TotalElevationGain,
     double? SufferScore,
-    string? GearId);
+    string? GearId,
+    double? AverageHeartrate,
+    double? AverageCadence);
 
 internal sealed record ShoeResponse(string Id, string Name, double Distance, bool Retired);
 
@@ -46,6 +48,8 @@ public sealed record ActivityQuery(DateTime? Before = null, DateTime? After = nu
 /// <summary>
 /// An Activity summary as listed by Strava; <see cref="RawJson"/> is the untouched JSON for later re-derivation.
 /// </summary>
+/// <param name="AverageHeartRate">Beats per minute; none without a heart-rate recording.</param>
+/// <param name="AverageCadence">As Strava counts it for Runs: steps per minute of one foot.</param>
 public sealed record StravaActivity(
     long Id,
     string Name,
@@ -58,6 +62,8 @@ public sealed record StravaActivity(
     double ElevationGain,
     double? RelativeEffort,
     string? GearId,
+    double? AverageHeartRate,
+    double? AverageCadence,
     string RawJson);
 
 /// <summary>

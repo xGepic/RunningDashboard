@@ -6,6 +6,7 @@ import { formatDistance, formatDuration, formatHoursMinutes, formatSwimPace } fr
 import { HistoryList, requestParams } from '../shared/history-list';
 import { SportSwitch } from '../shared/sport-switch';
 import { Swim, SwimPage, SwimSortKey } from './swim';
+import { swimTable } from './swim-export';
 
 /** Swims per page. */
 const pageSize = 10;
@@ -34,4 +35,9 @@ export class SwimsPage extends HistoryList<SwimSortKey, Swim> {
   protected readonly formatDuration = formatDuration;
   protected readonly formatHoursMinutes = formatHoursMinutes;
   protected readonly formatSwimPace = formatSwimPace;
+
+  /** Every Swim, in the list's sort order. */
+  protected exportSwims(): void {
+    this.exportCsv<Swim>('/api/swims/export', requestParams({ sort: this.sort(), direction: this.direction() }), this.datedFileName('swims'), swimTable);
+  }
 }

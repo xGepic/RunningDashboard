@@ -1,7 +1,10 @@
-import { HttpResourceRef } from '@angular/common/http';
-import { Directive, computed, inject, input } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import { HttpClient, HttpResourceRef } from '@angular/common/http';
+import { Directive, computed, inject, input, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { reloadOnSync } from '../sync/reload-on-sync';
+import { CsvTable, saveCsv } from './csv';
+import { isoDate, today } from './dates';
 
 /** One page of a history, as GET /api/runs, /api/rides and /api/swims return it. */
 export interface ListPage<Item> {
@@ -27,6 +30,8 @@ export function requestParams(params: Record<string, string | null | undefined>)
 @Directive()
 export abstract class HistoryList<SortKey extends string, Item extends { distance: number }> {
   protected readonly router = inject(Router);
+  private readonly http = inject(HttpClient);
+  private readonly document = inject(DOCUMENT);
 
   // From the query string (component input binding).
   readonly sort = input<SortKey>();
@@ -51,9 +56,34 @@ export abstract class HistoryList<SortKey extends string, Item extends { distanc
   /** The longest listed, which fills its distance bar. */
   protected readonly longest = computed(() => Math.max(1, ...(this.list.hasValue() ? this.list.value().items : []).map((i) => i.distance)));
 
+  /** While an export is being fetched. */
+  protected readonly exporting = signal(false);
+  protected readonly exportError = signal<string | null>(null);
+
   constructor() {
     // Only called once the page is up, when the subclass has set the list.
     reloadOnSync(() => this.list.reload());
+  }
+
+  /** Saves every row of the export `url` the `params` ask for (search, date range, sort order) as `fileName`. */
+  protected exportCsv<Row>(url: string, params: Record<string, string>, fileName: string, table: (rows: Row[]) => CsvTable): void {
+    this.exporting.set(true);
+    this.exportError.set(null);
+    this.http.get<Row[]>(url, { params }).subscribe({
+      next: (rows) => {
+        this.exporting.set(false);
+        saveCsv(this.document, fileName, table(rows));
+      },
+      error: () => {
+        this.exporting.set(false);
+        this.exportError.set('The export could not be made. Try again.');
+      },
+    });
+  }
+
+  /** "runs-2026-10-14.csv": what is exported, and when. */
+  protected datedFileName(name: string): string {
+    return `${name}-${isoDate(today())}.csv`;
   }
 
   /** Clicking the current sort column flips the direction; another column starts with its natural direction. */

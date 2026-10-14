@@ -86,8 +86,12 @@ public sealed class BackupTests
         // A database from before the last migration, as after updating the code.
         var path = Path.Combine(Path.GetTempPath(), $"running-dashboard-test-{Guid.NewGuid():N}.db");
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={path};Pooling=False").Options;
+        string latest;
         await using (var db = new AppDbContext(options))
+        {
             await db.GetService<IMigrator>().MigrateAsync("20261013115737_AddShoeMaximumDistance");
+            latest = db.Database.GetMigrations().Last();
+        }
 
         var app = new TestApp(path);
         try
@@ -104,7 +108,7 @@ public sealed class BackupTests
             BackupFiles(app).ShouldContain(Path.GetFileName(beforeMigration));
             BackupFiles(app).Count.ShouldBe(8);
             LastMigrationIn(beforeMigration).ShouldBe("20261013115737_AddShoeMaximumDistance");
-            LastMigrationIn(path).ShouldBe("20261013122309_AddTheme");
+            LastMigrationIn(path).ShouldBe(latest);
         }
         finally
         {

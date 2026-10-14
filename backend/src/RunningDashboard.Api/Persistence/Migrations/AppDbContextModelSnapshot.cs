@@ -143,6 +143,12 @@ namespace RunningDashboard.Api.Persistence.Migrations
                     b.Property<long>("Id")
                         .HasColumnType("INTEGER");
 
+                    b.Property<double?>("AverageHeartRate")
+                        .HasColumnType("REAL");
+
+                    b.Property<double?>("Cadence")
+                        .HasColumnType("REAL");
+
                     b.Property<DateTimeOffset?>("DetailFetchedAt")
                         .HasColumnType("TEXT");
 

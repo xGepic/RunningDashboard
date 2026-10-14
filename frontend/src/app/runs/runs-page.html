@@ -5,6 +5,13 @@
       <div class="title-row">
         <h1>Run history</h1>
         <app-sport-switch current="runs" />
+        <details class="export-menu" #exportMenu>
+          <summary class="btn" [class.busy]="exporting()">Export CSV</summary>
+          <div class="menu">
+            <button type="button" [disabled]="exporting()" (click)="exportMenu.open = false; exportRuns('month')">This month</button>
+            <button type="button" [disabled]="exporting()" (click)="exportMenu.open = false; exportRuns('all')">All Runs</button>
+          </div>
+        </details>
       </div>
     </div>
     @if (summary().runs > 0) {
@@ -16,6 +23,9 @@
       </div>
     }
   </header>
+  @if (exportError(); as error) {
+    <p class="error" role="alert">{{ error }}</p>
+  }
 
   <div class="toolbar">
     <nav class="period-nav" aria-label="Month">

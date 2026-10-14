@@ -5,6 +5,7 @@
       <div class="title-row">
         <h1>Ride history</h1>
         <app-sport-switch current="rides" />
+        <button type="button" class="btn export" [disabled]="exporting()" (click)="exportRides()">Export CSV</button>
       </div>
     </div>
     @if (totals(); as totals) {
@@ -18,6 +19,9 @@
       }
     }
   </header>
+  @if (exportError(); as error) {
+    <p class="error" role="alert">{{ error }}</p>
+  }
 
   @if (rides.error()) {
     <p class="error" role="alert">

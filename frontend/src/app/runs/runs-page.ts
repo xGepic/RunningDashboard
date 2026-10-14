@@ -8,6 +8,7 @@ import { HistoryList, ListParams, requestParams } from '../shared/history-list';
 import { SportSwitch } from '../shared/sport-switch';
 import { Units } from '../shared/units';
 import { Run, RunPage, RunSortKey } from './run';
+import { RunExport, runTable } from './run-export';
 
 /** All Runs of a month fit on one page; the pager only shows up past this. */
 const pageSize = 200;
@@ -117,6 +118,15 @@ export class RunsPage extends HistoryList<RunSortKey, Run> {
   protected open(runId: number, event: MouseEvent): void {
     if ((event.target as HTMLElement).closest('a')) return;
     this.router.navigate(['/runs', runId]);
+  }
+
+  /** The month as listed, search and sort order included, or every Run in the list's sort order. */
+  protected exportRuns(scope: 'month' | 'all'): void {
+    const order = { sort: this.sort(), direction: this.direction() };
+    const params = scope === 'month'
+      ? requestParams({ from: isoDate(this.monthStart()), to: isoDate(lastDayOf(this.monthStart())), search: this.search(), ...order })
+      : requestParams(order);
+    this.exportCsv<RunExport>('/api/runs/export', params, scope === 'month' ? `runs-${this.selectedMonth()}.csv` : this.datedFileName('runs'), (runs) => runTable(runs, this.units.unit()));
   }
 
   protected clearSearch(): void {

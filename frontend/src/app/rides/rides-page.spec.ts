@@ -58,4 +58,35 @@ describe('RidesPage', () => {
     expect(element.querySelector('[role="alert"]')!.textContent).toContain('Rides could not be loaded');
     expect(element.querySelector('.summary')).toBeNull();
   });
+
+  afterEach(() => vi.restoreAllMocks());
+
+  /** What the page handed the browser to save: the file's name and its bytes. */
+  function captureSaves(): { name: string; blob: Blob }[] {
+    const saves: { name: string; blob: Blob }[] = [];
+    URL.createObjectURL = vi.fn((blob: Blob) => {
+      saves.push({ name: '', blob });
+      return 'blob:csv';
+    });
+    URL.revokeObjectURL = vi.fn();
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      saves.at(-1)!.name = this.download;
+    });
+    return saves;
+  }
+
+  it('exports every Ride in the sort order shown, named after today', async () => {
+    const saves = captureSaves();
+    const element = await open(rides);
+    const http = TestBed.inject(HttpTestingController);
+
+    [...element.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent!.trim() === 'Export CSV')!.click();
+    const request = http.expectOne((r) => r.url === '/api/rides/export');
+    request.flush(rides.items);
+
+    expect(request.request.params.keys()).toEqual([]);
+    expect(saves.map((s) => s.name)).toEqual([expect.stringMatching(/^rides-\d{4}-\d{2}-\d{2}\.csv$/)]);
+    const text = await saves[0].blob.text();
+    expect(text).toContain('2026-10-11 08:00;Morning Ride;Ride;42,00;1:30:00;28,0;310;https://www.strava.com/activities/1');
+  });
 });

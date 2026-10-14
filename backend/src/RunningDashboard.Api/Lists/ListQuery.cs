@@ -55,20 +55,22 @@ public sealed record ListQuery(
         && (From is null || DateOnly.FromDateTime(startLocal) >= From)
         && (To is null || DateOnly.FromDateTime(startLocal) <= To);
 
+    /// <summary>The page asked for, in the requested order (see <see cref="Sorted"/>).</summary>
+    /// <param name="figures">Each sort key besides date, with the figure it sorts by.</param>
+    public List<T> PageOf<T>(IEnumerable<T> items, Func<T, DateTime> startLocal, IReadOnlyDictionary<string, Func<T, double?>> figures) =>
+        [.. Sorted(items, startLocal, figures).Skip((PageOrDefault - 1) * PageSizeOrDefault).Take(PageSizeOrDefault)];
+
     /// <summary>
-    /// The page asked for, in the requested order. Items without the figure sorted by go last; equal ones fall back to
-    /// newest first.
+    /// All of them in the requested order, e.g. for an export. Items without the figure sorted by go last; equal ones
+    /// fall back to newest first.
     /// </summary>
     /// <param name="figures">Each sort key besides date, with the figure it sorts by.</param>
-    public List<T> PageOf<T>(IEnumerable<T> items, Func<T, DateTime> startLocal, IReadOnlyDictionary<string, Func<T, double?>> figures)
+    public IEnumerable<T> Sorted<T>(IEnumerable<T> items, Func<T, DateTime> startLocal, IReadOnlyDictionary<string, Func<T, double?>> figures)
     {
         var ascending = Direction == "asc";
         var sorted = Sort is null or DateKey
             ? ascending ? items.OrderBy(startLocal) : items.OrderByDescending(startLocal)
             : items.OrderBy(i => figures[Sort](i) is null).ThenBy(i => ascending ? figures[Sort](i) : -figures[Sort](i));
-        return [.. sorted
-            .ThenByDescending(startLocal)
-            .Skip((PageOrDefault - 1) * PageSizeOrDefault)
-            .Take(PageSizeOrDefault)];
+        return sorted.ThenByDescending(startLocal);
     }
 }

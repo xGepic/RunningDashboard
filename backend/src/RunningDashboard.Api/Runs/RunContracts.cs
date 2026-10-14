@@ -19,6 +19,28 @@ internal sealed record RunPageResponse(IReadOnlyList<RunResponse> Items, int Pag
 /// <param name="ShoeName">Name of the Shoe logged with the Run, if Strava still lists it.</param>
 internal sealed record RunResponse(long Id, string Name, string SportType, DateTime StartLocal, double Distance, int MovingTime, double? Pace, string? ShoeName);
 
+/// <summary>A Run as exported: what the list shows, and more.</summary>
+/// <param name="Distance">Metres.</param>
+/// <param name="MovingTime">Seconds.</param>
+/// <param name="Pace">Seconds per kilometre.</param>
+/// <param name="ElevationGain">Metres.</param>
+/// <param name="AverageHeartRate">Beats per minute.</param>
+/// <param name="Cadence">Steps per minute, both feet together.</param>
+internal sealed record RunExportResponse(
+    long Id,
+    string Name,
+    string SportType,
+    DateTime StartLocal,
+    double Distance,
+    int MovingTime,
+    double? Pace,
+    double ElevationGain,
+    double? AverageHeartRate,
+    double? Cadence,
+    double? RelativeEffort,
+    string? ShoeName,
+    string StravaUrl);
+
 /// <param name="Detail">"pending", "loaded" or "unavailable": whether Best Efforts and splits are in.</param>
 /// <param name="Route">Google's encoded polyline of the route; none for a Run without GPS.</param>
 /// <param name="MileSplits">Strava's splits per mile, for an Athlete who reads miles; Pace is still per kilometre.</param>

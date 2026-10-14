@@ -79,6 +79,8 @@ public sealed class StravaClient(
                 activity.TotalElevationGain,
                 activity.SufferScore,
                 activity.GearId,
+                activity.AverageHeartrate,
+                activity.AverageCadence,
                 element.GetRawText());
         })];
     }
