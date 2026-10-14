@@ -71,25 +71,55 @@ public sealed class StravaRateLimits(TimeProvider clock)
             _refusedUntil = NextQuarterHour(clock.GetUtcNow());
     }
 
+    /// <summary>
+    /// Strava's four counters as they stand now, reads first, each per 15 minutes and then per day; none until Strava has
+    /// answered since the backend started. A counter is back at zero once its period has turned over since Strava
+    /// reported it.
+    /// </summary>
+    public IReadOnlyList<RateLimitUsage> CurrentUsage()
+    {
+        var now = clock.GetUtcNow();
+        lock (_lock)
+        {
+            return [.. _usage
+                .OrderBy(u => u.Key.Kind != RequestKind.Read)
+                .ThenBy(u => u.Key.Daily)
+                .Select(u =>
+                {
+                    var (periodStart, nextPeriod) = PeriodOf(u.Key, now);
+                    var used = u.Value.ObservedAt >= periodStart ? u.Value.Used : 0;
+                    return new RateLimitUsage(u.Key.Kind == RequestKind.Read, u.Key.Daily, used, u.Value.Limit, nextPeriod, u.Value.ObservedAt);
+                })];
+        }
+    }
+
     private DateTimeOffset? ResumeAt(DateTimeOffset now)
     {
-        var quarterStart = NextQuarterHour(now) - FifteenMinutes;
-        var dayStart = new DateTimeOffset(now.UtcDateTime.Date, TimeSpan.Zero);
-
         lock (_lock)
         {
             DateTimeOffset? resumeAt = _refusedUntil > now ? _refusedUntil : null;
             foreach (var (window, usage) in _usage)
             {
-                var (periodStart, nextPeriod) = window.Daily
-                    ? (dayStart, dayStart.AddDays(1))
-                    : (quarterStart, quarterStart + FifteenMinutes);
+                var (periodStart, nextPeriod) = PeriodOf(window, now);
                 if (usage.Used >= usage.Limit && usage.ObservedAt >= periodStart && (resumeAt is null || nextPeriod > resumeAt))
                     resumeAt = nextPeriod;
             }
 
             return resumeAt;
         }
+    }
+
+    /// <summary>The 15 minutes or the UTC day that <paramref name="now"/> falls in, for <paramref name="window"/>.</summary>
+    private static (DateTimeOffset Start, DateTimeOffset Next) PeriodOf(Window window, DateTimeOffset now)
+    {
+        if (window.Daily)
+        {
+            var dayStart = new DateTimeOffset(now.UtcDateTime.Date, TimeSpan.Zero);
+            return (dayStart, dayStart.AddDays(1));
+        }
+
+        var nextQuarter = NextQuarterHour(now);
+        return (nextQuarter - FifteenMinutes, nextQuarter);
     }
 
     /// <summary>Headers look like "X-ReadRateLimit-Limit: 100,1000" and "X-ReadRateLimit-Usage: 12,350".</summary>
@@ -125,3 +155,10 @@ public sealed class StravaRateLimits(TimeProvider clock)
 
     private sealed record Usage(int Limit, int Used, DateTimeOffset ObservedAt);
 }
+
+/// <summary>One of Strava's counters as it stands now.</summary>
+/// <param name="ReadsOnly">Counts read requests only; otherwise all requests.</param>
+/// <param name="Daily">Per UTC day; otherwise per 15 minutes.</param>
+/// <param name="ResetsAt">When the counter starts again from zero.</param>
+/// <param name="ObservedAt">When Strava reported it.</param>
+public sealed record RateLimitUsage(bool ReadsOnly, bool Daily, int Used, int Limit, DateTimeOffset ResetsAt, DateTimeOffset ObservedAt);

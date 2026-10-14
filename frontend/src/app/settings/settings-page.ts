@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { HttpClient, HttpErrorResponse, httpResource } from '@angular/common/http';
-import { Component, inject, linkedSignal, signal } from '@angular/core';
+import { Component, computed, effect, inject, linkedSignal, signal, untracked } from '@angular/core';
 import { Connection, StravaApp } from '../connection/connection';
 import { AthleteSettings } from '../shared/athlete-settings';
 import { FieldErrors, fieldErrorsOf, formError } from '../shared/field-errors';
@@ -8,7 +8,9 @@ import { DistanceUnit, formatWhole, unitNames } from '../shared/format';
 import { Theme, themes } from '../shared/themes';
 import { Units } from '../shared/units';
 import { SyncIndicator } from '../sync/sync-indicator';
+import { SyncState } from '../sync/sync-state';
 import { Backup } from './backup';
+import { RateLimit, StravaUsage } from './strava-usage';
 
 /** Metres; the most the API takes as the Shoes' Maximum Distance. */
 const maxShoeMaximumDistance = 5_000_000;
@@ -16,7 +18,20 @@ const maxShoeMaximumDistance = 5_000_000;
 /** For "Enter the distance in miles, e.g. 435." */
 const examples: Record<DistanceUnit, string> = { km: '700', mi: '435' };
 
-/** How the dashboard is shown (the Distance Unit and the Theme), the Shoes' Maximum Distance, the link to Strava and the backups. */
+/** The rows of the Strava API usage, each with its 15 minutes and then its day. */
+const usageRows: { requests: RateLimit['requests']; label: string }[] = [
+  { requests: 'read', label: 'Reads' },
+  { requests: 'all', label: 'All requests' },
+];
+const usagePeriods: RateLimit['period'][] = ['fifteen-minutes', 'day'];
+
+/** From this share of a limit on, it is nearly used up. */
+const nearlyUsedUp = 0.8;
+
+/**
+ * How the dashboard is shown (the Distance Unit and the Theme), the Shoes' Maximum Distance, the link to Strava with how much
+ * of its rate limits is used, and the backups.
+ */
 @Component({
   selector: 'app-settings-page',
   imports: [DatePipe, SyncIndicator],
@@ -28,6 +43,7 @@ export class SettingsPage {
   protected readonly units = inject(Units);
   protected readonly connection = httpResource<Connection>(() => '/api/connection');
   protected readonly backup = httpResource<Backup>(() => '/api/backup');
+  protected readonly rateLimits = httpResource<StravaUsage>(() => '/api/strava/rate-limits');
   private readonly http = inject(HttpClient);
 
   protected readonly distanceUnits: DistanceUnit[] = ['km', 'mi'];
@@ -50,6 +66,37 @@ export class SettingsPage {
   protected readonly backingUp = signal(false);
   /** Why "Back up now" failed, as the backend says; until the next try. */
   protected readonly backupError = signal<string | null>(null);
+
+  protected readonly formatWhole = formatWhole;
+
+  /** Reads and all requests, each with its 15 minutes and its day, and how close each is to its limit. */
+  protected readonly usageRows = computed(() => {
+    const limits = this.rateLimits.hasValue() ? this.rateLimits.value().limits : [];
+    return usageRows
+      .map(({ requests, label }) => ({
+        label,
+        cells: usagePeriods
+          .map((period) => limits.find((l) => l.requests === requests && l.period === period))
+          .filter((limit) => limit !== undefined)
+          .map((limit) => ({
+            ...limit,
+            share: Math.min(100, (limit.used / limit.limit) * 100),
+            level: limit.used >= limit.limit ? 'over' : limit.used >= limit.limit * nearlyUsedUp ? 'near' : null,
+          })),
+      }))
+      .filter((row) => row.cells.length > 0);
+  });
+
+  constructor() {
+    // A sync uses the limits up as it goes: read them again with every new sync status after the first.
+    const sync = inject(SyncState);
+    let first = true;
+    effect(() => {
+      sync.status();
+      if (!first) untracked(() => this.rateLimits.reload());
+      first = false;
+    });
+  }
 
   /** Shown at once; if it cannot be saved, the Theme before comes back, unless another has been picked since. */
   protected pickTheme(theme: Theme): void {

@@ -81,6 +81,41 @@
           }
         </p>
         <div class="sync"><app-sync-indicator /></div>
+        <div class="usage">
+          <h3 class="usage-title">Strava API usage</h3>
+          @if (rateLimits.error()) {
+            <p class="usage-note">The usage could not be loaded.</p>
+          } @else if (rateLimits.hasValue()) {
+            @if (rateLimits.value().observedAt; as observedAt) {
+              <table>
+                <thead>
+                  <tr><td></td><th scope="col">15 minutes</th><th scope="col">Day (UTC)</th></tr>
+                </thead>
+                <tbody>
+                  @for (row of usageRows(); track row.label) {
+                    <tr>
+                      <th scope="row">{{ row.label }}</th>
+                      @for (cell of row.cells; track cell.period) {
+                        <td>
+                          <span class="mono">{{ formatWhole(cell.used) }} / {{ formatWhole(cell.limit) }}</span>
+                          <div class="track" [class.near]="cell.level === 'near'" [class.over]="cell.level === 'over'">
+                            <span [style.width.%]="cell.share"></span>
+                          </div>
+                          <span class="resets">resets {{ cell.resetsAt | date: 'HH:mm' }}</span>
+                        </td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+              </table>
+              <p class="usage-note">Counted by Strava for your API app, as Strava reported it at {{ observedAt | date: 'HH:mm' }}.
+                When a limit is used up, a sync waits until it resets.</p>
+            } @else {
+              <p class="usage-note">Not known yet: Strava reports it with every answer, and the backend has not asked Strava anything
+                since it started.</p>
+            }
+          }
+        </div>
       } @else {
         <p class="who">Not connected yet.</p>
         @if (!current.stravaApp?.inConfiguration) {

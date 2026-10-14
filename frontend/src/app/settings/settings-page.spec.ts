@@ -1,10 +1,12 @@
+import { formatDate } from '@angular/common';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { Connection } from '../connection/connection';
-import { SyncStatus } from '../sync/sync-state';
+import { SyncState, SyncStatus } from '../sync/sync-state';
 import { Backup } from './backup';
 import { SettingsPage } from './settings-page';
+import { StravaUsage } from './strava-usage';
 
 const connected: Connection = {
   connected: true,
@@ -29,10 +31,27 @@ const idle: SyncStatus = {
 
 const backedUp: Backup = { folder: 'E:\\Backups\\RunningDashboard', lastBackupAt: '2026-10-14T07:05:00+00:00', lastError: null };
 
+const reported: StravaUsage = {
+  observedAt: '2026-10-14T18:07:00+00:00',
+  limits: [
+    { requests: 'read', period: 'fifteen-minutes', used: 85, limit: 100, resetsAt: '2026-10-14T18:15:00+00:00' },
+    { requests: 'read', period: 'day', used: 350, limit: 1000, resetsAt: '2026-10-15T00:00:00+00:00' },
+    { requests: 'all', period: 'fifteen-minutes', used: 86, limit: 200, resetsAt: '2026-10-14T18:15:00+00:00' },
+    { requests: 'all', period: 'day', used: 2000, limit: 2000, resetsAt: '2026-10-15T00:00:00+00:00' },
+  ],
+};
+
 describe('SettingsPage', () => {
   afterEach(() => delete document.documentElement.dataset['theme']);
 
-  async function render(unit: 'km' | 'mi', connection: Connection = connected, shoeMaximumDistance = 700_000, theme = 'blue', backup = backedUp) {
+  async function render(
+    unit: 'km' | 'mi',
+    connection: Connection = connected,
+    shoeMaximumDistance = 700_000,
+    theme = 'blue',
+    backup = backedUp,
+    usage = reported,
+  ) {
     TestBed.configureTestingModule({ imports: [SettingsPage], providers: [provideHttpClient(), provideHttpClientTesting()] });
     const fixture = TestBed.createComponent(SettingsPage);
     const http = TestBed.inject(HttpTestingController);
@@ -40,10 +59,14 @@ describe('SettingsPage', () => {
     http.expectOne('/api/settings').flush({ distanceUnit: unit, shoeMaximumDistance, theme });
     http.expectOne('/api/connection').flush(connection);
     http.expectOne('/api/backup').flush(backup);
+    http.expectOne('/api/strava/rate-limits').flush(usage);
     await fixture.whenStable();
     fixture.detectChanges();
     // The sync status is asked for once the connection shows.
     for (const sync of http.match('/api/sync')) sync.flush(idle);
+    fixture.detectChanges();
+    // A new sync status reads Strava's usage again.
+    for (const again of http.match('/api/strava/rate-limits')) again.flush(usage);
     fixture.detectChanges();
     return { fixture, http, element: fixture.nativeElement as HTMLElement };
   }
@@ -233,6 +256,61 @@ describe('SettingsPage', () => {
 
       expect(element.querySelector('.shoes [role="alert"]')?.textContent).toContain('could not be saved');
       expect(field(element).value).toBe('700');
+    });
+  });
+
+  describe('the Strava API usage', () => {
+    const rows = (element: HTMLElement) =>
+      [...element.querySelectorAll('.usage tbody tr')].map((row) =>
+        [...row.querySelectorAll('th, td')].map((cell) =>
+          [...cell.childNodes].map((part) => part.textContent!.trim()).filter((text) => text).join(' '),
+        ),
+      );
+    const tracks = (element: HTMLElement) => [...element.querySelectorAll('.usage .track')].map((t) => t.className.replace('track', '').trim());
+    const time = (iso: string) => formatDate(iso, 'HH:mm', 'en-US');
+
+    it('shows how much of each of Strava\'s limits is used, and when it resets', async () => {
+      const { element } = await render('km');
+
+      expect(element.querySelector('.usage thead')!.textContent).toContain('15 minutes');
+      expect(element.querySelector('.usage thead')!.textContent).toContain('Day (UTC)');
+      expect(rows(element)).toEqual([
+        ['Reads', `85 / 100 resets ${time('2026-10-14T18:15:00+00:00')}`, `350 / 1,000 resets ${time('2026-10-15T00:00:00+00:00')}`],
+        ['All requests', `86 / 200 resets ${time('2026-10-14T18:15:00+00:00')}`, `2,000 / 2,000 resets ${time('2026-10-15T00:00:00+00:00')}`],
+      ]);
+      expect(element.querySelector('.usage')!.textContent).toContain(`as Strava reported it at ${time('2026-10-14T18:07:00+00:00')}`);
+    });
+
+    it('marks a limit nearly used up, and one used up', async () => {
+      const { element } = await render('km');
+
+      expect(tracks(element)).toEqual(['near', '', '', 'over']);
+    });
+
+    it('says it is not known before Strava has answered', async () => {
+      const { element } = await render('km', connected, 700_000, 'blue', backedUp, { observedAt: null, limits: [] });
+
+      expect(element.querySelector('.usage table')).toBeNull();
+      expect(element.querySelector('.usage')!.textContent).toContain('Not known yet');
+    });
+
+    it('reads it again with each new sync status, as a sync uses it up', async () => {
+      const { fixture, http, element } = await render('km');
+
+      TestBed.inject(SyncState).status.set({ ...idle, running: true, phase: 'importing-details' });
+      fixture.detectChanges();
+      const nearlyUsedUp = { ...reported.limits[0], used: 99 };
+      http.expectOne('/api/strava/rate-limits').flush({ ...reported, limits: [nearlyUsedUp, ...reported.limits.slice(1)] });
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(rows(element)[0][1]).toContain('99 / 100');
+    });
+
+    it('is not shown before Strava is connected', async () => {
+      const { element } = await render('km', notConnected);
+
+      expect(element.querySelector('.usage')).toBeNull();
     });
   });
 

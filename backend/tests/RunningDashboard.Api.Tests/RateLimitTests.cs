@@ -13,6 +13,7 @@ public sealed class RateLimitTests
     private const string ActivitiesPath = "/api/v3/athlete/activities";
     private static readonly DateTimeOffset SevenPastSix = new(2026, 10, 9, 18, 7, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset QuarterPastSix = new(2026, 10, 9, 18, 15, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset Midnight = new(2026, 10, 10, 0, 0, 0, TimeSpan.Zero);
 
     private readonly TestApp _app = new();
 
@@ -77,6 +78,62 @@ public sealed class RateLimitTests
         paused.PausedUntil.ShouldBe(new DateTimeOffset(2026, 10, 10, 0, 0, 0, TimeSpan.Zero));
         finished.ImportedRuns.ShouldBe(2);
     }
+
+    [Test]
+    public async Task Until_Strava_has_answered_its_usage_is_not_known()
+    {
+        var browser = _app.CreateBrowser();
+
+        var usage = await browser.GetFromJsonAsync<UsageResponse>("/api/strava/rate-limits");
+
+        usage!.ObservedAt.ShouldBeNull();
+        usage.Limits.ShouldBeEmpty();
+    }
+
+    [Test]
+    public async Task After_a_sync_the_usage_shows_what_Strava_last_reported_with_when_each_limit_resets()
+    {
+        _app.Clock.SetUtcNow(SevenPastSix);
+        _app.Strava.Respond(HttpMethod.Get, ActivitiesPath, () => WithReadUsage(FakeStrava.FixtureResponse("activities-page-1.json"), fifteenMinutes: 12, day: 350));
+        _app.Strava.RespondWithFixture(HttpMethod.Get, ActivitiesPath, "activities-empty.json");
+        var browser = _app.CreateBrowser();
+
+        await _app.ConnectStravaAsync(browser);
+        await TestApp.WaitForSyncAsync(browser);
+        var usage = await browser.GetFromJsonAsync<UsageResponse>("/api/strava/rate-limits");
+
+        usage!.ObservedAt.ShouldBe(SevenPastSix);
+        usage.Limits.ShouldBe([
+            new LimitResponse("read", "fifteen-minutes", 12, 100, QuarterPastSix),
+            new LimitResponse("read", "day", 350, 1000, Midnight),
+            new LimitResponse("all", "fifteen-minutes", 12, 200, QuarterPastSix),
+            new LimitResponse("all", "day", 350, 2000, Midnight),
+        ]);
+    }
+
+    [Test]
+    public async Task Once_the_quarter_hour_turns_the_fifteen_minute_usage_starts_again_from_zero_but_the_day_s_does_not()
+    {
+        _app.Clock.SetUtcNow(SevenPastSix);
+        _app.Strava.Respond(HttpMethod.Get, ActivitiesPath, () => WithReadUsage(FakeStrava.FixtureResponse("activities-page-1.json"), fifteenMinutes: 95, day: 350));
+        _app.Strava.RespondWithFixture(HttpMethod.Get, ActivitiesPath, "activities-empty.json");
+        var browser = _app.CreateBrowser();
+
+        await _app.ConnectStravaAsync(browser);
+        await TestApp.WaitForSyncAsync(browser);
+        _app.Clock.SetUtcNow(QuarterPastSix.AddMinutes(1));
+        var usage = await browser.GetFromJsonAsync<UsageResponse>("/api/strava/rate-limits");
+
+        var read = usage!.Limits.Where(l => l.Requests == "read").ToList();
+        read.ShouldBe([
+            new LimitResponse("read", "fifteen-minutes", 0, 100, QuarterPastSix.AddMinutes(15)),
+            new LimitResponse("read", "day", 350, 1000, Midnight),
+        ]);
+    }
+
+    private sealed record UsageResponse(DateTimeOffset? ObservedAt, List<LimitResponse> Limits);
+
+    private sealed record LimitResponse(string Requests, string Period, int Used, int Limit, DateTimeOffset ResetsAt);
 
     private List<RecordedRequest> ListRequests() =>
         [.. _app.Strava.Requests.Where(r => r.Uri.AbsolutePath == ActivitiesPath)];

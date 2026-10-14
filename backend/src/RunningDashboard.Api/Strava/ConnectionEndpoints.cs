@@ -21,6 +21,9 @@ public static class ConnectionEndpoints
                     app);
         });
 
+        // Kept in memory only: unknown again after a restart, until Strava answers the next request.
+        app.MapGet("/api/strava/rate-limits", (StravaRateLimits rateLimits) => RateLimitsResponse.From(rateLimits.CurrentUsage()));
+
         // The secret is never sent back; the Settings page asks for both again to change them.
         app.MapPut("/api/strava/app", async (StravaAppRequest request, AppDbContext db, StravaAppCredentials stravaApp, CancellationToken cancellationToken) =>
         {
