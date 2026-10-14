@@ -41,7 +41,7 @@
   </div>
 
   @if (reviewing()) {
-    <app-year-review [year]="selectedYear()" />
+    <app-year-review [year]="selectedYear()" [months]="months.hasValue() ? months.value().months : null" />
   } @else if (months.error()) {
     <p class="error" role="alert">The monthly totals could not be loaded.</p>
   } @else if (selectedMonth()) {

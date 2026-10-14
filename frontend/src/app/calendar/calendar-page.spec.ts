@@ -328,13 +328,21 @@ describe('CalendarPage', () => {
       return page;
     }
 
-    it("shows the year's totals with their change against the year before, instead of its months", async () => {
+    it("headlines the year's distance with its change, its months as bars, and its totals as tiles", async () => {
       const { element, boxes } = await openReview('/calendar/2025?view=review', review2025);
 
       expect(boxes()).toEqual([]);
-      expect(element.querySelector('.card-sub')!.textContent).toContain('Changes are vs. 2024.');
-      expect([...element.querySelectorAll('.totals > div')].map(text)).toEqual([
-        'Runs 5 +150%', 'Distance 78 km +255%', 'Moving Time 7h 45m +252%', 'Elevation Gain 412 m −18%',
+      const hero = element.querySelector('.hero')!;
+      expect(hero.querySelector('h2')!.textContent!.trim()).toBe('2025 in Runs');
+      expect(text(hero.querySelector('.headline')!)).toBe('78 km +255% vs. 2024');
+      expect(hero.querySelector('.sentence')!.textContent!.replace(/\s+/g, ' ').trim()).toBe('5 Runs, 8 hours on your feet and 412 m climbed.');
+      const bars = [...hero.querySelectorAll('.month-bars .bar')];
+      expect(bars.map((b) => b.textContent!.trim()).join('')).toBe('JFMAMJJASOND');
+      expect(bars.map((b) => b.classList.contains('biggest'))).toEqual(Array.from({ length: 12 }, (_, i) => i === 8));
+      expect(bars[8].getAttribute('title')).toBe('September: 60.7 km');
+      expect(bars[0].getAttribute('title')).toBe('January: no Runs');
+      expect([...element.querySelectorAll('.tiles .tile')].map(text)).toEqual([
+        'Runs 5 +150%', 'Moving Time 7h 45m +252%', 'Elevation Gain 412 m −18%', 'Per week 1.5 km', 'Average Run 15.6 km',
       ]);
     });
 
@@ -349,26 +357,48 @@ describe('CalendarPage', () => {
         'Most-used Shoe Nike Pegasus 41 42 km · 2 Runs',
       ]);
       expect(element.querySelector('.highlight')!.getAttribute('href')).toBe('/runs/6');
-      expect([...element.querySelectorAll('.personal-bests tbody tr')].map(text)).toEqual([
-        '5K 25:00 1:00 faster Sunday Run · 12 Jan',
-        'Half-Marathon 1:56:40 first Half Race · 15 Mar',
+      expect(element.querySelector('.personal-bests .summary')!.textContent).toBe('2 set in 2025 · biggest leap: 5K, 3.8% faster');
+      const medal = (m: Element) => [...m.querySelectorAll('.distance, .badge, .time, .gain, .was, .run')].map((part) => part.textContent!.trim()).join(' ');
+      expect([...element.querySelectorAll('.medal')].map(medal)).toEqual([
+        '5K Biggest leap 25:00 −1:00 · 3.8% faster was 26:00 Sunday Run · 12 Jan',
+        'Half-Marathon 1:56:40 First time no earlier Best Effort Half Race · 15 Mar',
       ]);
+      expect(element.querySelector('.medal .run')!.getAttribute('href')).toBe('/runs/5');
       expect(text(element.querySelector('.goal-races li')!)).toBe('Spring Half 15 Mar 2025 · 21.1 km 1:56:40 (3:20 under)');
       expect(element.querySelector('.footnote')!.textContent!.replace(/\s+/g, ' ').trim())
         .toBe('Also 1 Ride and 1 Swim, listed under Activities and not counted here.');
     });
 
+    it.each([
+      [5, [3, 2]],
+      [7, [4, 3]],
+      [8, [4, 4]],
+      [9, [3, 3, 3]],
+      [3, [3]],
+    ])('lays out %i Personal Bests at most four to a row, the rows as even as they can be', async (count, expected) => {
+      const personalBests = Array.from({ length: count }, (_, i) => ({ ...review2025.personalBests[0], distance: 1000 * (i + 1), name: `${i + 1}K` }));
+      const { element } = await openReview('/calendar/2025?view=review', { ...review2025, personalBests });
+
+      const rows = [0];
+      for (const item of element.querySelectorAll('.medals > li')) {
+        if (item.classList.contains('row-break')) rows.push(0);
+        else rows[rows.length - 1]++;
+      }
+      expect(rows).toEqual(expected);
+    });
+
     it('compares the current year so far with the same time last year', async () => {
       const { element } = await openReview('/calendar?view=review', { ...review2025, year: 2026, from: '2026-01-01', until: '2026-10-12' }, year2026);
 
-      expect(element.querySelector('.card-sub')!.textContent!.replace(/\s+/g, ' ')).toContain('So far, up to 12 Oct. Changes are vs. the same time in 2025.');
+      expect(element.querySelector('.hero h2')!.textContent!.replace(/\s+/g, ' ').trim()).toBe('2026 in Runs · so far, up to 12 Oct');
+      expect(text(element.querySelector('.headline')!)).toContain('vs. the same time in 2025');
     });
 
     it('says when the history starts within the year, which has nothing to compare with', async () => {
       const { element } = await openReview('/calendar/2025?view=review', { ...review2025, from: '2025-04-28', previousYear: null });
 
-      expect(element.querySelector('.card-sub')!.textContent!.replace(/\s+/g, ' ').trim()).toBe('From 28 Apr, when the history starts.');
-      expect(element.querySelector('.totals .change')).toBeNull();
+      expect(element.querySelector('.hero h2')!.textContent!.replace(/\s+/g, ' ').trim()).toBe('2025 in Runs · from 28 Apr, when the history starts');
+      expect(element.querySelector('.chip')).toBeNull();
     });
 
     it('says when the year has no Runs', async () => {
