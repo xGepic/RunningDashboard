@@ -2,117 +2,331 @@
 <!--
   The runtime view (arc42): the building blocks at work in the four scenarios that matter most. To render it as an
   image (from the repo root):
-  msedge --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --window-size=1334,3860
+  msedge --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --window-size=1600,5002
          --virtual-time-budget=5000 --screenshot=docs/architecture/runtime-view.png file:///<repo>/docs/architecture/runtime-view.html
   The steps follow Program.cs, Strava/StravaAuthEndpoints.cs, Sync/ and frontend/src/app/sync/.
 -->
 <html lang="en">
+
 <head>
-<meta charset="utf-8">
-<title>Running Dashboard Runtime</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --text: #1f2937;
-    --muted: #4b5563;
-    --faint: #6b7280;
-    --border: #d4d8de;
-    --frontend: #d8e7f5;
-    --backend: #dfeedd;
-    --data: #f1ead2;
-    --external: #fde4d6;
-    --link: #2f6fa8;
-    --reply: #6b7280;
-  }
+  <meta charset="utf-8">
+  <title>Running Dashboard Runtime</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --ink: #101828;
+      --text: #475467;
+      --faint: #667085;
+      --label: #344054;
+      --border: #D0D5DD;
+      --frontend: #2E6DB4;
+      --backend: #2F855A;
+      --data: #B7791F;
+      --external: #C4532D;
+      --call: #475467;
+      --http: #2F6FA8;
+      --reply: #98A2B3;
+      --mono: 'IBM Plex Mono', Consolas, monospace;
+    }
 
-  * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
-  html, body {
-    margin: 0;
-    background: #f7f8fa;
-    color: var(--text);
-    font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
-  }
+    html,
+    body {
+      margin: 0;
+      background: #FCFCFD;
+      color: var(--ink);
+      font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+    }
 
-  .page { width: 1334px; padding: 14px 24px 20px; }
+    a {
+      color: var(--http);
+    }
 
-  h1 { margin: 0 0 10px; font-size: 28px; font-weight: 600; letter-spacing: -0.01em; }
+    a:hover {
+      color: #1F4E7A;
+    }
 
-  h2 { margin: 34px 0 6px; font-size: 19px; font-weight: 600; }
+    code {
+      font-family: var(--mono);
+      font-size: 13px;
+    }
 
-  .subtitle, .legend, .footer, .intro, .notes { color: var(--muted); font-size: 13.5px; }
+    .page {
+      width: 1600px;
+      padding: 64px;
+    }
 
-  .subtitle { margin: 0 0 22px; }
+    /* Header */
+    .kicker {
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 16px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
 
-  .intro { max-width: 1100px; margin: 0 0 14px; line-height: 1.5; }
+    h1 {
+      margin: 8px 0 12px;
+      font-size: 32px;
+      line-height: 40px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
 
-  .notes { max-width: 1100px; margin: 12px 0 0; padding-left: 20px; line-height: 1.5; }
+    .subtitle {
+      width: 1120px;
+      margin: 0 0 24px;
+      font-size: 15px;
+      line-height: 22px;
+      color: var(--text);
+    }
 
-  code { font-family: 'IBM Plex Mono', Consolas, monospace; font-size: 12.5px; }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px 28px;
+      font-size: 12.5px;
+      line-height: 20px;
+      color: var(--text);
+    }
 
-  .legend { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 26px; }
-  .legend span { display: inline-flex; align-items: center; gap: 8px; }
-  .swatch { width: 20px; height: 14px; border: 1px solid var(--border); border-radius: 3px; }
-  .line { width: 36px; border-top: 2px solid var(--text); }
-  .line.http { border-top-color: var(--link); }
-  .line.reply { border-top: 2px dashed var(--reply); }
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
 
-  .card { position: relative; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
+    .legend i {
+      display: inline-block;
+      width: 18px;
+      height: 14px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-top-width: 3px;
+      border-radius: 3px;
+    }
 
-  .participant {
-    position: absolute;
-    border: 1px solid var(--border);
-    border-radius: 5px;
-    background: #fff;
-    box-shadow: 0 1px 2px rgb(0 0 0 / 4%);
-    text-align: center;
-    overflow: hidden;
-  }
-  .participant h3 { margin: 0; padding: 6px 8px; font-size: 12.5px; font-weight: 600; }
-  .participant div { padding: 3px 8px 5px; border-top: 1px solid var(--border); font-family: 'IBM Plex Mono', Consolas, monospace; font-size: 10px; color: var(--faint); }
-  .frontend h3 { background: var(--frontend); }
-  .backend h3 { background: var(--backend); }
-  .data h3 { background: var(--data); }
-  .external h3 { background: var(--external); }
+    .legend i.frame {
+      width: 22px;
+      background: #F8F9FB;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
 
-  .card > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
-  svg text { font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif; font-size: 11.5px; fill: var(--text); paint-order: stroke; stroke: #fff; stroke-width: 4px; stroke-linejoin: round; }
-  svg text.http { fill: var(--link); }
-  svg text.reply { fill: var(--muted); }
-  svg text.frame { font-weight: 600; font-size: 10.5px; stroke: none; }
-  svg text.condition { font-style: italic; fill: var(--muted); }
+    /* Scenarios */
+    h2 {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 56px 0 8px;
+      font-size: 20px;
+      line-height: 28px;
+      font-weight: 600;
+    }
 
-  .footer { margin-top: 30px; }
-</style>
+    h2 .step {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #EAECF0;
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--label);
+    }
+
+    .intro {
+      width: 1120px;
+      margin: 0 0 24px;
+      font-size: 14px;
+      line-height: 21px;
+      color: var(--text);
+    }
+
+    .notes {
+      width: 1120px;
+      margin: 16px 0 0;
+      padding-left: 20px;
+      font-size: 13px;
+      line-height: 20px;
+      color: var(--text);
+    }
+
+    .notes li+li {
+      margin-top: 4px;
+    }
+
+    .card {
+      position: relative;
+      width: 1472px;
+      background: #fff;
+      border: 1px solid #EAECF0;
+      border-radius: 12px;
+      box-shadow: 0 1px 2px rgb(16 24 40 / 4%);
+    }
+
+    .participant {
+      position: absolute;
+      padding: 10px 12px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-top-width: 3px;
+      border-radius: 8px;
+      box-shadow: 0 1px 2px rgb(16 24 40 / 6%);
+      text-align: center;
+    }
+
+    .participant h3 {
+      margin: 0;
+      font-size: 14px;
+      line-height: 20px;
+      font-weight: 600;
+    }
+
+    .participant div {
+      margin-top: 2px;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      line-height: 16px;
+      color: var(--faint);
+    }
+
+    .frontend.participant,
+    .legend i.frontend {
+      border-top-color: var(--frontend);
+    }
+
+    .backend.participant,
+    .legend i.backend {
+      border-top-color: var(--backend);
+    }
+
+    .data.participant,
+    .legend i.data {
+      border-top-color: var(--data);
+    }
+
+    .external.participant,
+    .legend i.external {
+      border-top-color: var(--external);
+    }
+
+    .card>svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    svg text {
+      font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+      font-size: 12.5px;
+      fill: var(--label);
+      paint-order: stroke;
+      stroke-width: 5px;
+      stroke-linejoin: round;
+    }
+
+    svg text.http {
+      fill: var(--http);
+    }
+
+    svg text.reply {
+      fill: var(--faint);
+    }
+
+    svg text.frame {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      fill: var(--label);
+      stroke: none;
+    }
+
+    svg text.condition {
+      font-style: italic;
+      fill: var(--text);
+    }
+
+    .footer {
+      width: 1472px;
+      margin: 56px 0 0;
+      font-size: 13px;
+      line-height: 20px;
+      color: var(--text);
+    }
+  </style>
 </head>
-<body>
-<svg width="0" height="0" style="position: absolute">
-  <defs>
-    <marker id="call" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1f2937"/></marker>
-    <marker id="http" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2f6fa8"/></marker>
-    <marker id="reply" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#6b7280"/></marker>
-    <marker id="async" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M1 1L9 5L1 9" fill="none" stroke="#1f2937" stroke-width="1.5"/></marker>
-  </defs>
-</svg>
-<div class="page">
-  <h1>Running Dashboard Runtime</h1>
-  <p class="subtitle">The building blocks at work: starting the backend, connecting Strava, a sync, and opening a page while a sync runs.</p>
-  <div class="legend">
-    <span><i class="swatch" style="background: var(--frontend)"></i>Frontend</span>
-    <span><i class="swatch" style="background: var(--backend)"></i>Backend</span>
-    <span><i class="swatch" style="background: var(--data)"></i>Database</span>
-    <span><i class="swatch" style="background: var(--external)"></i>Service on the internet</span>
-    <span><i class="line"></i>Call</span>
-    <span><i class="line http"></i>HTTP request</span>
-    <span><i class="line reply"></i>Answer or redirect</span>
-    <span><svg width="36" height="12" style="overflow: visible"><path d="M0 6H34" stroke="#1f2937" stroke-width="1.6" marker-end="url(#async)"/></svg>Starts it without waiting</span>
-  </div>
-  <div id="scenarios"></div>
-  <p class="footer">Time runs down. <b>alt</b> shows one of several paths, <b>opt</b> one that may not happen, <b>loop</b> one that repeats. The <a href="building-block-view.html">building block view</a> describes the blocks, the <a href="deployment-view.html">deployment view</a> where they run.</p>
-</div>
 
-<script>
+<body>
+  <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+    <defs>
+      <marker id="call" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible">
+        <path d="M0 0L4 2L0 4Z" fill="#475467" stroke="none" />
+      </marker>
+      <marker id="http" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible">
+        <path d="M0 0L4 2L0 4Z" fill="#2F6FA8" stroke="none" />
+      </marker>
+      <marker id="reply" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible">
+        <path d="M0 0L4 2L0 4Z" fill="#98A2B3" stroke="none" />
+      </marker>
+      <marker id="async" orient="auto" markerWidth="5" markerHeight="5" refX="3.4" refY="2" overflow="visible">
+        <path d="M0 0L4 2L0 4" fill="none" stroke="#475467" stroke-width="0.8" stroke-linecap="round"
+          stroke-linejoin="round" />
+      </marker>
+    </defs>
+  </svg>
+  <div class="page">
+    <div class="kicker">arc42 · Section 6 · Runtime view</div>
+    <h1>Running Dashboard Runtime</h1>
+    <p class="subtitle">The building blocks at work: starting the backend, connecting Strava, a sync, and opening a page
+      while a sync runs.</p>
+    <div class="legend">
+      <span><i class="frontend"></i>Frontend</span>
+      <span><i class="backend"></i>Backend</span>
+      <span><i class="data"></i>Database</span>
+      <span><i class="external"></i>Service on the internet</span>
+      <span><svg aria-hidden="true" width="36" height="10" viewBox="0 0 36 10">
+          <path d="M0 5L30 5" fill="none" stroke="#475467" stroke-width="2" stroke-linecap="round" />
+          <path d="M28 1L36 5L28 9Z" fill="#475467" />
+        </svg>Call</span>
+      <span><svg aria-hidden="true" width="36" height="10" viewBox="0 0 36 10">
+          <path d="M0 5L30 5" fill="none" stroke="#2F6FA8" stroke-width="2" stroke-linecap="round" />
+          <path d="M28 1L36 5L28 9Z" fill="#2F6FA8" />
+        </svg>HTTP request</span>
+      <span><svg aria-hidden="true" width="36" height="10" viewBox="0 0 36 10">
+          <path d="M0 5L30 5" fill="none" stroke="#98A2B3" stroke-width="2" stroke-linecap="round"
+            stroke-dasharray="5 5" />
+          <path d="M28 1L36 5L28 9Z" fill="#98A2B3" />
+        </svg>Answer or redirect</span>
+      <span><svg aria-hidden="true" width="36" height="10" viewBox="0 0 36 10">
+          <path d="M0 5L34 5M28 1L34 5L28 9" fill="none" stroke="#475467" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" />
+        </svg>Starts it without waiting</span>
+      <span><i class="frame"></i>alt, opt or loop</span>
+    </div>
+    <div id="scenarios"></div>
+    <p class="footer">Time runs down. <b>alt</b> shows one of several paths, <b>opt</b> one that may not happen,
+      <b>loop</b> one that repeats. The <a href="building-block-view.html">building block view</a> describes the blocks,
+      the <a href="deployment-view.html">deployment view</a> where they run.</p>
+  </div>
+
+  <script>
   // participants: [id, name, detail, kind]. steps: ['msg', from, to, text, kind], ['group', 'alt' | 'opt' | 'loop', condition],
   // ['else', condition] and ['end']. A \n in a text starts a new line.
   const scenarios = [
@@ -281,8 +495,10 @@
   const host = document.getElementById('scenarios');
 
   for (const scenario of scenarios) {
+    // '3  A sync': the number goes in a badge.
+    const [, number, name] = scenario.title.match(/^(\d+)\s+(.*)$/);
     const title = document.createElement('h2');
-    title.textContent = scenario.title;
+    title.innerHTML = `<span class="step">${number}</span>${name}`;
     const intro = document.createElement('p');
     intro.className = 'intro';
     intro.innerHTML = scenario.intro;
@@ -300,19 +516,22 @@
 
   function draw(card, { participants, steps }) {
     const width = card.clientWidth;
-    const spacing = (width - 120) / participants.length;
-    const x = Object.fromEntries(participants.map(([id], i) => [id, 60 + spacing * (i + 0.5)]));
+    const spacing = (width - 96) / participants.length;
+    const x = Object.fromEntries(participants.map(([id], i) => [id, 48 + spacing * (i + 0.5)]));
 
-    let headerBottom = 0;
-    for (const [id, name, detail, kind] of participants) {
+    const boxes = participants.map(([id, name, detail, kind]) => {
       const element = document.createElement('div');
       element.className = `participant ${kind}`;
       element.innerHTML = `<h3>${name}</h3><div>${detail}</div>`;
-      const boxWidth = Math.min(spacing - 18, 190);
-      Object.assign(element.style, { left: `${x[id] - boxWidth / 2}px`, top: '18px', width: `${boxWidth}px` });
+      const boxWidth = Math.min(spacing - 24, 208);
+      Object.assign(element.style, { left: `${x[id] - boxWidth / 2}px`, top: '24px', width: `${boxWidth}px` });
       card.appendChild(element);
-      headerBottom = Math.max(headerBottom, element.offsetTop + element.offsetHeight);
-    }
+      return element;
+    });
+    // All as tall as the tallest, so the lifelines start on one line.
+    const boxHeight = Math.max(...boxes.map((b) => b.offsetHeight));
+    boxes.forEach((b) => (b.style.height = `${boxHeight}px`));
+    const headerBottom = 24 + boxHeight;
 
     const svg = document.createElementNS(svgNs, 'svg');
     const lifelines = document.createElementNS(svgNs, 'g');
@@ -330,72 +549,81 @@
       return element;
     }
 
+    // Frames get darker the deeper they nest; a label's halo takes the colour of the frame it sits in.
+    const fills = ['#FFFFFF', '#F8F9FB', '#F2F4F7', '#ECEEF2'];
+    const fill = (depth) => fills[Math.min(depth, fills.length - 1)];
+
+    const lineHeight = 16;
     // Lines of text upwards from y, the last one at y.
-    function label(lines, tx, y, anchor, className) {
-      lines.forEach((line, i) => add(messages, 'text', { x: tx, y: y - (lines.length - 1 - i) * 14, 'text-anchor': anchor, class: className ?? '' }, line));
+    function label(lines, tx, y, anchor, className, depth) {
+      lines.forEach((line, i) => add(messages, 'text', {
+        x: tx, y: y - (lines.length - 1 - i) * lineHeight, 'text-anchor': anchor, class: className ?? '', stroke: fill(depth),
+      }, line));
     }
 
     const strokes = {
-      call: { stroke: '#1f2937' },
-      http: { stroke: '#2f6fa8' },
-      reply: { stroke: '#6b7280', 'stroke-dasharray': '5 4' },
-      async: { stroke: '#1f2937' },
+      call: { stroke: '#475467' },
+      http: { stroke: '#2F6FA8' },
+      reply: { stroke: '#98A2B3', 'stroke-dasharray': '5 5' },
+      async: { stroke: '#475467' },
     };
 
-    let y = headerBottom + 20;
+    let y = headerBottom + 24;
     const open = [];
     for (const [type, ...rest] of steps) {
       if (type === 'msg') {
         const [from, to, content, kind = 'call'] = rest;
         const lines = content.split('\n');
-        const style = { fill: 'none', 'stroke-width': 1.5, 'marker-end': `url(#${kind})`, ...strokes[kind] };
+        const style = { fill: 'none', 'stroke-width': 1.75, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'marker-end': `url(#${kind})`, ...strokes[kind] };
         if (from === to) {
-          y += 14 * (lines.length - 1) + 8;
-          add(messages, 'path', { d: `M${x[from]} ${y - 6}H${x[from] + 26}V${y + 10}H${x[from] + 2}`, ...style });
-          label(lines, x[from] + 34, y + 6, 'start', kind);
-          y += 32;
+          y += lineHeight * (lines.length - 1) + 10;
+          add(messages, 'path', { d: `M${x[from]} ${y - 6}H${x[from] + 28}V${y + 12}H${x[from] + 6}`, ...style });
+          label(lines, x[from] + 38, y + 8, 'start', kind, open.length);
+          y += 26;
         } else {
-          y += 14 * (lines.length - 1) + 18;
+          y += lineHeight * (lines.length - 1) + 22;
+          // The path ends 4 px before the lifeline; the head covers the rest.
           const direction = x[to] > x[from] ? 1 : -1;
-          add(messages, 'path', { d: `M${x[from]} ${y}H${x[to] - direction}`, ...style });
-          label(lines, (x[from] + x[to]) / 2, y - 7, 'middle', kind);
-          y += 12;
+          add(messages, 'path', { d: `M${x[from]} ${y}H${x[to] - direction * 4}`, ...style });
+          label(lines, (x[from] + x[to]) / 2, y - 8, 'middle', kind, open.length);
+          y += 14;
         }
       } else if (type === 'group') {
         const [kind, condition] = rest;
-        y += 10;
+        y += 12;
         open.push({ kind, condition, top: y, elses: [] });
-        y += 22;
+        y += 28;
       } else if (type === 'else') {
-        y += 8;
-        open.at(-1).elses.push({ y, condition: rest[0] });
-        y += 22;
-      } else if (type === 'end') {
         y += 10;
+        open.at(-1).elses.push({ y, condition: rest[0] });
+        y += 26;
+      } else if (type === 'end') {
+        y += 12;
         const group = open.pop();
-        const inset = 14 + open.length * 12;
+        const inset = 16 + open.length * 14;
         // A group ends after the groups inside it, so it goes underneath them.
         const g = document.createElementNS(svgNs, 'g');
         frames.prepend(g);
         const [left, right] = [inset, width - inset];
-        add(g, 'rect', { x: left, y: group.top, width: right - left, height: y - group.top, rx: 4, fill: open.length % 2 ? '#f3f5f8' : '#fafbfc', stroke: '#c3c9d1' });
-        const tab = group.kind.length * 7 + 18;
-        add(g, 'path', { d: `M${left} ${group.top}h${tab}v12l-6 6H${left}z`, fill: '#e3e7ec', stroke: '#c3c9d1' });
-        add(g, 'text', { x: left + 7, y: group.top + 13, class: 'frame' }, group.kind);
-        add(g, 'text', { x: left + tab + 8, y: group.top + 14, class: 'condition' }, `[${group.condition}]`);
+        add(g, 'rect', { x: left, y: group.top, width: right - left, height: y - group.top, rx: 8, fill: fill(open.length + 1), stroke: '#D0D5DD' });
+        const tab = group.kind.length * 8 + 24;
+        add(g, 'path', { d: `M${left + 8} ${group.top}H${left + tab}v14l-7 7H${left}V${group.top + 8}a8 8 0 0 1 8 -8z`, fill: '#EAECF0', stroke: '#D0D5DD' });
+        add(g, 'text', { x: left + 10, y: group.top + 15, class: 'frame' }, group.kind);
+        add(g, 'text', { x: left + tab + 10, y: group.top + 15, class: 'condition', stroke: fill(open.length + 1) }, `[${group.condition}]`);
         for (const branch of group.elses) {
-          add(g, 'path', { d: `M${left} ${branch.y}H${right}`, stroke: '#c3c9d1', 'stroke-dasharray': '5 4' });
-          add(g, 'text', { x: left + 8, y: branch.y + 15, class: 'condition' }, `[${branch.condition}]`);
+          add(g, 'path', { d: `M${left} ${branch.y}H${right}`, stroke: '#D0D5DD', 'stroke-dasharray': '5 5' });
+          add(g, 'text', { x: left + 10, y: branch.y + 17, class: 'condition', stroke: fill(open.length + 1) }, `[${branch.condition}]`);
         }
         y += 4;
       }
     }
 
-    y += 18;
+    y += 24;
     for (const [id] of participants)
-      add(lifelines, 'path', { d: `M${x[id]} ${headerBottom}V${y}`, stroke: '#b8bfc8', 'stroke-dasharray': '4 4' });
-    card.style.height = `${y + 16}px`;
+      add(lifelines, 'path', { d: `M${x[id]} ${headerBottom}V${y}`, stroke: '#D0D5DD', 'stroke-width': 1.5, 'stroke-dasharray': '4 5' });
+    card.style.height = `${y + 24}px`;
   }
-</script>
+  </script>
 </body>
+
 </html>

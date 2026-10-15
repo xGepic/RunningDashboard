@@ -1,162 +1,337 @@
 <!doctype html>
 <!--
   Source of database-schema.png. After changing the tables below, render it again (from the repo root):
-  msedge --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --window-size=1334,1270
+  msedge --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --window-size=1600,1590
          --virtual-time-budget=5000 --screenshot=docs/architecture/database-schema.png file:///<repo>/docs/architecture/database-schema.html
   The tables follow backend/src/RunningDashboard.Api/Persistence/Migrations/AppDbContextModelSnapshot.cs, besides EF Core's
   own __EFMigrationsHistory and __EFMigrationsLock, which are not in the model.
 -->
 <html lang="en">
+
 <head>
-<meta charset="utf-8">
-<title>Running Dashboard Schema</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --text: #1f2937;
-    --muted: #4b5563;
-    --faint: #6b7280;
-    --border: #d4d8de;
-    --strava: #fde4d6;
-    --you: #d8e7f5;
-    --app: #e8eaee;
-    --key: #c2410c;
-    --link: #2f6fa8;
-  }
+  <meta charset="utf-8">
+  <title>Running Dashboard Schema</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --ink: #101828;
+      --text: #475467;
+      --faint: #667085;
+      --label: #344054;
+      --border: #D0D5DD;
+      --strava: #C4532D;
+      --you: #2E6DB4;
+      --app: #667085;
+      --key: #B54708;
+      --fk: #475467;
+      --code: #2F6FA8;
+      --mono: 'IBM Plex Mono', Consolas, monospace;
+    }
 
-  * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
-  html, body {
-    margin: 0;
-    background: #f7f8fa;
-    color: var(--text);
-    font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
-  }
+    html,
+    body {
+      margin: 0;
+      background: #FCFCFD;
+      color: var(--ink);
+      font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+    }
 
-  .page { width: 1334px; padding: 14px 24px 20px; }
+    a {
+      color: var(--code);
+    }
 
-  h1 { margin: 0 0 10px; font-size: 28px; font-weight: 600; letter-spacing: -0.01em; }
+    code {
+      font-family: var(--mono);
+      font-size: 13px;
+    }
 
-  .subtitle, .legend, .footer { color: var(--muted); font-size: 13.5px; }
+    .page {
+      width: 1600px;
+      padding: 64px;
+    }
 
-  .subtitle { margin: 0 0 22px; }
+    /* Header */
+    .kicker {
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 16px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
 
-  code { font-family: 'IBM Plex Mono', Consolas, monospace; font-size: 12.5px; }
+    h1 {
+      margin: 8px 0 12px;
+      font-size: 32px;
+      line-height: 40px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
 
-  .legend { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 26px; margin-bottom: 14px; }
-  .legend span { display: inline-flex; align-items: center; gap: 8px; }
-  .swatch { width: 20px; height: 14px; border: 1px solid var(--border); border-radius: 3px; }
-  .line { width: 36px; border-top: 2px solid var(--text); }
-  .line.dashed { border-top: 2px dashed var(--link); }
-  .keys { color: var(--muted); font-size: 13.5px; margin-bottom: 24px; }
-  .keys b { color: var(--key); font-family: 'IBM Plex Mono', Consolas, monospace; font-weight: 600; font-size: 12px; }
+    .subtitle {
+      width: 1120px;
+      margin: 0 0 24px;
+      font-size: 15px;
+      line-height: 22px;
+      color: var(--text);
+    }
 
-  .card { position: relative; height: 900px; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px 28px;
+      font-size: 12.5px;
+      line-height: 20px;
+      color: var(--text);
+    }
 
-  .table {
-    position: absolute;
-    border: 1px solid var(--border);
-    border-radius: 5px;
-    background: #fff;
-    font-family: 'IBM Plex Mono', Consolas, monospace;
-    font-size: 11.5px;
-    box-shadow: 0 1px 2px rgb(0 0 0 / 4%);
-  }
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
 
-  .table h2 {
-    margin: 0;
-    padding: 7px 10px;
-    border-bottom: 1px solid var(--border);
-    border-radius: 4px 4px 0 0;
-    font-size: 12.5px;
-    font-weight: 600;
-  }
+    .legend i {
+      display: inline-block;
+      width: 18px;
+      height: 14px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-top-width: 3px;
+      border-radius: 3px;
+    }
 
-  .strava h2 { background: var(--strava); }
-  .you h2 { background: var(--you); }
-  .app h2 { background: var(--app); }
+    .legend b {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--key);
+    }
 
-  .rows { padding: 4px 0 6px; }
-  .row { display: grid; grid-template-columns: 38px 1fr auto; align-items: center; height: 18px; padding: 0 10px; gap: 6px; }
-  .row .key { color: var(--key); font-size: 10px; font-weight: 600; }
-  .row .type { color: var(--faint); font-size: 10.5px; }
+    .legend code {
+      font-size: 12px;
+    }
 
-  .standalone {
-    position: absolute;
-    left: 26px;
-    right: 26px;
-    border: 1px dashed var(--border);
-    border-radius: 6px;
-    padding: 34px 18px 18px;
-  }
+    /* Board */
+    .board {
+      position: relative;
+      width: 1472px;
+      margin-top: 40px;
+    }
 
-  .standalone .label {
-    position: absolute;
-    top: 12px;
-    left: 18px;
-    color: var(--muted);
-    font-size: 10.5px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-  }
+    .table {
+      position: absolute;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-top-width: 3px;
+      border-radius: 8px;
+      box-shadow: 0 1px 2px rgb(16 24 40 / 6%);
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--label);
+    }
 
-  .standalone .tables { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 18px; }
-  .standalone .table { position: static; width: max-content; min-width: 236px; }
-  .standalone .stack { display: flex; flex-direction: column; gap: 18px; }
+    .table h2 {
+      margin: 0;
+      padding: 10px 14px 8px;
+      border-bottom: 1px solid #EAECF0;
+      font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+      font-size: 14px;
+      line-height: 20px;
+      font-weight: 600;
+      color: var(--ink);
+    }
 
-  svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
-  svg text { font-family: 'IBM Plex Mono', Consolas, monospace; font-size: 10.5px; fill: var(--text); }
-  svg text.link { font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif; font-size: 11px; fill: var(--link); }
+    .strava.table,
+    .legend i.strava {
+      border-top-color: var(--strava);
+    }
 
-  .footer { margin-top: 14px; }
-</style>
+    .you.table,
+    .legend i.you {
+      border-top-color: var(--you);
+    }
+
+    .app.table,
+    .legend i.app {
+      border-top-color: var(--app);
+    }
+
+    .rows {
+      padding: 6px 0 8px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 40px 1fr auto;
+      align-items: center;
+      height: 20px;
+      padding: 0 14px;
+      gap: 8px;
+    }
+
+    .row .key {
+      color: var(--key);
+      font-size: 10.5px;
+      font-weight: 600;
+    }
+
+    .row .type {
+      color: var(--faint);
+      font-size: 11px;
+    }
+
+    .standalone {
+      position: absolute;
+      left: 0;
+      right: 0;
+      border: 1.5px dashed #98A2B3;
+      border-radius: 16px;
+      padding: 48px 24px 24px;
+    }
+
+    .standalone .label {
+      position: absolute;
+      top: 18px;
+      left: 24px;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      line-height: 16px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+
+    .standalone .tables {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      gap: 24px;
+    }
+
+    .standalone .table {
+      position: static;
+      width: max-content;
+      min-width: 264px;
+    }
+
+    .standalone .stack {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .board>svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    .board>svg>path {
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .board>svg>.fk {
+      stroke: var(--fk);
+    }
+
+    .board>svg>.code {
+      stroke: var(--code);
+      stroke-dasharray: 6 5;
+    }
+
+    svg text {
+      font-family: var(--mono);
+      font-size: 12px;
+      fill: var(--label);
+    }
+
+    svg text.link {
+      font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+      font-size: 13px;
+      fill: var(--code);
+    }
+
+    .footer {
+      width: 1472px;
+      margin: 40px 0 0;
+      font-size: 13px;
+      line-height: 20px;
+      color: var(--text);
+    }
+  </style>
 </head>
+
 <body>
-<div class="page">
-  <h1>Running Dashboard Schema</h1>
-  <p class="subtitle">The SQLite database at <code>backend/src/RunningDashboard.Api/running-dashboard.db</code>.</p>
-  <div class="legend">
-    <span><i class="swatch" style="background: var(--strava)"></i>Imported from Strava</span>
-    <span><i class="swatch" style="background: var(--you)"></i>Entered by you</span>
-    <span><i class="swatch" style="background: var(--app)"></i>App and EF Core bookkeeping</span>
-    <span><i class="line"></i>Foreign key; deleting the parent deletes these rows</span>
-    <span><i class="line dashed"></i>Matched in code only, no constraint</span>
-  </div>
-  <div class="keys"><b>PK</b> / <b>FK</b> primary / foreign key, <code>?</code> nullable</div>
-
-  <div class="card" id="card">
-    <div class="standalone" id="standalone">
-      <span class="label">STANDALONE TABLES, LINKED TO NOTHING</span>
-      <div class="tables" id="standalone-tables"></div>
+  <div class="page">
+    <div class="kicker">Persistence · Database schema</div>
+    <h1>Running Dashboard Schema</h1>
+    <p class="subtitle">The SQLite database at <code>backend/src/RunningDashboard.Api/running-dashboard.db</code>, next
+      to the app when it is packaged.</p>
+    <div class="legend">
+      <span><i class="strava"></i>Imported from Strava</span>
+      <span><i class="you"></i>Entered by you</span>
+      <span><i class="app"></i>App and EF Core bookkeeping</span>
+      <span><svg aria-hidden="true" width="36" height="10" viewBox="0 0 36 10">
+          <path d="M0 5L30 5" fill="none" stroke="#475467" stroke-width="2" stroke-linecap="round" />
+          <path d="M28 1L36 5L28 9Z" fill="#475467" stroke="none" />
+        </svg>Foreign key; deleting the parent deletes these rows</span>
+      <span><svg aria-hidden="true" width="36" height="10" viewBox="0 0 36 10">
+          <path d="M0 5L30 5" fill="none" stroke="#2F6FA8" stroke-width="2" stroke-linecap="round"
+            stroke-dasharray="6 5" />
+          <path d="M28 1L36 5L28 9Z" fill="#2F6FA8" stroke="none" />
+        </svg>Matched in code only, no constraint</span>
+      <span><b>PK</b> / <b>FK</b> primary / foreign key, <code>?</code> nullable</span>
     </div>
+
+    <div class="board" id="board">
+      <div class="standalone" id="standalone">
+        <span class="label">Standalone tables, linked to nothing</span>
+        <div class="tables" id="standalone-tables"></div>
+      </div>
+    </div>
+
+    <p class="footer">Arrows point from the referencing column to the key it refers to. <code>n</code>, <code>1</code>
+      and <code>0..1</code> give how many rows sit on each end. <code>Runs.Temperature</code> is the one column not from
+      Strava: it comes from Open-Meteo's weather history.</p>
   </div>
 
-  <p class="footer">Arrows point from the referencing column to the key it refers to. <code>n</code>, <code>1</code> and <code>0..1</code> give how many rows sit on each end. <code>Runs.Temperature</code> is the one column not from Strava: it comes from Open-Meteo's weather history.</p>
-</div>
-
-<script>
+  <script>
   // [key, column, type]; kind: strava (imported), you (entered), app (bookkeeping).
   const linked = [
-    { id: 'BestEffort', kind: 'strava', at: [37, 36, 236], columns: [
+    { id: 'BestEffort', kind: 'strava', at: [0, 0, 272], columns: [
       ['PK', 'Id', 'INTEGER'], ['FK', 'RunId', 'INTEGER'], ['', 'Name', 'TEXT'], ['', 'Distance', 'REAL'], ['', 'ElapsedTime', 'INTEGER']] },
-    { id: 'Split', kind: 'strava', at: [37, 202, 236], columns: [
+    { id: 'Split', kind: 'strava', at: [0, 196, 272], columns: [
       ['PK FK', 'RunId', 'INTEGER'], ['PK', 'Unit', 'TEXT'], ['PK', 'Index', 'INTEGER'], ['', 'Distance', 'REAL'], ['', 'ElapsedTime', 'INTEGER'],
       ['', 'MovingTime', 'INTEGER'], ['', 'ElevationDifference', 'REAL'], ['', 'HeartRate', 'REAL?'], ['', 'GradeAdjustedSpeed', 'REAL?']] },
-    { id: 'Runs', kind: 'strava', at: [337, 36, 240], columns: [
+    { id: 'Runs', kind: 'strava', at: [368, 0, 288], columns: [
       ['PK', 'Id', 'INTEGER'], ['', 'Name', 'TEXT'], ['', 'SportType', 'TEXT'], ['', 'ShoeId', 'TEXT?'], ['', 'StartUtc', 'TEXT'],
       ['', 'StartLocal', 'TEXT'], ['', 'Distance', 'REAL'], ['', 'MovingTime', 'INTEGER'], ['', 'ElapsedTime', 'INTEGER'],
       ['', 'ElevationGain', 'REAL'], ['', 'RelativeEffort', 'REAL?'], ['', 'AverageHeartRate', 'REAL?'], ['', 'Cadence', 'REAL?'],
       ['', 'Temperature', 'REAL?'], ['', 'Trainer', 'INTEGER'], ['', 'DetailFetchedAt', 'TEXT?'], ['', 'RawSummaryJson', 'TEXT'],
       ['', 'RawDetailJson', 'TEXT?']] },
-    { id: 'Shoes', kind: 'strava', at: [713, 36, 240], columns: [
+    { id: 'Shoes', kind: 'strava', at: [776, 0, 272], columns: [
       ['PK', 'Id', 'TEXT'], ['', 'Name', 'TEXT'], ['', 'Distance', 'REAL'], ['', 'Retired', 'INTEGER'], ['', 'RawJson', 'TEXT']] },
-    { id: 'GoalRaces', kind: 'you', at: [713, 226, 240], columns: [
+    { id: 'GoalRaces', kind: 'you', at: [776, 216, 272], columns: [
       ['PK', 'Id', 'INTEGER'], ['', 'Name', 'TEXT'], ['', 'Date', 'TEXT'], ['', 'Distance', 'REAL'], ['', 'TargetTime', 'INTEGER?'],
       ['', 'TrainingBlockWeeks', 'INTEGER']] },
-    { id: 'TrainingPlans', kind: 'you', at: [1013, 226, 236], columns: [
+    { id: 'TrainingPlans', kind: 'you', at: [1144, 216, 264], columns: [
       ['PK FK', 'GoalRaceId', 'INTEGER'], ['', 'Length', 'INTEGER'], ['', 'Phases', 'TEXT (JSON)']] },
-    { id: 'TrainingPlanWeeks', kind: 'you', at: [1013, 366, 236], columns: [
+    { id: 'TrainingPlanWeeks', kind: 'you', at: [1144, 400, 264], columns: [
       ['PK FK', 'GoalRaceId', 'INTEGER'], ['PK', 'WeeksToRace', 'INTEGER'], ['', 'PlannedDistance', 'REAL?'], ['', 'PlannedLongRun', 'REAL?'],
       ['', 'RecoveryWeek', 'INTEGER'], ['', 'RunningDays', 'TEXT (JSON)']] },
   ];
@@ -186,14 +361,14 @@
 
   // [from table.column, side, to table.column, side, style, label, source end, target end, x of the vertical stretch]
   const links = [
-    ['BestEffort.RunId', 'right', 'Runs.Id', 'left', 'fk', null, 'n', '1', 305],
-    ['Split.RunId', 'right', 'Runs.Id', 'left', 'fk', null, 'n', null, 305],
-    ['Runs.ShoeId', 'right', 'Shoes.Id', 'left', 'code', 'gear id', null, null, 680],
-    ['GoalRaces.Date', 'left', 'Runs.StartLocal', 'right', 'code', 'race day', null, null, 645],
+    ['BestEffort.RunId', 'right', 'Runs.Id', 'left', 'fk', null, 'n', '1', 320],
+    ['Split.RunId', 'right', 'Runs.Id', 'left', 'fk', null, 'n', null, 320],
+    ['Runs.ShoeId', 'right', 'Shoes.Id', 'left', 'code', 'gear id', null, null, 728],
+    ['GoalRaces.Date', 'left', 'Runs.StartLocal', 'right', 'code', 'race day', null, null, 700],
     ['TrainingPlans.GoalRaceId', 'left', 'GoalRaces.Id', 'right', 'fk', null, '0..1', '1', null],
   ];
 
-  const card = document.getElementById('card');
+  const board = document.getElementById('board');
 
   function render(table) {
     const element = document.createElement('div');
@@ -207,7 +382,7 @@
     const element = render(table);
     const [left, top, width] = table.at;
     Object.assign(element.style, { left: `${left}px`, top: `${top}px`, width: `${width}px` });
-    card.appendChild(element);
+    board.appendChild(element);
   }
   for (const entry of standalone) {
     const column = document.createElement('div');
@@ -216,21 +391,22 @@
     document.getElementById('standalone-tables').appendChild(column);
   }
 
-  // The standalone tables sit below the linked ones; the card ends below them.
-  const bottom = Math.max(...[...card.querySelectorAll(':scope > .table')].map((t) => t.offsetTop + t.offsetHeight));
+  // The standalone tables sit below the linked ones; the board ends below them.
+  const bottom = Math.max(...[...board.querySelectorAll(':scope > .table')].map((t) => t.offsetTop + t.offsetHeight));
   const box = document.getElementById('standalone');
-  box.style.top = `${bottom + 34}px`;
-  card.style.height = `${box.offsetTop + box.offsetHeight + 26}px`;
+  box.style.top = `${bottom + 48}px`;
+  board.style.height = `${box.offsetTop + box.offsetHeight}px`;
 
   const svgNs = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(svgNs, 'svg');
+  svg.setAttribute('aria-hidden', 'true');
   svg.innerHTML = `<defs>
-    <marker id="fk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1f2937"/></marker>
-    <marker id="code" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2f6fa8"/></marker>
+    <marker id="fk" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0L4 2L0 4Z" fill="#475467" stroke="none" /></marker>
+    <marker id="code" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0L4 2L0 4Z" fill="#2F6FA8" stroke="none" /></marker>
   </defs>`;
-  card.appendChild(svg);
+  board.appendChild(svg);
 
-  const origin = card.getBoundingClientRect();
+  const origin = board.getBoundingClientRect();
   function point(column, side) {
     const r = document.getElementById(column).closest('.table').getBoundingClientRect();
     const row = document.getElementById(column).getBoundingClientRect();
@@ -247,30 +423,31 @@
 
   function path(d, style) {
     const p = document.createElementNS(svgNs, 'path');
-    Object.entries({
-      d, fill: 'none', 'stroke-width': 1.6, stroke: style === 'fk' ? '#1f2937' : '#2f6fa8', 'marker-end': `url(#${style})`,
-      ...(style === 'code' ? { 'stroke-dasharray': '6 4' } : {}),
-    }).forEach(([k, v]) => p.setAttribute(k, v));
+    Object.entries({ d, class: style, 'marker-end': `url(#${style})` }).forEach(([k, v]) => p.setAttribute(k, v));
     svg.appendChild(p);
   }
 
+  // Each path ends 4 px before the table; the head covers the rest.
   for (const [from, fromSide, to, toSide, style, label, sourceEnd, targetEnd, midX] of links) {
     const s = point(from, fromSide);
     const t = point(to, toSide);
     const out = fromSide === 'right' ? 1 : -1;
-    path(midX === null ? `M${s.x} ${s.y}H${t.x}` : `M${s.x} ${s.y}H${midX}V${t.y}H${t.x}`, style);
-    if (sourceEnd) text(s.x + out * 8, s.y - 6, sourceEnd, out > 0 ? 'start' : 'end');
-    if (targetEnd) text(t.x - out * 12, t.y - 6, targetEnd, out > 0 ? 'end' : 'start');
-    if (label) text((s.x + midX) / 2, s.y - 7, label, 'middle', 'link');
+    const into = toSide === 'left' ? 1 : -1;
+    const end = t.x - into * 4;
+    path(midX === null ? `M${s.x} ${s.y}H${end}` : `M${s.x} ${s.y}H${midX}V${t.y}H${end}`, style);
+    if (sourceEnd) text(s.x + out * 10, s.y - 8, sourceEnd, out > 0 ? 'start' : 'end');
+    if (targetEnd) text(t.x - into * 14, t.y - 8, targetEnd, into > 0 ? 'end' : 'start');
+    if (label) text((s.x + midX) / 2, s.y - 8, label, 'middle', 'link');
   }
 
   // TrainingPlanWeeks hangs below TrainingPlans: up from its top edge to the plan's bottom edge.
   const weeks = document.getElementById('TrainingPlanWeeks.GoalRaceId').closest('.table').getBoundingClientRect();
   const plans = document.getElementById('TrainingPlans.GoalRaceId').closest('.table').getBoundingClientRect();
   const x = plans.left + plans.width / 2 - origin.left;
-  path(`M${x} ${weeks.top - origin.top}V${plans.bottom - origin.top}`, 'fk');
-  text(x + 8, weeks.top - origin.top - 6, 'n', 'start');
-  text(x + 8, plans.bottom - origin.top + 16, '1', 'start');
-</script>
+  path(`M${x} ${weeks.top - origin.top}V${plans.bottom - origin.top + 4}`, 'fk');
+  text(x + 10, weeks.top - origin.top - 8, 'n', 'start');
+  text(x + 10, plans.bottom - origin.top + 20, '1', 'start');
+  </script>
 </body>
+
 </html>

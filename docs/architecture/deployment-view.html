@@ -2,291 +2,565 @@
 <!--
   The deployment view (arc42): where the dashboard runs during development, as the packaged app on a friend's computer,
   and how GitHub builds that app. To render it as an image (from the repo root):
-  msedge --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --window-size=1334,1810
+  msedge --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --window-size=1600,2426
          --virtual-time-budget=5000 --screenshot=docs/architecture/deployment-view.png file:///<repo>/docs/architecture/deployment-view.html
   It follows README.md, frontend/proxy.conf.json, publish.ps1 and .github/workflows/release.yml.
+  Layout: each section is a board of its own; zones, blocks, arrows and labels are placed in px on it (see the script).
 -->
 <html lang="en">
+
 <head>
-<meta charset="utf-8">
-<title>Running Dashboard Deployment</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --text: #1f2937;
-    --muted: #4b5563;
-    --faint: #6b7280;
-    --border: #d4d8de;
-    --frontend: #d8e7f5;
-    --backend: #dfeedd;
-    --data: #f1ead2;
-    --external: #fde4d6;
-    --ci: #e8eaee;
-    --link: #2f6fa8;
-  }
+  <meta charset="utf-8">
+  <title>Running Dashboard Deployment</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --ink: #101828;
+      --text: #475467;
+      --faint: #667085;
+      --label: #344054;
+      --border: #D0D5DD;
+      --frontend: #2E6DB4;
+      --backend: #2F855A;
+      --data: #B7791F;
+      --external: #C4532D;
+      --ci: #667085;
+      --call: #475467;
+      --http: #2F6FA8;
+      --mono: 'IBM Plex Mono', Consolas, monospace;
+    }
 
-  * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
-  html, body {
-    margin: 0;
-    background: #f7f8fa;
-    color: var(--text);
-    font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
-  }
+    html,
+    body {
+      margin: 0;
+      background: #FCFCFD;
+      color: var(--ink);
+      font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+    }
 
-  .page { width: 1334px; padding: 14px 24px 20px; }
+    a {
+      color: var(--http);
+    }
 
-  h1 { margin: 0 0 10px; font-size: 28px; font-weight: 600; letter-spacing: -0.01em; }
+    a:hover {
+      color: #1F4E7A;
+    }
 
-  h2 { margin: 34px 0 6px; font-size: 19px; font-weight: 600; }
+    code {
+      font-family: var(--mono);
+      font-size: 13px;
+    }
 
-  .subtitle, .legend, .footer, .intro { color: var(--muted); font-size: 13.5px; }
+    .page {
+      width: 1600px;
+      padding: 64px;
+    }
 
-  .subtitle { margin: 0 0 22px; }
+    /* Header */
+    .kicker {
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 16px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
 
-  .intro { max-width: 1100px; margin: 0 0 14px; line-height: 1.5; }
+    h1 {
+      margin: 8px 0 12px;
+      font-size: 32px;
+      line-height: 40px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
 
-  code { font-family: 'IBM Plex Mono', Consolas, monospace; font-size: 12.5px; }
+    .subtitle {
+      width: 1120px;
+      margin: 0 0 24px;
+      font-size: 15px;
+      line-height: 22px;
+      color: var(--text);
+    }
 
-  .legend { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 26px; }
-  .legend span { display: inline-flex; align-items: center; gap: 8px; }
-  .swatch { width: 20px; height: 14px; border: 1px solid var(--border); border-radius: 3px; }
-  .swatch.machine { border: 1.5px dashed #9aa3ae; background: #fafbfc; }
-  .line { width: 36px; border-top: 2px solid var(--text); }
-  .line.http { border-top: 2px dashed var(--link); }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px 28px;
+      font-size: 12.5px;
+      line-height: 20px;
+      color: var(--text);
+    }
 
-  .card { position: relative; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
 
-  .container {
-    position: absolute;
-    border: 1.5px dashed #9aa3ae;
-    border-radius: 8px;
-    background: #fafbfc;
-  }
-  .container .label { position: absolute; top: 12px; left: 18px; right: 18px; font-size: 15px; font-weight: 600; }
-  .container .label small { display: block; margin-top: 2px; color: var(--muted); font-size: 11.5px; font-weight: 400; }
+    .legend i {
+      display: inline-block;
+      width: 18px;
+      height: 14px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-top-width: 3px;
+      border-radius: 3px;
+    }
 
-  .block {
-    position: absolute;
-    border: 1px solid var(--border);
-    border-radius: 5px;
-    background: #fff;
-    box-shadow: 0 1px 2px rgb(0 0 0 / 4%);
-    overflow: hidden;
-  }
-  .block h3 { margin: 0; padding: 6px 10px; border-bottom: 1px solid var(--border); font-size: 12.5px; font-weight: 600; }
-  .block p { margin: 0; padding: 6px 10px 0; font-size: 11.5px; line-height: 1.45; color: var(--muted); }
-  .block .code { padding: 4px 10px 7px; font-family: 'IBM Plex Mono', Consolas, monospace; font-size: 10.5px; color: var(--faint); }
-  .frontend > h3 { background: var(--frontend); }
-  .backend > h3 { background: var(--backend); }
-  .data > h3 { background: var(--data); }
-  .external > h3 { background: var(--external); }
-  .ci > h3 { background: var(--ci); }
+    .legend i.boundary {
+      width: 22px;
+      background: none;
+      border: 1.5px dashed #98A2B3;
+      border-radius: 4px;
+    }
 
-  .card > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
-  svg text { font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif; font-size: 11px; fill: var(--text); paint-order: stroke; stroke: #fff; stroke-width: 4px; stroke-linejoin: round; }
-  svg text.http { fill: var(--link); }
+    /* Sections */
+    h2 {
+      margin: 56px 0 8px;
+      font-size: 20px;
+      line-height: 28px;
+      font-weight: 600;
+    }
 
-  .footer { margin-top: 30px; }
-</style>
+    .intro {
+      width: 1120px;
+      margin: 0 0 24px;
+      font-size: 14px;
+      line-height: 21px;
+      color: var(--text);
+    }
+
+    .board {
+      position: relative;
+    }
+
+    .board>* {
+      position: absolute;
+    }
+
+    /* Zones */
+    .zone {
+      border-radius: 12px;
+      border: 1px solid;
+    }
+
+    .zone.computer {
+      border: 1.5px dashed #98A2B3;
+      border-radius: 16px;
+    }
+
+    .zone.external {
+      background: #FDF4EF;
+      border-color: #F0D5C6;
+    }
+
+    .zone.ci {
+      background: #F5F6F8;
+      border-color: #E1E4E9;
+    }
+
+    .zone-name {
+      font-size: 12.5px;
+      line-height: 18px;
+      color: var(--text);
+    }
+
+    .zone-name b {
+      display: block;
+      margin-bottom: 2px;
+      font-size: 16px;
+      line-height: 22px;
+      font-weight: 600;
+    }
+
+    .zone-name.external b {
+      color: #8F3A1D;
+    }
+
+    .zone-name.ci b {
+      color: var(--label);
+    }
+
+    .zone-name.computer {
+      font-size: 12.5px;
+    }
+
+    .zone-name.computer b {
+      margin-bottom: 4px;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      line-height: 16px;
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+
+    .zone-name .mono {
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    /* Blocks */
+    .block {
+      padding: 14px 16px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-top-width: 3px;
+      border-radius: 8px;
+      box-shadow: 0 1px 2px rgb(16 24 40 / 6%);
+      font-size: 13px;
+      line-height: 19px;
+      color: var(--text);
+    }
+
+    .block h3 {
+      margin: 0 0 4px;
+      font-size: 14px;
+      line-height: 20px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .block p {
+      margin: 0;
+    }
+
+    .block .code {
+      margin-top: 8px;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      line-height: 16px;
+      color: var(--faint);
+    }
+
+    .frontend.block,
+    .legend i.frontend {
+      border-top-color: var(--frontend);
+    }
+
+    .backend.block,
+    .legend i.backend {
+      border-top-color: var(--backend);
+    }
+
+    .data.block,
+    .legend i.data {
+      border-top-color: var(--data);
+    }
+
+    .external.block,
+    .legend i.external {
+      border-top-color: var(--external);
+    }
+
+    .ci.block,
+    .legend i.ci {
+      border-top-color: var(--ci);
+    }
+
+    /* Arrows */
+    svg.arrows {
+      left: 0;
+      top: 0;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    svg.arrows>path {
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    svg.arrows .call {
+      stroke: var(--call);
+    }
+
+    svg.arrows .http {
+      stroke: var(--http);
+      stroke-dasharray: 6 5;
+    }
+
+    .arrow-label {
+      font-size: 13px;
+      line-height: 16px;
+      color: var(--label);
+      white-space: nowrap;
+    }
+
+    .arrow-label.http {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--http);
+    }
+
+    .footer {
+      width: 1472px;
+      margin: 56px 0 0;
+      font-size: 13px;
+      line-height: 20px;
+      color: var(--text);
+    }
+  </style>
 </head>
+
 <body>
-<svg width="0" height="0" style="position: absolute">
-  <defs>
-    <marker id="call" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1f2937"/></marker>
-    <marker id="http" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2f6fa8"/></marker>
-  </defs>
-</svg>
-<div class="page">
-  <h1>Running Dashboard Deployment</h1>
-  <p class="subtitle">Where the dashboard runs: on the developer's PC while it is worked on, as one packaged app on a friend's computer, and on GitHub Actions, which builds and releases that app.</p>
-  <div class="legend">
-    <span><i class="swatch machine"></i>Computer</span>
-    <span><i class="swatch" style="background: var(--frontend)"></i>Frontend</span>
-    <span><i class="swatch" style="background: var(--backend)"></i>Backend</span>
-    <span><i class="swatch" style="background: var(--data)"></i>Files</span>
-    <span><i class="swatch" style="background: var(--external)"></i>Service on the internet</span>
-    <span><i class="swatch" style="background: var(--ci)"></i>GitHub Actions job</span>
-    <span><i class="line"></i>Uses or leads to</span>
-    <span><i class="line http"></i>HTTP request</span>
+  <div class="page">
+    <div class="kicker">arc42 · Section 7 · Deployment view</div>
+    <h1>Running Dashboard Deployment</h1>
+    <p class="subtitle">Where the dashboard runs: on the developer's PC while it is worked on, as one packaged app on a
+      friend's computer, and on GitHub Actions, which builds and releases that app.</p>
+    <div class="legend">
+      <span><i class="frontend"></i>Frontend</span>
+      <span><i class="backend"></i>Backend</span>
+      <span><i class="data"></i>Files on disk</span>
+      <span><i class="external"></i>Service on the internet</span>
+      <span><i class="ci"></i>GitHub Actions job</span>
+      <span><i class="boundary"></i>Computer</span>
+      <span><svg aria-hidden="true" width="36" height="10" viewBox="0 0 36 10">
+          <path d="M0 5L30 5" fill="none" stroke="#475467" stroke-width="2" stroke-linecap="round" />
+          <path d="M28 1L36 5L28 9Z" fill="#475467" />
+        </svg>Uses or leads to</span>
+      <span><svg aria-hidden="true" width="36" height="10" viewBox="0 0 36 10">
+          <path d="M0 5L30 5" fill="none" stroke="#2F6FA8" stroke-width="2" stroke-linecap="round"
+            stroke-dasharray="6 5" />
+          <path d="M28 1L36 5L28 9Z" fill="#2F6FA8" />
+        </svg>HTTP request</span>
+    </div>
+    <div id="sections"></div>
+    <p class="footer">Everything listens on localhost only, so nothing on the network reaches the dashboard. The <a
+        href="building-block-view.html">building block view</a> shows what the backend and frontend are made of, the <a
+        href="runtime-view.html">runtime view</a> how they work together.</p>
   </div>
-  <div id="sections"></div>
-  <p class="footer">Everything listens on localhost only, so nothing on the network reaches the dashboard. The <a href="building-block-view.html">building block view</a> shows what the backend and frontend are made of, the <a href="runtime-view.html">runtime view</a> how they work together.</p>
-</div>
 
-<script>
-  // containers: [id, left, top, width, height, title, description]. blocks: [id, kind, left, top, width, height, title,
-  // description, code]. arrows: from and to as [id, side, position along that side from 0 to 1]; via: corners on the
-  // way, as ['H', x] or ['V', y].
-  const sections = [
-    {
-      title: 'Development',
-      intro: 'As the README sets it up: the Angular dev server and the backend run side by side from the repository, and the dev server passes the app\'s <code>/api</code> requests on to the backend. The database and its backups live in the backend\'s project folder.',
-      containers: [['devpc', 20, 20, 880, 362, 'Developer PC', 'Windows, with the .NET 10 SDK and Node.js']],
-      blocks: [
-        ['browser', 'frontend', 40, 90, 200, 120, 'Browser', 'http://localhost:4200', null],
-        ['ngserve', 'frontend', 300, 90, 250, 120, 'Angular dev server',
-          'npm start: ng serve on localhost:4200, rebuilds on every change, passes /api on to localhost:5148', 'frontend/proxy.conf.json'],
-        ['backend', 'backend', 610, 90, 270, 120, 'Backend',
-          'dotnet run: Kestrel on localhost:5148, with appsettings.json and the user secrets', 'backend/src/RunningDashboard.Api'],
-        ['files', 'data', 610, 246, 270, 92, 'Database and backups',
-          'running-dashboard.db with its -wal and -shm files, and backups/, in the backend\'s project folder', null],
-        ['strava', 'external', 960, 90, 300, 90, 'Strava', 'www.strava.com: the consent page for the browser, the API for the backend', null],
-        ['openmeteo', 'external', 960, 196, 300, 64, 'Open-Meteo', 'open-meteo.com: a Run\'s Temperature', null],
-        ['tiles', 'external', 960, 276, 300, 76, 'Map tile servers', 'OpenStreetMap, Esri and OpenTopoMap', null],
-      ],
-      arrows: [
-        { from: ['browser', 'right'], to: ['ngserve', 'left'], kind: 'http', label: 'HTTP', labelAt: [270, 144] },
-        { from: ['ngserve', 'right'], to: ['backend', 'left'], kind: 'http', label: '/api/*', labelAt: [580, 144] },
-        { from: ['backend', 'bottom'], to: ['files', 'top'], label: 'reads and writes', labelAt: [752, 232], anchor: 'start' },
-        { from: ['backend', 'right', 0.375], to: ['strava', 'left'], kind: 'http', label: 'HTTPS', labelAt: [920, 129] },
-        { from: ['backend', 'right', 0.85], to: ['openmeteo', 'left'], via: [['H', 935]], kind: 'http', label: 'HTTPS', labelAt: [907, 186] },
-        { from: ['browser', 'top'], to: ['strava', 'top', 0.3], via: [['V', 78]], kind: 'http', label: 'OAuth consent page', labelAt: [600, 73] },
-        { from: ['browser', 'bottom'], to: ['tiles', 'left'], via: [['V', 360], ['H', 930]], kind: 'http', label: 'map tiles, HTTPS', labelAt: [420, 354] },
-      ],
-    },
-    {
-      title: 'Packaged app on a friend\'s computer',
-      intro: '<code>publish.ps1</code> packs the backend with the .NET runtime into one file and puts the built frontend next to it, for Windows x64 and for Macs with Apple Silicon. Unpacked anywhere, it needs no .NET or Node, serves the whole dashboard on one port, and keeps its database and backups in its own folder. Each friend connects a Strava API app of their own.',
-      containers: [['pc', 20, 20, 880, 382, 'A friend\'s computer', 'Windows x64, or a Mac with Apple Silicon (M1 and later)']],
-      blocks: [
-        ['browser', 'frontend', 40, 90, 200, 130, 'Browser', 'http://localhost:5148, opened by the app once it has started', null],
-        ['app', 'backend', 300, 90, 580, 130, 'RunningDashboard.exe, or RunningDashboard on the Mac',
-          'One self-contained .NET 10 file. Kestrel on localhost:5148 serves the built frontend from wwwroot/ and the /api endpoints, and sends other paths to index.html for Angular\'s routes. It runs while its console window is open.',
-          'Program.cs: packaged when wwwroot/ is next to it'],
-        ['folder', 'data', 300, 256, 580, 98, 'The RunningDashboard folder, unpacked anywhere',
-          'RunningDashboard.exe or RunningDashboard · wwwroot/ · appsettings.json · running-dashboard.db, made on the first start · backups/', null],
-        ['strava', 'external', 960, 90, 300, 90, 'Strava', 'www.strava.com, with the friend\'s own Strava API app', null],
-        ['openmeteo', 'external', 960, 196, 300, 64, 'Open-Meteo', 'open-meteo.com: a Run\'s Temperature', null],
-        ['tiles', 'external', 960, 276, 300, 78, 'Map tile servers', 'OpenStreetMap, Esri and OpenTopoMap', null],
-      ],
-      arrows: [
-        { from: ['browser', 'right', 0.35], to: ['app', 'left', 0.35], kind: 'http', label: 'HTTP', labelAt: [270, 129] },
-        { from: ['app', 'left', 0.75], to: ['browser', 'right', 0.75], label: 'opens', labelAt: [270, 181] },
-        { from: ['app', 'bottom'], to: ['folder', 'top'], label: 'reads and writes next to itself', labelAt: [598, 242], anchor: 'start' },
-        { from: ['app', 'right', 0.346], to: ['strava', 'left'], kind: 'http', label: 'HTTPS', labelAt: [920, 129] },
-        { from: ['app', 'right', 0.9], to: ['openmeteo', 'left'], via: [['H', 935]], kind: 'http', label: 'HTTPS', labelAt: [907, 201] },
-        { from: ['browser', 'top'], to: ['strava', 'top', 0.3], via: [['V', 78]], kind: 'http', label: 'OAuth consent page', labelAt: [600, 73] },
-        { from: ['browser', 'bottom'], to: ['tiles', 'left'], via: [['V', 378], ['H', 930]], kind: 'http', label: 'map tiles, HTTPS', labelAt: [420, 372] },
-      ],
-    },
-    {
-      title: 'Build and release',
-      intro: 'The Release workflow tests the backend and the frontend on Linux side by side, then builds both apps on Windows with <code>publish.ps1</code>. For a version tag, it attaches them to a GitHub Release, where friends download the zip or the tarball (about 50 MB) and unpack it as above.',
-      containers: [['actions', 250, 20, 780, 272, 'GitHub Actions', '.github/workflows/release.yml']],
-      blocks: [
-        ['repo', 'external', 20, 100, 190, 110, 'GitHub repository', 'git push of a version tag v*, or Run workflow by hand', null],
-        ['testback', 'ci', 270, 86, 200, 86, 'test-backend', 'ubuntu-latest: dotnet test backend -c Release', null],
-        ['testfront', 'ci', 270, 186, 200, 86, 'test-frontend', 'ubuntu-latest: npm ci, then npm test', null],
-        ['build', 'ci', 520, 110, 230, 120, 'build', 'windows-latest: publish.ps1 builds the frontend, then the backend for win-x64 and osx-arm64', null],
-        ['publish', 'ci', 790, 110, 220, 120, 'publish', 'ubuntu-latest, for a v* tag only: gh release create with both files', null],
-        ['artifact', 'data', 560, 330, 280, 80, 'Run artifact RunningDashboard', 'RunningDashboard-win.zip and RunningDashboard-mac.tar.gz', null],
-        ['release', 'external', 1070, 110, 190, 120, 'GitHub Release', 'Both files, for friends to download', null],
-      ],
-      arrows: [
-        { from: ['repo', 'right'], to: ['testback', 'left'], via: [['H', 236]] },
-        { from: ['repo', 'right'], to: ['testfront', 'left'], via: [['H', 236]] },
-        { from: ['testback', 'right'], to: ['build', 'left', 0.3], via: [['H', 495]] },
-        { from: ['testfront', 'right'], to: ['build', 'left', 0.7], via: [['H', 495]] },
-        { from: ['build', 'right'], to: ['publish', 'left'] },
-        { from: ['build', 'bottom'], to: ['artifact', 'top', 0.2679], label: 'upload', labelAt: [642, 312], anchor: 'start' },
-        { from: ['artifact', 'right'], to: ['publish', 'bottom'], label: 'download', labelAt: [906, 312], anchor: 'start' },
-        { from: ['publish', 'right'], to: ['release', 'left'] },
-      ],
-    },
-  ];
+  <script>
+    // Each section is a board 1472 px wide; everything on it is placed in px from its top left corner.
+    // zones: [kind, left, top, width, height, name, description]; kind is computer (dashed), external or ci (tinted).
+    // blocks: [id, kind, left, top, width, height, title, description, code].
+    // arrows: from and to as [id, side, position along that side from 0 to 1]; via: corners on the way, as ['H', x] or
+    // ['V', y]. labels: [text, left, top, kind], kind http for a request.
+    const sections = [
+      {
+        title: 'Development',
+        intro: 'As the README sets it up: the Angular dev server and the backend run side by side from the repository, and the dev server passes the app\'s <code>/api</code> requests on to the backend. The database and its backups live in the backend\'s project folder.',
+        height: 528,
+        zones: [
+          ['computer', 0, 0, 1056, 464, 'Developer PC', 'Windows, with the .NET 10 SDK and Node.js'],
+          ['external', 1136, 0, 336, 464, 'Internet', 'Reached over HTTPS'],
+        ],
+        blocks: [
+          ['browser', 'frontend', 24, 104, 224, 136, 'Browser', 'http://localhost:4200', null],
+          ['ngserve', 'frontend', 312, 104, 320, 136, 'Angular dev server',
+            'npm start: ng serve on localhost:4200, rebuilds on every change, passes /api on to localhost:5148', 'frontend/proxy.conf.json'],
+          ['backend', 'backend', 696, 104, 336, 136, 'Backend',
+            'dotnet run: Kestrel on localhost:5148, with appsettings.json and the user secrets', 'backend/src/RunningDashboard.Api'],
+          ['files', 'data', 696, 296, 336, 104, 'Database and backups',
+            'running-dashboard.db with its -wal and -shm files, and backups/, in the backend\'s project folder', null],
+          ['strava', 'external', 1160, 104, 288, 112, 'Strava', 'www.strava.com: the consent page for the browser, the API for the backend', null],
+          ['openmeteo', 'external', 1160, 236, 288, 88, 'Open-Meteo', 'open-meteo.com: a Run\'s Temperature', null],
+          ['tiles', 'external', 1160, 344, 288, 88, 'Map tile servers', 'OpenStreetMap, Esri and OpenTopoMap', null],
+        ],
+        arrows: [
+          { from: ['browser', 'right'], to: ['ngserve', 'left'], kind: 'http' },
+          { from: ['ngserve', 'right'], to: ['backend', 'left'], kind: 'http' },
+          { from: ['backend', 'bottom'], to: ['files', 'top'] },
+          { from: ['backend', 'right', 0.25], to: ['strava', 'left', 34 / 112], kind: 'http' },
+          { from: ['backend', 'right', 0.75], to: ['openmeteo', 'left'], via: [['H', 1096]], kind: 'http' },
+          { from: ['browser', 'top'], to: ['strava', 'top', 0.25], via: [['V', 80]], kind: 'http' },
+          { from: ['browser', 'bottom'], to: ['tiles', 'bottom'], via: [['V', 496]], kind: 'http' },
+        ],
+        labels: [
+          ['HTTP', 262, 148, 'http'],
+          ['/api/*', 640, 148, 'http'],
+          ['reads and writes', 876, 260],
+          ['HTTPS', 1072, 116, 'http'],
+          ['OAuth consent page', 520, 58, 'http'],
+          ['map tiles, HTTPS', 520, 504, 'http'],
+        ],
+      },
+      {
+        title: 'Packaged app on a friend\'s computer',
+        intro: '<code>publish.ps1</code> packs the backend with the .NET runtime into one file and puts the built frontend next to it, for Windows x64 and for Macs with Apple Silicon. Unpacked anywhere, it needs no .NET or Node, serves the whole dashboard on one port, and keeps its database and backups in its own folder. Each friend connects a Strava API app of their own.',
+        height: 528,
+        zones: [
+          ['computer', 0, 0, 1056, 464, 'A friend\'s computer', 'Windows x64, or a Mac with Apple Silicon (M1 and later)'],
+          ['external', 1136, 0, 336, 464, 'Internet', 'Reached over HTTPS'],
+        ],
+        blocks: [
+          ['browser', 'frontend', 24, 104, 224, 152, 'Browser', 'http://localhost:5148, opened by the app once it has started', null],
+          ['app', 'backend', 312, 104, 720, 152, 'RunningDashboard.exe, or RunningDashboard on the Mac',
+            'One self-contained .NET 10 file. Kestrel on localhost:5148 serves the built frontend from wwwroot/ and the /api endpoints, and sends other paths to index.html for Angular\'s routes. It runs while its console window is open.',
+            'Program.cs: packaged when wwwroot/ is next to it'],
+          ['folder', 'data', 312, 312, 720, 96, 'The RunningDashboard folder, unpacked anywhere',
+            'RunningDashboard.exe or RunningDashboard · wwwroot/ · appsettings.json · running-dashboard.db, made on the first start · backups/', null],
+          ['strava', 'external', 1160, 104, 288, 112, 'Strava', 'www.strava.com, with the friend\'s own Strava API app', null],
+          ['openmeteo', 'external', 1160, 236, 288, 88, 'Open-Meteo', 'open-meteo.com: a Run\'s Temperature', null],
+          ['tiles', 'external', 1160, 344, 288, 88, 'Map tile servers', 'OpenStreetMap, Esri and OpenTopoMap', null],
+        ],
+        arrows: [
+          { from: ['browser', 'right', 0.3], to: ['app', 'left', 0.3], kind: 'http' },
+          { from: ['app', 'left', 0.7], to: ['browser', 'right', 0.7] },
+          { from: ['app', 'bottom', 0.75], to: ['folder', 'top', 0.75] },
+          { from: ['app', 'right', 0.25], to: ['strava', 'left', 38 / 112], kind: 'http' },
+          { from: ['app', 'right', 0.75], to: ['openmeteo', 'left'], via: [['H', 1096]], kind: 'http' },
+          { from: ['browser', 'top'], to: ['strava', 'top', 0.25], via: [['V', 80]], kind: 'http' },
+          { from: ['browser', 'bottom'], to: ['tiles', 'bottom'], via: [['V', 496]], kind: 'http' },
+        ],
+        labels: [
+          ['HTTP', 262, 128, 'http'],
+          ['opens', 262, 186],
+          ['reads and writes next to itself', 864, 276],
+          ['HTTPS', 1072, 120, 'http'],
+          ['OAuth consent page', 520, 58, 'http'],
+          ['map tiles, HTTPS', 520, 504, 'http'],
+        ],
+      },
+      {
+        title: 'Build and release',
+        intro: 'The Release workflow tests the backend and the frontend on Linux side by side, then builds both apps on Windows with <code>publish.ps1</code>. For a version tag, it attaches them to a GitHub Release, where friends download the zip or the tarball (about 50 MB) and unpack it as above.',
+        height: 528,
+        zones: [
+          ['ci', 288, 0, 912, 376, 'GitHub Actions', '<span class="mono">.github/workflows/release.yml</span>'],
+        ],
+        blocks: [
+          ['repo', 'external', 0, 160, 224, 112, 'GitHub repository', 'git push of a version tag v*, or Run workflow by hand', null],
+          ['testback', 'ci', 312, 96, 240, 104, 'test-backend', 'ubuntu-latest: dotnet test backend -c Release', null],
+          ['testfront', 'ci', 312, 240, 240, 104, 'test-frontend', 'ubuntu-latest: npm ci, then npm test', null],
+          ['build', 'ci', 616, 156, 272, 128, 'build', 'windows-latest: publish.ps1 builds the frontend, then the backend for win-x64 and osx-arm64', null],
+          ['publish', 'ci', 952, 156, 224, 128, 'publish', 'ubuntu-latest, for a v* tag only: gh release create with both files', null],
+          ['artifact', 'data', 616, 432, 352, 96, 'Run artifact RunningDashboard', 'RunningDashboard-win.zip and RunningDashboard-mac.tar.gz', null],
+          ['release', 'external', 1248, 164, 224, 112, 'GitHub Release', 'Both files, for friends to download', null],
+        ],
+        arrows: [
+          { from: ['repo', 'right'], to: ['testback', 'left'], via: [['H', 256]] },
+          { from: ['repo', 'right'], to: ['testfront', 'left'], via: [['H', 256]] },
+          { from: ['testback', 'right'], to: ['build', 'left', 0.3], via: [['H', 584]] },
+          { from: ['testfront', 'right'], to: ['build', 'left', 0.7], via: [['H', 584]] },
+          { from: ['build', 'right'], to: ['publish', 'left'] },
+          { from: ['build', 'bottom', 0.5], to: ['artifact', 'top', 136 / 352] },
+          { from: ['artifact', 'right'], to: ['publish', 'bottom'] },
+          { from: ['publish', 'right'], to: ['release', 'left'] },
+        ],
+        labels: [
+          ['upload', 764, 396],
+          ['download', 1076, 396],
+        ],
+      },
+    ];
 
-  const svgNs = 'http://www.w3.org/2000/svg';
-  const host = document.getElementById('sections');
+    const svgNs = 'http://www.w3.org/2000/svg';
+    const host = document.getElementById('sections');
+    const width = 1472;
 
-  for (const section of sections) {
-    const title = document.createElement('h2');
-    title.textContent = section.title;
-    const intro = document.createElement('p');
-    intro.className = 'intro';
-    intro.innerHTML = section.intro;
-    const card = document.createElement('div');
-    card.className = 'card';
-    host.append(title, intro, card);
-    draw(card, section);
-  }
-
-  function draw(card, { containers, blocks, arrows }) {
-    for (const [id, left, top, width, height, title, description] of containers) {
-      const element = document.createElement('div');
-      element.className = 'container';
-      element.id = id;
-      element.innerHTML = `<div class="label">${title}<small>${description}</small></div>`;
-      Object.assign(element.style, { left: `${left}px`, top: `${top}px`, width: `${width}px`, height: `${height}px` });
-      card.appendChild(element);
-    }
-    for (const [id, kind, left, top, width, height, title, description, code] of blocks) {
-      const element = document.createElement('div');
-      element.className = `block ${kind}`;
-      element.dataset.id = id;
-      element.innerHTML = `<h3>${title}</h3><p>${description}</p>${code ? `<div class="code">${code}</div>` : ''}`;
-      Object.assign(element.style, { left: `${left}px`, top: `${top}px`, width: `${width}px`, height: `${height}px` });
-      card.appendChild(element);
-    }
-    card.style.height = `${Math.max(...[...card.children].map((c) => c.offsetTop + c.offsetHeight)) + 24}px`;
-
-    const svg = document.createElementNS(svgNs, 'svg');
-    card.appendChild(svg);
-
-    // The same id comes up in several sections, so blocks are looked up within their card.
-    function point(id, side, at = 0.5) {
-      const origin = card.getBoundingClientRect();
-      const r = card.querySelector(`[data-id="${id}"]`).getBoundingClientRect();
-      const left = r.left - origin.left - card.clientLeft;
-      const top = r.top - origin.top - card.clientTop;
-      if (side === 'top') return { x: left + r.width * at, y: top };
-      if (side === 'bottom') return { x: left + r.width * at, y: top + r.height };
-      if (side === 'left') return { x: left, y: top + r.height * at };
-      return { x: left + r.width, y: top + r.height * at };
+    for (const section of sections) {
+      const title = document.createElement('h2');
+      title.textContent = section.title;
+      const intro = document.createElement('p');
+      intro.className = 'intro';
+      intro.innerHTML = section.intro;
+      const board = document.createElement('div');
+      board.className = 'board';
+      Object.assign(board.style, { width: `${width}px`, height: `${section.height}px` });
+      host.append(title, intro, board);
+      draw(board, section);
     }
 
-    function text(x, y, content, className, anchor = 'middle') {
-      const t = document.createElementNS(svgNs, 'text');
-      Object.entries({ x, y, 'text-anchor': anchor }).forEach(([k, v]) => t.setAttribute(k, v));
-      if (className) t.setAttribute('class', className);
-      t.textContent = content;
-      svg.appendChild(t);
+    function place(element, left, top, width, height) {
+      Object.assign(element.style, { left: `${left}px`, top: `${top}px`, width: `${width}px`, ...(height ? { height: `${height}px` } : {}) });
     }
 
-    const sideways = (side) => side === 'left' || side === 'right';
-
-    for (const { from, to, via = [], kind = 'call', label, labelAt, anchor } of arrows) {
-      const s = point(...from);
-      const t = point(...to);
-      // Without corners given, two sides facing each other meet halfway.
-      const corners = via.length ? via
-        : sideways(from[1]) && sideways(to[1]) && Math.abs(s.y - t.y) > 0.5 ? [['H', (s.x + t.x) / 2]]
-        : !sideways(from[1]) && !sideways(to[1]) && Math.abs(s.x - t.x) > 0.5 ? [['V', (s.y + t.y) / 2]]
-        : [];
-      const points = [s];
-      let current = s;
-      for (const [axis, value] of corners) {
-        current = axis === 'H' ? { x: value, y: current.y } : { x: current.x, y: value };
-        points.push(current);
+    function draw(board, { zones, blocks, arrows, labels, height }) {
+      for (const [kind, left, top, w, h, name, description] of zones) {
+        const zone = document.createElement('div');
+        zone.className = `zone ${kind}`;
+        place(zone, left, top, w, h);
+        board.appendChild(zone);
       }
-      if (sideways(to[1]) && Math.abs(current.y - t.y) > 0.5) points.push({ x: current.x, y: t.y });
-      if (!sideways(to[1]) && Math.abs(current.x - t.x) > 0.5) points.push({ x: t.x, y: current.y });
-      points.push(t);
 
-      const path = document.createElementNS(svgNs, 'path');
-      Object.entries({
-        d: `M${points.map((p) => `${p.x} ${p.y}`).join('L')}`,
-        fill: 'none',
-        'stroke-width': 1.6,
-        stroke: kind === 'http' ? '#2f6fa8' : '#1f2937',
-        'marker-end': `url(#${kind})`,
-        ...(kind === 'http' ? { 'stroke-dasharray': '6 4' } : {}),
-      }).forEach(([k, v]) => path.setAttribute(k, v));
-      svg.appendChild(path);
-      if (label) text(labelAt[0], labelAt[1], label, kind === 'http' ? 'http' : null, anchor);
+      // Arrows go over the zones and under the blocks.
+      const svg = document.createElementNS(svgNs, 'svg');
+      Object.entries({ class: 'arrows', width, height, viewBox: `0 0 ${width} ${height}`, 'aria-hidden': 'true' })
+        .forEach(([k, v]) => svg.setAttribute(k, v));
+      svg.innerHTML = `<defs>
+        <marker id="call" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0L4 2L0 4Z" fill="#475467" stroke="none" /></marker>
+        <marker id="http" orient="auto" markerWidth="5" markerHeight="5" refX="2" refY="2" overflow="visible"><path d="M0 0L4 2L0 4Z" fill="#2F6FA8" stroke="none" /></marker>
+      </defs>`;
+      board.appendChild(svg);
+
+      const boxes = {};
+      for (const [id, kind, left, top, w, h, title, description, code] of blocks) {
+        const block = document.createElement('div');
+        block.className = `block ${kind}`;
+        block.innerHTML = `<h3>${title}</h3><p>${description}</p>${code ? `<div class="code">${code}</div>` : ''}`;
+        place(block, left, top, w, h);
+        board.appendChild(block);
+        boxes[id] = { left, top, width: w, height: h };
+      }
+
+      for (const [kind, left, top, w, , name, description] of zones) {
+        const label = document.createElement('div');
+        label.className = `zone-name ${kind}`;
+        label.innerHTML = `<b>${name}</b>${description}`;
+        place(label, left + 24, top + (kind === 'computer' ? 16 : 18), w - 48);
+        board.appendChild(label);
+      }
+
+      for (const [content, left, top, kind] of labels) {
+        const label = document.createElement('div');
+        label.className = `arrow-label ${kind ?? ''}`;
+        label.textContent = content;
+        Object.assign(label.style, { left: `${left}px`, top: `${top}px` });
+        board.appendChild(label);
+      }
+
+      function point(id, side, at = 0.5) {
+        const r = boxes[id];
+        if (side === 'top') return { x: r.left + r.width * at, y: r.top };
+        if (side === 'bottom') return { x: r.left + r.width * at, y: r.top + r.height };
+        if (side === 'left') return { x: r.left, y: r.top + r.height * at };
+        return { x: r.left + r.width, y: r.top + r.height * at };
+      }
+
+      const sideways = (side) => side === 'left' || side === 'right';
+
+      for (const { from, to, via = [], kind = 'call' } of arrows) {
+        const s = point(...from);
+        const t = point(...to);
+        // Without corners given, two sides facing each other meet halfway.
+        const corners = via.length ? via
+          : sideways(from[1]) && sideways(to[1]) && Math.abs(s.y - t.y) > 0.5 ? [['H', (s.x + t.x) / 2]]
+            : !sideways(from[1]) && !sideways(to[1]) && Math.abs(s.x - t.x) > 0.5 ? [['V', (s.y + t.y) / 2]]
+              : [];
+        const points = [s];
+        let current = s;
+        for (const [axis, value] of corners) {
+          current = axis === 'H' ? { x: value, y: current.y } : { x: current.x, y: value };
+          points.push(current);
+        }
+        if (sideways(to[1]) && Math.abs(current.y - t.y) > 0.5) points.push({ x: current.x, y: t.y });
+        if (!sideways(to[1]) && Math.abs(current.x - t.x) > 0.5) points.push({ x: t.x, y: current.y });
+        // The path ends 4 px before the block; the head covers the rest.
+        const last = points.at(-1);
+        const dx = Math.sign(t.x - last.x), dy = Math.sign(t.y - last.y);
+        points.push({ x: t.x - dx * 4, y: t.y - dy * 4 });
+
+        const path = document.createElementNS(svgNs, 'path');
+        Object.entries({ class: kind, d: `M${points.map((p) => `${p.x} ${p.y}`).join('L')}`, 'marker-end': `url(#${kind})` })
+          .forEach(([k, v]) => path.setAttribute(k, v));
+        svg.appendChild(path);
+      }
     }
-  }
-</script>
+  </script>
 </body>
+
 </html>
