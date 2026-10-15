@@ -17,6 +17,7 @@ namespace RunningDashboard.Api.Tests.Harness;
 /// <param name="Trainer">Recorded indoors, e.g. on a treadmill.</param>
 /// <param name="GearId">Strava's gear id of the Shoe; none unless a test sets it.</param>
 /// <param name="AverageCadence">As Strava counts it: one foot's steps per minute; none unless a test sets it.</param>
+/// <param name="StartLatLng">Where it started, latitude then longitude; none (recorded without GPS) unless a test sets it.</param>
 public sealed record TestActivity(
     long Id,
     string Name,
@@ -33,7 +34,8 @@ public sealed record TestActivity(
     double? AverageCadence = null,
     string? GearId = null,
     TestSplit[]? Splits = null,
-    bool Trainer = false)
+    bool Trainer = false,
+    double[]? StartLatLng = null)
 {
     public static string ToJson(IEnumerable<TestActivity> activities) =>
         JsonSerializer.Serialize(activities.Select(a => a.ToStrava()));
@@ -83,6 +85,7 @@ public sealed record TestActivity(
             ["start_date_local"] = StartLocal.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture),
             ["timezone"] = $"(GMT{UtcOffsetHours:+00;-00}:00) Test/Zone",
             ["utc_offset"] = UtcOffsetHours * 3600,
+            ["start_latlng"] = StartLatLng ?? [],
             ["trainer"] = Trainer || SportType == "VirtualRun",
             ["commute"] = false,
             ["manual"] = false,

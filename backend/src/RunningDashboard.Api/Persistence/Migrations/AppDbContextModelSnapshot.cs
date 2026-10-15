@@ -193,6 +193,9 @@ namespace RunningDashboard.Api.Persistence.Migrations
                     b.Property<DateTime>("StartUtc")
                         .HasColumnType("TEXT");
 
+                    b.Property<double?>("Temperature")
+                        .HasColumnType("REAL");
+
                     b.Property<bool>("Trainer")
                         .HasColumnType("INTEGER");
 

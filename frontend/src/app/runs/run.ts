@@ -43,6 +43,8 @@ export interface RunDetail extends Run {
   elapsedTime: number;
   elevationGain: number;
   relativeEffort: number | null;
+  /** °C halfway through the Run, from the weather history where it started; none without GPS, on a treadmill, or while it cannot be looked up. */
+  temperature: number | null;
   stravaUrl: string;
   /** Whether Best Efforts and Splits are in: still to be fetched, stored, or no longer on Strava. */
   detail: 'pending' | 'loaded' | 'unavailable';

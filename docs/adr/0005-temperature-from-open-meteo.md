@@ -1,0 +1,5 @@
+# A Run's temperature comes from Open-Meteo, not Strava
+
+Strava's API has no weather. Its summaries carry an `average_temp` only for some watches, and a wrist sensor reads the skin's warmth more than the air's. So a Run's temperature is looked up on Open-Meteo, which is free, needs no API key and has the hourly weather since 1940: the air temperature halfway through the Run, where it started. Only that place and time leave the dashboard. Treadmill Runs and Runs without GPS have none.
+
+It is looked up the first time the Run's page is opened, not during the sync: a full history would mean hundreds of requests that nobody may ever look at. The value is then kept, since past weather does not change; a failed lookup is not kept, so the next visit tries again. This makes Open-Meteo a second data source next to Strava ([ADR 0001](0001-strava-as-only-data-source.md)), but only for this one figure, and nothing else depends on it.

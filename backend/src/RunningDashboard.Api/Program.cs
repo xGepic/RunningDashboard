@@ -15,6 +15,7 @@ using RunningDashboard.Api.Strava;
 using RunningDashboard.Api.Swims;
 using RunningDashboard.Api.Sync;
 using RunningDashboard.Api.Training;
+using RunningDashboard.Api.Weather;
 
 // The packaged app (see publish.ps1) brings the built frontend along in wwwroot and keeps its database next to the exe,
 // wherever it is started from.
@@ -33,6 +34,8 @@ builder.Services.AddOptions<StravaOptions>().Bind(builder.Configuration.GetSecti
 builder.Services.AddScoped<StravaAppCredentials>();
 builder.Services.AddHttpClient<StravaClient>();
 builder.Services.AddSingleton<StravaRateLimits>();
+// A Run's page waits for the temperature, so not for long.
+builder.Services.AddHttpClient<WeatherClient>(client => client.Timeout = TimeSpan.FromSeconds(5));
 builder.Services.AddScoped<ActivityImport>();
 builder.Services.AddScoped<RunDetailImport>();
 builder.Services.AddScoped<ShoeImport>();

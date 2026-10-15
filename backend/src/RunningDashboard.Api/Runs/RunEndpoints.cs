@@ -4,6 +4,7 @@ using RunningDashboard.Api.Lists;
 using RunningDashboard.Api.Persistence;
 using RunningDashboard.Api.Records;
 using RunningDashboard.Api.Training;
+using RunningDashboard.Api.Weather;
 
 namespace RunningDashboard.Api.Runs;
 
@@ -100,7 +101,7 @@ public static class RunEndpoints
             return Results.Ok(new RunMonthsResponse(selectedYear, firstRun?.Year, months));
         });
 
-        app.MapGet("/api/runs/{id:long}", async (long id, AppDbContext db, CancellationToken cancellationToken) =>
+        app.MapGet("/api/runs/{id:long}", async (long id, AppDbContext db, WeatherClient weather, CancellationToken cancellationToken) =>
         {
             var run = await db.Runs
                 .Include(r => r.BestEfforts)
@@ -112,10 +113,25 @@ public static class RunEndpoints
             if (run is null)
                 return Results.NotFound();
 
+            await LookUpTemperatureAsync(run, db, weather, cancellationToken);
             var shoe = run.ShoeId is null ? null : await db.Shoes.FindAsync([run.ShoeId], cancellationToken);
             var personalBestDistances = await PersonalBests.DistancesSetByAsync(run, db, cancellationToken);
             return Results.Ok(RunDetailResponse.From(run, shoe?.Name, personalBestDistances, await FitnessOfAsync(run, db, cancellationToken)));
         });
+    }
+
+    /// <summary>
+    /// Looks the Run's temperature up the first time its page is opened and keeps it; the weather that was does not
+    /// change. Without one from Open-Meteo, the next opening tries again.
+    /// </summary>
+    private static async Task LookUpTemperatureAsync(Run run, AppDbContext db, WeatherClient weather, CancellationToken cancellationToken)
+    {
+        if (run.Temperature is not null || run.WeatherLocation is not { } location)
+            return;
+
+        run.Temperature = await weather.TemperatureAtAsync(location.Latitude, location.Longitude, run.MidpointUtc, cancellationToken);
+        if (run.Temperature is not null)
+            await db.SaveChangesAsync(cancellationToken);
     }
 
     /// <summary>The Run's Aerobic Efficiency, Cadence and, as its week's Long Run, Cardiac Drift; none unless it is a Fitness Run.</summary>

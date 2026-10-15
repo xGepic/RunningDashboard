@@ -12,8 +12,22 @@
   }
 }
 
+/* Rows of --per-row facts (set by the page so they come out even); the last row's facts widen to fill it. */
 .summary {
+  display: flex;
+  flex-wrap: wrap;
   margin: 0;
+
+  > div {
+    // 1px gaps between the facts; a hair under the exact width, so rounding never pushes one into the next row.
+    flex: 1 1 max(150px, calc((100% + 1px) / var(--per-row) - 1.5px));
+  }
+
+  @media (width < 1200px) {
+    > div {
+      flex-basis: max(150px, calc((100% + 1px) / var(--per-row-narrow) - 1.5px));
+    }
+  }
 
   dd {
     margin: 0;

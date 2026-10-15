@@ -6,11 +6,12 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
 using RunningDashboard.Api.Strava;
+using RunningDashboard.Api.Weather;
 
 namespace RunningDashboard.Api.Tests.Harness;
 
 /// <summary>
-/// The real app in an in-memory host with its own SQLite file. Only Strava (HTTP) and the clock are fake.
+/// The real app in an in-memory host with its own SQLite file. Only Strava and Open-Meteo (HTTP) and the clock are fake.
 /// </summary>
 /// <param name="databasePath">Reuse another TestApp's database to simulate a backend restart.</param>
 public sealed class TestApp(string? databasePath = null) : WebApplicationFactory<Program>
@@ -38,6 +39,8 @@ public sealed class TestApp(string? databasePath = null) : WebApplicationFactory
 
     public FakeStrava Strava { get; } = new();
 
+    public FakeOpenMeteo Weather { get; } = new();
+
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 10, 9, 18, 0, 0, TimeSpan.Zero));
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -56,6 +59,7 @@ public sealed class TestApp(string? databasePath = null) : WebApplicationFactory
         {
             services.AddSingleton<TimeProvider>(Clock);
             services.AddHttpClient<StravaClient>().ConfigurePrimaryHttpMessageHandler(() => Strava);
+            services.AddHttpClient<WeatherClient>().ConfigurePrimaryHttpMessageHandler(() => Weather);
         });
     }
 

@@ -53,6 +53,34 @@ public sealed class Run
     /// <summary>Strava's gear id of the Shoe, if one was logged.</summary>
     public string? ShoeId { get; set; }
 
+    /// <summary>
+    /// Air temperature in °C halfway through the Run, from Open-Meteo's weather history at its start; null until it is
+    /// looked up, and for a Run without one (see <see cref="WeatherLocation"/>).
+    /// </summary>
+    public double? Temperature { get; set; }
+
+    /// <summary>Halfway through the Run, in UTC: when its temperature is looked up.</summary>
+    public DateTime MidpointUtc => StartUtc.AddSeconds(ElapsedTime / 2.0);
+
+    /// <summary>
+    /// Where the Run started, as Strava recorded it, for looking up the weather. None for a Run without GPS, and for
+    /// one on a treadmill, where the weather outside does not matter.
+    /// </summary>
+    public (double Latitude, double Longitude)? WeatherLocation
+    {
+        get
+        {
+            if (IsTreadmill)
+                return null;
+            using var activity = JsonDocument.Parse(RawSummaryJson);
+            return activity.RootElement.TryGetProperty("start_latlng", out var start)
+                && start.ValueKind == JsonValueKind.Array
+                && start.GetArrayLength() == 2
+                    ? (start[0].GetDouble(), start[1].GetDouble())
+                    : null;
+        }
+    }
+
     public required string RawSummaryJson { get; set; }
 
     /// <summary>When the detailed Activity was fetched; null while it is still to be fetched.</summary>

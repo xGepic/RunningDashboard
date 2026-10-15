@@ -41,6 +41,7 @@ internal sealed record RunExportResponse(
     string? ShoeName,
     string StravaUrl);
 
+/// <param name="Temperature">°C halfway through the Run; none without a start location or while Open-Meteo has none.</param>
 /// <param name="Detail">"pending", "loaded" or "unavailable": whether Best Efforts and splits are in.</param>
 /// <param name="Route">Google's encoded polyline of the route; none for a Run without GPS.</param>
 /// <param name="MileSplits">Strava's splits per mile, for an Athlete who reads miles; Pace is still per kilometre.</param>
@@ -57,6 +58,7 @@ internal sealed record RunDetailResponse(
     double? RelativeEffort,
     string StravaUrl,
     string? ShoeName,
+    double? Temperature,
     string Detail,
     string? Route,
     IReadOnlyList<BestEffortResponse> BestEfforts,
@@ -79,6 +81,7 @@ internal sealed record RunDetailResponse(
         run.RelativeEffort,
         $"https://www.strava.com/activities/{run.Id}",
         shoeName,
+        run.Temperature,
         run.DetailStatus.ToString().ToLowerInvariant(),
         run.Route,
         [.. run.BestEfforts

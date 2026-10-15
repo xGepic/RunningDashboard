@@ -61,6 +61,10 @@ _Avoid_: Skin, colour scheme, dark/light mode (the dashboard is always dark)
 A pair of running shoes registered on Strava. Each Run is logged with at most one Shoe.
 _Avoid_: Gear (when only shoes are meant), sneaker
 
+**Temperature**:
+The air temperature halfway through a Run where it started, in °C, from Open-Meteo's weather history (Strava has no weather). Treadmill Runs and Runs without GPS have none.
+_Avoid_: Weather (on its own), average temp (Strava's watch reading)
+
 **Maximum Distance**:
 The distance after which a Shoe is due to be retired, the same for every Shoe: 700 km unless the Athlete sets another in Settings. Strava does not know it.
 _Avoid_: Lifespan, mileage limit, retirement threshold

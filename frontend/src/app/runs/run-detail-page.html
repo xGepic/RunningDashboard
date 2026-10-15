@@ -13,13 +13,16 @@
       <a class="btn strava" [href]="run.stravaUrl" target="_blank" rel="noopener">View on Strava ↗</a>
     </header>
 
-    <dl class="facts summary">
+    <dl class="facts summary" [style.--per-row]="factsPerRow(run, 6)" [style.--per-row-narrow]="factsPerRow(run, 4)">
       <div><dt class="label">Distance</dt><dd class="value">{{ units.distance(run.distance) }}</dd></div>
       <div><dt class="label">Moving Time</dt><dd class="value">{{ formatDuration(run.movingTime) }}</dd></div>
       <div><dt class="label">Elapsed time</dt><dd class="value">{{ formatDuration(run.elapsedTime) }}</dd></div>
       <div><dt class="label">Pace</dt><dd class="value">{{ units.pace(run.pace) }}</dd></div>
       <div><dt class="label">Elevation gain</dt><dd class="value">{{ run.elevationGain | number: '1.0-0' }} m</dd></div>
       <div><dt class="label">Relative Effort</dt><dd class="value">{{ run.relativeEffort ?? '–' }}</dd></div>
+      <div title="Air temperature halfway through the Run where it started, from Open-Meteo's weather history">
+        <dt class="label">Temperature</dt><dd class="value">{{ run.temperature === null ? '–' : (run.temperature | number: '1.0-0') + ' °C' }}</dd>
+      </div>
       <div><dt class="label">Shoe</dt><dd class="value shoe">{{ run.shoeName ?? '–' }}</dd></div>
       @if (run.fitness; as fitness) {
         <div><dt class="label">Aerobic Efficiency</dt><dd class="value">{{ fitness.aerobicEfficiency === null ? '–' : formatEfficiency(fitness.aerobicEfficiency) }}</dd></div>
