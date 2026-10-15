@@ -132,8 +132,8 @@
     ['map', 'frontend', 50, 570, 340, 70, 'Run map', 'A Run\'s route and replay on Leaflet, loaded with a Run\'s page.', null],
 
     ['api', 'backend', 490, 96, 500, 132, 'HTTP API',
-      'Minimal API endpoints, one folder per feature: Runs · Rides · Swims · Overview and Yearly Goal · Review · Records · Fitness · Training · Goal Races and Training Plans · Shoes · Settings · Backup · Connection · Sync. They validate the request, query the database and shape the JSON.',
-      '*/*Endpoints.cs, Program.cs'],
+      'Minimal API endpoints, one folder per feature: Runs · Rides · Swims · Overview and Yearly Goal · Review · Records · Fitness · Training · Goal Races and Training Plans · Shoes · Settings · Backup · Connection · Sync. They validate the request, query the database and shape the JSON. A Run\'s page has WeatherClient look up its Temperature.',
+      '*/*Endpoints.cs, Weather/, Program.cs'],
     ['domain', 'backend', 490, 276, 155, 176, 'Domain rules',
       'Training Weeks and Blocks, planning rules, Fitness figures, Personal Bests, Race Results, list paging.',
       'Training/, Fitness/, Records/, GoalRaces/, Lists/'],
@@ -150,6 +150,8 @@
       'Daily and before migrations; keeps the 7 newest.',
       'Backup/'],
 
+    ['openmeteo', 'external', 1070, 96, 186, 132, 'Open-Meteo',
+      'open-meteo.com: hourly weather history and forecast, without an account or API key.', null],
     ['stravaapi', 'external', 1070, 276, 186, 176, 'Strava API',
       'www.strava.com: OAuth and the REST API v3, about 100 reads per 15 minutes and 1,000 a day.', null],
     ['database', 'data', 490, 720, 300, 74, 'running-dashboard.db', 'The SQLite database file, in WAL mode, next to the backend.', null],
@@ -171,6 +173,7 @@
     { from: ['worker', 'right'], to: ['strava', 'left'] },
     { from: ['strava', 'bottom', 0.097], to: ['persistence', 'right', 0.75], label: 'tokens', labelAt: [800, 598], anchor: 'start' },
     { from: ['strava', 'right'], to: ['stravaapi', 'left'], kind: 'http', label: 'HTTPS', labelAt: [1030, 358] },
+    { from: ['api', 'right', 0.35], to: ['openmeteo', 'left', 0.35], kind: 'http', label: 'HTTPS', labelAt: [1030, 134] },
     { from: ['persistence', 'bottom'], to: ['database', 'top'] },
     { from: ['backup', 'left', 0.9], to: ['database', 'right'], via: [['H', 830]], label: 'SQLite backup API', labelAt: [836, 688], anchor: 'start' },
     { from: ['backup', 'bottom', 0.7], to: ['backups', 'top', 0.7] },

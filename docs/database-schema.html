@@ -132,7 +132,7 @@
     </div>
   </div>
 
-  <p class="footer">Arrows point from the referencing column to the key it refers to. <code>n</code>, <code>1</code> and <code>0..1</code> give how many rows sit on each end.</p>
+  <p class="footer">Arrows point from the referencing column to the key it refers to. <code>n</code>, <code>1</code> and <code>0..1</code> give how many rows sit on each end. <code>Runs.Temperature</code> is the one column not from Strava: it comes from Open-Meteo's weather history.</p>
 </div>
 
 <script>
@@ -147,7 +147,7 @@
       ['PK', 'Id', 'INTEGER'], ['', 'Name', 'TEXT'], ['', 'SportType', 'TEXT'], ['', 'ShoeId', 'TEXT?'], ['', 'StartUtc', 'TEXT'],
       ['', 'StartLocal', 'TEXT'], ['', 'Distance', 'REAL'], ['', 'MovingTime', 'INTEGER'], ['', 'ElapsedTime', 'INTEGER'],
       ['', 'ElevationGain', 'REAL'], ['', 'RelativeEffort', 'REAL?'], ['', 'AverageHeartRate', 'REAL?'], ['', 'Cadence', 'REAL?'],
-      ['', 'Trainer', 'INTEGER'], ['', 'DetailFetchedAt', 'TEXT?'], ['', 'RawSummaryJson', 'TEXT'],
+      ['', 'Temperature', 'REAL?'], ['', 'Trainer', 'INTEGER'], ['', 'DetailFetchedAt', 'TEXT?'], ['', 'RawSummaryJson', 'TEXT'],
       ['', 'RawDetailJson', 'TEXT?']] },
     { id: 'Shoes', kind: 'strava', at: [713, 36, 240], columns: [
       ['PK', 'Id', 'TEXT'], ['', 'Name', 'TEXT'], ['', 'Distance', 'REAL'], ['', 'Retired', 'INTEGER'], ['', 'RawJson', 'TEXT']] },
