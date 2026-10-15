@@ -1,0 +1,160 @@
+@let review = this.review();
+@if (review.totals.runs === 0) {
+  <div class="card empty-card"><p class="empty">No Runs in {{ review.year }}.</p></div>
+} @else {
+  @if (headline(); as headline) {
+    <section class="hero" aria-label="Totals">
+      <div class="hero-text">
+        <h2 class="eyebrow">
+          {{ title() }}
+          @switch (period()) {
+            @case ('so far') { · {{ forImage() ? 'so far' : 'so far, up to ' + (review.until | date: 'd MMM') }} }
+            @case ('from') { · from {{ review.from | date: dayFormat() }}, when the history starts }
+          }
+        </h2>
+        <div class="headline">
+          <span class="big">{{ headline.distance }}</span><span class="unit">{{ units.unit() }}</span>
+          @if (headline.change; as change) {
+            <span class="chip" [class.up]="change.up" [class.down]="!change.up">{{ change.text }} {{ comparedWith() }}</span>
+          }
+        </div>
+        <p class="sentence">
+          <strong>{{ headline.runs }}</strong> Runs, <strong>{{ headline.hours }}</strong> hours on your feet and
+          <strong>{{ headline.climbed }} m</strong> climbed.
+        </p>
+      </div>
+      @if (monthBars().length) {
+        <div class="month-bars" role="img" aria-label="Distance per month; the Months view has the numbers">
+          @for (bar of monthBars(); track $index) {
+            <div class="bar" [class.biggest]="bar.biggest" [attr.title]="forImage() ? null : bar.title">
+              <span class="fill" [style.height.%]="bar.height"></span>
+              <span class="initial">{{ bar.initial }}</span>
+            </div>
+          }
+        </div>
+      }
+    </section>
+  }
+
+  <div class="tiles">
+    @for (tile of tiles(); track tile.label) {
+      <div class="tile">
+        <span class="label">{{ tile.label }}</span>
+        <span class="value">{{ tile.value }}</span>
+        @if (tile.change; as change) {
+          <span class="chip" [class.up]="change.up" [class.down]="!change.up" [attr.title]="forImage() ? null : comparedWith()">{{ change.text }}</span>
+        }
+      </div>
+    }
+  </div>
+
+  <div class="highlights">
+    @if (review.longestRun; as run) {
+      <a class="card highlight" [routerLink]="forImage() ? null : ['/runs', run.id]">
+        <span class="label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18h16M6 18V9l6-4 6 4v9" /></svg>Longest Run</span>
+        <span class="value">{{ units.distance(run.distance, 1) }}</span>
+        <span class="detail">{{ forImage() ? '' : run.name + ' · ' }}{{ run.startLocal | date: dayFormat() }} · {{ formatDuration(run.movingTime) }}</span>
+      </a>
+    }
+    @if (review.biggestWeek; as week) {
+      <div class="card highlight">
+        <span class="label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V12M10 20V6M15 20V10M20 20V4" /></svg>Biggest Training Week</span>
+        <span class="value">{{ units.distance(week.distance, 1) }}</span>
+        <span class="detail">{{ dateRange(week.start, week.end) }} · {{ week.runs }} {{ week.runs === 1 ? 'Run' : 'Runs' }}</span>
+      </div>
+    }
+    @if (review.biggestMonth; as month) {
+      <div class="card highlight">
+        <span class="label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4" /></svg>Biggest month</span>
+        <span class="value">{{ units.distance(month.distance, 1) }}</span>
+        <span class="detail">{{ fullMonthNames[month.month - 1] }} · {{ month.runs }} {{ month.runs === 1 ? 'Run' : 'Runs' }}</span>
+      </div>
+    }
+    @if (review.longestStreak; as streak) {
+      <div class="card highlight">
+        <span class="label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3c1 4 5 6 5 11a5 5 0 0 1-10 0c0-3 2-4 2-7 2 1 3 3 3 5" /></svg>Longest Streak</span>
+        <span class="value">{{ streak.weeks }} {{ streak.weeks === 1 ? 'week' : 'weeks' }}</span>
+        <span class="detail">{{ dateRange(streak.start, streak.end) }}</span>
+      </div>
+    }
+    @if (review.mostUsedShoe; as shoe) {
+      <div class="card highlight">
+        <span class="label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17v-6l5-3 3 3 5 1.5c3 .8 5 2 5 4.5H3zM3 20h18" /></svg>Most-used Shoe</span>
+        <span class="value shoe">{{ shoe.name }}</span>
+        <span class="detail">{{ units.distance(shoe.distance, 0) }} · {{ shoe.runs }} {{ shoe.runs === 1 ? 'Run' : 'Runs' }}</span>
+      </div>
+    }
+  </div>
+
+  @if (personalBests().length) {
+    <section class="personal-bests" aria-labelledby="personal-bests-title">
+      <div class="section-head">
+        <h2 class="section-title" id="personal-bests-title">Personal Bests</h2>
+        <span class="summary">{{ personalBestSummary() }}</span>
+      </div>
+      <ul class="medals">
+        @for (best of personalBests(); track best.distance) {
+          <li class="medal" [class.leap]="best.biggestLeap">
+            <div class="top">
+              <span class="distance">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="15" r="5" /><path d="M8.5 11.5 6 3h4l2 5 2-5h4l-2.5 8.5" /></svg>
+                {{ best.name }}
+              </span>
+              @if (best.biggestLeap) {
+                <span class="badge">Biggest leap</span>
+              }
+            </div>
+            <div class="figures">
+              <span class="time">{{ best.time }}</span>
+              @if (best.percent) {
+                <span class="gain">{{ best.saved }} · {{ best.percent }}</span>
+                <span class="was">was {{ best.was }}</span>
+                <span class="leap-bar" aria-hidden="true"><span [style.width.%]="best.bar"></span></span>
+              } @else {
+                <span class="gain first">First time</span>
+                <span class="was">no earlier Best Effort</span>
+              }
+            </div>
+            <a class="run" [routerLink]="forImage() ? null : ['/runs', best.runId]">{{ forImage() ? '' : best.runName + ' · ' }}{{ best.startLocal | date: dayFormat() }}</a>
+          </li>
+          @if (best.breakAfter) {
+            <li class="row-break" aria-hidden="true"></li>
+          }
+        }
+      </ul>
+    </section>
+  }
+
+  @if (review.goalRaces.length) {
+    <section class="card goal-races">
+      <div class="card-header">
+        <div class="titles"><h2 class="card-title">Goal Races</h2></div>
+      </div>
+      <ul>
+        @for (race of review.goalRaces; track race.id) {
+          <li>
+            <span class="name">{{ race.name }}</span>
+            <span class="when">{{ race.date | date: dayFormat() + ' y' }} · {{ units.distance(race.distance, 1) }}</span>
+            @if (race.raceResult?.elapsedTime; as time) {
+              <span class="result mono">{{ formatDuration(time) }}
+                @if (race.raceResult!.differenceFromTarget !== null) {
+                  <span [class.met]="race.raceResult!.differenceFromTarget! <= 0" [class.missed]="race.raceResult!.differenceFromTarget! > 0">
+                    ({{ formatDifference(race.raceResult!.differenceFromTarget!) }})</span>
+                }
+              </span>
+            } @else {
+              <span class="result muted">No Race Result</span>
+            }
+          </li>
+        }
+      </ul>
+    </section>
+  }
+
+  @if (!forImage() && review.rides + review.swims > 0) {
+    <p class="footnote">
+      Also {{ review.rides }} {{ review.rides === 1 ? 'Ride' : 'Rides' }} and {{ review.swims }} {{ review.swims === 1 ? 'Swim' : 'Swims' }},
+      listed under <a routerLink="/rides">Activities</a> and not counted here.
+    </p>
+  }
+}

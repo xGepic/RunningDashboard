@@ -5,7 +5,9 @@ import { By } from '@angular/platform-browser';
 import { Router, provideRouter, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
+import { Connection } from '../connection/connection';
 import { MonthTotals, Run, RunMonths, RunPage } from '../runs/run';
+import { ImageDownload } from '../shared/image-download';
 import { calendarRoutes } from './calendar-routes';
 import { YearReview } from './review';
 
@@ -408,6 +410,63 @@ describe('CalendarPage', () => {
       });
 
       expect(element.querySelector('.empty')!.textContent).toBe('No Runs in 2025.');
+    });
+
+    describe('as an image', () => {
+      /** What the image was drawn from, copied when it was saved, and under which file name. */
+      let saved: { image: HTMLElement; fileName: string }[];
+      const stefan: Connection = { connected: true, athlete: { id: 1, firstName: 'Stefan', lastName: 'Simanek' }, connectedAt: null, stravaApp: null };
+
+      beforeEach(() => {
+        saved = [];
+        TestBed.configureTestingModule({
+          providers: [{
+            provide: ImageDownload,
+            useValue: { save: async (image: HTMLElement, fileName: string) => void saved.push({ image: image.cloneNode(true) as HTMLElement, fileName }) },
+          }],
+        });
+      });
+
+      /** Clicks "Download image", answers the connection, and waits for the image to be saved. */
+      async function download(page: { element: HTMLElement; http: HttpTestingController }, connection: Connection) {
+        [...page.element.querySelectorAll('button')].find((b) => b.textContent!.trim() === 'Download image')!.click();
+        page.http.expectOne('/api/connection').flush(connection);
+        await vi.waitFor(() => expect(saved).toHaveLength(1));
+        return saved[0];
+      }
+
+      it("saves the Review titled with the Athlete's first name, without Run names, days of the month or links", async () => {
+        const page = await openReview('/calendar/2025?view=review', review2025);
+
+        const { image, fileName } = await download(page, stefan);
+
+        expect(fileName).toBe('Year in Review 2025.png');
+        expect(image.querySelector('.hero h2')!.textContent!.replace(/\s+/g, ' ').trim()).toBe("Stefan's 2025 in Runs");
+        expect(text(image.querySelector('.headline')!)).toBe('78 km +255% vs. 2024');
+        expect([...image.querySelectorAll('.highlight')].map(text)).toEqual([
+          'Longest Run 30.0 km Mar · 3:00:00',
+          'Biggest Training Week 31.0 km Jan · 2 Runs',
+          'Biggest month 43.0 km January · 3 Runs',
+          'Longest Streak 2 weeks Jan',
+          'Most-used Shoe Nike Pegasus 41 42 km · 2 Runs',
+        ]);
+        const medal = (m: Element) => [...m.querySelectorAll('.distance, .time, .run')].map((part) => part.textContent!.trim()).join(' ');
+        expect([...image.querySelectorAll('.medal')].map(medal)).toEqual(['5K 25:00 Jan', 'Half-Marathon 1:56:40 Mar']);
+        expect(text(image.querySelector('.goal-races li')!)).toBe('Spring Half Mar 2025 · 21.1 km 1:56:40 (3:20 under)');
+        expect(image.textContent).not.toContain('Half Race');
+        expect(image.textContent).not.toContain('Sunday Run');
+        expect(image.querySelectorAll('a[href], button, [title]')).toHaveLength(0);
+        expect(image.querySelector('.footnote')).toBeNull();
+      });
+
+      it('says "so far" for the current year, and goes without a name when none is connected', async () => {
+        const page = await openReview('/calendar?view=review', { ...review2025, year: 2026, from: '2026-01-01', until: '2026-10-12' }, year2026);
+
+        const { image, fileName } = await download(page, { connected: false, athlete: null, connectedAt: null, stravaApp: null });
+
+        expect(fileName).toBe('Year in Review 2026.png');
+        expect(image.querySelector('.hero h2')!.textContent!.replace(/\s+/g, ' ').trim()).toBe('2026 in Runs · so far');
+      });
     });
 
     it('switches between the months and the review, keeping the year', async () => {

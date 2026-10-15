@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
-import { Component, computed, inject, input } from '@angular/core';
+import { Component, computed, inject, input, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgxEchartsDirective } from 'ngx-echarts';
@@ -70,6 +70,8 @@ export class CalendarPage {
   });
 
   protected readonly reviewing = computed(() => this.view() === 'review' && this.selectedMonth() === null);
+  /** The Review, which the toolbar's "Download image" saves. */
+  protected readonly reviewPanel = viewChild(YearReviewPanel);
 
   protected readonly isCurrentYear = computed(() => this.selectedYear() >= new Date().getFullYear());
 

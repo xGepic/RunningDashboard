@@ -5,7 +5,7 @@ v3 adds two features to v2 ([running-dashboard-v2.md](running-dashboard-v2.md)).
 | # | Feature | Status |
 |---|---|---|
 | 01 | Retired Shoes | done |
-| 02 | Year in Review image | planned |
+| 02 | Year in Review image | done |
 
 ---
 
