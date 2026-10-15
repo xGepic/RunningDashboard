@@ -1,3 +1,5 @@
+import { saveUrl } from './download';
+
 /** A spreadsheet cell, already written as text; null leaves it empty. */
 export type CsvCell = string | null;
 
@@ -45,10 +47,7 @@ export function csvDateTime(startLocal: string): CsvCell {
 /** Hands the CSV to the browser to save; with a byte order mark, so Excel reads it as UTF-8 and umlauts survive. */
 export function saveCsv(document: Document, fileName: string, table: CsvTable): void {
   const url = URL.createObjectURL(new Blob(['﻿' + toCsv(table)], { type: 'text/csv;charset=utf-8' }));
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = fileName;
-  link.click();
+  saveUrl(document, url, fileName);
   URL.revokeObjectURL(url);
 }
 

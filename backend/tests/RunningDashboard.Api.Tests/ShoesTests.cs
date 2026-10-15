@@ -46,13 +46,8 @@ public sealed class ShoesTests
     [Test]
     public async Task A_shoe_retired_on_strava_is_retired_here_and_listed_after_the_active_ones()
     {
-        var firstSync = await TestApp.WaitForSyncAsync(_browser);
-        _app.Clock.Advance(TimeSpan.FromHours(1));
-        _app.Strava.RespondWithFixture(HttpMethod.Get, ActivitiesPath, "activities-empty.json");
-        _app.Strava.RespondWithFixture(HttpMethod.Get, AthletePath, "athlete-shoe-retired.json");
+        await SyncAgainAsync("athlete-shoe-retired.json");
 
-        await _browser.PostAsync("/api/sync", null);
-        await TestApp.WaitForSyncAsync(_browser, finishedAfter: firstSync.LastSyncedAt);
         var shoes = await GetShoesAsync();
 
         shoes.Select(s => s.Name).ShouldBe(["Adidas Adizero SL2", "Nike Pegasus 41", "Asics Novablast 4"]);

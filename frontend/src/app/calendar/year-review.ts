@@ -30,13 +30,13 @@ export class YearReviewPanel {
 
   protected readonly review = httpResource<YearReview>(() => ({ url: '/api/review', params: { year: String(this.year()) } }));
 
-  /** Only a year with Runs makes an image. */
-  readonly canDownload = computed(() => this.review.hasValue() && this.review.value().totals.runs > 0);
-  readonly downloading = signal(false);
+  private readonly downloading = signal(false);
+  /** Only a year with Runs makes an image, and only one at a time. */
+  readonly canDownload = computed(() => !this.downloading() && this.review.hasValue() && this.review.value().totals.runs > 0);
   protected readonly downloadFailed = signal(false);
   /** What the image is drawn from, off screen, while it is being made. */
-  protected readonly image = signal<{ review: YearReview; athleteName: string | null; width: number } | null>(null);
-  private readonly imageElement = viewChild<ElementRef<HTMLElement>>('image');
+  protected readonly imageSource = signal<{ review: YearReview; athleteName: string | null; width: number } | null>(null);
+  private readonly imageElement = viewChild<ElementRef<HTMLElement>>('imageElement');
 
   constructor() {
     reloadOnSync(() => this.review.reload());
@@ -44,14 +44,14 @@ export class YearReviewPanel {
 
   /** Saves the Review as "Year in Review 2026.png", titled with the Athlete's first name. */
   async downloadImage(): Promise<void> {
-    if (!this.canDownload() || this.downloading()) return;
+    if (!this.canDownload()) return;
     const review = this.review.value()!;
     this.downloading.set(true);
     this.downloadFailed.set(false);
     try {
       // Without a name the image is titled "2026 in Runs".
       const connection = await firstValueFrom(this.http.get<Connection>('/api/connection')).catch(() => null);
-      this.image.set({
+      this.imageSource.set({
         review,
         athleteName: connection?.athlete?.firstName ?? null,
         width: this.host.nativeElement.getBoundingClientRect().width || fallbackImageWidth,
@@ -61,7 +61,7 @@ export class YearReviewPanel {
     } catch {
       this.downloadFailed.set(true);
     } finally {
-      this.image.set(null);
+      this.imageSource.set(null);
       this.downloading.set(false);
     }
   }

@@ -7,10 +7,10 @@
   <app-year-review-content [review]="review" [months]="months()" />
 }
 
-@if (image(); as image) {
+@if (imageSource(); as source) {
   <div class="image-stage" aria-hidden="true">
-    <div class="image" #image [style.width.px]="image.width">
-      <app-year-review-content [review]="image.review" [months]="months()" [athleteName]="image.athleteName" forImage />
+    <div class="image" #imageElement [style.width.px]="source.width">
+      <app-year-review-content [review]="source.review" [months]="months()" [athleteName]="source.athleteName" forImage />
     </div>
   </div>
 }

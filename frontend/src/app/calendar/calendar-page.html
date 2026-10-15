@@ -38,7 +38,7 @@
         <button type="button" [attr.aria-pressed]="reviewing()" (click)="showView('review')">Review</button>
       </div>
       @if (reviewing()) {
-        <button type="button" class="btn" [disabled]="!reviewPanel()?.canDownload() || reviewPanel()?.downloading()"
+        <button type="button" class="btn" [disabled]="!reviewPanel()?.canDownload()"
                 (click)="reviewPanel()?.downloadImage()">Download image</button>
       }
     }

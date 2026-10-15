@@ -9,8 +9,9 @@
   left: -100000px;
 }
 
-/* The image: the Review on the page's background, with room around it. */
+/* The image: the Review on the page's background, with room around it; its width is the Review's, as on the page. */
 .image {
+  box-sizing: content-box;
   padding: 36px;
   background: var(--background);
   color: var(--text);

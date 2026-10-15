@@ -459,7 +459,7 @@ describe('CalendarPage', () => {
         expect(image.querySelector('.footnote')).toBeNull();
       });
 
-      it('says "so far" for the current year, and goes without a name when none is connected', async () => {
+      it('says "so far" for the current year, and goes without a name when no Athlete is connected', async () => {
         const page = await openReview('/calendar?view=review', { ...review2025, year: 2026, from: '2026-01-01', until: '2026-10-12' }, year2026);
 
         const { image, fileName } = await download(page, { connected: false, athlete: null, connectedAt: null, stravaApp: null });
