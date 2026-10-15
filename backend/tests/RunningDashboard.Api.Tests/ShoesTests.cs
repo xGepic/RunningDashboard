@@ -62,19 +62,31 @@ public sealed class ShoesTests
     }
 
     [Test]
-    public async Task Shoes_deleted_on_strava_are_removed_and_their_runs_show_no_shoe()
+    public async Task Shoes_strava_no_longer_lists_are_retired_here_and_their_runs_keep_their_shoe()
     {
-        var firstSync = await TestApp.WaitForSyncAsync(_browser);
-        _app.Clock.Advance(TimeSpan.FromHours(1));
-        _app.Strava.RespondWithFixture(HttpMethod.Get, ActivitiesPath, "activities-empty.json");
-        _app.Strava.RespondWithFixture(HttpMethod.Get, AthletePath, "athlete-without-shoes.json");
-
-        await _browser.PostAsync("/api/sync", null);
-        await TestApp.WaitForSyncAsync(_browser, finishedAfter: firstSync.LastSyncedAt);
+        // Strava leaves retired (and deleted) Shoes out of the athlete's list.
+        await SyncAgainAsync("athlete-without-shoes.json");
         var list = (await _browser.GetFromJsonAsync<RunPage>("/api/runs"))!;
 
-        (await GetShoesAsync()).ShouldBeEmpty();
-        list.Items.ShouldAllBe(r => r.ShoeName == null);
+        (await GetShoesAsync()).ShouldBe(
+            [
+                new ShoeResponse("g31444377", "Nike Pegasus 41", 812345, true, 3, new DateTime(2026, 10, 6, 20, 35, 26)),
+                new ShoeResponse("g33395946", "Adidas Adizero SL2", 412000, true, 2, new DateTime(2026, 9, 27, 9, 47, 0)),
+                new ShoeResponse("g29876543", "Asics Novablast 4", 1012000, true, 0, null),
+            ]);
+        list.Items.Single(r => r.Name == "Evening Run").ShoeName.ShouldBe("Nike Pegasus 41");
+    }
+
+    [Test]
+    public async Task A_retired_shoe_strava_lists_again_is_active_again()
+    {
+        await SyncAgainAsync("athlete-without-shoes.json");
+        await SyncAgainAsync("athlete.json");
+
+        var shoes = await GetShoesAsync();
+
+        shoes.Single(s => s.Name == "Nike Pegasus 41").Retired.ShouldBeFalse();
+        shoes.Single(s => s.Name == "Adidas Adizero SL2").Retired.ShouldBeFalse();
     }
 
     [Test]
@@ -86,6 +98,18 @@ public sealed class ShoesTests
         list.Items.Single(r => r.Name == "Evening Run").ShoeName.ShouldBe("Nike Pegasus 41");
         list.Items.Single(r => r.Name == "Wienerwald trail").ShoeName.ShouldBe("Adidas Adizero SL2");
         marathon.ShoeName.ShouldBe("Adidas Adizero SL2");
+    }
+
+    /// <summary>Syncs an hour later, with no new Activities and the athlete's Shoes as in the fixture.</summary>
+    private async Task SyncAgainAsync(string athleteFixture)
+    {
+        var lastSync = await TestApp.WaitForSyncAsync(_browser);
+        _app.Clock.Advance(TimeSpan.FromHours(1));
+        _app.Strava.RespondWithFixture(HttpMethod.Get, ActivitiesPath, "activities-empty.json");
+        _app.Strava.RespondWithFixture(HttpMethod.Get, AthletePath, athleteFixture);
+
+        await _browser.PostAsync("/api/sync", null);
+        await TestApp.WaitForSyncAsync(_browser, finishedAfter: lastSync.LastSyncedAt);
     }
 
     private async Task<List<ShoeResponse>> GetShoesAsync() =>

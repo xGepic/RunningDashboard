@@ -195,7 +195,7 @@ internal sealed record ReviewGoalRaceResponse(int Id, string Name, DateOnly Date
 /// <param name="Distance">Metres, in the year's Runs.</param>
 internal sealed record ReviewShoeResponse(string Name, int Runs, double Distance)
 {
-    /// <summary>Of the Shoes Strava still lists.</summary>
+    /// <summary>Of the stored Shoes, retired ones included; a Run whose Shoe is not stored has none.</summary>
     public static ReviewShoeResponse? MostUsed(IReadOnlyCollection<ReviewRun> runs, IReadOnlyDictionary<string, string> shoeNames) =>
         runs
             .Where(r => r.ShoeId is not null && shoeNames.ContainsKey(r.ShoeId))

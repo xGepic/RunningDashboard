@@ -86,7 +86,7 @@ public sealed class StravaClient(
     }
 
     /// <summary>
-    /// The Athlete's Shoes as Strava lists them on the authenticated athlete, retired ones included; null if the
+    /// The Athlete's Shoes as Strava lists them on the authenticated athlete, which leaves out retired ones; null if the
     /// response has no Shoes at all (not the same as an empty list).
     /// </summary>
     public async Task<IReadOnlyList<StravaShoe>?> ListShoesAsync(CancellationToken cancellationToken)

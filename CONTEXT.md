@@ -58,7 +58,7 @@ The dashboard's colours, picked by the Athlete in Settings: Blue (unless the Ath
 _Avoid_: Skin, colour scheme, dark/light mode (the dashboard is always dark)
 
 **Shoe**:
-A pair of running shoes registered on Strava. Each Run is logged with at most one Shoe.
+A pair of running shoes registered on Strava. Each Run is logged with at most one Shoe. A Shoe is retired once Strava no longer lists it, which is when the Athlete retires (or deletes) it there; it is kept with its last distance.
 _Avoid_: Gear (when only shoes are meant), sneaker
 
 **Temperature**:
