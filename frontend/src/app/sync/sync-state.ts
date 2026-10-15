@@ -1,5 +1,6 @@
+import { DOCUMENT } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
 
 /** As returned by GET/POST /api/sync. */
 export interface SyncStatus {
@@ -19,11 +20,17 @@ export interface SyncStatus {
 }
 
 const pollIntervalMs = 2000;
+/** How old the last sync may be when the dashboard comes back into view; the backend syncs hourly besides. */
+const staleAfterMs = 15 * 60 * 1000;
 
-/** The backend's sync status, polled while a sync runs. */
+/**
+ * The backend's sync status, polled while a sync runs. When the dashboard's tab comes back into view, a sync starts
+ * if the last one is more than 15 minutes old, so a Run uploaded meanwhile shows up without "Sync now".
+ */
 @Injectable({ providedIn: 'root' })
 export class SyncState {
   private readonly http = inject(HttpClient);
+  private readonly document = inject(DOCUMENT);
   private pollTimer?: ReturnType<typeof setTimeout>;
 
   readonly status = signal<SyncStatus | null>(null);
@@ -31,6 +38,11 @@ export class SyncState {
 
   constructor() {
     this.refresh();
+    const backInView = () => {
+      if (this.document.visibilityState === 'visible') this.refresh((status) => this.syncIfStale(status));
+    };
+    this.document.addEventListener('visibilitychange', backInView);
+    inject(DestroyRef).onDestroy(() => this.document.removeEventListener('visibilitychange', backInView));
   }
 
   syncNow(): void {
@@ -41,9 +53,21 @@ export class SyncState {
     });
   }
 
-  private refresh(): void {
+  /**
+   * Syncs unless a sync runs, the last one is recent, Strava waits to be reconnected (it would only fail again) or
+   * no sync ever finished (Strava may not be connected).
+   */
+  private syncIfStale(status: SyncStatus): void {
+    if (status.running || status.reconnectRequired || status.lastSyncedAt === null) return;
+    if (Date.now() - Date.parse(status.lastSyncedAt) > staleAfterMs) this.syncNow();
+  }
+
+  private refresh(then?: (status: SyncStatus) => void): void {
     this.http.get<SyncStatus>('/api/sync').subscribe({
-      next: (status) => this.update(status),
+      next: (status) => {
+        this.update(status);
+        then?.(status);
+      },
       // A failed poll keeps the last status and tries again while that one says a sync runs, so it does not freeze there.
       error: () => this.pollWhileRunning(),
     });

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using RunningDashboard.Api.Persistence;
 using RunningDashboard.Api.Strava;
 
@@ -7,12 +8,14 @@ namespace RunningDashboard.Api.Sync;
 /// <summary>
 /// Runs syncs in the background, one at a time. Asking for a sync while one runs just reports the running one,
 /// except after a reconnect: the running sync may still use the old tokens, so another sync follows it.
-/// A sync starts when the backend starts (if Strava is connected), after connecting, and on "Sync now".
+/// A sync starts when the backend starts (if Strava is connected), after connecting, on "Sync now", and every
+/// <see cref="SyncOptions.Interval"/> while the backend runs.
 /// </summary>
 public sealed class SyncWorker(
     IServiceScopeFactory scopes,
     StravaRateLimits rateLimits,
     TimeProvider clock,
+    IOptions<SyncOptions> options,
     ILogger<SyncWorker> logger) : BackgroundService
 {
     private readonly SemaphoreSlim _syncRequested = new(0, 1);
@@ -81,8 +84,33 @@ public sealed class SyncWorker(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await RequestSyncIfConnectedAsync(stoppingToken);
+        await RequestSyncIfConnectedAsync(unlessReconnectRequired: false, stoppingToken);
+        await Task.WhenAll(SyncWhenRequestedAsync(stoppingToken), SyncPeriodicallyAsync(stoppingToken));
+    }
 
+    /// <summary>
+    /// Asks for a sync every <see cref="SyncOptions.Interval"/>. One that comes while a sync runs, e.g. a first import
+    /// paused for the rate limits, is dropped, as "Sync now" would be.
+    /// </summary>
+    private async Task SyncPeriodicallyAsync(CancellationToken stoppingToken)
+    {
+        var interval = options.Value.Interval;
+        if (interval <= TimeSpan.Zero)
+            return;
+
+        using var timer = new PeriodicTimer(interval, clock);
+        try
+        {
+            while (await timer.WaitForNextTickAsync(stoppingToken))
+                await RequestSyncIfConnectedAsync(unlessReconnectRequired: true, stoppingToken);
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+        }
+    }
+
+    private async Task SyncWhenRequestedAsync(CancellationToken stoppingToken)
+    {
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -178,18 +206,26 @@ public sealed class SyncWorker(
             _phase = phase;
     }
 
+    /// <summary>Starts a sync if Strava is connected.</summary>
+    /// <param name="unlessReconnectRequired">
+    /// Not while Strava waits to be reconnected: a sync nobody asked for would only fail the same way again.
+    /// </param>
     /// <remarks>Never throws: a failure here must not stop the backend.</remarks>
-    private async Task RequestSyncIfConnectedAsync(CancellationToken cancellationToken)
+    private async Task RequestSyncIfConnectedAsync(bool unlessReconnectRequired, CancellationToken cancellationToken)
     {
         try
         {
             using var scope = scopes.CreateScope();
-            if (await scope.ServiceProvider.GetRequiredService<AppDbContext>().IsStravaConnectedAsync(cancellationToken))
-                RequestSync();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            if (!await db.IsStravaConnectedAsync(cancellationToken))
+                return;
+            if (unlessReconnectRequired && await db.SyncStates.AnyAsync(s => s.ReconnectRequired, cancellationToken))
+                return;
+            RequestSync();
         }
         catch (Exception exception) when (!cancellationToken.IsCancellationRequested)
         {
-            logger.LogError(exception, "Could not check the Strava connection at startup; no startup sync");
+            logger.LogError(exception, "Could not check the Strava connection; no sync this time");
         }
     }
 }

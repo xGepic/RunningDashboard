@@ -27,9 +27,76 @@ describe('SyncState', () => {
     sync = TestBed.inject(SyncState);
   });
 
-  afterEach(() => vi.useRealTimers());
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
 
   const fail = () => http.expectOne('/api/sync').flush(null, { status: 502, statusText: 'Bad Gateway' });
+
+  /** The dashboard's tab comes back into view at <time> (UTC) on the day of the last sync in `idle`. */
+  const backInViewAt = (time: string) => {
+    vi.setSystemTime(new Date(`2026-10-09T${time}:00Z`));
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+    document.dispatchEvent(new Event('visibilitychange'));
+  };
+  const expectSyncStarted = () => http.expectOne({ url: '/api/sync', method: 'POST' }).flush(running);
+
+  it('syncs when the tab comes back into view more than 15 minutes after the last sync', () => {
+    http.expectOne('/api/sync').flush(idle);
+
+    backInViewAt('18:16');
+    http.expectOne({ url: '/api/sync', method: 'GET' }).flush(idle);
+
+    expectSyncStarted();
+    expect(sync.running()).toBe(true);
+  });
+
+  it('does not sync when the tab comes back into view soon after the last sync', () => {
+    http.expectOne('/api/sync').flush(idle);
+
+    backInViewAt('18:14');
+    http.expectOne({ url: '/api/sync', method: 'GET' }).flush(idle);
+
+    http.expectNone('/api/sync');
+  });
+
+  it('does not sync when the tab comes back into view while Strava waits to be reconnected', () => {
+    http.expectOne('/api/sync').flush(idle);
+
+    backInViewAt('20:00');
+    http.expectOne({ url: '/api/sync', method: 'GET' }).flush({ ...idle, reconnectRequired: true });
+
+    http.expectNone('/api/sync');
+  });
+
+  it('does not sync when the tab comes back into view before any sync finished', () => {
+    http.expectOne('/api/sync').flush({ ...idle, lastSyncedAt: null });
+
+    backInViewAt('20:00');
+    http.expectOne({ url: '/api/sync', method: 'GET' }).flush({ ...idle, lastSyncedAt: null });
+
+    http.expectNone('/api/sync');
+  });
+
+  it('does not start a second sync when the tab comes back into view during one', () => {
+    http.expectOne('/api/sync').flush(idle);
+
+    backInViewAt('20:00');
+    http.expectOne({ url: '/api/sync', method: 'GET' }).flush({ ...running, lastSyncedAt: idle.lastSyncedAt });
+
+    http.expectNone({ url: '/api/sync', method: 'POST' });
+  });
+
+  it('does nothing when the tab is hidden', () => {
+    http.expectOne('/api/sync').flush(idle);
+    vi.setSystemTime(new Date('2026-10-09T20:00:00Z'));
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+
+    document.dispatchEvent(new Event('visibilitychange'));
+
+    http.expectNone('/api/sync');
+  });
 
   it('polls while a sync runs, and stops once it is done', () => {
     http.expectOne('/api/sync').flush(running);

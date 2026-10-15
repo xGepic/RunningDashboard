@@ -39,6 +39,7 @@ builder.Services.AddHttpClient<WeatherClient>(client => client.Timeout = TimeSpa
 builder.Services.AddScoped<ActivityImport>();
 builder.Services.AddScoped<RunDetailImport>();
 builder.Services.AddScoped<ShoeImport>();
+builder.Services.AddOptions<SyncOptions>().Bind(builder.Configuration.GetSection(SyncOptions.Section));
 builder.Services.AddSingleton<SyncWorker>();
 builder.Services.AddHostedService(services => services.GetRequiredService<SyncWorker>());
 builder.Services.AddOptions<BackupOptions>().Bind(builder.Configuration.GetSection(BackupOptions.Section));

@@ -23,6 +23,8 @@ npm start --prefix frontend
 
 Open http://localhost:4200 and click **Connect Strava**. The first time, it leads to Settings: enter the Strava API app's Client ID and Client Secret there, then connect. They are stored in the database, never in the repository (see [ADR 0004](docs/adr/0004-strava-api-app-entered-on-settings.md)). Credentials in the backend's configuration, such as the user secrets `Strava:ClientId` and `Strava:ClientSecret`, win over the ones entered on Settings.
 
+While the backend runs, it syncs every hour, and the dashboard syncs when its tab comes back into view more than 15 minutes after the last sync; **Sync now** is there for anything sooner. To sync more or less often, set `Sync:Interval` in `appsettings.json` or as a user secret, e.g. `00:30:00` (`00:00:00` turns it off).
+
 Everything runs locally, except that the Run map loads its tiles from OpenStreetMap, Esri and OpenTopoMap, so it needs an internet connection. None of them needs an account or API key.
 
 ## Give it to a friend

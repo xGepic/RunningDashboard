@@ -34,6 +34,12 @@ public sealed class TestApp(string? databasePath = null) : WebApplicationFactory
 
     private readonly string? _backupFolder;
 
+    /// <summary>
+    /// Time between the syncs the backend starts by itself; off unless a test sets it, as most tests move the clock by
+    /// hours and queue Strava's responses for the syncs they start themselves.
+    /// </summary>
+    public TimeSpan SyncInterval { get; init; } = TimeSpan.Zero;
+
     /// <summary>False for a PC without the Strava API app in its configuration, as the packaged app runs.</summary>
     public bool StravaInConfiguration { get; init; } = true;
 
@@ -48,6 +54,7 @@ public sealed class TestApp(string? databasePath = null) : WebApplicationFactory
         builder.UseEnvironment("Testing");
         builder.UseSetting("ConnectionStrings:RunningDashboard", $"Data Source={DatabasePath};Pooling=False");
         builder.UseSetting("Backup:Folder", BackupFolder);
+        builder.UseSetting("Sync:Interval", SyncInterval.ToString("c"));
         if (StravaInConfiguration)
         {
             builder.UseSetting("Strava:ClientId", ClientId);
