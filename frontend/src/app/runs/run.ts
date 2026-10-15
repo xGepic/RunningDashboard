@@ -43,6 +43,8 @@ export interface RunDetail extends Run {
   elapsedTime: number;
   elevationGain: number;
   relativeEffort: number | null;
+  /** Beats per minute; none without a heart-rate recording. */
+  averageHeartRate: number | null;
   /** °C halfway through the Run, from the weather history where it started; none without GPS, on a treadmill, or while it cannot be looked up. */
   temperature: number | null;
   stravaUrl: string;

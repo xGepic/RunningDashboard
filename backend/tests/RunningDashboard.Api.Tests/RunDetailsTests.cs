@@ -41,6 +41,7 @@ public sealed class RunDetailsTests
         run.ElapsedTime.ShouldBe(2096);
         run.ElevationGain.ShouldBe(11);
         run.RelativeEffort.ShouldBe(16);
+        run.AverageHeartRate.ShouldBe(151.3);
         run.StravaUrl.ShouldBe("https://www.strava.com/activities/20479305419");
 
         run.BestEfforts.Select(e => e.Name).ShouldBe(["400m", "1/2 mile", "1K", "1 mile", "2 mile", "5K"]);
@@ -261,6 +262,7 @@ public sealed class RunDetailsTests
         double? Pace,
         double ElevationGain,
         double? RelativeEffort,
+        double? AverageHeartRate,
         string StravaUrl,
         string Detail,
         string? Route,

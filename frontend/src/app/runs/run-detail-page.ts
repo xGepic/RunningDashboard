@@ -52,7 +52,7 @@ export class RunDetailPage {
    * row are 6 and 5. The CSS stretches each row across the whole width. Counts the facts the template shows.
    */
   protected factsPerRow(run: RunDetail, max: number): number {
-    const facts = 8 + (run.fitness ? 2 + (run.fitness.cardiacDrift !== null ? 1 : 0) : 0);
+    const facts = 9 +(run.fitness ? 2 + (run.fitness.cardiacDrift !== null ? 1 : 0) : 0);
     return Math.ceil(facts / Math.ceil(facts / max));
   }
 

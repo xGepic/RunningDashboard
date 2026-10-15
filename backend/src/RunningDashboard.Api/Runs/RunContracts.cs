@@ -41,6 +41,7 @@ internal sealed record RunExportResponse(
     string? ShoeName,
     string StravaUrl);
 
+/// <param name="AverageHeartRate">Beats per minute; none without a heart-rate recording.</param>
 /// <param name="Temperature">°C halfway through the Run; none without a start location or while Open-Meteo has none.</param>
 /// <param name="Detail">"pending", "loaded" or "unavailable": whether Best Efforts and splits are in.</param>
 /// <param name="Route">Google's encoded polyline of the route; none for a Run without GPS.</param>
@@ -56,6 +57,7 @@ internal sealed record RunDetailResponse(
     double? Pace,
     double ElevationGain,
     double? RelativeEffort,
+    double? AverageHeartRate,
     string StravaUrl,
     string? ShoeName,
     double? Temperature,
@@ -79,6 +81,7 @@ internal sealed record RunDetailResponse(
         Run.PaceOf(run.MovingTime, run.Distance),
         run.ElevationGain,
         run.RelativeEffort,
+        run.AverageHeartRate,
         $"https://www.strava.com/activities/{run.Id}",
         shoeName,
         run.Temperature,

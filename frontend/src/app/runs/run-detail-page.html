@@ -20,6 +20,7 @@
       <div><dt class="label">Pace</dt><dd class="value">{{ units.pace(run.pace) }}</dd></div>
       <div><dt class="label">Elevation gain</dt><dd class="value">{{ run.elevationGain | number: '1.0-0' }} m</dd></div>
       <div><dt class="label">Relative Effort</dt><dd class="value">{{ run.relativeEffort ?? '–' }}</dd></div>
+      <div><dt class="label">Avg heart rate</dt><dd class="value">{{ run.averageHeartRate === null ? '–' : (run.averageHeartRate | number: '1.0-0') + ' bpm' }}</dd></div>
       <div title="Air temperature halfway through the Run where it started, from Open-Meteo's weather history">
         <dt class="label">Temperature</dt><dd class="value">{{ run.temperature === null ? '–' : (run.temperature | number: '1.0-0') + ' °C' }}</dd>
       </div>
