@@ -3,7 +3,7 @@
   The runtime view (arc42): the building blocks at work in the four scenarios that matter most. To render it as an
   image (from the repo root):
   msedge --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --window-size=1334,3860
-         --virtual-time-budget=5000 --screenshot=docs/runtime-view.png file:///<repo>/docs/runtime-view.html
+         --virtual-time-budget=5000 --screenshot=docs/architecture/runtime-view.png file:///<repo>/docs/architecture/runtime-view.html
   The steps follow Program.cs, Strava/StravaAuthEndpoints.cs, Sync/ and frontend/src/app/sync/.
 -->
 <html lang="en">
@@ -118,7 +118,7 @@
   const scenarios = [
     {
       title: '1  Starting the backend',
-      intro: 'What <code>Program.cs</code> does when the backend starts, from <code>dotnet run</code> as from the packaged app. Migrations never run on an existing database without a backup first, and a connected Athlete gets a sync right away.',
+      intro: 'What <code>Program.cs</code> does when the backend starts, from <code>dotnet run</code> as from the packaged app. Migrations never run on an existing database without a backup first, and a connected Athlete gets a sync right away and every hour after.',
       participants: [
         ['program', 'Program', 'Program.cs', 'backend'],
         ['db', 'Database', 'AppDbContext', 'data'],
@@ -139,6 +139,12 @@
         ['msg', 'sync', 'db', 'Strava connected?'],
         ['group', 'opt', 'connected'],
         ['msg', 'sync', 'sync', 'RequestSync(): a sync runs (scenario 3)'],
+        ['end'],
+        ['group', 'loop', 'every hour (Sync:Interval; 0 turns it off)'],
+        ['msg', 'sync', 'db', 'Strava connected, and no reconnect required?'],
+        ['group', 'opt', 'yes'],
+        ['msg', 'sync', 'sync', 'RequestSync(): a sync runs, unless one already does'],
+        ['end'],
         ['end'],
         ['msg', 'program', 'backupworker', 'start', 'async'],
         ['group', 'loop', 'at start, then every hour'],
@@ -224,7 +230,7 @@
         ['msg', 'worker', 'shoes', 'ImportAsync()'],
         ['msg', 'shoes', 'client', 'the Athlete\'s Shoes'],
         ['msg', 'client', 'strava', 'GET /athlete', 'http'],
-        ['msg', 'shoes', 'db', 'add, update and remove Shoes'],
+        ['msg', 'shoes', 'db', 'add and update Shoes; retire the ones\nStrava no longer lists'],
         ['msg', 'worker', 'details', 'ImportAsync()'],
         ['group', 'loop', 'each Run without its detail, newest first'],
         ['msg', 'details', 'client', 'the detailed Activity'],
@@ -265,6 +271,7 @@
         ['end'],
       ],
       notes: [
+        'When the tab comes back into view more than 15 minutes after the last sync, SyncState first asks for the status, then starts a sync with POST /api/sync unless one runs or Strava waits to be reconnected; the page reloads as above.',
         'The sidebar\'s newest activity and Shoe badge reload the same way. A Run\'s page also loads Leaflet, and its map loads tiles straight from the tile servers. The first time a Run\'s page is opened, the backend looks up its Temperature on Open-Meteo and keeps it.',
       ],
     },
