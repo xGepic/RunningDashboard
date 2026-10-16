@@ -24,6 +24,21 @@ export interface YearReview {
   swims: number;
 }
 
+/** "Stefan's 2026 in Runs", or "2026 in Runs" without the Athlete's name. */
+export function reviewTitle(review: YearReview, athleteName: string | null): string {
+  return `${athleteName ? `${athleteName}'s ` : ''}${review.year} in Runs`;
+}
+
+/** Whether it is the current year, which is reviewed so far. */
+export function isSoFar(review: YearReview): boolean {
+  return !review.until.endsWith('-12-31');
+}
+
+/** "vs. 2025", or "vs. the same time in 2025" for the current year. */
+export function comparedWith(review: YearReview): string {
+  return isSoFar(review) ? `vs. the same time in ${review.year - 1}` : `vs. ${review.year - 1}`;
+}
+
 export interface ReviewTotals {
   runs: number;
   distance: number;

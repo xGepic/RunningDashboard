@@ -83,6 +83,10 @@ _Avoid_: Lap, km segment
 The fastest Best Effort for a standard distance across all Runs.
 _Avoid_: PR, record
 
+**Achievement**:
+A distance badge the Athlete earns with their Runs: a single Run's distance (by its Best Effort), the distance of all Runs, or the distance of a calendar year, month or Training Week. It is dated by the Run that earned it. The year, month and week ones can be earned again each time; the others only once. Rides and Swims never earn one.
+_Avoid_: Badge (in code and the API), trophy, milestone, award
+
 ### Training
 
 **Training Week**:

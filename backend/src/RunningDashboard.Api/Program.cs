@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
+using RunningDashboard.Api.Achievements;
 using RunningDashboard.Api.Backup;
 using RunningDashboard.Api.Fitness;
 using RunningDashboard.Api.GoalRaces;
@@ -69,6 +70,7 @@ app.MapSettingsEndpoints();
 app.MapBackupEndpoints();
 app.MapShoeEndpoints();
 app.MapRecordEndpoints();
+app.MapAchievementEndpoints();
 app.MapFitnessEndpoints();
 app.MapReviewEndpoints();
 app.MapGoalRaceEndpoints();

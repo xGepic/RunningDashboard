@@ -10,6 +10,7 @@ import { monthNames } from '../shared/dates';
 import { DistanceUnit, formatDistance, formatWhole } from '../shared/format';
 import { Units } from '../shared/units';
 import { reloadOnSync } from '../sync/reload-on-sync';
+import { AchievementsCard } from './achievements-card';
 import { MonthPace, Overview, Totals, YearTotals } from './overview';
 import { StreakCard } from './streak-card';
 import { YearlyGoalCard } from './yearly-goal-card';
@@ -33,7 +34,7 @@ const kpiDefinitions: { label: string; unit: string | null; icon: string; of: (t
 
 @Component({
   selector: 'app-overview-page',
-  imports: [DecimalPipe, NgxEchartsDirective, RouterLink, StreakCard, YearlyGoalCard],
+  imports: [AchievementsCard, DecimalPipe, NgxEchartsDirective, RouterLink, StreakCard, YearlyGoalCard],
   templateUrl: './overview-page.html',
   styleUrl: './overview-page.scss',
 })

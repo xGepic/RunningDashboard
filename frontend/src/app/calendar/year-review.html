@@ -4,13 +4,19 @@
   @if (downloadFailed()) {
     <p class="error" role="alert">The image could not be made.</p>
   }
-  <app-year-review-content [review]="review" [months]="months()" />
+  <app-year-review-content [review]="review" [months]="months()" [achievements]="achievements()" />
+  @if (story(); as playing) {
+    @defer (on immediate) {
+      <app-year-story [review]="review" [months]="months()" [achievements]="achievements()" [athleteName]="playing.athleteName"
+                      (closed)="story.set(null)" (download)="downloadImage()" />
+    }
+  }
 }
 
 @if (imageSource(); as source) {
   <div class="image-stage" aria-hidden="true">
     <div class="image" #imageElement [style.width.px]="source.width">
-      <app-year-review-content [review]="source.review" [months]="months()" [athleteName]="source.athleteName" forImage />
+      <app-year-review-content [review]="source.review" [months]="months()" [achievements]="achievements()" [athleteName]="source.athleteName" forImage />
     </div>
   </div>
 }

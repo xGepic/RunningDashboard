@@ -31,7 +31,7 @@ describe('App', () => {
     const { element } = await render();
 
     const links = [...element.querySelectorAll('.sidebar nav[aria-label="Pages"] a')].map((a) => [a.querySelector('.label')!.textContent, a.querySelector('kbd')!.textContent]);
-    expect(links).toEqual([['Overview', '1'], ['Training', '2'], ['Activities', '3'], ['Calendar', '4'], ['Records', '5'], ['Fitness', '6'], ['Shoes', '7']]);
+    expect(links).toEqual([['Overview', '1'], ['Training', '2'], ['Activities', '3'], ['Calendar', '4'], ['Records', '5'], ['Achievements', '6'], ['Fitness', '7'], ['Shoes', '8']]);
 
     document.body.dispatchEvent(new KeyboardEvent('keydown', { key: '4', bubbles: true }));
     await new Promise((resolve) => setTimeout(resolve));

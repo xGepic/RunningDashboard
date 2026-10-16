@@ -1,0 +1,67 @@
+/* A medal: the Theme's accent in rings, the threshold in the middle; the groups differ by the ring's pattern. */
+:host {
+  --size: 72px;
+  display: inline-flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: var(--size);
+  height: var(--size);
+  border: calc(var(--size) * 0.05) solid var(--accent);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 25%, rgb(var(--accent-rgb) / 45%), transparent 60%),
+    rgb(var(--accent-rgb) / 18%);
+  box-shadow:
+    inset 0 0 0 calc(var(--size) * 0.04) var(--surface),
+    inset 0 0 0 calc(var(--size) * 0.07) rgb(var(--accent-rgb) / 55%),
+    0 0 calc(var(--size) * 0.25) rgb(var(--accent-rgb) / 25%);
+  color: var(--text);
+  line-height: 1;
+  text-align: center;
+}
+
+/* Repeatable ones: a dashed outer ring, as they come round again. */
+:host(.year),
+:host(.month),
+:host(.week) {
+  border-style: dashed;
+}
+
+/* Lifetime: a double ring, as they only ever add up. */
+:host(.lifetime) {
+  border-style: double;
+  border-width: calc(var(--size) * 0.07);
+}
+
+.value {
+  font-family: var(--mono);
+  font-size: calc(var(--size) * 0.3);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+
+  &.long {
+    font-size: calc(var(--size) * 0.22);
+  }
+}
+
+.unit {
+  margin-top: calc(var(--size) * 0.04);
+  color: var(--text-secondary);
+  font-size: calc(var(--size) * 0.12);
+  white-space: nowrap;
+}
+
+:host(.locked) {
+  border-color: var(--border-strong);
+  background: var(--inset);
+  box-shadow:
+    inset 0 0 0 calc(var(--size) * 0.04) var(--surface),
+    inset 0 0 0 calc(var(--size) * 0.07) var(--border);
+  color: var(--text-faint);
+
+  .unit {
+    color: var(--text-faint);
+  }
+}

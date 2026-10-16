@@ -1,11 +1,13 @@
 import { DatePipe, formatDate } from '@angular/common';
 import { Component, LOCALE_ID, booleanAttribute, computed, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { YearAchievement } from '../achievements/achievement';
+import { AchievementMedal } from '../achievements/achievement-medal';
 import { MonthTotals } from '../runs/run';
 import { fullMonthNames, monthNames } from '../shared/dates';
-import { formatDifference, formatDuration, formatHoursMinutes, formatWhole } from '../shared/format';
+import { formatDifference, formatDuration, formatHoursMinutes, formatWhole, percentChange } from '../shared/format';
 import { Units } from '../shared/units';
-import { ReviewTotals, YearReview } from './review';
+import { ReviewTotals, YearReview, comparedWith, isSoFar, reviewTitle } from './review';
 
 /**
  * A year's highlights: a headline, its totals against the year before, and its best moments. For the image the Athlete
@@ -14,7 +16,7 @@ import { ReviewTotals, YearReview } from './review';
  */
 @Component({
   selector: 'app-year-review-content',
-  imports: [DatePipe, RouterLink],
+  imports: [AchievementMedal, DatePipe, RouterLink],
   templateUrl: './year-review-content.html',
   styleUrl: './year-review-content.scss',
 })
@@ -22,6 +24,8 @@ export class YearReviewContent {
   readonly review = input.required<YearReview>();
   /** The year's totals per month, as the Calendar has them, for the bars in the headline; none while they load. */
   readonly months = input<MonthTotals[] | null>(null);
+  /** The Achievements earned in the year. */
+  readonly achievements = input<YearAchievement[]>([]);
   readonly forImage = input(false, { transform: booleanAttribute });
   /** The Athlete's first name, for the image's title. */
   readonly athleteName = input<string | null>(null);
@@ -31,10 +35,7 @@ export class YearReviewContent {
   private readonly locale = inject(LOCALE_ID);
 
   /** "Stefan's 2026 in Runs", or "2026 in Runs" without a name. */
-  protected readonly title = computed(() => {
-    const name = this.athleteName();
-    return `${name ? `${name}'s ` : ''}${this.review().year} in Runs`;
-  });
+  protected readonly title = computed(() => reviewTitle(this.review(), this.athleteName()));
 
   /** "15 Mar", or only "Mar" on the image. */
   protected readonly dayFormat = computed(() => (this.forImage() ? 'MMM' : 'd MMM'));
@@ -42,22 +43,19 @@ export class YearReviewContent {
   /** "so far" for the current year, "from" for the first one when it started later; null for a whole year. */
   protected readonly period = computed(() => {
     const review = this.review();
-    if (!review.until.endsWith('-12-31')) return 'so far';
+    if (isSoFar(review)) return 'so far';
     return review.from.endsWith('-01-01') ? null : 'from';
   });
 
   /** "vs. 2025", or "vs. the same time in 2025" for the current year. */
-  protected readonly comparedWith = computed(() => {
-    const review = this.review();
-    return this.period() === 'so far' ? `vs. the same time in ${review.year - 1}` : `vs. ${review.year - 1}`;
-  });
+  protected readonly comparedWith = computed(() => comparedWith(this.review()));
 
   /** The headline: the year's distance, big, with its change, and the rest of the totals in a sentence. */
   protected readonly headline = computed(() => {
     const { totals, previousYear } = this.review();
     return {
       distance: formatWhole(this.units.fromMetres(totals.distance)),
-      change: previousYear ? change(totals.distance, previousYear.distance) : null,
+      change: previousYear ? percentChange(totals.distance, previousYear.distance) : null,
       runs: totals.runs,
       hours: formatWhole(totals.movingTime / 3600),
       climbed: formatWhole(totals.elevationGain),
@@ -84,7 +82,7 @@ export class YearReviewContent {
     const withChange = (label: string, of: (t: ReviewTotals) => number, value: string) => ({
       label,
       value,
-      change: previousYear ? change(of(totals), of(previousYear)) : null,
+      change: previousYear ? percentChange(of(totals), of(previousYear)) : null,
     });
     const weeks = Math.max(1, (Date.parse(review.until) - Date.parse(review.from)) / (7 * 86_400_000) + 1 / 7);
     return [
@@ -130,6 +128,13 @@ export class YearReviewContent {
     return leap ? `${set} · biggest leap: ${leap.name}, ${leap.percent}` : set;
   });
 
+  /** "10 earned in 2026 · 4 for the first time"; a repeatable one counts once, however often it was earned. */
+  protected readonly achievementSummary = computed(() => {
+    const achievements = this.achievements();
+    const firsts = achievements.filter((a) => a.firstTime).length;
+    return `${achievements.length} earned in ${this.review().year}${firsts ? ` · ${firsts} for the first time` : ''}`;
+  });
+
   /** "6 Jan – 12 Jan"; on the image "Jan", or "Jan – Feb" across two months. */
   protected dateRange(start: string, end: string): string {
     const [from, to] = [start, end].map((date) => formatDate(date, this.dayFormat(), this.locale));
@@ -143,10 +148,3 @@ export class YearReviewContent {
 
 /** Personal Bests side by side on a wide page. */
 const maxMedalsPerRow = 4;
-
-/** "+12%" or "−5%" against the year before; none when there was nothing to compare with. */
-function change(current: number, previous: number): { text: string; up: boolean } | null {
-  if (previous === 0) return null;
-  const percent = Math.round(((current - previous) / previous) * 100);
-  return { text: `${percent > 0 ? '+' : percent < 0 ? '−' : '±'}${Math.abs(percent)}%`, up: percent >= 0 };
-}

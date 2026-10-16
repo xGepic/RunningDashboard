@@ -1,0 +1,41 @@
+@if (achievements.hasValue() && (latest() || next())) {
+  <section class="card achievements" aria-labelledby="achievements-title">
+    <div class="card-header">
+      <div class="titles">
+        <h2 id="achievements-title" class="card-title">Achievements</h2>
+        <p class="card-sub">Distances reached with your Runs</p>
+      </div>
+      <a class="all" routerLink="/achievements">All Achievements →</a>
+    </div>
+
+    <div class="pair">
+      @if (latest(); as latest) {
+        <div class="item">
+          <app-achievement-medal [achievement]="latest.achievement" [size]="64" />
+          <div class="text">
+            <span class="label">Latest @if (latest.isNew) {<span class="badge green">New</span>}</span>
+            <span class="name">{{ latest.achievement.name }}</span>
+            <a class="run" [routerLink]="['/runs', latest.earned.runId]">{{ latest.earned.runName }} · {{ latest.earned.date | date: 'd MMM y' }}</a>
+            @if (latest.others > 0) {
+              <span class="others">and {{ latest.others }} more with the same Run</span>
+            }
+          </div>
+        </div>
+      }
+      @if (next(); as next) {
+        <div class="item">
+          <app-achievement-medal [achievement]="next.achievement" [size]="64" locked />
+          <div class="text">
+            <span class="label">Next up</span>
+            <span class="name">{{ next.achievement.name }}</span>
+            <span class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="next.progress.percent"
+                  [attr.aria-label]="next.achievement.name + ': ' + next.progress.text">
+              <span [style.width.%]="next.progress.percent"></span>
+            </span>
+            <span class="of">{{ next.progress.text }}</span>
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+}

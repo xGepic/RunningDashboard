@@ -1,0 +1,169 @@
+@let review = this.review();
+<div class="stage" (pointerdown)="onPointerDown($event)" (pointerup)="onPointerUp($event)" (pointercancel)="onPointerCancel()"
+     (pointerleave)="onPointerCancel()">
+  <header class="top">
+    <div class="segments" aria-hidden="true">
+      @for (segment of segments(); track segment.key) {
+        <span class="segment" [class]="segment.state">
+          <span class="fill" [style.animation-duration.s]="segment.seconds" [class.paused]="paused()"
+                (animationend)="segmentDone(segment.state)"></span>
+        </span>
+      }
+    </div>
+    <div class="bar">
+      <span class="story-title">{{ title() }}@if (soFar()) { · so far}</span>
+      @if (paused()) {
+        <span class="paused-label">Paused</span>
+      }
+      <button type="button" class="close" (click)="closed.emit()" aria-label="Close the story">✕</button>
+    </div>
+  </header>
+
+  @for (card of [current()]; track card.key) {
+    <section class="card-body" [class]="card.kind" aria-live="polite">
+      @switch (card.kind) {
+        @case ('intro') {
+          <p class="eyebrow in" style="--i: 0">Year in Review</p>
+          <h2 class="giant in" style="--i: 1">{{ title() }}</h2>
+          <p class="lead in" style="--i: 2">
+            @if (soFar()) {
+              So far, up to {{ review.until | date: 'd MMMM' }}.
+            } @else {
+              {{ review.totals.runs }} Runs. Here is how it went.
+            }
+          </p>
+        }
+        @case ('distance') {
+          <p class="eyebrow in" style="--i: 0">You ran</p>
+          <p class="huge in" style="--i: 1"><span [appCountUp]="units.fromMetres(review.totals.distance)"></span><span class="unit">{{ units.unit() }}</span></p>
+          @if (distanceChange(); as change) {
+            <p class="in" style="--i: 3"><span class="chip" [class.up]="change.up">{{ change.text }} {{ comparedWith() }}</span></p>
+          }
+        }
+        @case ('time') {
+          <p class="eyebrow in" style="--i: 0">On your feet</p>
+          <div class="trio">
+            <p class="figure in" style="--i: 1"><span class="big" [appCountUp]="review.totals.movingTime / 3600"></span><span class="label">hours</span></p>
+            <p class="figure in" style="--i: 2"><span class="big" [appCountUp]="review.totals.runs" [countUpDelay]="300"></span><span class="label">Runs</span></p>
+            <p class="figure in" style="--i: 3"><span class="big" [appCountUp]="review.totals.elevationGain" [countUpDelay]="600"></span><span class="label">metres climbed</span></p>
+          </div>
+        }
+        @case ('months') {
+          <p class="eyebrow in" style="--i: 0">Month by month</p>
+          @if (monthBars().length) {
+            <div class="month-bars" aria-hidden="true">
+              @for (bar of monthBars(); track $index) {
+                <div class="month" [class.biggest]="bar.biggest">
+                  <span class="fill grow" [style.height.%]="bar.height" [style.--i]="$index"></span>
+                  <span class="initial">{{ bar.initial }}</span>
+                </div>
+              }
+            </div>
+          }
+          @if (review.biggestMonth; as month) {
+            <p class="lead in" style="--i: 6">
+              <strong>{{ fullMonthNames[month.month - 1] }}</strong> was the biggest:
+              {{ units.distance(month.distance, 1) }} in {{ month.runs }} {{ month.runs === 1 ? 'Run' : 'Runs' }}.
+            </p>
+          }
+        }
+        @case ('longest') {
+          @if (review.longestRun; as run) {
+            <div class="pair-block in" style="--i: 0">
+              <p class="eyebrow">Longest Run</p>
+              <p class="huge"><span [appCountUp]="units.fromMetres(run.distance)" [countUpFormat]="formatOneDecimal"></span><span class="unit">{{ units.unit() }}</span></p>
+              <p class="lead">{{ run.name }} · {{ run.startLocal | date: 'd MMMM' }} · {{ formatDuration(run.movingTime) }}</p>
+            </div>
+          }
+          @if (review.biggestWeek; as week) {
+            <div class="pair-block in" style="--i: 4">
+              <p class="eyebrow">Biggest Training Week</p>
+              <p class="big-line"><span [appCountUp]="units.fromMetres(week.distance)" [countUpFormat]="formatOneDecimal" [countUpDelay]="1200"></span> {{ units.unit() }}</p>
+              <p class="lead">{{ week.start | date: 'd MMM' }} – {{ week.end | date: 'd MMM' }} · {{ week.runs }} {{ week.runs === 1 ? 'Run' : 'Runs' }}</p>
+            </div>
+          }
+        }
+        @case ('streak') {
+          @if (review.longestStreak; as streak) {
+            <p class="eyebrow in" style="--i: 0">Longest Streak</p>
+            <p class="huge in" style="--i: 1"><span [appCountUp]="streak.weeks"></span><span class="unit">{{ streak.weeks === 1 ? 'week' : 'weeks' }} in a row</span></p>
+            <p class="lead in" style="--i: 3">{{ streak.start | date: 'd MMM' }} – {{ streak.end | date: 'd MMM' }}, with a Run every Training Week.</p>
+          }
+        }
+        @case ('bests') {
+          <p class="eyebrow in" style="--i: 0">Personal Bests</p>
+          <ul class="medals">
+            @for (best of personalBests(); track best.distance) {
+              <li class="medal pop" [class.leap]="best.biggestLeap" [style.--i]="$index + 1">
+                <span class="name">{{ best.name }}</span>
+                <span class="time">{{ best.time }}</span>
+                <span class="gain" [class.first]="best.leap === null">{{ best.gain }}</span>
+                @if (best.biggestLeap) {
+                  <span class="badge">Biggest leap</span>
+                }
+              </li>
+            }
+          </ul>
+        }
+        @case ('achievements') {
+          <p class="eyebrow in" style="--i: 0">Achievements</p>
+          <ul class="achievement-medals">
+            @for (item of achievements(); track item.achievement.id) {
+              <li class="pop" [style.--i]="$index + 1">
+                <app-achievement-medal [achievement]="item.achievement" [size]="84" />
+                <span class="name">{{ item.achievement.name }}</span>
+                @if (item.achievement.repeatable) {
+                  <span class="times">×{{ item.times }}</span>
+                }
+              </li>
+            }
+          </ul>
+        }
+        @case ('races') {
+          <p class="eyebrow in" style="--i: 0">Goal Races</p>
+          <ul class="races">
+            @for (race of review.goalRaces; track race.id) {
+              <li class="in" [style.--i]="$index + 1">
+                <span class="name">{{ race.name }}</span>
+                <span class="when">{{ race.date | date: 'd MMMM' }} · {{ units.distance(race.distance, 1) }}</span>
+                @if (race.raceResult?.elapsedTime; as time) {
+                  <span class="result">{{ formatDuration(time) }}</span>
+                  @if (race.raceResult!.differenceFromTarget !== null) {
+                    @let difference = race.raceResult!.differenceFromTarget!;
+                    <span class="target" [class.met]="difference <= 0" [class.missed]="difference > 0">
+                      {{ difference <= 0 ? 'Target Time beaten' : 'Target Time missed' }} ({{ formatDifference(difference) }})
+                    </span>
+                  }
+                } @else {
+                  <span class="when">No Race Result</span>
+                }
+              </li>
+            }
+          </ul>
+        }
+        @case ('shoe') {
+          @if (review.mostUsedShoe; as shoe) {
+            <p class="eyebrow in" style="--i: 0">Most-used Shoe</p>
+            <h2 class="giant in" style="--i: 1">{{ shoe.name }}</h2>
+            <p class="lead in" style="--i: 2">{{ units.distance(shoe.distance, 0) }} together, in {{ shoe.runs }} {{ shoe.runs === 1 ? 'Run' : 'Runs' }}.</p>
+          }
+        }
+        @case ('outro') {
+          <p class="eyebrow in" style="--i: 0">{{ title() }}@if (soFar()) { · so far}</p>
+          <div class="trio">
+            <p class="figure in" style="--i: 1"><span class="big">{{ formatWhole(units.fromMetres(review.totals.distance)) }}</span><span class="label">{{ units.unit() }}</span></p>
+            <p class="figure in" style="--i: 2"><span class="big">{{ review.totals.runs }}</span><span class="label">Runs</span></p>
+            <p class="figure in" style="--i: 3"><span class="big">{{ formatWhole(review.totals.movingTime / 3600) }}</span><span class="label">hours</span></p>
+          </div>
+          <div class="actions in" style="--i: 5">
+            <button type="button" class="btn" (click)="replay()">Replay</button>
+            <button type="button" class="btn" (click)="download.emit()">Download image</button>
+            <button type="button" class="btn btn-primary" (click)="closed.emit()">Close</button>
+          </div>
+        }
+      }
+    </section>
+  }
+
+  <p class="hint" aria-hidden="true">← → to skip · Space or hold to pause · Esc to close</p>
+</div>

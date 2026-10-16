@@ -107,3 +107,10 @@ export function parseDistance(text: string, unit: DistanceUnit): number | null {
 function pad(value: number): string {
   return value.toString().padStart(2, '0');
 }
+
+/** "+12%" or "−5%" from `previous` to `current`, e.g. against the year before; none when there was nothing to compare with. */
+export function percentChange(current: number, previous: number): { text: string; up: boolean } | null {
+  if (previous === 0) return null;
+  const percent = Math.round(((current - previous) / previous) * 100);
+  return { text: `${percent > 0 ? '+' : percent < 0 ? '−' : '±'}${Math.abs(percent)}%`, up: percent >= 0 };
+}
