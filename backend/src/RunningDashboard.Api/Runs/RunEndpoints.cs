@@ -35,7 +35,7 @@ public static class RunEndpoints
 
             // Filtered and sorted in memory over a lean projection: a few thousand Runs at most, and it keeps the
             // name search case-insensitive beyond ASCII (SQLite's LIKE is not), independent of the server's culture.
-            var shoeNames = await db.Shoes.ToDictionaryAsync(s => s.Id, s => s.Name, cancellationToken);
+            var shoeNames = await db.GetShoeNamesAsync(cancellationToken);
             var runs = (await db.Runs
                     .Select(r => new { r.Id, r.Name, r.SportType, r.StartLocal, r.Distance, r.MovingTime, r.ShoeId })
                     .ToListAsync(cancellationToken))
@@ -57,7 +57,7 @@ public static class RunEndpoints
             if (errors.Count > 0)
                 return Results.ValidationProblem(errors);
 
-            var shoeNames = await db.Shoes.ToDictionaryAsync(s => s.Id, s => s.Name, cancellationToken);
+            var shoeNames = await db.GetShoeNamesAsync(cancellationToken);
             var runs = (await db.Runs
                     .Select(r => new
                     {
@@ -77,8 +77,8 @@ public static class RunEndpoints
         // months, empty ones as zero.
         app.MapGet("/api/runs/months", async (int? year, AppDbContext db, TimeProvider clock, CancellationToken cancellationToken) =>
         {
-            if (year is < 1900 or > 2099)
-                return Results.ValidationProblem(new Dictionary<string, string[]> { ["year"] = ["The year is between 1900 and 2099."] });
+            if (YearParameter.Reject(year) is { } rejected)
+                return rejected;
 
             var selectedYear = year ?? clock.GetLocalNow().Year;
             var from = new DateTime(selectedYear, 1, 1);
@@ -147,7 +147,7 @@ public static class RunEndpoints
     /// <summary>The Run's Aerobic Efficiency, Cadence and, as its week's Long Run, Cardiac Drift; none unless it is a Fitness Run.</summary>
     private static async Task<RunFitnessResponse?> FitnessOfAsync(Run run, AppDbContext db, CancellationToken cancellationToken)
     {
-        if (!FitnessFigures.IsFitnessRun(run.IsTreadmill, run.StartLocal, await FitnessEndpoints.RaceDaysAsync(db, cancellationToken)))
+        if (!FitnessFigures.IsFitnessRun(run.IsTreadmill, run.StartLocal, await db.GetRaceDaysAsync(cancellationToken)))
             return null;
 
         var week = TrainingWeek.Of(run.StartLocal);

@@ -62,24 +62,18 @@ public sealed class Run
     /// <summary>Halfway through the Run, in UTC: when its temperature is looked up.</summary>
     public DateTime MidpointUtc => StartUtc.AddSeconds(ElapsedTime / 2.0);
 
+    /// <summary>Where the Run started, as Strava recorded it; none for a Run without GPS.</summary>
+    public double? StartLatitude { get; set; }
+
+    /// <inheritdoc cref="StartLatitude"/>
+    public double? StartLongitude { get; set; }
+
     /// <summary>
-    /// Where the Run started, as Strava recorded it, for looking up the weather. None for a Run without GPS, and for
-    /// one on a treadmill, where the weather outside does not matter.
+    /// Where the Run started, for looking up the weather. None for a Run without GPS, and for one on a treadmill,
+    /// where the weather outside does not matter.
     /// </summary>
-    public (double Latitude, double Longitude)? WeatherLocation
-    {
-        get
-        {
-            if (IsTreadmill)
-                return null;
-            using var activity = JsonDocument.Parse(RawSummaryJson);
-            return activity.RootElement.TryGetProperty("start_latlng", out var start)
-                && start.ValueKind == JsonValueKind.Array
-                && start.GetArrayLength() == 2
-                    ? (start[0].GetDouble(), start[1].GetDouble())
-                    : null;
-        }
-    }
+    public (double Latitude, double Longitude)? WeatherLocation =>
+        !IsTreadmill && StartLatitude is { } latitude && StartLongitude is { } longitude ? (latitude, longitude) : null;
 
     public required string RawSummaryJson { get; set; }
 
@@ -191,6 +185,8 @@ public sealed class Run
         Cadence = activity.AverageCadence * 2;
         Trainer = activity.Trainer;
         ShoeId = activity.GearId;
+        StartLatitude = activity.StartLatitude;
+        StartLongitude = activity.StartLongitude;
         RawSummaryJson = activity.RawJson;
     }
 }

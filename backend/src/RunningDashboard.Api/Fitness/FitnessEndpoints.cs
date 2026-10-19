@@ -19,7 +19,7 @@ public static class FitnessEndpoints
                     .Select(s => new { s.RunId, Split = new FitnessSplit(s.Index, s.Distance, s.MovingTime, s.HeartRate, s.GradeAdjustedSpeed) })
                     .ToListAsync(cancellationToken))
                 .ToLookup(s => s.RunId, s => s.Split);
-            var raceDays = await RaceDaysAsync(db, cancellationToken);
+            var raceDays = await db.GetRaceDaysAsync(cancellationToken);
 
             var longRuns = runs
                 .GroupBy(r => TrainingWeek.Of(r.StartLocal))
@@ -40,10 +40,6 @@ public static class FitnessEndpoints
             return new FitnessResponse(FitnessFigures.GoodCardiacDrift, points, FitnessMonthResponse.Of(points));
         });
     }
-
-    /// <summary>The days of every Goal Race, on which no Run is a Fitness Run.</summary>
-    public static async Task<IReadOnlySet<DateOnly>> RaceDaysAsync(AppDbContext db, CancellationToken cancellationToken) =>
-        (await db.GoalRaces.Select(r => r.Date).ToListAsync(cancellationToken)).ToHashSet();
 
     private sealed record FitnessRunData(
         long Id, string Name, string SportType, bool Trainer, DateTime StartLocal, double Distance, int MovingTime, double? AverageHeartRate, double? Cadence)

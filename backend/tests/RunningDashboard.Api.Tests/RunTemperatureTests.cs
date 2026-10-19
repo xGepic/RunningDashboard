@@ -1,4 +1,9 @@
 using System.Net.Http.Json;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
+using RunningDashboard.Api.Persistence;
 using RunningDashboard.Api.Tests.Harness;
 
 namespace RunningDashboard.Api.Tests;
@@ -119,6 +124,54 @@ public sealed class RunTemperatureTests
         var response = await browser.GetAsync("/api/runs/99/temperature");
 
         response.StatusCode.ShouldBe(System.Net.HttpStatusCode.NotFound);
+    }
+
+    private sealed record RunTemperatureResponse(double? Temperature);
+}
+
+/// <summary>Runs stored before get where they started from the stored summary, for their temperature.</summary>
+public sealed class StoredStartLocationTests
+{
+    [Test]
+    public async Task Runs_stored_before_get_their_start_location_from_the_stored_summary()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"running-dashboard-test-{Guid.NewGuid():N}.db");
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite($"Data Source={path};Pooling=False").Options;
+        await using (var db = new AppDbContext(options))
+            await db.GetService<IMigrator>().MigrateAsync("20261015061424_AddRunTemperature");
+        await using (var connection = new SqliteConnection($"Data Source={path};Pooling=False"))
+        {
+            await connection.OpenAsync();
+            await using var insert = connection.CreateCommand();
+            insert.CommandText = """
+                INSERT INTO Runs (Id, Name, SportType, StartUtc, StartLocal, Distance, MovingTime, ElapsedTime, ElevationGain, RawSummaryJson)
+                VALUES (1, 'Outdoors', 'Run', '2026-09-20 05:00:00', '2026-09-20 07:00:00', 10000, 3600, 3600, 0, '{"start_latlng": [48.2, 16.37]}'),
+                       (2, 'Without GPS', 'Run', '2026-09-21 05:00:00', '2026-09-21 07:00:00', 10000, 3600, 3600, 0, '{"start_latlng": []}');
+                """;
+            await insert.ExecuteNonQueryAsync();
+        }
+
+        var app = new TestApp(path);
+        try
+        {
+            // 2 °C per hour of the day: halfway through, 05:30 UTC, is 11 °C.
+            app.Weather.HasHourlyTemperatures(new DateTime(2026, 9, 20), [.. Enumerable.Range(0, 48).Select(hour => (double?)hour * 2)]);
+            var browser = app.CreateBrowser();
+
+            var outdoors = (await browser.GetFromJsonAsync<RunTemperatureResponse>("/api/runs/1/temperature"))!;
+            var withoutGps = (await browser.GetFromJsonAsync<RunTemperatureResponse>("/api/runs/2/temperature"))!;
+
+            outdoors.Temperature.ShouldBe(11);
+            withoutGps.Temperature.ShouldBeNull();
+            app.Weather.Requests.ShouldHaveSingleItem().Query.ShouldContain("latitude=48.2&longitude=16.37");
+        }
+        finally
+        {
+            await app.DisposeAsync();
+            File.Delete(path);
+            if (Directory.Exists(app.BackupFolder))
+                Directory.Delete(app.BackupFolder, recursive: true);
+        }
     }
 
     private sealed record RunTemperatureResponse(double? Temperature);

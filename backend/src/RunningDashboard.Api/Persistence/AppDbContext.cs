@@ -29,6 +29,14 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public Task<YearlyGoal?> GetYearlyGoalAsync(int year, CancellationToken cancellationToken) =>
         YearlyGoals.SingleOrDefaultAsync(g => g.Year == year, cancellationToken);
 
+    /// <summary>The days of every Goal Race, on which no Run is a Fitness Run.</summary>
+    public async Task<IReadOnlySet<DateOnly>> GetRaceDaysAsync(CancellationToken cancellationToken) =>
+        (await GoalRaces.Select(r => r.Date).ToListAsync(cancellationToken)).ToHashSet();
+
+    /// <summary>Each Shoe's name by its Strava gear id.</summary>
+    public Task<Dictionary<string, string>> GetShoeNamesAsync(CancellationToken cancellationToken) =>
+        Shoes.ToDictionaryAsync(s => s.Id, s => s.Name, cancellationToken);
+
     public Task<bool> IsStravaConnectedAsync(CancellationToken cancellationToken) =>
         StravaConnections.AnyAsync(cancellationToken);
 
@@ -69,6 +77,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             run.Property(r => r.SportType).HasMaxLength(50);
             run.Property(r => r.ShoeId).HasMaxLength(50);
             run.HasIndex(r => r.StartUtc);
+            // Training Weeks, months, years and blocks are all ranges of local start times.
+            run.HasIndex(r => r.StartLocal);
             run.HasMany(r => r.BestEfforts).WithOne().HasForeignKey(e => e.RunId).OnDelete(DeleteBehavior.Cascade);
             run.HasMany(r => r.Splits).WithOne().HasForeignKey(s => s.RunId).OnDelete(DeleteBehavior.Cascade);
         });

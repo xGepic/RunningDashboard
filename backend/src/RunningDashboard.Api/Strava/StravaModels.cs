@@ -16,7 +16,8 @@ internal sealed record ActivityResponse(
     string? GearId,
     double? AverageHeartrate,
     double? AverageCadence,
-    bool Trainer);
+    bool Trainer,
+    double[]? StartLatlng);
 
 internal sealed record ShoeResponse(string Id, string Name, double Distance, bool Retired);
 
@@ -59,6 +60,7 @@ public sealed record ActivityQuery(DateTime? Before = null, DateTime? After = nu
 /// <param name="AverageHeartRate">Beats per minute; none without a heart-rate recording.</param>
 /// <param name="AverageCadence">As Strava counts it for Runs: steps per minute of one foot.</param>
 /// <param name="Trainer">Recorded indoors, e.g. on a treadmill.</param>
+/// <param name="StartLatitude">Where it started; none for an Activity recorded without GPS.</param>
 public sealed record StravaActivity(
     long Id,
     string Name,
@@ -74,6 +76,8 @@ public sealed record StravaActivity(
     double? AverageHeartRate,
     double? AverageCadence,
     bool Trainer,
+    double? StartLatitude,
+    double? StartLongitude,
     string RawJson);
 
 /// <summary>

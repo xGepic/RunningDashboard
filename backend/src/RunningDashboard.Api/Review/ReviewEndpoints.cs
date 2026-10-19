@@ -12,8 +12,8 @@ public static class ReviewEndpoints
         // One calendar year's highlights, the current year's so far.
         app.MapGet("/api/review", async (int? year, AppDbContext db, TimeProvider clock, CancellationToken cancellationToken) =>
         {
-            if (year is < 1900 or > 2099)
-                return Results.ValidationProblem(new Dictionary<string, string[]> { ["year"] = ["The year is between 1900 and 2099."] });
+            if (YearParameter.Reject(year) is { } rejected)
+                return rejected;
 
             var today = DateOnly.FromDateTime(clock.GetLocalNow().DateTime);
             var selectedYear = year ?? today.Year;
@@ -43,7 +43,7 @@ public static class ReviewEndpoints
                 .Where(a => a.StartLocal >= yearStart && a.StartLocal < nextYearStart)
                 .Select(a => a.SportType)
                 .ToListAsync(cancellationToken);
-            var shoeNames = await db.Shoes.ToDictionaryAsync(s => s.Id, s => s.Name, cancellationToken);
+            var shoeNames = await db.GetShoeNamesAsync(cancellationToken);
 
             return Results.Ok(YearReviewResponse.Of(
                 selectedYear,

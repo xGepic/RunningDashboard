@@ -81,6 +81,9 @@ public sealed class StravaClient(
                 activity.AverageHeartrate,
                 activity.AverageCadence,
                 activity.Trainer,
+                // An empty list without GPS.
+                activity.StartLatlng is [var latitude, _] ? latitude : null,
+                activity.StartLatlng is [_, var longitude] ? longitude : null,
                 element.GetRawText());
         })];
     }

@@ -187,8 +187,14 @@ namespace RunningDashboard.Api.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
+                    b.Property<double?>("StartLatitude")
+                        .HasColumnType("REAL");
+
                     b.Property<DateTime>("StartLocal")
                         .HasColumnType("TEXT");
+
+                    b.Property<double?>("StartLongitude")
+                        .HasColumnType("REAL");
 
                     b.Property<DateTime>("StartUtc")
                         .HasColumnType("TEXT");
@@ -200,6 +206,8 @@ namespace RunningDashboard.Api.Persistence.Migrations
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("StartLocal");
 
                     b.HasIndex("StartUtc");
 
