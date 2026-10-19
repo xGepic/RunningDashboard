@@ -108,12 +108,39 @@ public sealed class RidesListTests
         totals.Speed!.Value.ShouldBe(23.864, 0.0005); // 157.5 km in 6.6 h
     }
 
+    [TestCase("virtual", new[] { "Zwift Watopia" })]
+    [TestCase("outdoor", new[] { "Kahlenberg climb", "Gravel Marchfeld", "Anninger MTB" })]
+    public async Task Only_the_virtual_or_only_the_outdoor_rides_can_be_listed(string kind, string[] expected)
+    {
+        var page = await ListAsync($"kind={kind}");
+
+        page.Names.ShouldBe(expected);
+        (page.TotalCount, page.Totals.Rides).ShouldBe((expected.Length, expected.Length));
+    }
+
+    [Test]
+    public async Task The_totals_cover_only_the_rides_of_the_kind_listed()
+    {
+        var totals = (await ListAsync("kind=outdoor")).Totals;
+
+        (totals.Distance, totals.MovingTime).ShouldBe((127500, 20160));
+    }
+
+    [Test]
+    public async Task The_export_has_only_the_rides_of_the_kind_listed()
+    {
+        var rides = (await _browser.GetFromJsonAsync<List<RideItem>>("/api/rides/export?kind=virtual"))!;
+
+        rides.Select(r => r.Name).ShouldBe(["Zwift Watopia"]);
+    }
+
     [TestCase("page=0")]
     [TestCase("pageSize=0")]
     [TestCase("pageSize=201")]
     [TestCase("sort=pace")]
     [TestCase("direction=up")]
     [TestCase("from=2026-10-01&to=2026-09-26")]
+    [TestCase("kind=indoor")]
     public async Task Invalid_options_are_refused(string query)
     {
         var response = await _browser.GetAsync($"/api/rides?{query}");

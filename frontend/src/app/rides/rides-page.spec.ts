@@ -52,6 +52,18 @@ describe('RidesPage', () => {
     expect(element.querySelector('.summary')!.textContent).toContain('42.0 km');
   });
 
+  it('lists only the virtual Rides once Virtual is picked, from the first page', async () => {
+    const element = await open(rides);
+    const http = TestBed.inject(HttpTestingController);
+
+    [...element.querySelectorAll<HTMLButtonElement>('.segmented button')].find((b) => b.textContent!.trim() === 'Virtual')!.click();
+    await new Promise((resolve) => setTimeout(resolve));
+    const request = http.expectOne((r) => r.url === '/api/rides');
+
+    expect(request.request.params.get('kind')).toBe('virtual');
+    expect(request.request.params.get('page')).toBeNull();
+  });
+
   it('says so when the Rides cannot be loaded, without totals', async () => {
     const element = await open('error');
 

@@ -31,3 +31,6 @@ export interface RideTotals {
 }
 
 export type RideSortKey = 'date' | 'distance' | 'movingTime' | 'speed' | 'elevation';
+
+/** Which Rides the history lists besides all of them: the virtual ones (e.g. on Zwift) or the outdoor ones. */
+export type RideKind = 'outdoor' | 'virtual';

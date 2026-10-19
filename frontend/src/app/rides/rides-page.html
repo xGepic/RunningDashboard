@@ -10,7 +10,7 @@
     </div>
     @if (totals(); as totals) {
       @if (totals.rides > 0) {
-        <div class="stats summary" aria-label="Totals of all Rides">
+        <div class="stats summary" [attr.aria-label]="'Totals of all ' + kindName() + 'Rides'">
           <div class="stat"><span class="label">Rides</span><span class="value">{{ totals.rides }}</span></div>
           <div class="stat"><span class="label">Distance</span><span class="value">{{ units.distance(totals.distance, 1) }}</span></div>
           <div class="stat"><span class="label">Moving Time</span><span class="value">{{ formatHoursMinutes(totals.movingTime) }}</span></div>
@@ -19,6 +19,15 @@
       }
     }
   </header>
+
+  <div class="toolbar">
+    <div class="segmented" role="group" aria-label="Kind of Ride">
+      <button type="button" [attr.aria-pressed]="!kind()" (click)="showKind(null)">All</button>
+      <button type="button" [attr.aria-pressed]="kind() === 'outdoor'" (click)="showKind('outdoor')">Outdoor</button>
+      <button type="button" [attr.aria-pressed]="kind() === 'virtual'" (click)="showKind('virtual')">Virtual</button>
+    </div>
+  </div>
+
   @if (exportError(); as error) {
     <p class="error" role="alert">{{ error }}</p>
   }
@@ -33,17 +42,17 @@
       <div class="card empty-card">
         <p class="empty">
           @if (page.page > 1) {
-            There are no Rides on page {{ page.page }}.
+            There are no {{ kindName() }}Rides on page {{ page.page }}.
             <button type="button" class="link" (click)="goToPage(1)">Go to the first page</button>
           } @else {
-            No Rides yet.
+            No {{ kindName() }}Rides yet.
           }
         </p>
       </div>
     } @else if (page.items.length === 0) {
       <div class="card empty-card">
         <p class="empty">
-          There are only {{ pageCount() }} pages of Rides.
+          There are only {{ pageCount() }} pages of {{ kindName() }}Rides.
           <button type="button" class="link" (click)="goToPage(pageCount())">Go to the last page</button>
         </p>
       </div>
@@ -68,7 +77,7 @@
                   <td>
                     <div class="name">
                       <a [href]="ride.stravaUrl" target="_blank" rel="noopener" title="Open on Strava">{{ ride.name }}</a>
-                      <span class="badge" [class]="kind(ride).tone">{{ kind(ride).label }}</span>
+                      <span class="badge" [class]="badge(ride).tone">{{ badge(ride).label }}</span>
                     </div>
                   </td>
                   <td class="number">

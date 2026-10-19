@@ -21,6 +21,10 @@ Any entry recorded on Strava, of any sport. The dashboard ignores Activities tha
 A Strava activity with a cycling sport type: road, virtual, gravel or mountain bike (e-bike rides are not Rides). Rides are only listed in the Ride history, with their Avg Speed; they never count toward totals, Training Weeks, Streaks, Records or goals.
 _Avoid_: Cycle, bike ride, workout
 
+**Virtual Ride**:
+A Ride with Strava's virtual sport type, e.g. on Zwift. All other Rides are outdoor Rides, by their sport type alone, so a trainer session recorded as an ordinary Ride counts as outdoor. The Ride history can list only the one or the other.
+_Avoid_: Indoor ride, trainer ride
+
 **Swim**:
 A Strava activity with the swimming sport type, in a pool or open water. Swims are only listed in the Swim history, with their Swim Pace; like Rides, they never count toward totals, Training Weeks, Streaks, Records or goals.
 _Avoid_: Swim workout, session
