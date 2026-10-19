@@ -1,0 +1,42 @@
+# Tests the backend and the frontend on every push to a branch and every pull request; the Release workflow runs it
+# too before it builds the apps.
+name: Tests
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_call:
+
+jobs:
+  # The tests run on Linux: cheaper than Windows, and closer to the Mac the app also runs on.
+  test-backend:
+    name: Test the backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - run: dotnet test backend -c Release
+
+  test-frontend:
+    name: Test the frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      - run: npm test -- --watch=false

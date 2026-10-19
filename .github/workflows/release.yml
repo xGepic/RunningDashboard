@@ -1,6 +1,6 @@
-# Tests everything, builds the packaged apps with publish.ps1 and, for a version tag (git tag v1.0.0 && git push origin
-# v1.0.0), attaches them to a GitHub Release for friends to download. Run by hand (Actions → Release → Run workflow),
-# it only builds them and keeps them as the run's artifact.
+# Runs the Tests workflow, builds the packaged apps with publish.ps1 and, for a version tag (git tag v1.0.0 && git push
+# origin v1.0.0), attaches them to a GitHub Release for friends to download. Run by hand (Actions → Release → Run
+# workflow), it only builds them and keeps them as the run's artifact.
 name: Release
 
 on:
@@ -9,41 +9,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  # The tests run on Linux: cheaper than Windows, and closer to the Mac the app also runs on.
-  test-backend:
-    name: Test the backend
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-dotnet@v6
-        with:
-          dotnet-version: '10.0.x'
-
-      - run: dotnet test backend -c Release
-
-  test-frontend:
-    name: Test the frontend
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-
-      - run: npm ci
-
-      - run: npm test -- --watch=false
+  tests:
+    name: Tests
+    uses: ./.github/workflows/tests.yml
 
   build:
     name: Build the apps
-    needs: [test-backend, test-frontend]
+    needs: tests
     # publish.ps1 builds the Windows and the Mac app on Windows; the Mac one comes out signed and executable.
     runs-on: windows-latest
     steps:
