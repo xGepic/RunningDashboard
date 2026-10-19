@@ -42,7 +42,6 @@ internal sealed record RunExportResponse(
     string StravaUrl);
 
 /// <param name="AverageHeartRate">Beats per minute; none without a heart-rate recording.</param>
-/// <param name="Temperature">°C halfway through the Run; none without a start location or while Open-Meteo has none.</param>
 /// <param name="Detail">"pending", "loaded" or "unavailable": whether Best Efforts and splits are in.</param>
 /// <param name="Route">Google's encoded polyline of the route; none for a Run without GPS.</param>
 /// <param name="MileSplits">Strava's splits per mile, for an Athlete who reads miles; Pace is still per kilometre.</param>
@@ -60,7 +59,6 @@ internal sealed record RunDetailResponse(
     double? AverageHeartRate,
     string StravaUrl,
     string? ShoeName,
-    double? Temperature,
     string Detail,
     string? Route,
     IReadOnlyList<BestEffortResponse> BestEfforts,
@@ -84,7 +82,6 @@ internal sealed record RunDetailResponse(
         run.AverageHeartRate,
         $"https://www.strava.com/activities/{run.Id}",
         shoeName,
-        run.Temperature,
         run.DetailStatus.ToString().ToLowerInvariant(),
         run.Route,
         [.. run.BestEfforts
@@ -95,6 +92,9 @@ internal sealed record RunDetailResponse(
         SplitResponse.Of(run, SplitUnit.Mile),
         fitness);
 }
+
+/// <param name="Temperature">°C halfway through the Run; none without a start location or while Open-Meteo has none.</param>
+internal sealed record RunTemperatureResponse(double? Temperature);
 
 /// <summary>A Fitness Run's figures.</summary>
 /// <param name="AerobicEfficiency">Metres per heartbeat; none without heart rate.</param>

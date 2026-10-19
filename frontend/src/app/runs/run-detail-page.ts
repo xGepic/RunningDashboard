@@ -9,7 +9,7 @@ import { ChartColors, ChartTheme, tooltipHtml } from '../shared/chart-theme';
 import { paceChart, paceLabel } from '../shared/charts';
 import { DistanceUnit, formatDistance, formatDuration } from '../shared/format';
 import { Units } from '../shared/units';
-import { RunDetail, Split } from './run';
+import { RunDetail, RunTemperature, Split } from './run';
 import { RunMap } from './run-map';
 import { ReplayStretch } from './replay';
 
@@ -26,6 +26,10 @@ export class RunDetailPage {
   private readonly theme = inject(ChartTheme);
 
   protected readonly run = httpResource<RunDetail>(() => `/api/runs/${this.id()}`);
+  /** Looked up on Open-Meteo the first time, so it may come after the Run. */
+  protected readonly temperature = httpResource<RunTemperature>(() => `/api/runs/${this.id()}/temperature`);
+  /** °C; none while loading, when it could not be loaded, or for a Run without one. */
+  protected readonly celsius = computed(() => (this.temperature.hasValue() ? this.temperature.value().temperature : null));
   protected readonly formatDuration = formatDuration;
   protected readonly formatEfficiency = formatEfficiency;
   protected readonly formatCadence = formatCadence;

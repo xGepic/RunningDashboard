@@ -38,6 +38,12 @@ export interface MonthTotals {
 
 export type RunSortKey = 'date' | 'distance' | 'movingTime' | 'pace';
 
+/** As returned by GET /api/runs/{id}/temperature, apart from the Run so its page need not wait for Open-Meteo. */
+export interface RunTemperature {
+  /** °C halfway through the Run, from the weather history where it started; none without GPS, on a treadmill, or while it cannot be looked up. */
+  temperature: number | null;
+}
+
 /** A Run with its detail, as returned by GET /api/runs/{id}. */
 export interface RunDetail extends Run {
   elapsedTime: number;
@@ -45,8 +51,6 @@ export interface RunDetail extends Run {
   relativeEffort: number | null;
   /** Beats per minute; none without a heart-rate recording. */
   averageHeartRate: number | null;
-  /** °C halfway through the Run, from the weather history where it started; none without GPS, on a treadmill, or while it cannot be looked up. */
-  temperature: number | null;
   stravaUrl: string;
   /** Whether Best Efforts and Splits are in: still to be fetched, stored, or no longer on Strava. */
   detail: 'pending' | 'loaded' | 'unavailable';

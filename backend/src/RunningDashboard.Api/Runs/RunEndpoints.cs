@@ -101,7 +101,7 @@ public static class RunEndpoints
             return Results.Ok(new RunMonthsResponse(selectedYear, firstRun?.Year, months));
         });
 
-        app.MapGet("/api/runs/{id:long}", async (long id, AppDbContext db, WeatherClient weather, CancellationToken cancellationToken) =>
+        app.MapGet("/api/runs/{id:long}", async (long id, AppDbContext db, CancellationToken cancellationToken) =>
         {
             var run = await db.Runs
                 .Include(r => r.BestEfforts)
@@ -113,10 +113,20 @@ public static class RunEndpoints
             if (run is null)
                 return Results.NotFound();
 
-            await LookUpTemperatureAsync(run, db, weather, cancellationToken);
             var shoe = run.ShoeId is null ? null : await db.Shoes.FindAsync([run.ShoeId], cancellationToken);
             var personalBestDistances = await PersonalBests.DistancesSetByAsync(run, db, cancellationToken);
             return Results.Ok(RunDetailResponse.From(run, shoe?.Name, personalBestDistances, await FitnessOfAsync(run, db, cancellationToken)));
+        });
+
+        // Apart from the Run, so its page need not wait for Open-Meteo.
+        app.MapGet("/api/runs/{id:long}/temperature", async (long id, AppDbContext db, WeatherClient weather, CancellationToken cancellationToken) =>
+        {
+            var run = await db.Runs.FindAsync([id], cancellationToken);
+            if (run is null)
+                return Results.NotFound();
+
+            await LookUpTemperatureAsync(run, db, weather, cancellationToken);
+            return Results.Ok(new RunTemperatureResponse(run.Temperature));
         });
     }
 

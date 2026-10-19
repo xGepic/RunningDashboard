@@ -23,7 +23,7 @@ public sealed class RunTemperatureTests
         var browser = await _app.ConnectWithActivitiesAsync(new TestActivity(1, "Morning Run", new DateTime(2026, 9, 20, 7, 0, 0), 10000, 3600, StartLatLng: Vienna));
         OpenMeteoHasTheDayOf(new DateTime(2026, 9, 20));
 
-        var run = (await browser.GetFromJsonAsync<RunDetailResponse>("/api/runs/1"))!;
+        var run = (await browser.GetFromJsonAsync<RunTemperatureResponse>("/api/runs/1/temperature"))!;
 
         run.Temperature.ShouldBe(11);
         var request = _app.Weather.Requests.ShouldHaveSingleItem();
@@ -38,7 +38,7 @@ public sealed class RunTemperatureTests
         var browser = await _app.ConnectWithActivitiesAsync(new TestActivity(1, "Morning Run", new DateTime(2026, 10, 8, 7, 0, 0), 10000, 3600, StartLatLng: Vienna));
         OpenMeteoHasTheDayOf(new DateTime(2026, 10, 8));
 
-        var run = (await browser.GetFromJsonAsync<RunDetailResponse>("/api/runs/1"))!;
+        var run = (await browser.GetFromJsonAsync<RunTemperatureResponse>("/api/runs/1/temperature"))!;
 
         run.Temperature.ShouldBe(11);
         _app.Weather.Requests.ShouldHaveSingleItem().Host.ShouldBe("api.open-meteo.com");
@@ -50,8 +50,8 @@ public sealed class RunTemperatureTests
         var browser = await _app.ConnectWithActivitiesAsync(new TestActivity(1, "Morning Run", new DateTime(2026, 9, 20, 7, 0, 0), 10000, 3600, StartLatLng: Vienna));
         OpenMeteoHasTheDayOf(new DateTime(2026, 9, 20));
 
-        await browser.GetFromJsonAsync<RunDetailResponse>("/api/runs/1");
-        var again = (await browser.GetFromJsonAsync<RunDetailResponse>("/api/runs/1"))!;
+        await browser.GetFromJsonAsync<RunTemperatureResponse>("/api/runs/1/temperature");
+        var again = (await browser.GetFromJsonAsync<RunTemperatureResponse>("/api/runs/1/temperature"))!;
 
         again.Temperature.ShouldBe(11);
         _app.Weather.Requests.Count.ShouldBe(1);
@@ -63,11 +63,10 @@ public sealed class RunTemperatureTests
         var browser = await _app.ConnectWithActivitiesAsync(new TestActivity(1, "Morning Run", new DateTime(2026, 9, 20, 7, 0, 0), 10000, 3600, StartLatLng: Vienna));
         _app.Weather.IsDown();
 
-        var whileDown = (await browser.GetFromJsonAsync<RunDetailResponse>("/api/runs/1"))!;
+        var whileDown = (await browser.GetFromJsonAsync<RunTemperatureResponse>("/api/runs/1/temperature"))!;
         OpenMeteoHasTheDayOf(new DateTime(2026, 9, 20));
-        var later = (await browser.GetFromJsonAsync<RunDetailResponse>("/api/runs/1"))!;
+        var later = (await browser.GetFromJsonAsync<RunTemperatureResponse>("/api/runs/1/temperature"))!;
 
-        whileDown.Name.ShouldBe("Morning Run");
         whileDown.Temperature.ShouldBeNull();
         later.Temperature.ShouldBe(11);
     }
@@ -78,7 +77,7 @@ public sealed class RunTemperatureTests
         var browser = await _app.ConnectWithActivitiesAsync(new TestActivity(1, "Morning Run", new DateTime(2026, 9, 20, 7, 0, 0), 10000, 3600, StartLatLng: Vienna));
         _app.Weather.HasHourlyTemperatures(new DateTime(2026, 9, 20), [.. Enumerable.Range(0, 48).Select(hour => hour < 6 ? (double?)hour : null)]);
 
-        var run = (await browser.GetFromJsonAsync<RunDetailResponse>("/api/runs/1"))!;
+        var run = (await browser.GetFromJsonAsync<RunTemperatureResponse>("/api/runs/1/temperature"))!;
 
         run.Temperature.ShouldBeNull();
     }
@@ -91,13 +90,36 @@ public sealed class RunTemperatureTests
             new TestActivity(2, "Treadmill", new DateTime(2026, 9, 21, 12, 0, 0), 5000, 1800, Trainer: true, StartLatLng: Vienna));
         OpenMeteoHasTheDayOf(new DateTime(2026, 9, 20));
 
-        var withoutGps = (await browser.GetFromJsonAsync<RunDetailResponse>("/api/runs/1"))!;
-        var treadmill = (await browser.GetFromJsonAsync<RunDetailResponse>("/api/runs/2"))!;
+        var withoutGps = (await browser.GetFromJsonAsync<RunTemperatureResponse>("/api/runs/1/temperature"))!;
+        var treadmill = (await browser.GetFromJsonAsync<RunTemperatureResponse>("/api/runs/2/temperature"))!;
 
         withoutGps.Temperature.ShouldBeNull();
         treadmill.Temperature.ShouldBeNull();
         _app.Weather.Requests.ShouldBeEmpty();
     }
 
-    private sealed record RunDetailResponse(long Id, string Name, double? Temperature);
+    [Test]
+    public async Task A_runs_page_loads_without_waiting_for_open_meteo()
+    {
+        var browser = await _app.ConnectWithActivitiesAsync(new TestActivity(1, "Morning Run", new DateTime(2026, 9, 20, 7, 0, 0), 10000, 3600, StartLatLng: Vienna));
+        _app.Weather.IsDown();
+
+        var run = await browser.GetAsync("/api/runs/1");
+
+        run.EnsureSuccessStatusCode();
+        (await run.Content.ReadAsStringAsync()).ShouldNotContain("temperature");
+        _app.Weather.Requests.ShouldBeEmpty();
+    }
+
+    [Test]
+    public async Task An_unknown_run_has_no_temperature()
+    {
+        var browser = await _app.ConnectWithActivitiesAsync();
+
+        var response = await browser.GetAsync("/api/runs/99/temperature");
+
+        response.StatusCode.ShouldBe(System.Net.HttpStatusCode.NotFound);
+    }
+
+    private sealed record RunTemperatureResponse(double? Temperature);
 }

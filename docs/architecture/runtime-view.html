@@ -486,7 +486,7 @@
       ],
       notes: [
         'When the tab comes back into view more than 15 minutes after the last sync, SyncState first asks for the status, then starts a sync with POST /api/sync unless one runs or Strava waits to be reconnected; the page reloads as above.',
-        'The sidebar\'s newest activity and Shoe badge reload the same way. A Run\'s page also loads Leaflet, and its map loads tiles straight from the tile servers. The first time a Run\'s page is opened, the backend looks up its Temperature on Open-Meteo and keeps it.',
+        'The sidebar\'s newest activity and Shoe badge reload the same way. A Run\'s page also loads Leaflet, and its map loads tiles straight from the tile servers. The first time a Run\'s page is opened, it asks for the Temperature apart from the Run (GET /api/runs/{id}/temperature), and the backend looks it up on Open-Meteo and keeps it.',
       ],
     },
   ];
