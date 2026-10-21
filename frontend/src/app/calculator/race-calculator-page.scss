@@ -1,0 +1,98 @@
+.calculator {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 720px;
+}
+
+.inputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+
+  .field {
+    width: 180px;
+  }
+
+  /* Worked out from the other field; typing in it makes it the one that counts. */
+  input.computed {
+    color: var(--accent-light);
+  }
+}
+
+.field-error {
+  margin-top: -12px;
+}
+
+.sliders {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.slider {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  align-items: center;
+  gap: 4px 16px;
+
+  .slider-label {
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+
+  /* Not the boxed text field the global input style draws. */
+  input[type='range'] {
+    width: 100%;
+    height: 20px;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    box-shadow: none;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  .ends {
+    display: flex;
+    grid-column: 2;
+    justify-content: space-between;
+    color: var(--text-faint);
+    font-size: 11px;
+  }
+}
+
+.result {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px 40px;
+  margin: 0;
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  dt {
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+
+  dd {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 12.5px;
+  }
+
+  .figure {
+    color: var(--text);
+    font-size: 42px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+}

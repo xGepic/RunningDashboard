@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { calendarRoutes } from './calendar/calendar-routes';
+import { RaceCalculatorPage } from './calculator/race-calculator-page';
 import { TrainingPlanPage } from './goal-races/training-plan-page';
 import { FitnessPage } from './fitness/fitness-page';
 import { OverviewPage } from './overview/overview-page';
@@ -26,6 +27,7 @@ export const routes: Routes = [
   { path: 'swims', loadComponent: () => import('./swims/swims-page').then((m) => m.SwimsPage), title: 'Swims · Running Dashboard' },
   ...calendarRoutes,
   { path: 'shoes', component: ShoesPage, title: 'Shoes · Running Dashboard' },
+  { path: 'calculator', component: RaceCalculatorPage, title: 'Race Calculator · Running Dashboard' },
   { path: 'settings', component: SettingsPage, title: 'Settings · Running Dashboard' },
   { path: 'training', component: TrainingPage, title: 'Training · Running Dashboard' },
   { path: 'training/plan/:id', component: TrainingPlanPage, title: 'Training Plan · Running Dashboard' },

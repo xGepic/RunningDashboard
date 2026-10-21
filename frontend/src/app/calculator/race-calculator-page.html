@@ -1,0 +1,71 @@
+<div class="page">
+  <header class="page-header">
+    <div class="titles">
+      <span class="eyebrow">Calculator</span>
+      <h1>Pace and Race Time</h1>
+      <p class="subtitle">Type a pace for the finish time, or a finish time for the pace, over a race distance.</p>
+    </div>
+  </header>
+
+  <section class="card calculator">
+    <div class="inputs">
+      <label class="field">
+        Distance
+        <select #distancePicker (change)="distance.set(+distancePicker.value)">
+          @for (option of distances; track option.distance) {
+            <option [value]="option.distance" [selected]="option.distance === distance()">{{ option.name }}</option>
+          }
+        </select>
+      </label>
+      <label class="field">
+        Pace (min/{{ units.unit() }})
+        <input #paceInput name="pace" class="mono" inputmode="numeric" placeholder="m:ss" [class.computed]="source() !== 'pace'"
+               [value]="fieldValue('pace')" (input)="type('pace', paceInput.value)"
+               [attr.aria-invalid]="source() === 'pace' && typedInvalid()" />
+      </label>
+      <label class="field">
+        Finish time
+        <input #timeInput name="time" class="mono" inputmode="numeric" placeholder="h:mm:ss" [class.computed]="source() !== 'time'"
+               [value]="fieldValue('time')" (input)="type('time', timeInput.value)"
+               [attr.aria-invalid]="source() === 'time' && typedInvalid()" />
+      </label>
+    </div>
+    @if (typedInvalid()) {
+      <span class="field-error">
+        {{ source() === 'pace' ? 'Enter the pace as m:ss, e.g. 4:30.' : 'Enter the finish time as h:mm:ss or m:ss, e.g. 1:45:00.' }}
+      </span>
+    }
+
+    <div class="sliders">
+      <label class="slider">
+        <span class="slider-label">Pace</span>
+        <!-- min and max before value, so the value is not held to the slider's old ends -->
+        <input #paceSlider type="range" name="pace-slider" step="1" [min]="paceRange().min" [max]="paceRange().max"
+               [value]="sliderValue('pace')" [attr.aria-valuetext]="units.pace(pace())" (input)="slide('pace', +paceSlider.value)" />
+        <span class="ends mono"><span>{{ formatDuration(paceRange().min) }}</span><span>{{ formatDuration(paceRange().max) }}</span></span>
+      </label>
+      <label class="slider">
+        <span class="slider-label">Finish time</span>
+        <input #timeSlider type="range" name="time-slider" step="1" [min]="timeRange().min" [max]="timeRange().max"
+               [value]="sliderValue('time')" [attr.aria-valuetext]="finishTime() === null ? null : formatDuration(finishTime()!)"
+               (input)="slide('time', +timeSlider.value)" />
+        <span class="ends mono"><span>{{ formatDuration(timeRange().min) }}</span><span>{{ formatDuration(timeRange().max) }}</span></span>
+      </label>
+    </div>
+
+    <dl class="result" aria-live="polite">
+      <div>
+        <dt>Finish time</dt>
+        <dd class="figure">{{ finishTime() === null ? '–' : formatDuration(finishTime()!) }}</dd>
+      </div>
+      <div>
+        <dt>Pace</dt>
+        <dd class="figure">{{ units.pace(pace()) }}</dd>
+      </div>
+      <div>
+        <dt>Distance</dt>
+        <dd class="mono">{{ units.distance(distance()) }}</dd>
+      </div>
+    </dl>
+  </section>
+</div>
