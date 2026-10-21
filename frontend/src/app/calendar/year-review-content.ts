@@ -1,8 +1,6 @@
 import { DatePipe, formatDate } from '@angular/common';
 import { Component, LOCALE_ID, booleanAttribute, computed, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { YearAchievement } from '../achievements/achievement';
-import { AchievementMedal } from '../achievements/achievement-medal';
 import { MonthTotals } from '../runs/run';
 import { fullMonthNames, monthNames } from '../shared/dates';
 import { formatDifference, formatDuration, formatHoursMinutes, formatWhole, percentChange } from '../shared/format';
@@ -16,7 +14,7 @@ import { ReviewTotals, YearReview, comparedWith, isSoFar, reviewTitle } from './
  */
 @Component({
   selector: 'app-year-review-content',
-  imports: [AchievementMedal, DatePipe, RouterLink],
+  imports: [DatePipe, RouterLink],
   templateUrl: './year-review-content.html',
   styleUrl: './year-review-content.scss',
 })
@@ -24,8 +22,6 @@ export class YearReviewContent {
   readonly review = input.required<YearReview>();
   /** The year's totals per month, as the Calendar has them, for the bars in the headline; none while they load. */
   readonly months = input<MonthTotals[] | null>(null);
-  /** The Achievements earned in the year. */
-  readonly achievements = input<YearAchievement[]>([]);
   readonly forImage = input(false, { transform: booleanAttribute });
   /** The Athlete's first name, for the image's title. */
   readonly athleteName = input<string | null>(null);
@@ -126,13 +122,6 @@ export class YearReviewContent {
     const set = `${bests.length} set in ${this.review().year}`;
     const leap = bests.find((b) => b.biggestLeap);
     return leap ? `${set} · biggest leap: ${leap.name}, ${leap.percent}` : set;
-  });
-
-  /** "10 earned in 2026 · 4 for the first time"; a repeatable one counts once, however often it was earned. */
-  protected readonly achievementSummary = computed(() => {
-    const achievements = this.achievements();
-    const firsts = achievements.filter((a) => a.firstTime).length;
-    return `${achievements.length} earned in ${this.review().year}${firsts ? ` · ${firsts} for the first time` : ''}`;
   });
 
   /** "6 Jan – 12 Jan"; on the image "Jan", or "Jan – Feb" across two months. */

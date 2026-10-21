@@ -125,28 +125,6 @@
     </section>
   }
 
-  @if (achievements().length) {
-    <section class="achievements" aria-labelledby="achievements-title">
-      <div class="section-head">
-        <h2 class="section-title" id="achievements-title">Achievements</h2>
-        <span class="summary">{{ achievementSummary() }}</span>
-      </div>
-      <ul class="achievement-medals">
-        @for (item of achievements(); track item.achievement.id) {
-          <li>
-            <app-achievement-medal [achievement]="item.achievement" [size]="60" />
-            <span class="name">{{ item.achievement.name }}</span>
-            @if (item.achievement.repeatable) {
-              <span class="detail times">×{{ item.times }}</span>
-            } @else {
-              <a class="detail" [routerLink]="forImage() ? null : ['/runs', item.last.runId]">{{ item.last.date | date: dayFormat() }}</a>
-            }
-          </li>
-        }
-      </ul>
-    </section>
-  }
-
   @if (review.goalRaces.length) {
     <section class="card goal-races">
       <div class="card-header">

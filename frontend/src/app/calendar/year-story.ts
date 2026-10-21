@@ -1,7 +1,5 @@
 import { DatePipe } from '@angular/common';
 import { Component, ElementRef, afterNextRender, computed, inject, input, output, signal } from '@angular/core';
-import { YearAchievement } from '../achievements/achievement';
-import { AchievementMedal } from '../achievements/achievement-medal';
 import { MonthTotals } from '../runs/run';
 import { CountUp } from '../shared/count-up';
 import { fullMonthNames, monthNames } from '../shared/dates';
@@ -10,7 +8,7 @@ import { prefersReducedMotion } from '../shared/motion';
 import { Units } from '../shared/units';
 import { YearReview, comparedWith, isSoFar, reviewTitle } from './review';
 
-type CardKind = 'intro' | 'distance' | 'time' | 'months' | 'longest' | 'streak' | 'bests' | 'achievements' | 'races' | 'shoe' | 'outro';
+type CardKind = 'intro' | 'distance' | 'time' | 'months' | 'longest' | 'streak' | 'bests' | 'races' | 'shoe' | 'outro';
 
 /** How long a card stays before the next one, in seconds. */
 const cardSeconds = 5;
@@ -26,7 +24,7 @@ const holdMilliseconds = 250;
  */
 @Component({
   selector: 'app-year-story',
-  imports: [AchievementMedal, CountUp, DatePipe],
+  imports: [CountUp, DatePipe],
   templateUrl: './year-story.html',
   styleUrl: './year-story.scss',
   host: {
@@ -43,8 +41,6 @@ export class YearStory {
   readonly review = input.required<YearReview>();
   /** The year's totals per month, for the bars; none while they load. */
   readonly months = input<MonthTotals[] | null>(null);
-  /** The Achievements earned in the year. */
-  readonly achievements = input<YearAchievement[]>([]);
   /** The Athlete's first name, for the title. */
   readonly athleteName = input<string | null>(null);
 
@@ -105,7 +101,6 @@ export class YearStory {
       longest: review.longestRun !== null,
       streak: review.longestStreak !== null,
       bests: review.personalBests.length > 0,
-      achievements: this.achievements().length > 0,
       races: review.goalRaces.length > 0,
       shoe: review.mostUsedShoe !== null,
       outro: true,
@@ -211,7 +206,7 @@ export class YearStory {
   }
 
   private secondsFor(kind: CardKind): number {
-    const items = kind === 'bests' ? this.review().personalBests.length : kind === 'achievements' ? this.achievements().length : 0;
+    const items = kind === 'bests' ? this.review().personalBests.length : 0;
     return Math.min(maxCardSeconds, cardSeconds + items * secondsPerItem);
   }
 

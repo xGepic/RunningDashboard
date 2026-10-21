@@ -105,20 +105,6 @@
             }
           </ul>
         }
-        @case ('achievements') {
-          <p class="eyebrow in" style="--i: 0">Achievements</p>
-          <ul class="achievement-medals">
-            @for (item of achievements(); track item.achievement.id) {
-              <li class="pop" [style.--i]="$index + 1">
-                <app-achievement-medal [achievement]="item.achievement" [size]="84" />
-                <span class="name">{{ item.achievement.name }}</span>
-                @if (item.achievement.repeatable) {
-                  <span class="times">×{{ item.times }}</span>
-                }
-              </li>
-            }
-          </ul>
-        }
         @case ('races') {
           <p class="eyebrow in" style="--i: 0">Goal Races</p>
           <ul class="races">

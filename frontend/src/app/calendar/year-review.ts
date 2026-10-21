@@ -1,7 +1,6 @@
 import { HttpClient, httpResource } from '@angular/common/http';
 import { Component, ElementRef, Injector, afterNextRender, computed, inject, input, signal, viewChild } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { Achievement, earnedIn } from '../achievements/achievement';
 import { Connection } from '../connection/connection';
 import { MonthTotals } from '../runs/run';
 import { ImageDownload } from '../shared/image-download';
@@ -31,9 +30,6 @@ export class YearReviewPanel {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   protected readonly review = httpResource<YearReview>(() => ({ url: '/api/review', params: { year: String(this.year()) } }));
-  private readonly allAchievements = httpResource<Achievement[]>(() => '/api/achievements');
-  /** The Achievements earned in the year; none while they load or when they could not be loaded. */
-  readonly achievements = computed(() => (this.allAchievements.hasValue() ? earnedIn(this.year(), this.allAchievements.value()) : []));
 
   private readonly downloading = signal(false);
   /** Only a year with Runs makes an image, and only one at a time. */
@@ -49,10 +45,7 @@ export class YearReviewPanel {
   protected readonly story = signal<{ athleteName: string | null } | null>(null);
 
   constructor() {
-    reloadOnSync(() => {
-      this.review.reload();
-      this.allAchievements.reload();
-    });
+    reloadOnSync(() => this.review.reload());
   }
 
   /** Plays the year's story over the whole window, titled with the Athlete's first name. */
