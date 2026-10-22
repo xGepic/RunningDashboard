@@ -40,14 +40,10 @@ It fills `deploy/` (not committed; the apps are over 100 MB):
 - `deploy/win` and `deploy/RunningDashboard-win.zip`: `RunningDashboard.exe` for Windows
 - `deploy/mac` and `deploy/RunningDashboard-mac.tar.gz`: `RunningDashboard` for the Mac
 
-GitHub can build them too: pushing a version tag runs all tests, builds both apps and attaches them to a GitHub Release (in a private repository, only people with access to it can download them there):
+GitHub can build them too: **Actions → Release → Run workflow** runs all tests, builds both apps and attaches them to the GitHub Release "latest", replacing the one before (in a private repository, only people with access to it can download them there). The download links stay the same from one run to the next:
 
-```sh
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-(**Actions → Release → Run workflow** builds them without a release, as the run's artifact.)
+- <https://github.com/xGepic/RunningDashboard/releases/latest/download/RunningDashboard-win.zip>
+- <https://github.com/xGepic/RunningDashboard/releases/latest/download/RunningDashboard-mac.tar.gz>
 
 Send them the zip or the tarball (about 50 MB). It holds no data and no credentials of yours. They:
 

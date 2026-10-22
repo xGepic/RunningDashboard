@@ -1,11 +1,9 @@
-# Runs the Tests workflow, builds the packaged apps with publish.ps1 and, for a version tag (git tag v1.0.0 && git push
-# origin v1.0.0), attaches them to a GitHub Release for friends to download. Run by hand (Actions → Release → Run
-# workflow), it only builds them and keeps them as the run's artifact.
+# Run by hand (Actions → Release → Run workflow): runs the Tests workflow, builds the packaged apps with publish.ps1
+# and attaches them to the GitHub Release "latest" for friends to download, replacing the one before. Its downloads
+# keep their links: https://github.com/<owner>/<repo>/releases/latest/download/RunningDashboard-win.zip
 name: Release
 
 on:
-  push:
-    tags: ['v*']
   workflow_dispatch:
 
 jobs:
@@ -44,7 +42,6 @@ jobs:
   publish:
     name: Publish the release
     needs: build
-    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -53,10 +50,12 @@ jobs:
         with:
           name: RunningDashboard
 
+      # The previous "latest" goes, its tag too, so the new one is tagged on the commit that was just built.
       - env:
           GH_TOKEN: ${{ github.token }}
-        run: >
-          gh release create "$GITHUB_REF_NAME"
-          RunningDashboard-win.zip RunningDashboard-mac.tar.gz
-          --repo "$GITHUB_REPOSITORY"
-          --title "Running Dashboard $GITHUB_REF_NAME" --generate-notes
+        run: |
+          gh release delete latest --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes || true
+          gh release create latest RunningDashboard-win.zip RunningDashboard-mac.tar.gz \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --latest \
+            --title "Running Dashboard" \
+            --notes "Built $(date -u '+%Y-%m-%d %H:%M') UTC from ${GITHUB_SHA::7} on $GITHUB_REF_NAME."
