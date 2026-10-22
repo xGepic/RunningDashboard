@@ -7,6 +7,7 @@ import { formatDuration, formatHoursMinutes } from '../shared/format';
 import { HistoryList, ListParams, requestParams } from '../shared/history-list';
 import { SportSwitch } from '../shared/sport-switch';
 import { Units } from '../shared/units';
+import { Shoe } from '../shoes/shoe';
 import { Run, RunPage, RunSortKey } from './run';
 import { RunExport, runTable } from './run-export';
 
@@ -29,6 +30,8 @@ export class RunsPage extends HistoryList<RunSortKey, Run> {
   readonly search = input<string>();
   /** "2026-10-05": shows that Training Week instead of a month; any day of it will do. */
   readonly week = input<string>();
+  /** A Shoe's id: lists every Run logged with it, of all time, instead of a month or week. */
+  readonly shoe = input<string>();
 
   protected readonly selectedMonth = computed(() => {
     const month = this.month();
@@ -47,8 +50,9 @@ export class RunsPage extends HistoryList<RunSortKey, Run> {
   });
   protected readonly isCurrentWeek = computed(() => this.weekStart()! >= mondayOf(today()));
 
-  /** The days listed: the Training Week asked for, or else the month. */
+  /** The days listed: the Training Week asked for, or else the month; none for a Shoe's Runs. */
   protected readonly period = computed(() => {
+    if (this.shoe()) return null;
     const monday = this.weekStart();
     return monday ? { from: monday, to: addDays(monday, 6) } : { from: this.monthStart(), to: lastDayOf(this.monthStart()) };
   });
@@ -56,12 +60,12 @@ export class RunsPage extends HistoryList<RunSortKey, Run> {
   /** Distances and Pace in the Distance Unit from Settings. */
   protected readonly units = inject(Units);
 
-  /** A month's or Training Week's Runs. */
+  /** A month's or Training Week's Runs, or a Shoe's. */
   protected readonly runs = httpResource<RunPage>(() => ({
     url: '/api/runs',
     params: requestParams({
-      from: isoDate(this.period().from),
-      to: isoDate(this.period().to),
+      ...this.periodParams(),
+      shoe: this.shoe(),
       search: this.search(),
       sort: this.sort(),
       direction: this.direction(),
@@ -74,6 +78,10 @@ export class RunsPage extends HistoryList<RunSortKey, Run> {
   protected readonly ascendingFirst: readonly RunSortKey[] = ['pace'];
 
   protected readonly searched = computed(() => !!this.search());
+
+  /** Only loaded for a Shoe's Runs, for its name. */
+  private readonly shoes = httpResource<Shoe[]>(() => (this.shoe() ? '/api/shoes' : undefined));
+  protected readonly shoeName = computed(() => (this.shoes.hasValue() ? this.shoes.value().find((s) => s.id === this.shoe())?.name : undefined));
 
   protected readonly longRunDistance = longRunDistance;
 
@@ -124,6 +132,11 @@ export class RunsPage extends HistoryList<RunSortKey, Run> {
     return currentMonth();
   }
 
+  /** Back from a Shoe's Runs to the current month's. */
+  protected clearShoe(): void {
+    this.navigate({ shoe: null, month: null, week: null, page: null });
+  }
+
   /** The current month stays out of the URL, so "/runs" always opens on it. */
   protected showMonth(month: string): void {
     if (!month) return;
@@ -154,21 +167,38 @@ export class RunsPage extends HistoryList<RunSortKey, Run> {
     this.router.navigate(['/runs', runId]);
   }
 
-  /** The month or Training Week as listed, search and sort order included, or every Run in the list's sort order. */
+  /** The month, Training Week or Shoe as listed, search and sort order included, or every Run in the list's sort order. */
   protected exportRuns(scope: 'period' | 'all'): void {
     const order = { sort: this.sort(), direction: this.direction() };
-    const { from, to } = this.period();
     const params = scope === 'period'
-      ? requestParams({ from: isoDate(from), to: isoDate(to), search: this.search(), ...order })
+      ? requestParams({ ...this.periodParams(), shoe: this.shoe(), search: this.search(), ...order })
       : requestParams(order);
+    this.exportCsv<RunExport>('/api/runs/export', params, this.exportFileName(scope), (runs) => runTable(runs, this.units.unit()));
+  }
+
+  /** "runs-2026-09.csv", "runs-week-2026-10-05.csv", "runs-nike-pegasus-41.csv", or "runs-2026-10-12.csv" for all. */
+  private exportFileName(scope: 'period' | 'all'): string {
     const monday = this.weekStart();
-    const fileName = scope === 'all' ? this.datedFileName('runs') : monday ? `runs-week-${isoDate(monday)}.csv` : `runs-${this.selectedMonth()}.csv`;
-    this.exportCsv<RunExport>('/api/runs/export', params, fileName, (runs) => runTable(runs, this.units.unit()));
+    const shoe = this.shoe();
+    if (scope === 'all') return this.datedFileName('runs');
+    if (shoe) return `runs-${slug(this.shoeName() ?? '') || shoe}.csv`;
+    return monday ? `runs-week-${isoDate(monday)}.csv` : `runs-${this.selectedMonth()}.csv`;
+  }
+
+  /** The listed days as the request's from and to; none for a Shoe's Runs. */
+  private periodParams(): { from?: string; to?: string } {
+    const period = this.period();
+    return period ? { from: isoDate(period.from), to: isoDate(period.to) } : {};
   }
 
   protected clearSearch(): void {
     this.navigate({ search: null, page: null });
   }
+}
+
+/** "nike-pegasus-41" for "Nike Pegasus 41". */
+function slug(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
 /** "2026-10-12": the day a Run started, where it happened. */

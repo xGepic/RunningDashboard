@@ -95,6 +95,26 @@ public sealed class ShoesTests
         marathon.ShoeName.ShouldBe("Adidas Adizero SL2");
     }
 
+    [Test]
+    public async Task The_runs_of_a_shoe_are_the_ones_logged_with_it_newest_first()
+    {
+        var pegasus = (await _browser.GetFromJsonAsync<RunPage>("/api/runs?shoe=g31444377"))!;
+        var adizero = (await _browser.GetFromJsonAsync<RunPage>("/api/runs?shoe=g33395946&sort=distance&direction=asc"))!;
+        var novablast = (await _browser.GetFromJsonAsync<RunPage>("/api/runs?shoe=g29876543"))!;
+
+        pegasus.Items.Select(r => r.Name).ShouldBe(["Evening Run", "Lauf am Nachmittag", "Treadmill intervals"]);
+        adizero.Items.Select(r => r.Name).ShouldBe(["Wienerwald trail", "Finisher."]);
+        novablast.Items.ShouldBeEmpty();
+    }
+
+    [Test]
+    public async Task A_shoes_export_holds_only_its_runs()
+    {
+        var runs = (await _browser.GetFromJsonAsync<List<RunWithShoe>>("/api/runs/export?shoe=g33395946"))!;
+
+        runs.ShouldBe([new RunWithShoe("Finisher.", "Adidas Adizero SL2"), new RunWithShoe("Wienerwald trail", "Adidas Adizero SL2")]);
+    }
+
     /// <summary>Syncs an hour later, with no new Activities and the athlete's Shoes as in the fixture.</summary>
     private async Task SyncAgainAsync(string athleteFixture)
     {

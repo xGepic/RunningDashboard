@@ -15,9 +15,9 @@
     } @else {
       <section class="shoes">
         @for (card of cards(); track card.shoe.id) {
-          <article class="card shoe" [class.retired]="card.shoe.retired">
+          <article class="card shoe" [class.retired]="card.shoe.retired" (click)="open(card.shoe.id, $event)">
             <div class="head">
-              <h2>{{ card.shoe.name }}</h2>
+              <h2><a routerLink="/runs" [queryParams]="{ shoe: card.shoe.id }" title="The Runs in this Shoe">{{ card.shoe.name }}</a></h2>
               @if (card.shoe.retired) {
                 <span class="badge muted">Retired</span>
               } @else if (card.latest) {

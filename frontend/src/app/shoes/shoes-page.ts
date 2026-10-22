@@ -1,6 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { Component, computed, inject } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { AthleteSettings } from '../shared/athlete-settings';
 import { formatOneDecimal } from '../shared/format';
 import { shoeWear } from '../shared/shoe-wear';
@@ -13,7 +14,7 @@ const shoeColors = ['var(--accent)', 'var(--teal)', 'var(--amber)', 'var(--met)'
 
 @Component({
   selector: 'app-shoes-page',
-  imports: [DatePipe],
+  imports: [DatePipe, RouterLink],
   templateUrl: './shoes-page.html',
   styleUrl: './shoes-page.scss',
 })
@@ -22,6 +23,7 @@ export class ShoesPage {
   /** Distances in the Distance Unit, the Maximum Distance too. */
   protected readonly units = inject(Units);
   private readonly settings = inject(AthleteSettings);
+  private readonly router = inject(Router);
 
   /** Each Shoe with its share of all Shoes' distance; the first active one is the most recently used. */
   protected readonly cards = computed(() => {
@@ -59,6 +61,12 @@ export class ShoesPage {
 
   constructor() {
     reloadOnSync(() => this.shoes.reload());
+  }
+
+  /** The whole card opens the Shoe's Runs; its name stays a link of its own. */
+  protected open(shoeId: string, event: MouseEvent): void {
+    if ((event.target as HTMLElement).closest('a')) return;
+    this.router.navigate(['/runs'], { queryParams: { shoe: shoeId } });
   }
 
   /** How far a Shoe is towards the Maximum Distance, the same for every Shoe and set in Settings. */

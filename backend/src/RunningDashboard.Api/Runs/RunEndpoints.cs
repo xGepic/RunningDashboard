@@ -27,7 +27,8 @@ public static class RunEndpoints
 
     public static void MapRunEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapGet("/api/runs", async ([AsParameters] ListQuery query, AppDbContext db, CancellationToken cancellationToken) =>
+        // With a shoe (Strava's gear id), only the Runs logged with that Shoe.
+        app.MapGet("/api/runs", async ([AsParameters] ListQuery query, string? shoe, AppDbContext db, CancellationToken cancellationToken) =>
         {
             var errors = query.Validate(Figures.Keys, "Runs");
             if (errors.Count > 0)
@@ -37,6 +38,7 @@ public static class RunEndpoints
             // name search case-insensitive beyond ASCII (SQLite's LIKE is not), independent of the server's culture.
             var shoeNames = await db.GetShoeNamesAsync(cancellationToken);
             var runs = (await db.Runs
+                    .Where(r => shoe == null || r.ShoeId == shoe)
                     .Select(r => new { r.Id, r.Name, r.SportType, r.StartLocal, r.Distance, r.MovingTime, r.ShoeId })
                     .ToListAsync(cancellationToken))
                 .Select(r => new RunResponse(
@@ -51,7 +53,7 @@ public static class RunEndpoints
 
         // Every Run the list would show, on one "page", with what a spreadsheet wants besides; the page and its size
         // are ignored.
-        app.MapGet("/api/runs/export", async ([AsParameters] ListQuery query, AppDbContext db, CancellationToken cancellationToken) =>
+        app.MapGet("/api/runs/export", async ([AsParameters] ListQuery query, string? shoe, AppDbContext db, CancellationToken cancellationToken) =>
         {
             var errors = query.Validate(Figures.Keys, "Runs");
             if (errors.Count > 0)
@@ -59,6 +61,7 @@ public static class RunEndpoints
 
             var shoeNames = await db.GetShoeNamesAsync(cancellationToken);
             var runs = (await db.Runs
+                    .Where(r => shoe == null || r.ShoeId == shoe)
                     .Select(r => new
                     {
                         r.Id, r.Name, r.SportType, r.StartLocal, r.Distance, r.MovingTime, r.ElevationGain, r.AverageHeartRate, r.Cadence,

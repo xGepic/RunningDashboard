@@ -8,7 +8,7 @@
         <details class="export-menu" #exportMenu>
           <summary class="btn" [class.busy]="exporting()">Export CSV</summary>
           <div class="menu">
-            <button type="button" [disabled]="exporting()" (click)="exportMenu.open = false; exportRuns('period')">{{ weekStart() ? 'This week' : 'This month' }}</button>
+            <button type="button" [disabled]="exporting()" (click)="exportMenu.open = false; exportRuns('period')">{{ shoe() ? 'This Shoe' : weekStart() ? 'This week' : 'This month' }}</button>
             <button type="button" [disabled]="exporting()" (click)="exportMenu.open = false; exportRuns('all')">All Runs</button>
           </div>
         </details>
@@ -28,10 +28,16 @@
   }
 
   <div class="toolbar">
-    @if (weekStart(); as monday) {
+    @if (shoe()) {
+      <nav class="period-nav" aria-label="Shoe">
+        <h2>{{ shoeName() ?? 'Shoe' }}</h2>
+        <a class="link" routerLink="/shoes">All Shoes</a>
+        <button type="button" class="link" (click)="clearShoe()">All Runs</button>
+      </nav>
+    } @else if (weekStart(); as monday) {
       <nav class="period-nav" aria-label="Training Week">
         <button type="button" class="step" (click)="shiftWeek(-1)" aria-label="Previous week" title="Previous week">←</button>
-        <h2>{{ monday | date: 'd MMM' }} – {{ period().to | date: 'd MMM y' }}</h2>
+        <h2>{{ monday | date: 'd MMM' }} – {{ period()!.to | date: 'd MMM y' }}</h2>
         <button type="button" class="step" (click)="shiftWeek(1)" [disabled]="isCurrentWeek()" aria-label="Next week" title="Next week">→</button>
         <button type="button" class="step today" (click)="showWeek(thisWeek())" [disabled]="isCurrentWeek()"
                 title="Back to this week">Today</button>
@@ -50,10 +56,12 @@
     }
 
     <form class="filters" role="search" (submit)="$event.preventDefault()">
-      <label class="inline month">
-        <span>Month</span>
-        <input #monthPicker type="month" [value]="weekStart() ? weeksMonth() : selectedMonth()" (change)="showMonth(monthPicker.value)" />
-      </label>
+      @if (!shoe()) {
+        <label class="inline month">
+          <span>Month</span>
+          <input #monthPicker type="month" [value]="weekStart() ? weeksMonth() : selectedMonth()" (change)="showMonth(monthPicker.value)" />
+        </label>
+      }
       <label class="inline search">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
              aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-4-4" /></svg>
@@ -79,6 +87,8 @@
           @if (page.page > 1) {
             There are no Runs on page {{ page.page }}.
             <button type="button" class="link" (click)="goToPage(1)">Go to the first page</button>
+          } @else if (shoe()) {
+            {{ searched() ? 'No Runs in this Shoe match this search.' : 'No Runs logged with this Shoe yet.' }}
           } @else if (weekStart(); as monday) {
             No Runs in the week of {{ monday | date: 'd MMM y' }}{{ searched() ? ' match this search' : '' }}.
           } @else if (searched()) {

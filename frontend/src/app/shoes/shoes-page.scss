@@ -11,6 +11,7 @@
   overflow: hidden;
   border-radius: 16px;
   transition: border-color 0.2s;
+  cursor: pointer;
 
   &:hover {
     border-color: var(--border-hover);
@@ -33,6 +34,14 @@
     font-size: 20px;
     font-weight: 600;
     letter-spacing: -0.015em;
+
+    a {
+      color: var(--text);
+    }
+  }
+
+  .shoe:hover & h2 a {
+    color: var(--accent-light);
   }
 }
 

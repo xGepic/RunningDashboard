@@ -193,6 +193,61 @@ describe('RunsPage', () => {
     });
   });
 
+  describe("a Shoe's Runs", () => {
+    const pegasus: RunPage = { ...october, items: october.items.map((r) => ({ ...r, shoeName: 'Nike Pegasus 41' })) };
+    const shoes = async (http: HttpTestingController) => {
+      http.expectOne('/api/shoes').flush([{ id: 'g1', name: 'Nike Pegasus 41', distance: 18000, retired: false, runs: 2, lastRun: '2026-10-11T08:00:00' }]);
+      await new Promise((resolve) => setTimeout(resolve));
+      TestBed.inject(ApplicationRef).tick();
+    };
+
+    it('are all of them, whatever the month, under the name of the Shoe', async () => {
+      const { http, element, request } = await open('/runs?shoe=g1&month=2026-03', pegasus);
+      await shoes(http);
+
+      expect(request.params.keys().sort()).toEqual(['pageSize', 'shoe']);
+      expect(request.params.get('shoe')).toBe('g1');
+      expect(element.querySelector('.period-nav')!.getAttribute('aria-label')).toBe('Shoe');
+      expect(element.querySelector('.period-nav h2')!.textContent!.trim()).toBe('Nike Pegasus 41');
+      expect(element.querySelector('input[type="month"]')).toBeNull();
+      expect(names(element)).toEqual(['Easy Sunday', 'Tempo Tuesday']);
+    });
+
+    it('lead back to all Runs, on the current month', async () => {
+      const { http, element } = await open('/runs?shoe=g1', pegasus);
+      await shoes(http);
+
+      [...element.querySelectorAll<HTMLButtonElement>('.period-nav button')].find((b) => b.textContent!.trim() === 'All Runs')!.click();
+      await new Promise((resolve) => setTimeout(resolve));
+      TestBed.inject(ApplicationRef).tick();
+
+      expect(TestBed.inject(Router).url).toBe('/runs');
+      const request = http.expectOne((r) => r.url === '/api/runs');
+      expect([request.request.params.get('from'), request.request.params.has('shoe')]).toEqual(['2026-10-01', false]);
+    });
+
+    it('say so when the Shoe has none', async () => {
+      const { http, element } = await open('/runs?shoe=g1', { ...october, items: [], totalCount: 0 });
+      await shoes(http);
+
+      expect(element.querySelector('.empty')!.textContent!.trim()).toBe('No Runs logged with this Shoe yet.');
+    });
+
+    it('export as the Shoe, named after it', async () => {
+      const saves = captureSaves();
+      const { http, element } = await open('/runs?shoe=g1&sort=pace&direction=asc', pegasus);
+      await shoes(http);
+
+      [...element.querySelectorAll<HTMLButtonElement>('.export-menu button')].find((b) => b.textContent!.trim() === 'This Shoe')!.click();
+      const request = http.expectOne((r) => r.url === '/api/runs/export');
+      request.flush([]);
+
+      expect(request.request.params.keys().sort()).toEqual(['direction', 'shoe', 'sort']);
+      expect(saves.map((s) => s.name)).toEqual(['runs-nike-pegasus-41.csv']);
+      vi.restoreAllMocks();
+    });
+  });
+
   describe('a day with two Runs', () => {
     const double: RunPage = {
       ...october,
