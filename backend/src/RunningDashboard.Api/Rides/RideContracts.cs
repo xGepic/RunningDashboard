@@ -32,3 +32,54 @@ internal sealed record RideResponse(
     double? Speed,
     double ElevationGain,
     string StravaUrl);
+
+/// <param name="Distance">Metres.</param>
+/// <param name="MovingTime">Seconds.</param>
+/// <param name="ElapsedTime">Seconds.</param>
+/// <param name="Speed">Avg Speed in kilometres per hour; none without Moving Time.</param>
+/// <param name="MaxSpeed">Kilometres per hour.</param>
+/// <param name="ElevationGain">Metres.</param>
+/// <param name="AverageHeartRate">Beats per minute; none without a heart-rate recording.</param>
+/// <param name="MaxHeartRate">Beats per minute; none without a heart-rate recording.</param>
+/// <param name="AveragePower">Watts, measured or estimated by Strava.</param>
+/// <param name="AverageCadence">Pedal revolutions per minute; none without a cadence sensor.</param>
+/// <param name="Route">
+/// Google's encoded polyline of the route; none for a Ride without GPS, and for a virtual Ride, whose route lies in an
+/// app's made-up world.
+/// </param>
+internal sealed record RideDetailResponse(
+    long Id,
+    string Name,
+    string SportType,
+    DateTime StartLocal,
+    double Distance,
+    int MovingTime,
+    int ElapsedTime,
+    double? Speed,
+    double? MaxSpeed,
+    double ElevationGain,
+    double? AverageHeartRate,
+    double? MaxHeartRate,
+    double? AveragePower,
+    double? AverageCadence,
+    string? Route,
+    string StravaUrl)
+{
+    public static RideDetailResponse From(ListedActivity ride) => new(
+        ride.Id,
+        ride.Name,
+        ride.SportType,
+        ride.StartLocal,
+        ride.Distance,
+        ride.MovingTime,
+        ride.ElapsedTime,
+        ListedActivity.AvgSpeedOf(ride.MovingTime, ride.Distance),
+        ride.MaxSpeed,
+        ride.ElevationGain,
+        ride.AverageHeartRate,
+        ride.MaxHeartRate,
+        ride.AveragePower,
+        ride.AverageCadence,
+        ride.SportType == Sports.VirtualRide ? null : ride.Route,
+        $"https://www.strava.com/activities/{ride.Id}");
+}

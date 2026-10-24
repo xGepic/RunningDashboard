@@ -41,6 +41,15 @@ public sealed class ListedActivity
     /// <inheritdoc cref="AverageHeartRate"/>
     public double? MaxHeartRate => NumberIn(RawSummaryJson, "max_heartrate");
 
+    /// <summary>Kilometres per hour, from the stored summary; none if Strava sent none.</summary>
+    public double? MaxSpeed => NumberIn(RawSummaryJson, "max_speed") * 3.6;
+
+    /// <summary>Watts, from the stored summary: measured with a power meter, or else Strava's estimate for a Ride; none for most Swims.</summary>
+    public double? AveragePower => NumberIn(RawSummaryJson, "average_watts");
+
+    /// <summary>Pedal revolutions per minute for a Ride, from the stored summary; none without a cadence sensor.</summary>
+    public double? AverageCadence => NumberIn(RawSummaryJson, "average_cadence");
+
     /// <summary>
     /// The simplified route from the stored summary, as Strava encodes it (Google's encoded polyline). None for an
     /// Activity without GPS, such as a Swim in a pool.

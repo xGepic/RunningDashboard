@@ -59,7 +59,7 @@
     } @else {
       <section class="card flush">
         <div class="table-scroll">
-          <table class="data-table history">
+          <table class="data-table history opens">
             <thead>
               <tr>
                 <th [attr.aria-sort]="ariaSort('date')"><button type="button" (click)="sortBy('date')">Date<span class="mono">{{ sortIndicator('date') }}</span></button></th>
@@ -72,11 +72,11 @@
             </thead>
             <tbody>
               @for (ride of page.items; track ride.id) {
-                <tr>
+                <tr (click)="open(ride.id, $event)">
                   <td class="date">{{ ride.startLocal | date: 'EEE d MMM y' }} <span class="time">{{ ride.startLocal | date: 'HH:mm' }}</span></td>
                   <td>
                     <div class="name">
-                      <a [href]="ride.stravaUrl" target="_blank" rel="noopener" title="Open on Strava">{{ ride.name }}</a>
+                      <a [routerLink]="['/rides', ride.id]">{{ ride.name }}</a>
                       <span class="badge" [class]="badge(ride).tone">{{ badge(ride).label }}</span>
                     </div>
                   </td>

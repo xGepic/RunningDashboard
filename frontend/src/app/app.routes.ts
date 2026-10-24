@@ -23,6 +23,8 @@ export const routes: Routes = [
   { path: 'runs/:id', loadComponent: () => import('./runs/run-detail-page').then((m) => m.RunDetailPage), title: 'Run · Running Dashboard' },
   // Ride and Swim history, opened from the Runs | Rides | Swims switch; they belong to the Runs section.
   { path: 'rides', component: RidesPage, title: 'Rides · Running Dashboard' },
+  // Loaded when first opened: the Ride's map brings in Leaflet.
+  { path: 'rides/:id', loadComponent: () => import('./rides/ride-detail-page').then((m) => m.RideDetailPage), title: 'Ride · Running Dashboard' },
   // Loaded when first opened, to keep the first load small.
   { path: 'swims', loadComponent: () => import('./swims/swims-page').then((m) => m.SwimsPage), title: 'Swims · Running Dashboard' },
   { path: 'swims/:id', loadComponent: () => import('./swims/swim-detail-page').then((m) => m.SwimDetailPage), title: 'Swim · Running Dashboard' },

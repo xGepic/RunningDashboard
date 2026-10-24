@@ -14,12 +14,19 @@ namespace RunningDashboard.Api.Tests;
 /// | Gravel Marchfeld | GravelRide       | 2026-09-26 | 61,200 m |   9,000 s   | = 24.48 km/h|   180 m   |
 /// | Anninger MTB     | MountainBikeRide | 2026-09-20 | 24,000 m |   5,760 s   | = 15.0 km/h |   740 m   |
 ///
+/// The Kahlenberg climb was recorded with GPS, heart rate, power and cadence; Zwift draws a route for the Watopia ride too.
+///
 /// Not Rides: an Evening Run, an e-bike ride and a walk.
 /// </summary>
 [FixtureLifeCycle(LifeCycle.SingleInstance)]
 public sealed class RidesListTests
 {
     private const long KahlenbergClimb = 20460000001;
+    private const long ZwiftWatopia = 20430000003;
+    private const long EBikeShopping = 20440000002;
+
+    /// <summary>Google's polyline example, standing in for a real route.</summary>
+    private const string Route = "_p~iF~ps|U_ulLnnqC";
 
     private readonly TestApp _app = new();
     private HttpClient _browser = null!;
@@ -27,9 +34,11 @@ public sealed class RidesListTests
     [OneTimeSetUp]
     public async Task OneTimeSetUpAsync() => _browser = await _app.ConnectWithActivitiesAsync(
         new TestActivity(20479305419, "Evening Run", new DateTime(2026, 10, 6, 20, 35, 26), 5081.2, 2096),
-        new TestActivity(KahlenbergClimb, "Kahlenberg climb", new DateTime(2026, 10, 5, 10, 0, 0), 42300, 5400, "Ride", ElevationGain: 620, ElapsedTime: 6100),
-        new TestActivity(20440000002, "E-bike shopping", new DateTime(2026, 10, 2, 11, 0, 0), 8000, 1500, "EBikeRide"),
-        new TestActivity(20430000003, "Zwift Watopia", new DateTime(2026, 10, 1, 19, 0, 0), 30000, 3600, "VirtualRide", ElevationGain: 310),
+        new TestActivity(KahlenbergClimb, "Kahlenberg climb", new DateTime(2026, 10, 5, 10, 0, 0), 42300, 5400, "Ride", ElevationGain: 620, ElapsedTime: 6100,
+            AverageHeartRate: 141.6, MaxHeartRate: 176, AveragePower: 182.5, AverageCadence: 84.2, MaxSpeed: 16.5, SummaryRoute: Route),
+        new TestActivity(EBikeShopping, "E-bike shopping", new DateTime(2026, 10, 2, 11, 0, 0), 8000, 1500, "EBikeRide"),
+        new TestActivity(ZwiftWatopia, "Zwift Watopia", new DateTime(2026, 10, 1, 19, 0, 0), 30000, 3600, "VirtualRide", ElevationGain: 310,
+            SummaryRoute: Route),
         new TestActivity(20420000004, "Sunday walk", new DateTime(2026, 9, 27, 15, 0, 0), 4000, 3000, "Walk"),
         new TestActivity(20410000005, "Gravel Marchfeld", new DateTime(2026, 9, 26, 9, 0, 0), 61200, 9000, "GravelRide", ElevationGain: 180),
         new TestActivity(20400000006, "Anninger MTB", new DateTime(2026, 9, 20, 14, 0, 0), 24000, 5760, "MountainBikeRide", ElevationGain: 740));
@@ -148,6 +157,40 @@ public sealed class RidesListTests
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 
+    [Test]
+    public async Task A_ride_has_a_detail_page_with_its_times_heart_rate_power_cadence_and_route()
+    {
+        var ride = (await _browser.GetFromJsonAsync<RideDetail>($"/api/rides/{KahlenbergClimb}"))!;
+
+        (ride.Id, ride.Name, ride.SportType, ride.StartLocal).ShouldBe((KahlenbergClimb, "Kahlenberg climb", "Ride", new DateTime(2026, 10, 5, 10, 0, 0)));
+        (ride.Distance, ride.MovingTime, ride.ElapsedTime, ride.ElevationGain).ShouldBe((42300, 5400, 6100, 620));
+        ride.Speed!.Value.ShouldBe(28.2, 0.0005);
+        ride.MaxSpeed!.Value.ShouldBe(59.4, 0.0005); // 16.5 m/s
+        (ride.AverageHeartRate, ride.MaxHeartRate).ShouldBe((141.6, 176));
+        (ride.AveragePower, ride.AverageCadence).ShouldBe((182.5, 84.2));
+        ride.Route.ShouldBe(Route);
+        ride.StravaUrl.ShouldBe($"https://www.strava.com/activities/{KahlenbergClimb}");
+    }
+
+    [Test]
+    public async Task A_virtual_ride_has_no_route_and_nothing_it_was_recorded_without()
+    {
+        var ride = (await _browser.GetFromJsonAsync<RideDetail>($"/api/rides/{ZwiftWatopia}"))!;
+
+        ride.Route.ShouldBeNull(); // Zwift's route lies in its made-up world
+        (ride.MaxSpeed, ride.AverageHeartRate, ride.MaxHeartRate, ride.AveragePower, ride.AverageCadence).ShouldBe((null, null, null, null, null));
+    }
+
+    [TestCase(EBikeShopping)]
+    [TestCase(20479305419)] // the Evening Run
+    [TestCase(1)]
+    public async Task Only_a_ride_has_a_ride_detail_page(long id)
+    {
+        var response = await _browser.GetAsync($"/api/rides/{id}");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
+
     private async Task<RidePage> ListAsync(string query) =>
         (await _browser.GetFromJsonAsync<RidePage>($"/api/rides?{query}"))!;
 
@@ -161,4 +204,23 @@ public sealed class RidesListTests
     /// <param name="Speed">Kilometres per hour.</param>
     private sealed record RideItem(
         long Id, string Name, string SportType, DateTime StartLocal, double Distance, int MovingTime, double? Speed, double ElevationGain, string StravaUrl);
+
+    /// <param name="Speed">Kilometres per hour.</param>
+    private sealed record RideDetail(
+        long Id,
+        string Name,
+        string SportType,
+        DateTime StartLocal,
+        double Distance,
+        int MovingTime,
+        int ElapsedTime,
+        double? Speed,
+        double? MaxSpeed,
+        double ElevationGain,
+        double? AverageHeartRate,
+        double? MaxHeartRate,
+        double? AveragePower,
+        double? AverageCadence,
+        string? Route,
+        string StravaUrl);
 }

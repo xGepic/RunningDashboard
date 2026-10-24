@@ -18,7 +18,7 @@ _Avoid_: Activity (when only runs are meant), workout, session
 Any entry recorded on Strava, of any sport. The dashboard ignores Activities that are not Runs, Rides or Swims.
 
 **Ride**:
-A Strava activity with a cycling sport type: road, virtual, gravel or mountain bike (e-bike rides are not Rides). Rides are only listed in the Ride history, with their Avg Speed; they never count toward totals, Training Weeks, Streaks, Records or goals.
+A Strava activity with a cycling sport type: road, virtual, gravel or mountain bike (e-bike rides are not Rides). Rides are listed in the Ride history, with their Avg Speed, and each has a page of its own; they never count toward totals, Training Weeks, Streaks, Records or goals.
 _Avoid_: Cycle, bike ride, workout
 
 **Virtual Ride**:
@@ -34,7 +34,7 @@ A Swim's Moving Time per 100 metres, written as min:ss /100m.
 _Avoid_: Pace (on its own, for Swims), Avg Speed
 
 **Listed Activity**:
-A Ride or a Swim: an Activity the dashboard stores only to list it in its history, never to count it.
+A Ride or a Swim: an Activity the dashboard stores only to show it in its history and on its own page, never to count it.
 _Avoid_: Other activity, cross-training
 
 **Avg Speed**:

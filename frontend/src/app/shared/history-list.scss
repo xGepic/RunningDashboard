@@ -6,7 +6,6 @@
 .history {
   min-width: 880px;
 
-  // A Ride has no page of its own, so its row opens nothing; the Runs list makes its rows clickable.
   tbody tr {
     cursor: default;
 
@@ -15,8 +14,8 @@
     }
   }
 
-  // A Swim has a page of its own: the whole row opens it.
-  &.swims tbody tr {
+  // A Ride or Swim has a page of its own: the whole row opens it. The Runs list does the same in its own styles.
+  &.opens tbody tr {
     cursor: pointer;
   }
 

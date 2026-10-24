@@ -43,6 +43,12 @@ public static class RideEndpoints
 
             return Results.Ok(query.Sorted(await MatchingAsync(query, kind, db, cancellationToken), r => r.StartLocal, Figures).ToList());
         });
+
+        app.MapGet("/api/rides/{id:long}", async (long id, AppDbContext db, CancellationToken cancellationToken) =>
+        {
+            var ride = await db.ListedActivities.SingleOrDefaultAsync(a => a.Id == id && Sports.Rides.Contains(a.SportType), cancellationToken);
+            return ride is null ? Results.NotFound() : Results.Ok(RideDetailResponse.From(ride));
+        });
     }
 
     private static Dictionary<string, string[]> Validate(ListQuery query, string? kind)

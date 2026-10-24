@@ -19,6 +19,8 @@ namespace RunningDashboard.Api.Tests.Harness;
 /// <param name="AverageCadence">As Strava counts it: one foot's steps per minute; none unless a test sets it.</param>
 /// <param name="StartLatLng">Where it started, latitude then longitude; none (recorded without GPS) unless a test sets it.</param>
 /// <param name="MaxHeartRate">Beats per minute; none (recorded without heart rate) unless a test sets it.</param>
+/// <param name="MaxSpeed">Metres per second, as Strava sends it; none unless a test sets it.</param>
+/// <param name="AveragePower">Watts; none (recorded without a power meter) unless a test sets it.</param>
 /// <param name="SummaryRoute">The summary's simplified route as an encoded polyline; none (recorded without GPS) unless a test sets it.</param>
 public sealed record TestActivity(
     long Id,
@@ -39,7 +41,9 @@ public sealed record TestActivity(
     bool Trainer = false,
     double[]? StartLatLng = null,
     double? MaxHeartRate = null,
-    string? SummaryRoute = null)
+    string? SummaryRoute = null,
+    double? MaxSpeed = null,
+    double? AveragePower = null)
 {
     public static string ToJson(IEnumerable<TestActivity> activities) =>
         JsonSerializer.Serialize(activities.Select(a => a.ToStrava()));
@@ -98,6 +102,8 @@ public sealed record TestActivity(
             ["visibility"] = "everyone",
             ["gear_id"] = GearId,
             ["average_speed"] = MovingTime > 0 ? Distance / MovingTime : 0,
+            ["max_speed"] = MaxSpeed,
+            ["average_watts"] = AveragePower,
             ["has_heartrate"] = AverageHeartRate is not null,
             ["average_heartrate"] = AverageHeartRate,
             ["max_heartrate"] = MaxHeartRate,

@@ -1,0 +1,41 @@
+<div class="page">
+  <a class="back" routerLink="/rides">← Rides</a>
+
+  @if (ride.error()) {
+    <p class="error" role="alert">This Ride could not be loaded.</p>
+  } @else if (ride.value(); as ride) {
+    <header class="page-header">
+      <div class="titles">
+        <span class="eyebrow">Ride <span class="badge" [class]="badge(ride).tone">{{ badge(ride).label }}</span></span>
+        <h1>{{ ride.name }}</h1>
+        <p class="subtitle">{{ ride.startLocal | date: 'EEEE d MMMM y, HH:mm' }}</p>
+      </div>
+      <a class="btn strava" [href]="ride.stravaUrl" target="_blank" rel="noopener">View on Strava ↗</a>
+    </header>
+
+    <dl class="facts summary" [style.--per-row]="factsPerRow(ride, 6)" [style.--per-row-narrow]="factsPerRow(ride, 4)">
+      <div><dt class="label">Distance</dt><dd class="value">{{ units.distance(ride.distance) }}</dd></div>
+      <div><dt class="label">Moving Time</dt><dd class="value">{{ formatDuration(ride.movingTime) }}</dd></div>
+      <div><dt class="label">Elapsed time</dt><dd class="value">{{ formatDuration(ride.elapsedTime) }}</dd></div>
+      <div><dt class="label">Avg Speed</dt><dd class="value">{{ units.speed(ride.speed) }}</dd></div>
+      <div><dt class="label">Max speed</dt><dd class="value">{{ units.speed(ride.maxSpeed) }}</dd></div>
+      <div><dt class="label">Elevation gain</dt><dd class="value">{{ ride.elevationGain | number: '1.0-0' }} m</dd></div>
+      <div><dt class="label">Avg heart rate</dt><dd class="value">{{ ride.averageHeartRate === null ? '–' : (ride.averageHeartRate | number: '1.0-0') + ' bpm' }}</dd></div>
+      <div><dt class="label">Max heart rate</dt><dd class="value">{{ ride.maxHeartRate === null ? '–' : (ride.maxHeartRate | number: '1.0-0') + ' bpm' }}</dd></div>
+      @if (ride.averagePower !== null) {
+        <div><dt class="label">Avg power</dt><dd class="value">{{ ride.averagePower | number: '1.0-0' }} W</dd></div>
+      }
+      @if (ride.averageCadence !== null) {
+        <div><dt class="label">Cadence</dt><dd class="value">{{ ride.averageCadence | number: '1.0-0' }} rpm</dd></div>
+      }
+    </dl>
+
+    @if (ride.route; as route) {
+      <section class="card flush route">
+        <div class="card-header"><h2 class="card-title">Route</h2></div>
+        <!-- Without stretches to keep the pace of, the map offers no replay. -->
+        <app-run-map [route]="route" [stretches]="[]" />
+      </section>
+    }
+  }
+</div>
