@@ -21,13 +21,5 @@
       <div><dt class="label">Avg heart rate</dt><dd class="value">{{ swim.averageHeartRate === null ? '–' : (swim.averageHeartRate | number: '1.0-0') + ' bpm' }}</dd></div>
       <div><dt class="label">Max heart rate</dt><dd class="value">{{ swim.maxHeartRate === null ? '–' : (swim.maxHeartRate | number: '1.0-0') + ' bpm' }}</dd></div>
     </dl>
-
-    @if (swim.route; as route) {
-      <section class="card flush route">
-        <div class="card-header"><h2 class="card-title">Route</h2></div>
-        <!-- Without stretches to keep the pace of, the map offers no replay. -->
-        <app-run-map [route]="route" [stretches]="[]" />
-      </section>
-    }
   }
 </div>

@@ -8,7 +8,7 @@ import { SwimDetailPage } from './swim-detail-page';
 
 const poolSwim: SwimDetail = {
   id: 1, name: 'Lunch Swim', startLocal: '2026-10-11T12:00:00', distance: 2000, movingTime: 2400, elapsedTime: 2700, pace: 120,
-  averageHeartRate: 132.4, maxHeartRate: 158, route: null, stravaUrl: 'https://www.strava.com/activities/1',
+  averageHeartRate: 132.4, maxHeartRate: 158, stravaUrl: 'https://www.strava.com/activities/1',
 };
 
 describe('SwimDetailPage', () => {
@@ -36,7 +36,7 @@ describe('SwimDetailPage', () => {
     return harness.routeNativeElement!;
   }
 
-  it('shows the Swim with its Swim Pace and heart rate, and no map in a pool', async () => {
+  it('shows the Swim with its Swim Pace and heart rate', async () => {
     const element = await open(poolSwim);
 
     expect(element.querySelector('h1')!.textContent).toContain('Lunch Swim');
@@ -45,7 +45,6 @@ describe('SwimDetailPage', () => {
     expect(facts).toContain('2:00 /100m');
     expect(facts).toContain('132 bpm');
     expect(facts).toContain('158 bpm');
-    expect(element.querySelector('app-run-map')).toBeNull();
   });
 
   it('says so when the Swim cannot be loaded', async () => {

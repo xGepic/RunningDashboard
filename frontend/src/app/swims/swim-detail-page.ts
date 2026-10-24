@@ -2,17 +2,16 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { RunMap } from '../runs/run-map';
 import { formatDuration, formatSwimPace } from '../shared/format';
 import { SwimDetail } from './swim';
 
 /**
- * A Swim's own page: its figures and, for one in open water, its route. Laid out like a Run's page, but Strava's
- * summary is all there is of a Swim, so it has no Splits, and the map has no replay.
+ * A Swim's own page: its figures. Laid out like a Run's page, but Strava's summary is all there is of a Swim, so it
+ * has no Splits; and the Athlete swims in pools only, so it has no route either.
  */
 @Component({
   selector: 'app-swim-detail-page',
-  imports: [DatePipe, DecimalPipe, RouterLink, RunMap],
+  imports: [DatePipe, DecimalPipe, RouterLink],
   templateUrl: './swim-detail-page.html',
   styleUrl: '../runs/run-detail-page.scss',
 })

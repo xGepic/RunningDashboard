@@ -43,7 +43,5 @@ export interface SwimDetail {
   /** Beats per minute; none without a heart-rate recording. */
   averageHeartRate: number | null;
   maxHeartRate: number | null;
-  /** Google's encoded polyline; none without GPS, such as in a pool. */
-  route: string | null;
   stravaUrl: string;
 }

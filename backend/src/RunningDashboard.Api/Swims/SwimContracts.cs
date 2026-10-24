@@ -36,7 +36,6 @@ internal sealed record SwimResponse(
 /// <param name="Pace">Swim Pace in seconds per 100 metres; none without distance.</param>
 /// <param name="AverageHeartRate">Beats per minute; none without a heart-rate recording.</param>
 /// <param name="MaxHeartRate">Beats per minute; none without a heart-rate recording.</param>
-/// <param name="Route">Google's encoded polyline of the route; none for a Swim without GPS, such as in a pool.</param>
 internal sealed record SwimDetailResponse(
     long Id,
     string Name,
@@ -47,7 +46,6 @@ internal sealed record SwimDetailResponse(
     double? Pace,
     double? AverageHeartRate,
     double? MaxHeartRate,
-    string? Route,
     string StravaUrl)
 {
     public static SwimDetailResponse From(ListedActivity swim) => new(
@@ -60,6 +58,5 @@ internal sealed record SwimDetailResponse(
         ListedActivity.SwimPaceOf(swim.MovingTime, swim.Distance),
         swim.AverageHeartRate,
         swim.MaxHeartRate,
-        swim.Route,
         $"https://www.strava.com/activities/{swim.Id}");
 }
