@@ -7,7 +7,7 @@ import { NgxEchartsDirective } from 'ngx-echarts';
 import { formatCadence, formatDrift, formatEfficiency } from '../fitness/fitness';
 import { ChartColors, ChartTheme, tooltipHtml } from '../shared/chart-theme';
 import { paceChart, paceLabel } from '../shared/charts';
-import { DistanceUnit, formatDistance, formatDuration } from '../shared/format';
+import { DistanceUnit, distanceIn, formatDistance, formatDuration } from '../shared/format';
 import { Units } from '../shared/units';
 import { RunDetail, RunTemperature, Split } from './run';
 import { RunMap } from './run-map';
@@ -63,10 +63,15 @@ export class RunDetailPage {
   protected readonly splitPace = computed(() => {
     if (!this.run.hasValue()) return null;
     const { unit, splits } = this.splits();
-    if (!splits.some((s) => s.pace !== null)) return null;
-    return splitPaceChart(splits, unit, this.run.value().pace, this.units.unit(), this.theme.colors());
+    // The few metres left over at the end have a Pace of noise that would stretch the axis; the table still shows them.
+    const charted = splits.filter((s) => distanceIn(s.distance, unit) >= minChartedSplit);
+    if (!charted.some((s) => s.pace !== null)) return null;
+    return splitPaceChart(charted, unit, this.run.value().pace, this.units.unit(), this.theme.colors());
   });
 }
+
+/** The shortest Split the Pace chart shows, in km or miles as the Splits are. */
+const minChartedSplit = 0.1;
 
 /** Pace per Split, as in the Overview's Pace chart; a dashed line marks the Run's own Pace. */
 function splitPaceChart(splits: Split[], splitUnit: DistanceUnit, runPace: number | null, unit: DistanceUnit, colors: ChartColors): EChartsCoreOption {

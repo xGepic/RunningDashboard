@@ -207,11 +207,35 @@ export interface PaceChartData {
   average?: number | null;
 }
 
+/** Steps between Pace ticks, in seconds per km or mile: ticks land on round paces like 5:00, 5:15, 5:30. */
+const paceSteps = [5, 10, 15, 20, 30, 60, 120, 300, 600];
+
+/**
+ * The Pace axis (seconds per km) around these Paces: the finest step of `paceSteps` that needs at most `maxTicks`
+ * ticks, ends rounded out to it, all in the unit shown so a mile axis ticks on round paces per mile too. None
+ * without a Pace, or when even the coarsest step needs more ticks; ECharts then picks its own.
+ */
+export function paceAxis(paces: number[], unit: DistanceUnit, maxTicks = 6): { min: number; max: number; interval: number } | null {
+  if (paces.length === 0) return null;
+  const perUnit = 1 / distanceIn(1000, unit);
+  const fastest = Math.min(...paces) * perUnit;
+  const slowest = Math.max(...paces) * perUnit;
+  for (const step of paceSteps) {
+    let min = Math.floor(fastest / step) * step;
+    let max = Math.ceil(slowest / step) * step;
+    // One Pace alone, on a tick: give it a step either side rather than an axis of no height.
+    if (min === max) [min, max] = [min - step, max + step];
+    if ((max - min) / step + 1 <= maxTicks) return { min: min / perUnit, max: max / perUnit, interval: step / perUnit };
+  }
+  return null;
+}
+
 /** Line chart of Pace per km or mile, filled below. Faster is up: the y axis runs from the slowest Pace to the fastest. */
 export function paceChart(data: PaceChartData, unit: DistanceUnit, colors: ChartColors): EChartsCoreOption {
   const base = baseChartOptions(colors);
   const label = (seconds: number) => paceLabel(seconds, unit);
   const average = data.average ?? null;
+  const axis = paceAxis([...data.paces, average].filter((pace) => pace !== null), unit);
   return {
     ...base,
     tooltip: {
@@ -223,7 +247,7 @@ export function paceChart(data: PaceChartData, unit: DistanceUnit, colors: Chart
       },
     },
     xAxis: { ...categoryAxis(data.labels, colors), boundaryGap: false },
-    yAxis: { ...valueAxis(colors, label, false), inverse: true },
+    yAxis: { ...valueAxis(colors, label, false), inverse: true, ...axis },
     series: [
       {
         type: 'line',
