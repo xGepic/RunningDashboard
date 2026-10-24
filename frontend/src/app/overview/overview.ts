@@ -1,17 +1,20 @@
-import { WeekDistance } from '../shared/charts';
+import { TrainingTimeWeek, WeekDistance } from '../shared/charts';
 
-/** As returned by GET /api/overview. Distances in metres, times in seconds, pace in seconds per km. */
+/** As returned by GET /api/overview. Distances in metres, times in seconds. */
 export interface Overview {
   totals: Totals;
   years: YearTotals[];
   /** Every Training Week from the first Run's up to the current one; weeks without Runs have distance 0. */
   weeks: WeekDistance[];
-  /** Every month from the first Run's up to the current one; months without Runs have no pace. */
-  months: MonthPace[];
   /** The current year's Yearly Goal; none without one. */
   yearlyGoal: YearlyGoal | null;
   /** None without Runs. */
   streak: Streak | null;
+  /**
+   * Every Training Week from the first Run's or Listed Activity's up to the current one, with all zeros for an empty
+   * week; empty without Runs or without Rides and Swims.
+   */
+  trainingTime: TrainingTimeWeek[];
 }
 
 /**
@@ -57,11 +60,4 @@ export interface Totals {
 
 export interface YearTotals extends Totals {
   year: number;
-}
-
-export interface MonthPace {
-  year: number;
-  month: number;
-  distance: number;
-  pace: number | null;
 }

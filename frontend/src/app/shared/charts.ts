@@ -1,7 +1,7 @@
 import type { EChartsCoreOption } from 'echarts/core';
 import { ChartColors, baseChartOptions, tooltipHtml } from './chart-theme';
 import { fullMonthNames, monthNames } from './dates';
-import { DistanceUnit, distanceIn, formatPace } from './format';
+import { DistanceUnit, distanceIn, formatHoursMinutes, formatPace } from './format';
 
 /** Distance (metres) run in the Training Week starting on the Monday <code>start</code> (yyyy-MM-dd). */
 export interface WeekDistance {
@@ -95,6 +95,80 @@ export function weeklyDistanceChart(weeks: WeekDistance[], unit: DistanceUnit, c
         animationEasing: 'cubicOut',
       },
     ],
+  };
+}
+
+/** Training Time: Moving Time (seconds) of the Runs, Rides and Swims in the Training Week starting on the Monday `start`. */
+export interface TrainingTimeWeek {
+  start: string;
+  runs: number;
+  rides: number;
+  swims: number;
+}
+
+/** The sports of Training Time, bottom to top of a column. */
+export const trainingTimeSports = [
+  { key: 'runs', label: 'Runs', color: (colors: ChartColors) => colors.series },
+  { key: 'rides', label: 'Rides', color: (colors: ChartColors) => colors.ride },
+  { key: 'swims', label: 'Swims', color: (colors: ChartColors) => colors.swim },
+] as const;
+
+/** All of a week's Training Time, in seconds. */
+export function trainingTimeOf(week: TrainingTimeWeek): number {
+  return week.runs + week.rides + week.swims;
+}
+
+/** "1h 06m", or "–" for nothing. */
+export function trainingTimeLabel(seconds: number): string {
+  return seconds > 0 ? formatHoursMinutes(seconds) : '–';
+}
+
+/**
+ * Stacked columns of Training Time per Training Week, in hours: Runs at the bottom in the Theme's colour, then Rides and
+ * Swims. Only a column's top segment is rounded, and a hairline in the surface colour parts the segments.
+ */
+export function trainingTimeChart(weeks: TrainingTimeWeek[], colors: ChartColors): EChartsCoreOption {
+  const base = baseChartOptions(colors);
+  // The index of each week's topmost sport with time; -1 for an empty week.
+  const topSport = weeks.map((w) => trainingTimeSports.reduce((top, s, index) => (w[s.key] > 0 ? index : top), -1));
+  return {
+    ...base,
+    tooltip: {
+      ...base.tooltip,
+      axisPointer: { type: 'shadow', shadowStyle: { color: withAlpha(colors.series, 0.06) } },
+      formatter: (params: { dataIndex: number }[]) => {
+        const week = weeks[params[0]?.dataIndex];
+        if (!week) return '';
+        // The sports top to bottom, as the column shows them.
+        const rows = [...trainingTimeSports]
+          .reverse()
+          .map(
+            (s) =>
+              `<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:${colors.muted};margin-top:3px">` +
+              `<span style="width:8px;height:8px;border-radius:2px;background:${s.color(colors)}"></span>${s.label}` +
+              `<span style="margin-left:auto;padding-left:14px;font-family:${colors.fontMono};color:${colors.text}">${trainingTimeLabel(week[s.key])}</span></div>`,
+          )
+          .join('');
+        return tooltipHtml(colors, `Week of ${weekLabel(week.start)}`, trainingTimeLabel(trainingTimeOf(week))) + rows;
+      },
+    },
+    xAxis: categoryAxis(weeks.map((w) => shortWeekLabel(w.start)), colors),
+    yAxis: valueAxis(colors, (value) => `${value} h`, true),
+    series: trainingTimeSports.map((sport, index) => ({
+      type: 'bar',
+      name: sport.label,
+      stack: 'time',
+      data: weeks.map((w, i) => ({
+        value: Math.round((w[sport.key] / 3600) * 100) / 100,
+        itemStyle: { borderRadius: topSport[i] === index ? [3, 3, 0, 0] : 0 },
+      })),
+      barMaxWidth: weeks.length > 12 ? 24 : 56,
+      barCategoryGap: weeks.length > 12 ? '18%' : '28%',
+      itemStyle: { color: sport.color(colors), borderColor: colors.surface, borderWidth: 1 },
+      emphasis: { focus: 'series' },
+      animationDuration: 700,
+      animationEasing: 'cubicOut',
+    })),
   };
 }
 

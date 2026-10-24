@@ -2,15 +2,23 @@ import { DecimalPipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { Component, computed, inject, linkedSignal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import type { EChartsCoreOption } from 'echarts/core';
 import { NgxEchartsDirective } from 'ngx-echarts';
-import { ChartColors, ChartTheme, tooltipHtml } from '../shared/chart-theme';
-import { WeekDistance, paceChart, paceLabel, shortWeekLabel, weekLabel, weeklyDistanceChart } from '../shared/charts';
-import { monthNames } from '../shared/dates';
-import { DistanceUnit, formatDistance, formatWhole } from '../shared/format';
+import { ChartTheme } from '../shared/chart-theme';
+import {
+  TrainingTimeWeek,
+  WeekDistance,
+  shortWeekLabel,
+  trainingTimeChart,
+  trainingTimeLabel,
+  trainingTimeOf,
+  trainingTimeSports,
+  weekLabel,
+  weeklyDistanceChart,
+} from '../shared/charts';
+import { formatWhole } from '../shared/format';
 import { Units } from '../shared/units';
 import { reloadOnSync } from '../sync/reload-on-sync';
-import { MonthPace, Overview, Totals, YearTotals } from './overview';
+import { Overview, Totals, YearTotals } from './overview';
 import { StreakCard } from './streak-card';
 import { YearlyGoalCard } from './yearly-goal-card';
 
@@ -42,9 +50,8 @@ export class OverviewPage {
   private readonly router = inject(Router);
 
   protected readonly overview = httpResource<Overview>(() => '/api/overview');
-  /** Distances and Pace in the Distance Unit; elevation stays in metres. */
+  /** Distances in the Distance Unit; elevation stays in metres. */
   protected readonly units = inject(Units);
-  protected readonly monthLabel = monthLabel;
   protected readonly weekLabel = weekLabel;
   protected readonly formatWhole = formatWhole;
   protected readonly thisYear = new Date().getFullYear();
@@ -119,27 +126,45 @@ export class OverviewPage {
     return weeks.length ? weeklyDistanceChart(weeks, this.units.unit(), this.theme.colors()) : null;
   });
 
-  /** Years that have months, newest first. */
-  protected readonly monthYears = computed(() => {
-    const months = this.overview.hasValue() ? this.overview.value().months : [];
-    return [...new Set(months.map((m) => m.year))].sort((a, b) => b - a);
+  protected readonly trainingTimeLabel = trainingTimeLabel;
+  protected readonly trainingTimeOf = trainingTimeOf;
+
+  /** The legend's swatches, in the Theme's colours. */
+  protected readonly trainingTimeSports = computed(() => {
+    const colors = this.theme.colors();
+    return trainingTimeSports.map((s) => ({ label: s.label, color: s.color(colors) }));
   });
 
-  /** Chosen apart from the weeks' year; defaults to the newest and is kept across reloads like it. */
-  protected readonly selectedMonthYear = linkedSignal<number[], number | null>({
-    source: this.monthYears,
+  /** Years that have Training Time, newest first. */
+  protected readonly trainingTimeYears = computed(() => {
+    const weeks = this.overview.hasValue() ? this.overview.value().trainingTime : [];
+    return [...new Set(weeks.map(weekYear))].sort((a, b) => b - a);
+  });
+
+  /** Chosen apart from the distance chart's year; defaults to the newest and is kept across reloads like it. */
+  protected readonly selectedTrainingTimeYear = linkedSignal<number[], number | null>({
+    source: this.trainingTimeYears,
     computation: (years, previous) =>
       previous?.value != null && years.includes(previous.value) ? previous.value : (years[0] ?? null),
   });
 
-  protected readonly selectedMonths = computed(() => {
-    const months = this.overview.hasValue() ? this.overview.value().months : [];
-    return months.filter((m) => m.year === this.selectedMonthYear());
+  protected readonly selectedTrainingTime = computed(() => {
+    const weeks = this.overview.hasValue() ? this.overview.value().trainingTime : [];
+    return weeks.filter((w) => weekYear(w) === this.selectedTrainingTimeYear());
   });
 
-  protected readonly monthlyPace = computed(() => {
-    const months = this.selectedMonths();
-    return months.some((m) => m.pace !== null) ? monthlyPaceChart(months, this.units.unit(), this.theme.colors()) : null;
+  /** The selected year's average week and the share of its Training Time spent on Rides and Swims. */
+  protected readonly trainingTimeStats = computed(() => {
+    const weeks = this.selectedTrainingTime();
+    const total = weeks.reduce((sum, w) => sum + trainingTimeOf(w), 0);
+    if (total === 0) return null;
+    const crossTraining = weeks.reduce((sum, w) => sum + w.rides + w.swims, 0);
+    return { average: total / weeks.length, crossTrainingShare: Math.round((crossTraining / total) * 100) };
+  });
+
+  protected readonly trainingTime = computed(() => {
+    const weeks = this.selectedTrainingTime();
+    return weeks.length ? trainingTimeChart(weeks, this.theme.colors()) : null;
   });
 
   constructor() {
@@ -158,29 +183,7 @@ export class OverviewPage {
   }
 }
 
-function weekYear(week: WeekDistance): number {
+function weekYear(week: WeekDistance | TrainingTimeWeek): number {
   return Number(week.start.slice(0, 4));
 }
 
-/** "Oct 2026". */
-function monthLabel(month: MonthPace): string {
-  return `${monthNames[month.month - 1]} ${month.year}`;
-}
-
-/** Pace per month, per km or mile; a dot shows only under the pointer. */
-function monthlyPaceChart(months: MonthPace[], unit: DistanceUnit, colors: ChartColors): EChartsCoreOption {
-  return paceChart(
-    {
-      labels: months.map((m) => monthNames[m.month - 1]),
-      paces: months.map((m) => m.pace),
-      showSymbol: false,
-      tooltip: (index) => {
-        const month = months[index];
-        if (month.pace === null) return tooltipHtml(colors, monthLabel(month), 'no Runs');
-        return tooltipHtml(colors, monthLabel(month), paceLabel(month.pace, unit), `/${unit}`, `over ${formatDistance(month.distance, unit)}`);
-      },
-    },
-    unit,
-    colors,
-  );
-}

@@ -127,45 +127,65 @@
         </details>
       </section>
 
-      <section class="card">
-        <div class="card-header">
-          <div class="titles">
-            <h2 class="card-title">Average Pace per month</h2>
-            <p class="card-sub">Total Moving Time ÷ total distance of the month, so longer Runs count for more.</p>
-          </div>
-          <div class="header-aside">
-            <span class="direction"><span class="mono">↑</span> Faster</span>
-            <div class="segmented mono" role="group" aria-label="Year">
-              @for (y of monthYears(); track y) {
-                <button type="button" [attr.aria-pressed]="y === selectedMonthYear()" (click)="selectedMonthYear.set(y)">{{ y }}</button>
+      @if (overview.trainingTime.length) {
+        <section class="card">
+          <div class="card-header">
+            <div class="titles">
+              <h2 class="card-title">Training Time per Training Week</h2>
+              <p class="card-sub">Moving Time of Runs, Rides and Swims · only here, never in the running figures</p>
+            </div>
+            <div class="header-aside">
+              @if (trainingTimeStats(); as stats) {
+                <div class="stats">
+                  <div class="stat"><span class="label">Avg / week</span><span class="value">{{ trainingTimeLabel(stats.average) }}</span></div>
+                  <div class="stat"><span class="label">Rides &amp; Swims</span><span class="value">{{ stats.crossTrainingShare }} <span class="unit">%</span></span></div>
+                </div>
               }
+              <div class="segmented mono" role="group" aria-label="Year">
+                @for (y of trainingTimeYears(); track y) {
+                  <button type="button" [attr.aria-pressed]="y === selectedTrainingTimeYear()" (click)="selectedTrainingTimeYear.set(y)">{{ y }}</button>
+                }
+              </div>
             </div>
           </div>
-        </div>
-        @if (monthlyPace(); as options) {
-          <div class="chart" echarts [options]="options" [autoResize]="true" role="img"
-               [attr.aria-label]="'Line chart of average Pace per month in ' + selectedMonthYear() + ', faster towards the top; the table below has the same numbers'"></div>
-        } @else {
-          <p class="empty">No Runs in {{ selectedMonthYear() }}.</p>
-        }
-        <details class="as-table">
-          <summary>Show as table</summary>
-          <div class="table-box">
-            <table class="data-table">
-              <thead><tr><th>Month</th><th class="number">Distance</th><th class="number">Pace</th></tr></thead>
-              <tbody>
-                @for (month of selectedMonths(); track month.year * 100 + month.month) {
+          <p class="sport-legend">
+            @for (sport of trainingTimeSports(); track sport.label) {
+              <span><span class="swatch" [style.background]="sport.color"></span>{{ sport.label }}</span>
+            }
+          </p>
+          @if (trainingTime(); as options) {
+            <div class="chart" echarts [options]="options" [autoResize]="true" role="img"
+                 [attr.aria-label]="'Stacked column chart of Training Time per Training Week in ' + selectedTrainingTimeYear() + ', Runs, Rides and Swims; the table below has the same numbers'"></div>
+          }
+          <details class="as-table">
+            <summary>Show as table</summary>
+            <div class="table-box">
+              <table class="data-table">
+                <thead>
                   <tr>
-                    <td class="muted">{{ monthLabel(month) }}</td>
-                    <td class="number">{{ units.distance(month.distance) }}</td>
-                    <td class="number">{{ units.pace(month.pace) }}</td>
+                    <th>Week starting</th>
+                    <th class="number">Runs</th>
+                    <th class="number">Rides</th>
+                    <th class="number">Swims</th>
+                    <th class="number">Total</th>
                   </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        </details>
-      </section>
+                </thead>
+                <tbody>
+                  @for (week of selectedTrainingTime(); track week.start) {
+                    <tr>
+                      <td class="muted">{{ weekLabel(week.start) }}</td>
+                      <td class="number">{{ trainingTimeLabel(week.runs) }}</td>
+                      <td class="number">{{ trainingTimeLabel(week.rides) }}</td>
+                      <td class="number">{{ trainingTimeLabel(week.swims) }}</td>
+                      <td class="number">{{ trainingTimeLabel(trainingTimeOf(week)) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </details>
+        </section>
+      }
     }
   }
 </div>

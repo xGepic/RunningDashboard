@@ -18,7 +18,7 @@ _Avoid_: Activity (when only runs are meant), workout, session
 Any entry recorded on Strava, of any sport. The dashboard ignores Activities that are not Runs, Rides or Swims.
 
 **Ride**:
-A Strava activity with a cycling sport type: road, virtual, gravel or mountain bike (e-bike rides are not Rides). Rides are listed in the Ride history, with their Avg Speed, and each has a page of its own; they never count toward totals, Training Weeks, Streaks, Records or goals.
+A Strava activity with a cycling sport type: road, virtual, gravel or mountain bike (e-bike rides are not Rides). Rides are listed in the Ride history, with their Avg Speed, and each has a page of its own; they never count toward totals, Training Weeks, Streaks, Records or goals, and only show in Training Time beside the Runs.
 _Avoid_: Cycle, bike ride, workout
 
 **Virtual Ride**:
@@ -26,7 +26,7 @@ A Ride with Strava's virtual sport type, e.g. on Zwift. All other Rides are outd
 _Avoid_: Indoor ride, trainer ride
 
 **Swim**:
-A Strava activity with the swimming sport type, in a pool or open water. Swims are listed in the Swim history, with their Swim Pace, and each has a page of its own; like Rides, they never count toward totals, Training Weeks, Streaks, Records or goals.
+A Strava activity with the swimming sport type, in a pool or open water. Swims are listed in the Swim history, with their Swim Pace, and each has a page of its own; like Rides, they never count toward totals, Training Weeks, Streaks, Records or goals, and only show in Training Time beside the Runs.
 _Avoid_: Swim workout, session
 
 **Swim Pace**:
@@ -34,7 +34,7 @@ A Swim's Moving Time per 100 metres, written as min:ss /100m.
 _Avoid_: Pace (on its own, for Swims), Avg Speed
 
 **Listed Activity**:
-A Ride or a Swim: an Activity the dashboard stores only to show it in its history and on its own page, never to count it.
+A Ride or a Swim: an Activity the dashboard stores only to show it in its history, on its own page and in Training Time, never to count it.
 _Avoid_: Other activity, cross-training
 
 **Avg Speed**:
@@ -104,6 +104,10 @@ _Avoid_: Best streak, record streak
 **Relative Effort**:
 Strava's heart-rate-based score for how hard a Run was. Summing it over a week gives the week's training load.
 _Avoid_: Suffer score, load (on its own)
+
+**Training Time**:
+The Moving Time of a Training Week's Runs, Rides and Swims, each sport on its own and together: how much the Athlete trained, whatever the sport. It is shown beside the running figures, never added to them, so Rides and Swims still count toward nothing.
+_Avoid_: Cross-training load, total time (on its own)
 
 **Goal Race**:
 A race the Athlete is training for, with a name, a date, a distance and an optional Target Time. Only one Goal Race is upcoming (race day today or later) at a time; past Goal Races are kept for Race Results and comparisons.

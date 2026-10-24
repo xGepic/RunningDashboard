@@ -55,24 +55,6 @@ public sealed class OverviewTests
     }
 
     [Test]
-    public async Task Monthly_pace_is_total_moving_time_over_total_distance()
-    {
-        var browser = await _app.ConnectWithActivitiesAsync(
-            new TestActivity(1, "Fast long run", new DateTime(2026, 9, 6, 9, 0, 0), 10000, 3000),
-            new TestActivity(2, "Slow short run", new DateTime(2026, 9, 8, 18, 0, 0), 2000, 1000),
-            new TestActivity(3, "July run", new DateTime(2026, 7, 15, 18, 0, 0), 5000, 2000));
-
-        var overview = await GetOverviewAsync(browser);
-
-        // 4000 s over 12 km, not the average of 300 and 500 s/km.
-        var september = overview.Months.Where(m => m is { Year: 2026, Month: 9 }).ShouldHaveSingleItem();
-        september.Pace!.Value.ShouldBe(333.3, 0.05);
-        september.Distance.ShouldBe(12000);
-        var august = overview.Months.Where(m => m is { Year: 2026, Month: 8 }).ShouldHaveSingleItem();
-        august.Pace.ShouldBeNull();
-    }
-
-    [Test]
     public async Task Weeks_without_runs_show_as_zero_up_to_the_current_week()
     {
         var browser = await _app.ConnectWithActivitiesAsync(
@@ -96,7 +78,6 @@ public sealed class OverviewTests
         overview.Totals.ShouldBe(new TotalsResponse(0, 0, 0, 0));
         overview.Years.ShouldBeEmpty();
         overview.Weeks.ShouldBeEmpty();
-        overview.Months.ShouldBeEmpty();
         overview.Streak.ShouldBeNull();
     }
 
@@ -203,6 +184,50 @@ public sealed class OverviewTests
         streak.Longest.ShouldBe(new LongestStreakResponse(2, new DateOnly(2026, 9, 28), new DateOnly(2026, 10, 11)));
     }
 
+    [Test]
+    public async Task Training_time_adds_each_weeks_rides_and_swims_next_to_its_runs_without_changing_the_running_figures()
+    {
+        var browser = await _app.ConnectWithActivitiesAsync(
+            new TestActivity(1, "Tempo run", new DateTime(2026, 9, 29, 18, 0, 0), 10000, 3000),
+            new TestActivity(2, "Commute", new DateTime(2026, 9, 30, 7, 30, 0), 6000, 1500, "Ride"),
+            new TestActivity(3, "Zwift Watopia", new DateTime(2026, 10, 1, 19, 0, 0), 30000, 3600, "VirtualRide"),
+            new TestActivity(4, "Pool", new DateTime(2026, 10, 2, 7, 0, 0), 2000, 2400, "Swim"),
+            new TestActivity(5, "Easy run", new DateTime(2026, 10, 6, 18, 0, 0), 6000, 2100));
+
+        var overview = await GetOverviewAsync(browser);
+
+        overview.TrainingTime.ShouldBe([
+            new TrainingTimeWeekResponse(new DateOnly(2026, 9, 28), 3000, 5100, 2400),
+            new TrainingTimeWeekResponse(new DateOnly(2026, 10, 5), 2100, 0, 0),
+        ]);
+        overview.Totals.ShouldBe(new TotalsResponse(2, 16000, 5100, 0));
+        overview.Weeks.Select(w => w.Distance).ShouldBe([10000, 6000]);
+    }
+
+    [Test]
+    public async Task Training_time_starts_with_a_ride_before_the_first_run_and_shows_empty_weeks_as_zero()
+    {
+        var browser = await _app.ConnectWithActivitiesAsync(
+            new TestActivity(1, "Gravel Marchfeld", new DateTime(2026, 9, 13, 9, 0, 0), 61200, 9000, "GravelRide"),
+            new TestActivity(2, "First run", new DateTime(2026, 9, 29, 18, 0, 0), 5000, 1800));
+
+        var overview = await GetOverviewAsync(browser);
+
+        overview.TrainingTime.Select(w => w.Start).ShouldBe(TrainingWeeks(new DateOnly(2026, 9, 7), 5));
+        overview.TrainingTime.Select(w => w.Rides).ShouldBe([9000, 0, 0, 0, 0]);
+        overview.TrainingTime.Select(w => w.Runs).ShouldBe([0, 0, 0, 1800, 0]);
+        // The running weeks still start with the first Run.
+        overview.Weeks[0].Start.ShouldBe(new DateOnly(2026, 9, 28));
+    }
+
+    [Test]
+    public async Task Without_rides_or_swims_there_is_no_training_time()
+    {
+        var browser = await _app.ConnectWithActivitiesAsync(Run(1, new DateTime(2026, 9, 29)));
+
+        (await GetOverviewAsync(browser)).TrainingTime.ShouldBeEmpty();
+    }
+
     private static IEnumerable<DateOnly> TrainingWeeks(DateOnly firstMonday, int count) =>
         Enumerable.Range(0, count).Select(i => firstMonday.AddDays(7 * i));
 
@@ -214,15 +239,20 @@ public sealed class OverviewTests
     private static async Task<OverviewResponse> GetOverviewAsync(HttpClient browser) =>
         (await browser.GetFromJsonAsync<OverviewResponse>("/api/overview"))!;
 
-    private sealed record OverviewResponse(TotalsResponse Totals, List<YearResponse> Years, List<WeekResponse> Weeks, List<MonthResponse> Months, StreakResponse? Streak);
+    private sealed record OverviewResponse(
+        TotalsResponse Totals,
+        List<YearResponse> Years,
+        List<WeekResponse> Weeks,
+        StreakResponse? Streak,
+        List<TrainingTimeWeekResponse> TrainingTime);
+
+    private sealed record TrainingTimeWeekResponse(DateOnly Start, int Runs, int Rides, int Swims);
 
     private sealed record TotalsResponse(int Runs, double Distance, int MovingTime, double ElevationGain);
 
     private sealed record YearResponse(int Year, int Runs, double Distance, int MovingTime, double ElevationGain);
 
     private sealed record WeekResponse(DateOnly Start, double Distance);
-
-    private sealed record MonthResponse(int Year, int Month, double Distance, double? Pace);
 
     private sealed record StreakResponse(int Current, bool ThisWeekHasRun, LongestStreakResponse Longest, List<StreakWeekResponse> RecentWeeks);
 

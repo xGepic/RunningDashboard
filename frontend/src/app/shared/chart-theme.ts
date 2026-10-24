@@ -20,6 +20,9 @@ export interface ChartColors {
   fontMono: string;
   /** For what is good, e.g. the Cardiac Drift band up to 5%. */
   good: string;
+  /** Rides and Swims beside Runs in `series`, e.g. in Training Time. */
+  ride: string;
+  swim: string;
 }
 
 /** The chart colours of the app's dark look, in the Athlete's Theme. */
@@ -49,6 +52,8 @@ export class ChartTheme {
       tooltipBorder: token('--border-hover'),
       fontMono: token('--mono'),
       good: token('--met'),
+      ride: token('--chart-ride'),
+      swim: token('--chart-swim'),
     };
   });
 }

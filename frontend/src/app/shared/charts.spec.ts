@@ -1,4 +1,5 @@
-import { paceAxis } from './charts';
+import { ChartColors } from './chart-theme';
+import { TrainingTimeWeek, paceAxis, trainingTimeChart, trainingTimeLabel } from './charts';
 
 describe('paceAxis', () => {
   it('ticks every 10 seconds around close Paces', () => {
@@ -26,5 +27,36 @@ describe('paceAxis', () => {
 
   it('leaves the axis to ECharts without a Pace', () => {
     expect(paceAxis([], 'km')).toBeNull();
+  });
+});
+
+describe('trainingTimeChart', () => {
+  const colors = { series: '#4a9eff', ride: '#d95926', swim: '#199e70', surface: '#141b27' } as ChartColors;
+  const weeks: TrainingTimeWeek[] = [
+    { start: '2026-09-28', runs: 3000, rides: 5100, swims: 2400 },
+    { start: '2026-10-05', runs: 2100, rides: 900, swims: 0 },
+    { start: '2026-10-12', runs: 0, rides: 0, swims: 0 },
+  ];
+  type Series = { name: string; stack: string; data: { value: number; itemStyle: { borderRadius: number | number[] } }[] };
+  const series = () => (trainingTimeChart(weeks, colors)['series'] as Series[]);
+
+  it('stacks Runs, Rides and Swims from the bottom, in hours', () => {
+    expect(series().map((s) => s.name)).toEqual(['Runs', 'Rides', 'Swims']);
+    expect(series().every((s) => s.stack === 'time')).toBe(true);
+    expect(series().map((s) => s.data[0].value)).toEqual([0.83, 1.42, 0.67]);
+  });
+
+  it('rounds only the top segment of a column', () => {
+    const radii = (week: number) => series().map((s) => s.data[week].itemStyle.borderRadius);
+    expect(radii(0)).toEqual([0, 0, [3, 3, 0, 0]]);
+    expect(radii(1)).toEqual([0, [3, 3, 0, 0], 0]);
+    expect(radii(2)).toEqual([0, 0, 0]);
+  });
+});
+
+describe('trainingTimeLabel', () => {
+  it('shows hours and minutes, and a dash for nothing', () => {
+    expect(trainingTimeLabel(3960)).toBe('1h 06m');
+    expect(trainingTimeLabel(0)).toBe('–');
   });
 });
