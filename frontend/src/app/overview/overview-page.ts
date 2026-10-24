@@ -1,6 +1,6 @@
-import { DecimalPipe } from '@angular/common';
+import { DOCUMENT, DecimalPipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
-import { Component, computed, inject, linkedSignal } from '@angular/core';
+import { Component, DestroyRef, computed, inject, linkedSignal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { NgxEchartsDirective } from 'ngx-echarts';
 import { ChartTheme } from '../shared/chart-theme';
@@ -169,6 +169,10 @@ export class OverviewPage {
 
   constructor() {
     reloadOnSync(() => this.overview.reload());
+    // The Overview scrolls without a visible scrollbar.
+    const root = inject(DOCUMENT).documentElement;
+    root.classList.add('no-scrollbar');
+    inject(DestroyRef).onDestroy(() => root.classList.remove('no-scrollbar'));
   }
 
   /** A column opens its Training Week's Runs. */

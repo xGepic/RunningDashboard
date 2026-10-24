@@ -448,6 +448,15 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Put on by a page that scrolls without a visible scrollbar, e.g. the Overview. */
+html.no-scrollbar {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 a {
   color: var(--accent-light);
   text-decoration: none;
