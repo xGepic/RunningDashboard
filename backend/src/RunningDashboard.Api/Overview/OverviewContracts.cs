@@ -5,23 +5,30 @@ namespace RunningDashboard.Api.Overview;
 
 internal sealed record RunFigures(DateTime StartLocal, double Distance, int MovingTime, double ElevationGain);
 
+/// <summary>A Ride or a Swim, for Training Time only.</summary>
+/// <param name="MovingTime">Seconds.</param>
+internal sealed record ListedFigures(DateTime StartLocal, int MovingTime, string SportType);
+
 /// <param name="Weeks">Every Training Week from the first Run's up to the current one, empty weeks as zero.</param>
-/// <param name="Months">Every month from the first Run's up to the current one.</param>
 /// <param name="YearlyGoal">The current year's; none without one.</param>
 /// <param name="Streak">None without Runs.</param>
+/// <param name="TrainingTime">
+/// Every Training Week from the first Run's or Listed Activity's up to the current one, empty weeks as zero; empty
+/// without Runs or without Rides and Swims, as there is nothing to add to the running figures then.
+/// </param>
 internal sealed record OverviewResponse(
     TotalsResponse Totals,
     IReadOnlyList<YearResponse> Years,
     IReadOnlyList<WeekResponse> Weeks,
-    IReadOnlyList<MonthResponse> Months,
     YearlyGoalResponse? YearlyGoal,
-    StreakResponse? Streak)
+    StreakResponse? Streak,
+    IReadOnlyList<TrainingTimeWeekResponse> TrainingTime)
 {
-    public static OverviewResponse From(IReadOnlyList<RunFigures> runs, YearlyGoalResponse? yearlyGoal, DateOnly today)
+    public static OverviewResponse From(IReadOnlyList<RunFigures> runs, IReadOnlyList<ListedFigures> listed, YearlyGoalResponse? yearlyGoal, DateOnly today)
     {
         var totals = TotalsResponse.Of(runs);
         if (runs.Count == 0)
-            return new OverviewResponse(totals, [], [], [], yearlyGoal, null);
+            return new OverviewResponse(totals, [], [], yearlyGoal, null, []);
 
         var years = runs
             .GroupBy(r => r.StartLocal.Year)
@@ -41,22 +48,39 @@ internal sealed record OverviewResponse(
             .Select(w => new WeekResponse(w.Start, distanceByWeek.GetValueOrDefault(w)))
             .ToList();
 
-        var byMonth = runs.ToLookup(r => new DateOnly(r.StartLocal.Year, r.StartLocal.Month, 1));
-        var firstMonth = byMonth.Min(g => g.Key);
-        var lastMonth = Max(byMonth.Max(g => g.Key), new DateOnly(today.Year, today.Month, 1));
-        var months = new List<MonthResponse>();
-        for (var month = firstMonth; month <= lastMonth; month = month.AddMonths(1))
-        {
-            var inMonth = byMonth[month].ToList();
-            var distance = inMonth.Sum(r => r.Distance);
-            // Pace over the whole month: longer Runs weigh more than in an average of each Run's Pace.
-            months.Add(new MonthResponse(month.Year, month.Month, distance, Run.PaceOf(inMonth.Sum(r => r.MovingTime), distance)));
-        }
-
-        return new OverviewResponse(totals, years, weeks, months, yearlyGoal, streak);
+        return new OverviewResponse(totals, years, weeks, yearlyGoal, streak, TrainingTimeWeekResponse.Of(runs, listed, TrainingWeek.Of(today)));
     }
 
     private static DateOnly Max(DateOnly a, DateOnly b) => a > b ? a : b;
+}
+
+/// <summary>Training Time: the Moving Time of one Training Week's Runs, Rides and Swims, each on its own.</summary>
+/// <param name="Start">The Monday of the Training Week.</param>
+/// <param name="Runs">Seconds.</param>
+/// <param name="Rides">Seconds.</param>
+/// <param name="Swims">Seconds.</param>
+internal sealed record TrainingTimeWeekResponse(DateOnly Start, int Runs, int Rides, int Swims)
+{
+    /// <param name="runs">At least one.</param>
+    public static List<TrainingTimeWeekResponse> Of(IReadOnlyList<RunFigures> runs, IReadOnlyList<ListedFigures> listed, TrainingWeek thisWeek)
+    {
+        if (listed.Count == 0)
+            return [];
+
+        var runTime = runs.GroupBy(r => TrainingWeek.Of(r.StartLocal)).ToDictionary(g => g.Key, g => g.Sum(r => r.MovingTime));
+        var rideTime = TimeByWeek(listed.Where(a => Sports.Rides.Contains(a.SportType)));
+        var swimTime = TimeByWeek(listed.Where(a => Sports.Swims.Contains(a.SportType)));
+        var weeksWithActivities = runTime.Keys.Concat(rideTime.Keys).Concat(swimTime.Keys).ToList();
+        var firstWeek = weeksWithActivities.MinBy(w => w.Start);
+        // A Run or Ride abroad can already be in the next week by its local time.
+        var lastWeek = weeksWithActivities.Append(thisWeek).MaxBy(w => w.Start);
+        return TrainingWeek.Range(firstWeek, lastWeek)
+            .Select(w => new TrainingTimeWeekResponse(w.Start, runTime.GetValueOrDefault(w), rideTime.GetValueOrDefault(w), swimTime.GetValueOrDefault(w)))
+            .ToList();
+    }
+
+    private static Dictionary<TrainingWeek, int> TimeByWeek(IEnumerable<ListedFigures> activities) =>
+        activities.GroupBy(a => TrainingWeek.Of(a.StartLocal)).ToDictionary(g => g.Key, g => g.Sum(a => a.MovingTime));
 }
 
 /// <param name="Distance">Metres.</param>
@@ -123,6 +147,3 @@ internal sealed record LongestStreakResponse(int Weeks, DateOnly Start, DateOnly
 
 /// <param name="Start">The Monday of the Training Week.</param>
 internal sealed record StreakWeekResponse(DateOnly Start, bool HasRun);
-
-/// <param name="Pace">Seconds per kilometre over all of the month's Runs; none without Runs.</param>
-internal sealed record MonthResponse(int Year, int Month, double Distance, double? Pace);

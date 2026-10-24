@@ -23,7 +23,8 @@
  * tints the whole page, its surfaces, lines and text, towards its accent; the other Themes' neutrals are Blue's turned
  * to their accent's hue in OKLCH, so lightness and contrast stay the same. An element with a data-theme of its
  * own, like a swatch, shows that Theme's colours. --chart-bar-top is the top of a bar's gradient, --chart-bar-hover a
- * bar under the pointer.
+ * bar under the pointer. --chart-ride and --chart-swim stand for Rides and Swims beside Runs in the Theme's colour:
+ * hues away from its accent, checked together against its surface for colour-blind readers.
  */
 :root,
 [data-theme='blue'] {
@@ -78,6 +79,8 @@
   --chart-series: #4a9eff;
   --chart-bar-top: #5aa9ff;
   --chart-bar-hover: #8cc4ff;
+  --chart-ride: #d95926;
+  --chart-swim: #199e70;
 }
 
 [data-theme='teal'] {
@@ -132,6 +135,8 @@
   --chart-series: #22c3d6;
   --chart-bar-top: #36c9da;
   --chart-bar-hover: #85e0ea;
+  --chart-ride: #d95926;
+  --chart-swim: #9085e9;
 }
 
 [data-theme='green'] {
@@ -186,6 +191,8 @@
   --chart-series: #3ccf6e;
   --chart-bar-top: #4fd57d;
   --chart-bar-hover: #93e8b0;
+  --chart-ride: #d95926;
+  --chart-swim: #9085e9;
 }
 
 [data-theme='orange'] {
@@ -240,6 +247,8 @@
   --chart-series: #ff8f3f;
   --chart-bar-top: #ff9c52;
   --chart-bar-hover: #ffc196;
+  --chart-ride: #3987e5;
+  --chart-swim: #d55181;
 }
 
 [data-theme='red'] {
@@ -294,6 +303,8 @@
   --chart-series: #ff5c5c;
   --chart-bar-top: #ff6b6b;
   --chart-bar-hover: #ffa3a3;
+  --chart-ride: #3987e5;
+  --chart-swim: #199e70;
 }
 
 [data-theme='pink'] {
@@ -348,6 +359,8 @@
   --chart-series: #ff6fae;
   --chart-bar-top: #ff7fb7;
   --chart-bar-hover: #ffb3d5;
+  --chart-ride: #3987e5;
+  --chart-swim: #c98500;
 }
 
 [data-theme='purple'] {
@@ -402,6 +415,8 @@
   --chart-series: #9d7bff;
   --chart-bar-top: #a78aff;
   --chart-bar-hover: #c7b5ff;
+  --chart-ride: #d95926;
+  --chart-swim: #199e70;
 }
 
 @keyframes spin {

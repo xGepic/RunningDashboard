@@ -12,9 +12,12 @@ public static class OverviewEndpoints
             var runs = await db.Runs
                 .Select(r => new RunFigures(r.StartLocal, r.Distance, r.MovingTime, r.ElevationGain))
                 .ToListAsync(cancellationToken);
+            var listed = await db.ListedActivities
+                .Select(a => new ListedFigures(a.StartLocal, a.MovingTime, a.SportType))
+                .ToListAsync(cancellationToken);
             var today = DateOnly.FromDateTime(clock.GetLocalNow().DateTime);
             var goal = await db.GetYearlyGoalAsync(today.Year, cancellationToken);
-            return OverviewResponse.From(runs, goal is null ? null : YearlyGoalResponse.From(goal), today);
+            return OverviewResponse.From(runs, listed, goal is null ? null : YearlyGoalResponse.From(goal), today);
         });
     }
 }
