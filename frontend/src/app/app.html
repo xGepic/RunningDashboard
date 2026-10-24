@@ -26,11 +26,7 @@
         <span class="when">{{ activity.startLocal | date: 'd MMM y' }} · {{ activity.sport }}</span>
         <span class="figures">{{ activity.figures }}</span>
       </ng-template>
-      @if (activity.route) {
-        <a [routerLink]="activity.route"><ng-container [ngTemplateOutlet]="details" /></a>
-      } @else {
-        <a [href]="activity.stravaUrl" target="_blank" rel="noopener" title="Open on Strava"><ng-container [ngTemplateOutlet]="details" /></a>
-      }
+      <a [routerLink]="activity.route"><ng-container [ngTemplateOutlet]="details" /></a>
     </div>
   }
   <nav class="settings-link" aria-label="Settings">

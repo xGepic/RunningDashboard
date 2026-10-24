@@ -143,20 +143,19 @@ describe('App', () => {
       expect(last.querySelector('.figures')!.textContent).toBe('10.24 km · 52:05');
     });
 
-    it('is a Ride when that came after the last Run, opened on Strava as in Ride history', async () => {
+    it('is a Ride when that came after the last Run, linked to its details', async () => {
       const last = await show([run], [ride], [swim]);
 
-      const link = last.querySelector('a')!;
-      expect(link.getAttribute('href')).toBe('https://www.strava.com/activities/77');
-      expect(link.getAttribute('target')).toBe('_blank');
+      expect(last.querySelector('a')!.getAttribute('href')).toBe('/rides/77');
       expect(last.querySelector('.name')!.textContent).toBe('Gravel loop');
       expect(last.querySelector('.when')!.textContent).toBe('13 Oct 2026 · Ride');
       expect(last.querySelector('.figures')!.textContent).toBe('42.00 km · 1:30:00');
     });
 
-    it('shows a Swim in metres, as Swim history does', async () => {
+    it('shows a Swim in metres, as Swim history does, linked to its details', async () => {
       const last = await show([], [], [swim]);
 
+      expect(last.querySelector('a')!.getAttribute('href')).toBe('/swims/88');
       expect(last.querySelector('.when')!.textContent).toBe('11 Oct 2026 · Swim');
       expect(last.querySelector('.figures')!.textContent).toBe('1,500 m · 32:10');
     });

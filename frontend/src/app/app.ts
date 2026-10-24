@@ -48,9 +48,8 @@ interface LastActivity {
   startLocal: string;
   /** Distance and Moving Time. */
   figures: string;
-  /** A Run's page; a Ride or Swim has none and opens on Strava, as in its history. */
-  route: (string | number)[] | null;
-  stravaUrl: string | null;
+  /** The activity's own page. */
+  route: (string | number)[];
 }
 
 /** At the bottom of the sidebar, apart from the pages, and without a key. */
@@ -90,7 +89,7 @@ export class App {
 
   /**
    * "Runs" and, on a page below it, that page's name: the header's breadcrumb. A month of the Calendar
-   * (/calendar/2025#Dec) is below its year (/calendar/2025); Ride and Swim history (/rides, /swims) are below the Activities. The section
+   * (/calendar/2025#Dec) is below its year (/calendar/2025); Ride and Swim history (/rides, /swims) and each Run's, Ride's and Swim's page are below the Activities. The section
    * is also the page highlighted in the navigation.
    */
   protected readonly breadcrumb = computed(() => {
@@ -105,13 +104,17 @@ export class App {
     }
     const sub = /^\/runs\/[^/]+$/.test(path)
       ? 'Run'
-      : path === '/rides'
-        ? 'Rides'
-        : path === '/swims'
-          ? 'Swims'
-          : /^\/training\/plan\/[^/]+$/.test(path)
-            ? 'Training Plan'
-            : null;
+      : /^\/rides\/[^/]+$/.test(path)
+        ? 'Ride'
+        : /^\/swims\/[^/]+$/.test(path)
+          ? 'Swim'
+          : path === '/rides'
+            ? 'Rides'
+            : path === '/swims'
+              ? 'Swims'
+              : /^\/training\/plan\/[^/]+$/.test(path)
+                ? 'Training Plan'
+                : null;
     // Back up keeps the filters, but the Rides' and Swims' sort order and page mean nothing to the Runs (as with the switch).
     const dropParams = path === '/rides' || path === '/swims' ? { sort: null, direction: null, page: null } : {};
     return { section, sub, parent: section?.path, dropParams };
@@ -126,16 +129,16 @@ export class App {
   protected readonly lastActivity = computed((): LastActivity | null => {
     const activities: LastActivity[] = [
       ...firstOf(this.latestRuns).map((run): LastActivity => ({
-        sport: 'Run', name: run.name, startLocal: run.startLocal, route: ['/runs', run.id], stravaUrl: null,
+        sport: 'Run', name: run.name, startLocal: run.startLocal, route: ['/runs', run.id],
         figures: `${this.units.distance(run.distance)} · ${formatDuration(run.movingTime)}`,
       })),
       ...firstOf(this.latestRides).map((ride): LastActivity => ({
-        sport: 'Ride', name: ride.name, startLocal: ride.startLocal, route: null, stravaUrl: ride.stravaUrl,
+        sport: 'Ride', name: ride.name, startLocal: ride.startLocal, route: ['/rides', ride.id],
         figures: `${this.units.distance(ride.distance)} · ${formatDuration(ride.movingTime)}`,
       })),
       // Swims stay in metres.
       ...firstOf(this.latestSwims).map((swim): LastActivity => ({
-        sport: 'Swim', name: swim.name, startLocal: swim.startLocal, route: null, stravaUrl: swim.stravaUrl,
+        sport: 'Swim', name: swim.name, startLocal: swim.startLocal, route: ['/swims', swim.id],
         figures: `${formatWhole(swim.distance)} m · ${formatDuration(swim.movingTime)}`,
       })),
     ];
