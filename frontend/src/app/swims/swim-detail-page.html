@@ -1,0 +1,33 @@
+<div class="page">
+  <a class="back" routerLink="/swims">← Swims</a>
+
+  @if (swim.error()) {
+    <p class="error" role="alert">This Swim could not be loaded.</p>
+  } @else if (swim.value(); as swim) {
+    <header class="page-header">
+      <div class="titles">
+        <span class="eyebrow">Swim</span>
+        <h1>{{ swim.name }}</h1>
+        <p class="subtitle">{{ swim.startLocal | date: 'EEEE d MMMM y, HH:mm' }}</p>
+      </div>
+      <a class="btn strava" [href]="swim.stravaUrl" target="_blank" rel="noopener">View on Strava ↗</a>
+    </header>
+
+    <dl class="facts summary" style="--per-row: 6; --per-row-narrow: 3">
+      <div><dt class="label">Distance</dt><dd class="value">{{ swim.distance | number: '1.0-0' }} m</dd></div>
+      <div><dt class="label">Moving Time</dt><dd class="value">{{ formatDuration(swim.movingTime) }}</dd></div>
+      <div><dt class="label">Elapsed time</dt><dd class="value">{{ formatDuration(swim.elapsedTime) }}</dd></div>
+      <div><dt class="label">Swim Pace</dt><dd class="value">{{ formatSwimPace(swim.pace) }}</dd></div>
+      <div><dt class="label">Avg heart rate</dt><dd class="value">{{ swim.averageHeartRate === null ? '–' : (swim.averageHeartRate | number: '1.0-0') + ' bpm' }}</dd></div>
+      <div><dt class="label">Max heart rate</dt><dd class="value">{{ swim.maxHeartRate === null ? '–' : (swim.maxHeartRate | number: '1.0-0') + ' bpm' }}</dd></div>
+    </dl>
+
+    @if (swim.route; as route) {
+      <section class="card flush route">
+        <div class="card-header"><h2 class="card-title">Route</h2></div>
+        <!-- Without stretches to keep the pace of, the map offers no replay. -->
+        <app-run-map [route]="route" [stretches]="[]" />
+      </section>
+    }
+  }
+</div>

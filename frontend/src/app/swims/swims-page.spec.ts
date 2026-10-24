@@ -51,6 +51,12 @@ describe('SwimsPage', () => {
     expect(element.querySelector('.summary')!.textContent).toContain('2:00 /100m');
   });
 
+  it("links each Swim to its own page", async () => {
+    const element = await open(swims);
+
+    expect(element.querySelector('tbody a')!.getAttribute('href')).toBe('/swims/1');
+  });
+
   it('says so when the Swims cannot be loaded, without totals', async () => {
     const element = await open('error');
 

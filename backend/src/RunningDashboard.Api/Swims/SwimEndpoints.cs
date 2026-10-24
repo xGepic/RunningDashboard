@@ -36,6 +36,12 @@ public static class SwimEndpoints
 
             return Results.Ok(query.Sorted(await MatchingAsync(query, db, cancellationToken), s => s.StartLocal, Figures).ToList());
         });
+
+        app.MapGet("/api/swims/{id:long}", async (long id, AppDbContext db, CancellationToken cancellationToken) =>
+        {
+            var swim = await db.ListedActivities.SingleOrDefaultAsync(a => a.Id == id && Sports.Swims.Contains(a.SportType), cancellationToken);
+            return swim is null ? Results.NotFound() : Results.Ok(SwimDetailResponse.From(swim));
+        });
     }
 
     /// <summary>

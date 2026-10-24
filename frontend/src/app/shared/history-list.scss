@@ -6,13 +6,18 @@
 .history {
   min-width: 880px;
 
-  // A Ride or Swim has no page of its own, so its row opens nothing; the Runs list makes its rows clickable.
+  // A Ride has no page of its own, so its row opens nothing; the Runs list makes its rows clickable.
   tbody tr {
     cursor: default;
 
     &:hover {
       background: var(--row-hover);
     }
+  }
+
+  // A Swim has a page of its own: the whole row opens it.
+  &.swims tbody tr {
+    cursor: pointer;
   }
 
   .date {

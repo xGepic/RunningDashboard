@@ -36,6 +36,12 @@ export class SwimsPage extends HistoryList<SwimSortKey, Swim> {
   protected readonly formatHoursMinutes = formatHoursMinutes;
   protected readonly formatSwimPace = formatSwimPace;
 
+  /** Opens the Swim's page, unless a link in the row was clicked. */
+  protected open(swimId: number, event: MouseEvent): void {
+    if ((event.target as HTMLElement).closest('a')) return;
+    this.router.navigate(['/swims', swimId]);
+  }
+
   /** Every Swim, in the list's sort order. */
   protected exportSwims(): void {
     this.exportCsv<Swim>('/api/swims/export', requestParams({ sort: this.sort(), direction: this.direction() }), this.datedFileName('swims'), swimTable);

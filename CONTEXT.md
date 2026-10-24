@@ -26,7 +26,7 @@ A Ride with Strava's virtual sport type, e.g. on Zwift. All other Rides are outd
 _Avoid_: Indoor ride, trainer ride
 
 **Swim**:
-A Strava activity with the swimming sport type, in a pool or open water. Swims are only listed in the Swim history, with their Swim Pace; like Rides, they never count toward totals, Training Weeks, Streaks, Records or goals.
+A Strava activity with the swimming sport type, in a pool or open water. Swims are listed in the Swim history, with their Swim Pace, and each has a page of its own; like Rides, they never count toward totals, Training Weeks, Streaks, Records or goals.
 _Avoid_: Swim workout, session
 
 **Swim Pace**:

@@ -25,6 +25,7 @@ export const routes: Routes = [
   { path: 'rides', component: RidesPage, title: 'Rides · Running Dashboard' },
   // Loaded when first opened, to keep the first load small.
   { path: 'swims', loadComponent: () => import('./swims/swims-page').then((m) => m.SwimsPage), title: 'Swims · Running Dashboard' },
+  { path: 'swims/:id', loadComponent: () => import('./swims/swim-detail-page').then((m) => m.SwimDetailPage), title: 'Swim · Running Dashboard' },
   ...calendarRoutes,
   { path: 'shoes', component: ShoesPage, title: 'Shoes · Running Dashboard' },
   { path: 'calculator', component: RaceCalculatorPage, title: 'Race Calculator · Running Dashboard' },

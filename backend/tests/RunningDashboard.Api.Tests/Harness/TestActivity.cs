@@ -18,6 +18,8 @@ namespace RunningDashboard.Api.Tests.Harness;
 /// <param name="GearId">Strava's gear id of the Shoe; none unless a test sets it.</param>
 /// <param name="AverageCadence">As Strava counts it: one foot's steps per minute; none unless a test sets it.</param>
 /// <param name="StartLatLng">Where it started, latitude then longitude; none (recorded without GPS) unless a test sets it.</param>
+/// <param name="MaxHeartRate">Beats per minute; none (recorded without heart rate) unless a test sets it.</param>
+/// <param name="SummaryRoute">The summary's simplified route as an encoded polyline; none (recorded without GPS) unless a test sets it.</param>
 public sealed record TestActivity(
     long Id,
     string Name,
@@ -35,7 +37,9 @@ public sealed record TestActivity(
     string? GearId = null,
     TestSplit[]? Splits = null,
     bool Trainer = false,
-    double[]? StartLatLng = null)
+    double[]? StartLatLng = null,
+    double? MaxHeartRate = null,
+    string? SummaryRoute = null)
 {
     public static string ToJson(IEnumerable<TestActivity> activities) =>
         JsonSerializer.Serialize(activities.Select(a => a.ToStrava()));
@@ -86,6 +90,7 @@ public sealed record TestActivity(
             ["timezone"] = $"(GMT{UtcOffsetHours:+00;-00}:00) Test/Zone",
             ["utc_offset"] = UtcOffsetHours * 3600,
             ["start_latlng"] = StartLatLng ?? [],
+            ["map"] = new { summary_polyline = SummaryRoute ?? "" },
             ["trainer"] = Trainer || SportType == "VirtualRun",
             ["commute"] = false,
             ["manual"] = false,
@@ -95,6 +100,7 @@ public sealed record TestActivity(
             ["average_speed"] = MovingTime > 0 ? Distance / MovingTime : 0,
             ["has_heartrate"] = AverageHeartRate is not null,
             ["average_heartrate"] = AverageHeartRate,
+            ["max_heartrate"] = MaxHeartRate,
             ["average_cadence"] = AverageCadence,
             ["pr_count"] = 0,
             ["suffer_score"] = RelativeEffort,

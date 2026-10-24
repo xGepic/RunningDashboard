@@ -1,3 +1,4 @@
+using System.Text.Json;
 using RunningDashboard.Api.Strava;
 
 namespace RunningDashboard.Api.Persistence;
@@ -33,6 +34,37 @@ public sealed class ListedActivity
     public double ElevationGain { get; set; }
 
     public required string RawSummaryJson { get; set; }
+
+    /// <summary>Beats per minute, from the stored summary; none without a heart-rate recording.</summary>
+    public double? AverageHeartRate => NumberIn(RawSummaryJson, "average_heartrate");
+
+    /// <inheritdoc cref="AverageHeartRate"/>
+    public double? MaxHeartRate => NumberIn(RawSummaryJson, "max_heartrate");
+
+    /// <summary>
+    /// The simplified route from the stored summary, as Strava encodes it (Google's encoded polyline). None for an
+    /// Activity without GPS, such as a Swim in a pool.
+    /// </summary>
+    public string? Route
+    {
+        get
+        {
+            using var activity = JsonDocument.Parse(RawSummaryJson);
+            return activity.RootElement.TryGetProperty("map", out var map)
+                && map.ValueKind == JsonValueKind.Object
+                && map.TryGetProperty("summary_polyline", out var polyline)
+                && polyline.ValueKind == JsonValueKind.String
+                && polyline.GetString() is { Length: > 0 } route
+                    ? route
+                    : null;
+        }
+    }
+
+    private static double? NumberIn(string activityJson, string property)
+    {
+        using var activity = JsonDocument.Parse(activityJson);
+        return activity.RootElement.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.Number ? value.GetDouble() : null;
+    }
 
     /// <summary>
     /// Avg Speed: distance per Moving Time, in kilometres per hour. An Activity without Moving Time has none.

@@ -14,12 +14,19 @@ namespace RunningDashboard.Api.Tests;
 /// | Technique 1k           | 2026-09-26 |  1,000 m |   1,350 s   | = 135 s /100 m   |
 /// | Lake 3k                | 2026-09-20 |  3,000 m |   3,150 s   | = 105 s /100 m   |
 ///
+/// The Pool 2k was recorded with heart rate, the Open water Alte Donau with GPS.
+///
 /// Not Swims: an Evening Run, a Ride and a walk.
 /// </summary>
 [FixtureLifeCycle(LifeCycle.SingleInstance)]
 public sealed class SwimsListTests
 {
     private const long Pool2K = 20460000011;
+    private const long OpenWaterAlteDonau = 20430000013;
+    private const long Ride = 20440000012;
+
+    /// <summary>Google's polyline example, standing in for a real route.</summary>
+    private const string Route = "_p~iF~ps|U_ulLnnqC";
 
     private readonly TestApp _app = new();
     private HttpClient _browser = null!;
@@ -27,9 +34,11 @@ public sealed class SwimsListTests
     [OneTimeSetUp]
     public async Task OneTimeSetUpAsync() => _browser = await _app.ConnectWithActivitiesAsync(
         new TestActivity(20479305419, "Evening Run", new DateTime(2026, 10, 6, 20, 35, 26), 5081.2, 2096),
-        new TestActivity(Pool2K, "Pool 2k", new DateTime(2026, 10, 5, 7, 0, 0), 2000, 2400, "Swim", ElapsedTime: 2700),
-        new TestActivity(20440000012, "Kahlenberg climb", new DateTime(2026, 10, 2, 11, 0, 0), 42300, 5400, "Ride"),
-        new TestActivity(20430000013, "Open water Alte Donau", new DateTime(2026, 10, 1, 18, 0, 0), 1500, 2550, "Swim"),
+        new TestActivity(Pool2K, "Pool 2k", new DateTime(2026, 10, 5, 7, 0, 0), 2000, 2400, "Swim", ElapsedTime: 2700,
+            AverageHeartRate: 132.4, MaxHeartRate: 158),
+        new TestActivity(Ride, "Kahlenberg climb", new DateTime(2026, 10, 2, 11, 0, 0), 42300, 5400, "Ride"),
+        new TestActivity(OpenWaterAlteDonau, "Open water Alte Donau", new DateTime(2026, 10, 1, 18, 0, 0), 1500, 2550, "Swim",
+            SummaryRoute: Route),
         new TestActivity(20420000014, "Sunday walk", new DateTime(2026, 9, 27, 15, 0, 0), 4000, 3000, "Walk"),
         new TestActivity(20410000015, "Technique 1k", new DateTime(2026, 9, 26, 7, 0, 0), 1000, 1350, "Swim"),
         new TestActivity(20400000016, "Lake 3k", new DateTime(2026, 9, 20, 9, 0, 0), 3000, 3150, "Swim"));
@@ -119,6 +128,38 @@ public sealed class SwimsListTests
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
     }
 
+    [Test]
+    public async Task A_swim_has_a_detail_page_with_its_times_heart_rate_and_link_to_strava()
+    {
+        var swim = (await _browser.GetFromJsonAsync<SwimDetail>($"/api/swims/{Pool2K}"))!;
+
+        (swim.Id, swim.Name, swim.StartLocal).ShouldBe((Pool2K, "Pool 2k", new DateTime(2026, 10, 5, 7, 0, 0)));
+        (swim.Distance, swim.MovingTime, swim.ElapsedTime).ShouldBe((2000, 2400, 2700));
+        swim.Pace!.Value.ShouldBe(120, 0.0005);
+        (swim.AverageHeartRate, swim.MaxHeartRate).ShouldBe((132.4, 158));
+        swim.Route.ShouldBeNull(); // in a pool, without GPS
+        swim.StravaUrl.ShouldBe($"https://www.strava.com/activities/{Pool2K}");
+    }
+
+    [Test]
+    public async Task An_open_water_swim_has_its_route_and_no_heart_rate_without_a_recording()
+    {
+        var swim = (await _browser.GetFromJsonAsync<SwimDetail>($"/api/swims/{OpenWaterAlteDonau}"))!;
+
+        swim.Route.ShouldBe(Route);
+        (swim.AverageHeartRate, swim.MaxHeartRate).ShouldBe((null, null));
+    }
+
+    [TestCase(Ride)]
+    [TestCase(20479305419)] // the Evening Run
+    [TestCase(1)]
+    public async Task Only_a_swim_has_a_swim_detail_page(long id)
+    {
+        var response = await _browser.GetAsync($"/api/swims/{id}");
+
+        response.StatusCode.ShouldBe(HttpStatusCode.NotFound);
+    }
+
     private async Task<SwimPage> ListAsync(string query) =>
         (await _browser.GetFromJsonAsync<SwimPage>($"/api/swims?{query}"))!;
 
@@ -131,4 +172,18 @@ public sealed class SwimsListTests
 
     /// <param name="Pace">Seconds per 100 metres.</param>
     private sealed record SwimItem(long Id, string Name, DateTime StartLocal, double Distance, int MovingTime, double? Pace, string StravaUrl);
+
+    /// <param name="Pace">Seconds per 100 metres.</param>
+    private sealed record SwimDetail(
+        long Id,
+        string Name,
+        DateTime StartLocal,
+        double Distance,
+        int MovingTime,
+        int ElapsedTime,
+        double? Pace,
+        double? AverageHeartRate,
+        double? MaxHeartRate,
+        string? Route,
+        string StravaUrl);
 }
