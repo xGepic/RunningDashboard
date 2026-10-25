@@ -137,6 +137,10 @@
             <div class="header-aside">
               @if (trainingTimeStats(); as stats) {
                 <div class="stats">
+                  <div class="stat">
+                    <span class="label">Peak week</span>
+                    <span class="value">{{ trainingTimeLabel(stats.peak) }} <span class="unit">· {{ stats.peakLabel }}</span></span>
+                  </div>
                   <div class="stat"><span class="label">Avg / week</span><span class="value">{{ trainingTimeLabel(stats.average) }}</span></div>
                   <div class="stat"><span class="label">Rides &amp; Swims</span><span class="value">{{ stats.crossTrainingShare }} <span class="unit">%</span></span></div>
                 </div>

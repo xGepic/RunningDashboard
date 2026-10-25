@@ -153,13 +153,19 @@ export class OverviewPage {
     return weeks.filter((w) => weekYear(w) === this.selectedTrainingTimeYear());
   });
 
-  /** The selected year's average week and the share of its Training Time spent on Rides and Swims. */
+  /** The selected year's longest week, its average week and the share of its Training Time spent on Rides and Swims. */
   protected readonly trainingTimeStats = computed(() => {
     const weeks = this.selectedTrainingTime();
     const total = weeks.reduce((sum, w) => sum + trainingTimeOf(w), 0);
     if (total === 0) return null;
+    const peak = weeks.reduce((a, b) => (trainingTimeOf(b) > trainingTimeOf(a) ? b : a));
     const crossTraining = weeks.reduce((sum, w) => sum + w.rides + w.swims, 0);
-    return { average: total / weeks.length, crossTrainingShare: Math.round((crossTraining / total) * 100) };
+    return {
+      peak: trainingTimeOf(peak),
+      peakLabel: shortWeekLabel(peak.start),
+      average: total / weeks.length,
+      crossTrainingShare: Math.round((crossTraining / total) * 100),
+    };
   });
 
   protected readonly trainingTime = computed(() => {
