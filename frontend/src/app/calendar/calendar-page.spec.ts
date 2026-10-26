@@ -6,7 +6,9 @@ import { Router, provideRouter, withComponentInputBinding } from '@angular/route
 import { RouterTestingHarness } from '@angular/router/testing';
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import { Connection } from '../connection/connection';
-import { MonthTotals, Run, RunMonths, RunPage } from '../runs/run';
+import { Ride } from '../rides/ride';
+import { MonthTotals, Run, RunMonths } from '../runs/run';
+import { Swim } from '../swims/swim';
 import { ImageDownload } from '../shared/image-download';
 import { calendarRoutes } from './calendar-routes';
 import { YearReview } from './review';
@@ -38,6 +40,14 @@ const septemberWeeks: Run[] = [
   run(4, 'Sunday long run with a very long name', '2026-09-13T08:00:00', 21000),
   run(5, 'October opener', '2026-10-03T09:00:00', 8000),
 ];
+
+const ride = (id: number, name: string, startLocal: string): Ride => ({
+  id, name, sportType: 'VirtualRide', startLocal, distance: 30000, movingTime: 3600, speed: 30, elevationGain: 0, stravaUrl: '',
+});
+
+const swim = (id: number, name: string, startLocal: string): Swim => ({
+  id, name, startLocal, distance: 2000, movingTime: 2400, pace: 120, stravaUrl: '',
+});
 
 /** The text of an element's parts, one space between them: "September 60.7 km 7h 17m". */
 const text = (element: Element) =>
@@ -86,14 +96,22 @@ describe('CalendarPage', () => {
     return { harness, http, element, settle, boxes: () => [...element.querySelectorAll('.month-box')] };
   }
 
-  /** Opens a month's `url`, answering its Training Weeks' Runs with `runs` from `from` to `to`. */
-  async function openMonth(url: string, from: string, to: string, runs: Run[] = septemberWeeks, unit: 'km' | 'mi' = 'km') {
+  /** Opens a month's `url`, answering its Training Weeks' Runs with `runs`, and Rides and Swims, from `from` to `to`. */
+  async function openMonth(
+    url: string, from: string, to: string, runs: Run[] = septemberWeeks, unit: 'km' | 'mi' = 'km',
+    { rides = [], swims = [] }: { rides?: Ride[]; swims?: Swim[] } = {},
+  ) {
     const page = await open(url, year2026, unit);
-    const request = page.http.expectOne((r) => r.url === '/api/runs');
-    expect(Object.fromEntries(request.request.params.keys().map((key) => [key, request.request.params.get(key)]))).toEqual({
-      from, to, pageSize: '200', sort: 'date', direction: 'asc',
-    });
-    request.flush({ items: runs, page: 1, pageSize: 200, totalCount: runs.length } satisfies RunPage);
+    const answer = (list: string, items: unknown[], totals: unknown) => {
+      const request = page.http.expectOne((r) => r.url === list);
+      expect(Object.fromEntries(request.request.params.keys().map((key) => [key, request.request.params.get(key)]))).toEqual({
+        from, to, pageSize: '200', sort: 'date', direction: 'asc',
+      });
+      request.flush({ items, page: 1, pageSize: 200, totalCount: items.length, totals });
+    };
+    answer('/api/runs', runs, undefined);
+    answer('/api/rides', rides, { rides: rides.length, distance: 0, movingTime: 0, speed: null });
+    answer('/api/swims', swims, { swims: swims.length, distance: 0, movingTime: 0, pace: null });
     await page.settle();
     const days = () => [...page.harness.routeNativeElement!.querySelectorAll('.week .day')];
     return { ...page, days };
@@ -257,6 +275,43 @@ describe('CalendarPage', () => {
       const summary = [...element.querySelectorAll('.summary .stat')].map(text);
       expect(summary).toEqual(['Runs 3', 'Distance 60.7 km', 'Moving Time 7h 17m', 'Avg Pace 7:13 /km']);
       expect(element.querySelector('h1')!.textContent!.trim()).toBe('September 2026');
+    });
+
+    it('shows Rides and Swims in their days in the order they started, linking to them, without counting them', async () => {
+      const { days, element } = await openMonth('/calendar#Sep', '2026-08-31', '2026-10-04', septemberWeeks, 'km', {
+        rides: [ride(11, 'Zwift spin', '2026-09-08T19:30:00'), ride(12, 'Gravel loop', '2026-09-20T10:00:00')],
+        swims: [swim(21, 'Morning swim', '2026-09-08T06:30:00')],
+      });
+
+      const all = days();
+      // The sport is spoken before a Ride's or Swim's name, as it is only shown by colour.
+      expect(day(all[8])).toBe('8: Swim: Morning swim, Tempo Tuesday, Ride: Zwift spin, Evening shakeout');
+      expect(day(all[20])).toBe('20: Ride: Gravel loop');
+      expect([...all[8].querySelectorAll('a')].map((a) => [a.getAttribute('href'), a.className])).toEqual([
+        ['/swims/21', 'swim'], ['/runs/2', 'run'], ['/rides/11', 'ride'], ['/runs/3', 'run'],
+      ]);
+      expect(all[8].querySelector('a.ride')!.getAttribute('title')).toBe('Zwift spin');
+      expect([...element.querySelectorAll('.week .week-total')].map((total) => total.textContent!.trim())).toEqual([
+        '5.0 km', '34.0 km', '–', '–', '8.0 km',
+      ]);
+      expect(text(element.querySelector('.sport-legend')!)).toBe("Runs Rides Swims The week's distance counts Runs only.");
+    });
+
+    it('leaves the legend out when the month has only Runs', async () => {
+      const { element } = await openMonth('/calendar#Sep', '2026-08-31', '2026-10-04');
+
+      expect(element.querySelector('.sport-legend')).toBeNull();
+    });
+
+    it("says so when the month's Rides could not be loaded", async () => {
+      const page = await open('/calendar#Sep');
+      page.http.expectOne((r) => r.url === '/api/runs').flush({ items: septemberWeeks, page: 1, pageSize: 200, totalCount: 5 });
+      page.http.expectOne((r) => r.url === '/api/rides').flush(null, { status: 500, statusText: 'Server Error' });
+      page.http.expectOne((r) => r.url === '/api/swims').flush({ items: [], page: 1, pageSize: 200, totalCount: 0 });
+      await page.settle();
+
+      expect(page.element.querySelector('[role="alert"]')!.textContent!.trim()).toBe("The month's activities could not be loaded.");
+      expect(page.element.querySelector('.month-grid')).toBeNull();
     });
 
     it('shows the totals in miles when they are chosen in Settings', async () => {

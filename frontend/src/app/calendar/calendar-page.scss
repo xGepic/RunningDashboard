@@ -138,7 +138,7 @@ a.month-box {
     background: var(--inset);
 
     .date-number,
-    .day-runs {
+    .day-activities {
       opacity: 0.45;
     }
   }
@@ -175,7 +175,7 @@ a.month-box {
   font-size: 12px;
 }
 
-.day-runs {
+.day-activities {
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -198,6 +198,43 @@ a.month-box {
       background: color-mix(in srgb, var(--accent) 26%, transparent);
       color: var(--text);
     }
+
+    /* Rides and Swims in their Training Time colours. */
+    &.ride {
+      background: color-mix(in srgb, var(--chart-ride) 16%, transparent);
+
+      &:hover {
+        background: color-mix(in srgb, var(--chart-ride) 28%, transparent);
+      }
+    }
+
+    &.swim {
+      background: color-mix(in srgb, var(--chart-swim) 16%, transparent);
+
+      &:hover {
+        background: color-mix(in srgb, var(--chart-swim) 28%, transparent);
+      }
+    }
+  }
+}
+
+.sport-legend {
+  margin-top: 12px;
+
+  .swatch.run {
+    background: var(--accent);
+  }
+
+  .swatch.ride {
+    background: var(--chart-ride);
+  }
+
+  .swatch.swim {
+    background: var(--chart-swim);
+  }
+
+  .note {
+    margin-left: auto;
   }
 }
 
@@ -236,7 +273,7 @@ a.month-box {
       border-left: 0;
     }
 
-    &.without-runs {
+    &.without-activities {
       display: none;
     }
 
@@ -254,7 +291,7 @@ a.month-box {
     display: inline;
   }
 
-  .day-runs {
+  .day-activities {
     flex: 1;
     min-width: 0;
     margin: 0;

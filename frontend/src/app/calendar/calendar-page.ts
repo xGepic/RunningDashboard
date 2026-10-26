@@ -10,19 +10,41 @@ import { monthlyDistanceChart } from '../shared/charts';
 import { formatHoursMinutes } from '../shared/format';
 import { Units } from '../shared/units';
 import { reloadOnSync } from '../sync/reload-on-sync';
+import { RidePage } from '../rides/ride';
 import { Run, RunMonths, RunPage } from '../runs/run';
+import { SwimPage } from '../swims/swim';
 import { monthFragments, yearPath } from './calendar-links';
 import { YearReviewPanel } from './year-review';
 
-/** All Runs of a month's Training Weeks fit on one page. */
+/** All Runs, Rides or Swims of a month's Training Weeks fit on one page. */
 const pageSize = 200;
+
+type Sport = 'run' | 'ride' | 'swim';
+
+/** A Run, Ride or Swim in its day, linking to its own page. */
+interface CalendarActivity {
+  id: number;
+  name: string;
+  startLocal: string;
+  sport: Sport;
+}
+
+/** The pages Runs, Rides and Swims have, and what a Ride or Swim is called for a screen reader (Runs go without). */
+const sports: Record<Sport, { path: string; label: string | null }> = {
+  run: { path: '/runs', label: null },
+  ride: { path: '/rides', label: 'Ride' },
+  swim: { path: '/swims', label: 'Swim' },
+};
 
 /** A day of the month view; days of the months around it fill its first and last Training Weeks. */
 interface CalendarDay {
   date: Date;
   otherMonth: boolean;
   isToday: boolean;
+  /** For the week's distance, which counts Runs only. */
   runs: Run[];
+  /** Its Runs, Rides and Swims in the order they started. */
+  activities: CalendarActivity[];
 }
 
 /** A year of Runs as a box per month; a month's fragment (/calendar#Sep) shows that month's Training Weeks instead. */
@@ -78,41 +100,71 @@ export class CalendarPage {
   /** The year's monthly totals. */
   protected readonly months = httpResource<RunMonths>(() => ({ url: '/api/runs/months', params: { year: String(this.selectedYear()) } }));
 
-  /** The Runs of the month's Training Weeks, oldest first; not loaded for the year view. */
-  protected readonly runs = httpResource<RunPage>(() => {
+  /** The month's Training Weeks as the Run, Ride and Swim lists take them, oldest first; none for the year view. */
+  private readonly gridParams = computed(() => {
     const range = this.gridRange();
-    if (!range) return undefined;
-    return {
-      url: '/api/runs',
-      params: {
-        from: isoDate(range.from),
-        to: isoDate(range.to),
-        pageSize: String(pageSize),
-        sort: 'date',
-        direction: 'asc',
-      },
-    };
+    if (!range) return null;
+    return { from: isoDate(range.from), to: isoDate(range.to), pageSize: String(pageSize), sort: 'date', direction: 'asc' };
   });
+
+  /** The Runs of the month's Training Weeks; not loaded for the year view. */
+  protected readonly runs = httpResource<RunPage>(() => {
+    const params = this.gridParams();
+    return params ? { url: '/api/runs', params } : undefined;
+  });
+  /** The Rides of the month's Training Weeks, shown in their days but counted nowhere. */
+  protected readonly rides = httpResource<RidePage>(() => {
+    const params = this.gridParams();
+    return params ? { url: '/api/rides', params } : undefined;
+  });
+  /** The Swims of the month's Training Weeks, shown in their days but counted nowhere. */
+  protected readonly swims = httpResource<SwimPage>(() => {
+    const params = this.gridParams();
+    return params ? { url: '/api/swims', params } : undefined;
+  });
+
+  protected readonly gridFailed = computed(() => !!(this.runs.error() || this.rides.error() || this.swims.error()));
 
   /** The grid's Training Weeks, Monday first. */
   protected readonly weeks = computed(() => {
     const range = this.gridRange();
     const month = this.selectedMonth();
-    if (!range || month === null || !this.runs.hasValue()) return [];
+    if (!range || month === null || this.gridFailed() || !this.runs.hasValue() || !this.rides.hasValue() || !this.swims.hasValue()) return [];
     const runsByDay = new Map<string, Run[]>();
     for (const run of this.runs.value().items) {
       const key = run.startLocal.slice(0, 10);
       runsByDay.set(key, [...(runsByDay.get(key) ?? []), run]);
+    }
+    const activitiesByDay = new Map<string, CalendarActivity[]>();
+    const activities = [
+      ...this.runs.value().items.map((a) => ({ ...a, sport: 'run' as const })),
+      ...this.rides.value().items.map((a) => ({ ...a, sport: 'ride' as const })),
+      ...this.swims.value().items.map((a) => ({ ...a, sport: 'swim' as const })),
+    ].sort((a, b) => a.startLocal.localeCompare(b.startLocal));
+    for (const { id, name, startLocal, sport } of activities) {
+      const key = startLocal.slice(0, 10);
+      activitiesByDay.set(key, [...(activitiesByDay.get(key) ?? []), { id, name, startLocal, sport }]);
     }
     const todayKey = isoDate(today());
     const weeks: CalendarDay[][] = [];
     for (let date = range.from; date <= range.to; date = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1)) {
       if (daysSinceMonday(date) === 0) weeks.push([]);
       const key = isoDate(date);
-      weeks[weeks.length - 1].push({ date, otherMonth: date.getMonth() !== month - 1, isToday: key === todayKey, runs: runsByDay.get(key) ?? [] });
+      weeks[weeks.length - 1].push({
+        date,
+        otherMonth: date.getMonth() !== month - 1,
+        isToday: key === todayKey,
+        runs: runsByDay.get(key) ?? [],
+        activities: activitiesByDay.get(key) ?? [],
+      });
     }
     return weeks.map((days) => ({ start: days[0].date, days, distance: days.flatMap((d) => d.runs).reduce((sum, r) => sum + r.distance, 0) }));
   });
+
+  /** Whether the grid shows a Ride or Swim, for which its legend is there. */
+  protected readonly hasListedActivities = computed(() =>
+    this.weeks().some((week) => week.days.some((d) => d.activities.some((a) => a.sport !== 'run'))),
+  );
 
   /** The month's own totals, without the days of the months around it; none for the year view. */
   protected readonly monthTotals = computed(() => {
@@ -180,11 +232,14 @@ export class CalendarPage {
 
   protected readonly weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   protected readonly formatHoursMinutes = formatHoursMinutes;
+  protected readonly sports = sports;
 
   constructor() {
     reloadOnSync(() => {
       this.months.reload();
       this.runs.reload();
+      this.rides.reload();
+      this.swims.reload();
     });
   }
 

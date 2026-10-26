@@ -158,18 +158,6 @@
   gap: 12px 20px;
 }
 
-/* Which colour is which sport in Training Time; the text stays in text colours. */
 .sport-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 16px;
-  margin: 0 0 12px;
-  color: var(--text-muted);
-  font-size: 12px;
-
-  > span {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
+  margin-bottom: 12px;
 }
