@@ -1,8 +1,13 @@
+/* One column in the middle of the page, the header with the calculator. */
+.page {
+  max-width: 720px;
+  margin-inline: auto;
+}
+
 .calculator {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  max-width: 720px;
 }
 
 .inputs {
