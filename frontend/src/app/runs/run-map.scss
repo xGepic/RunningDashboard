@@ -1,5 +1,7 @@
 .map {
   height: 380px;
+  // Leaflet's panes and controls have z-indexes up to 1000; keep them inside the map so it scrolls under the top bar.
+  isolation: isolate;
 }
 
 .replay {
