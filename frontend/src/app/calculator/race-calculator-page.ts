@@ -98,7 +98,7 @@ export class RaceCalculatorPage {
 
   protected readonly strategy = signal<PacingStrategy>('even');
   /** In %. */
-  protected readonly share = signal<number>(2);
+  protected readonly share = signal<number>(5);
 
   /** Until there is a finish time, one of no time, for the Checkpoints alone. */
   protected readonly plan = computed(() => new PacingPlan(this.distance(), this.finishTime() ?? 0, this.strategy(), this.share() / 100));

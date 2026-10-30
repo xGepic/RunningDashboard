@@ -199,7 +199,7 @@ describe('RaceCalculatorPage', () => {
       expect(page.select('share')!.style.visibility).toBe('hidden');
       page.press('Negative Split');
       expect(page.select('share')!.style.visibility).toBe('');
-      expect(page.select('share')!.selectedOptions[0].text.trim()).toBe('2% faster');
+      expect(page.select('share')!.selectedOptions[0].text.trim()).toBe('5% faster');
     });
 
     it('lists the stretches between the Checkpoints, with the clock time at each', async () => {
@@ -263,7 +263,7 @@ describe('RaceCalculatorPage', () => {
 
       page.press('Negative Split');
       expect(page.element.querySelector('.pacing .card-sub')!.textContent!.replace(/\s+/g, ' ')).toContain(
-        'From 5:06 /km at the start to 4:54 /km at the finish: the second half 2% faster than the first.',
+        'From 5:15 /km at the start to 4:45 /km at the finish: the second half 5% faster than the first.',
       );
       page.pick('share', '4% faster');
 
@@ -282,8 +282,8 @@ describe('RaceCalculatorPage', () => {
 
       page.press('Positive Split');
 
-      expect(page.rows()[0][2]).toBe('4:57 /km');
-      expect(page.select('share')!.selectedOptions[0].text.trim()).toBe('2% slower');
+      expect(page.rows()[0][2]).toBe('4:53 /km');
+      expect(page.select('share')!.selectedOptions[0].text.trim()).toBe('5% slower');
     });
 
     it('opens to miles when distances are in miles, the Checkpoints staying in km', async () => {
