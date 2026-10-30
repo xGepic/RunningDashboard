@@ -11,24 +11,33 @@ internal sealed record ListedFigures(DateTime StartLocal, int MovingTime, string
 
 /// <param name="Weeks">Every Training Week from the first Run's up to the current one, empty weeks as zero.</param>
 /// <param name="YearlyGoal">The current year's; none without one.</param>
+/// <param name="WeeklyTimeGoal">None without one.</param>
 /// <param name="Streak">None without Runs.</param>
 /// <param name="TrainingTime">
 /// Every Training Week from the first Run's or Listed Activity's up to the current one, empty weeks as zero; empty
 /// without Runs or without Rides and Swims, as there is nothing to add to the running figures then.
 /// </param>
+/// <param name="ThisWeek">The current Training Week's Training Time, for the Weekly Time Goal; none without Runs.</param>
 internal sealed record OverviewResponse(
     TotalsResponse Totals,
     IReadOnlyList<YearResponse> Years,
     IReadOnlyList<WeekResponse> Weeks,
     YearlyGoalResponse? YearlyGoal,
+    WeeklyTimeGoalResponse? WeeklyTimeGoal,
     StreakResponse? Streak,
-    IReadOnlyList<TrainingTimeWeekResponse> TrainingTime)
+    IReadOnlyList<TrainingTimeWeekResponse> TrainingTime,
+    TrainingTimeWeekResponse? ThisWeek)
 {
-    public static OverviewResponse From(IReadOnlyList<RunFigures> runs, IReadOnlyList<ListedFigures> listed, YearlyGoalResponse? yearlyGoal, DateOnly today)
+    public static OverviewResponse From(
+        IReadOnlyList<RunFigures> runs,
+        IReadOnlyList<ListedFigures> listed,
+        YearlyGoalResponse? yearlyGoal,
+        WeeklyTimeGoalResponse? weeklyTimeGoal,
+        DateOnly today)
     {
         var totals = TotalsResponse.Of(runs);
         if (runs.Count == 0)
-            return new OverviewResponse(totals, [], [], yearlyGoal, null, []);
+            return new OverviewResponse(totals, [], [], yearlyGoal, weeklyTimeGoal, null, [], null);
 
         var years = runs
             .GroupBy(r => r.StartLocal.Year)
@@ -48,7 +57,16 @@ internal sealed record OverviewResponse(
             .Select(w => new WeekResponse(w.Start, distanceByWeek.GetValueOrDefault(w)))
             .ToList();
 
-        return new OverviewResponse(totals, years, weeks, yearlyGoal, streak, TrainingTimeWeekResponse.Of(runs, listed, TrainingWeek.Of(today)));
+        var thisWeek = TrainingWeek.Of(today);
+        return new OverviewResponse(
+            totals,
+            years,
+            weeks,
+            yearlyGoal,
+            weeklyTimeGoal,
+            streak,
+            TrainingTimeWeekResponse.Of(runs, listed, thisWeek),
+            TrainingTimeWeekResponse.For(thisWeek, runs, listed));
     }
 
     private static DateOnly Max(DateOnly a, DateOnly b) => a > b ? a : b;
@@ -75,6 +93,17 @@ internal sealed record TrainingTimeWeekResponse(DateOnly Start, int Runs, int Ri
         // A Run or Ride abroad can already be in the next week by its local time.
         var lastWeek = weeksWithActivities.Append(thisWeek).MaxBy(w => w.Start);
         return [.. TrainingWeek.Range(firstWeek, lastWeek).Select(w => new TrainingTimeWeekResponse(w.Start, runTime.GetValueOrDefault(w), rideTime.GetValueOrDefault(w), swimTime.GetValueOrDefault(w)))];
+    }
+
+    /// <summary>The Training Time of <paramref name="week"/> alone, Rides and Swims or not.</summary>
+    public static TrainingTimeWeekResponse For(TrainingWeek week, IReadOnlyList<RunFigures> runs, IReadOnlyList<ListedFigures> listed)
+    {
+        var inWeek = listed.Where(a => TrainingWeek.Of(a.StartLocal) == week).ToList();
+        return new TrainingTimeWeekResponse(
+            week.Start,
+            runs.Where(r => TrainingWeek.Of(r.StartLocal) == week).Sum(r => r.MovingTime),
+            inWeek.Where(a => Sports.Rides.Contains(a.SportType)).Sum(a => a.MovingTime),
+            inWeek.Where(a => Sports.Swims.Contains(a.SportType)).Sum(a => a.MovingTime));
     }
 
     private static Dictionary<TrainingWeek, int> TimeByWeek(IEnumerable<ListedFigures> activities) =>
@@ -105,9 +134,10 @@ internal sealed record WeekResponse(DateOnly Start, double Distance);
 /// only breaks it once it ends without one.
 /// </summary>
 /// <param name="Current">Weeks in the Streak up to now.</param>
+/// <param name="Start">The Monday of the current Streak's first Training Week; none while it is 0.</param>
 /// <param name="Longest">The Longest Streak; the more recent of two equally long ones, so the ongoing Streak once it ties.</param>
 /// <param name="RecentWeeks">The last <see cref="RecentWeekCount"/> Training Weeks up to the current one, oldest first, but none before the first Run's.</param>
-internal sealed record StreakResponse(int Current, bool ThisWeekHasRun, LongestStreakResponse Longest, IReadOnlyList<StreakWeekResponse> RecentWeeks)
+internal sealed record StreakResponse(int Current, DateOnly? Start, bool ThisWeekHasRun, LongestStreakResponse Longest, IReadOnlyList<StreakWeekResponse> RecentWeeks)
 {
     private const int RecentWeekCount = 12;
 
@@ -116,8 +146,12 @@ internal sealed record StreakResponse(int Current, bool ThisWeekHasRun, LongestS
     {
         var thisWeekHasRun = weeksWithRuns.Contains(thisWeek);
         var current = 0;
+        DateOnly? start = null;
         for (var week = thisWeekHasRun ? thisWeek : thisWeek.WeeksBefore(1); weeksWithRuns.Contains(week); week = week.WeeksBefore(1))
+        {
             current++;
+            start = week.Start;
+        }
 
         var firstWeek = weeksWithRuns.MinBy(w => w.Start);
         var longest = new LongestStreakResponse(0, default, default);
@@ -135,7 +169,7 @@ internal sealed record StreakResponse(int Current, bool ThisWeekHasRun, LongestS
             .Select(w => new StreakWeekResponse(w.Start, weeksWithRuns.Contains(w)))
             .ToList();
 
-        return new StreakResponse(current, thisWeekHasRun, longest, recentWeeks);
+        return new StreakResponse(current, start, thisWeekHasRun, longest, recentWeeks);
     }
 }
 

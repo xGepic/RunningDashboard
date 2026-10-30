@@ -1,0 +1,29 @@
+/* The week's Training Time against the goal, a part per sport in its Training Time colour, Runs first. */
+.bar {
+  display: flex;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 5px;
+  background: var(--inset);
+
+  span {
+    height: 100%;
+    transition: width 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+
+    & + span {
+      box-shadow: inset 1px 0 0 var(--surface);
+    }
+  }
+
+  .runs {
+    background: var(--accent);
+  }
+
+  .rides {
+    background: var(--chart-ride);
+  }
+
+  .swims {
+    background: var(--chart-swim);
+  }
+}

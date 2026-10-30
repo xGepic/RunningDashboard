@@ -1,0 +1,63 @@
+<section class="card goal" aria-labelledby="weekly-goal-title">
+  <div class="card-header">
+    <div class="titles">
+      <h2 id="weekly-goal-title" class="card-title">Weekly goal</h2>
+      <p class="card-sub">Training Time this week: Runs, Rides and Swims</p>
+    </div>
+    @if (goal() && !editing()) {
+      <div class="goal-actions">
+        <button type="button" class="link" (click)="edit()">Edit</button>
+        <button type="button" class="link danger" (click)="remove()">Remove</button>
+      </div>
+    }
+  </div>
+
+  @if (editing()) {
+    <form class="goal-form" [formGroup]="form" (ngSubmit)="save()" novalidate>
+      <label class="field">
+        Hours per week
+        <input class="mono" formControlName="hours" inputmode="decimal" placeholder="e.g. 7.5" [attr.aria-invalid]="!!errors()['hours']" />
+        @for (error of errors()['hours']; track error) {
+          <span class="field-error">{{ error }}</span>
+        }
+      </label>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" [disabled]="saving()">Save</button>
+        <button type="button" class="btn" (click)="cancel()">Cancel</button>
+      </div>
+    </form>
+  } @else if (!goal()) {
+    <div class="none">
+      <p>No weekly time goal yet.</p>
+      <button type="button" class="btn btn-primary" (click)="edit()">Set a goal</button>
+    </div>
+  } @else if (progress(); as p) {
+    <div class="figures">
+      <p class="done">
+        <span class="value">{{ formatHoursMinutes(p.done) }}</span>
+        <span class="of">/ {{ goalLabel(p.goal) }}</span>
+      </p>
+      <span class="percent mono">{{ p.percent | number: '1.0-0' }} %</span>
+    </div>
+
+    <div class="bar" role="img" [attr.aria-label]="(p.percent | number: '1.0-0') + ' % of the weekly goal done'">
+      @for (segment of p.segments; track segment.sport) {
+        <span [class]="segment.sport" [style.width.%]="segment.width"></span>
+      }
+    </div>
+
+    <div class="stats">
+      @if (p.remaining === 0) {
+        <div class="stat"><span class="label">Status</span><span class="value met">Goal reached</span></div>
+      } @else {
+        <div class="stat"><span class="label">To go</span><span class="value">{{ formatHoursMinutes(p.remaining) }}</span></div>
+        <div class="stat"><span class="label">Days left</span><span class="value">{{ p.daysLeft }}</span></div>
+        <div class="stat"><span class="label">Needed / day</span><span class="value">{{ formatHoursMinutes(p.perDay) }}</span></div>
+      }
+    </div>
+  }
+
+  @for (error of errors()[formError]; track error) {
+    <p class="error" role="alert">{{ error }}</p>
+  }
+</section>

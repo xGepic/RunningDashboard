@@ -43,6 +43,29 @@
     </div>
   </section>
 
+  <section class="card goals">
+    <div class="card-header">
+      <div class="titles">
+        <h2 class="card-title">Goals</h2>
+        <p class="card-sub">Which goals the Overview shows. A hidden goal is kept, and comes back as it was once it is shown again.</p>
+      </div>
+    </div>
+    <div class="setting">
+      <span class="label">Yearly Goal</span>
+      <div class="segmented" role="group" aria-label="Yearly Goal">
+        <button type="button" [attr.aria-pressed]="settings.showYearlyGoal()" (click)="settings.change({ showYearlyGoal: true })">Show</button>
+        <button type="button" [attr.aria-pressed]="!settings.showYearlyGoal()" (click)="settings.change({ showYearlyGoal: false })">Hide</button>
+      </div>
+    </div>
+    <div class="setting">
+      <span class="label">Weekly Time Goal</span>
+      <div class="segmented" role="group" aria-label="Weekly Time Goal">
+        <button type="button" [attr.aria-pressed]="settings.showWeeklyTimeGoal()" (click)="settings.change({ showWeeklyTimeGoal: true })">Show</button>
+        <button type="button" [attr.aria-pressed]="!settings.showWeeklyTimeGoal()" (click)="settings.change({ showWeeklyTimeGoal: false })">Hide</button>
+      </div>
+    </div>
+  </section>
+
   <section class="card shoes">
     <div class="card-header">
       <div class="titles">

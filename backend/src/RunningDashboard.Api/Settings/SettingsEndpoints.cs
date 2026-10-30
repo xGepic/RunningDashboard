@@ -37,6 +37,8 @@ public static class SettingsEndpoints
             settings.DistanceUnit = request.DistanceUnit ?? settings.DistanceUnit;
             settings.ShoeMaximumDistance = request.ShoeMaximumDistance ?? settings.ShoeMaximumDistance;
             settings.Theme = request.Theme ?? settings.Theme;
+            settings.ShowYearlyGoal = request.ShowYearlyGoal ?? settings.ShowYearlyGoal;
+            settings.ShowWeeklyTimeGoal = request.ShowWeeklyTimeGoal ?? settings.ShowWeeklyTimeGoal;
             await db.SaveChangesAsync(cancellationToken);
             return Results.Ok(SettingsResponse.From(settings));
         });

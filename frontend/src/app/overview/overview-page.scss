@@ -1,7 +1,6 @@
 /* The Yearly Goal and the Streak side by side, the goal wider; stacked on narrow screens. */
 .goal-row {
   display: grid;
-  grid-template-columns: 2fr 1fr;
   gap: 12px;
 
   /* Each card fills its cell, as wide as its column and as tall as the row. */
@@ -9,10 +8,34 @@
     display: grid;
     min-width: 0;
   }
+
+  &.cards-0 {
+    display: none;
+  }
+
+  &.cards-2 {
+    grid-template-columns: 2fr 1fr;
+  }
+
+  &.cards-3 {
+    grid-template-columns: 3fr 2fr 2fr;
+  }
+}
+
+/* Three cards: the first across the row, the other two side by side under it. */
+@media (width < 1280px) {
+  .goal-row.cards-3 {
+    grid-template-columns: 1fr 1fr;
+
+    > :first-child {
+      grid-column: 1 / -1;
+    }
+  }
 }
 
 @media (width < 900px) {
-  .goal-row {
+  .goal-row.cards-2,
+  .goal-row.cards-3 {
     grid-template-columns: 1fr;
   }
 }

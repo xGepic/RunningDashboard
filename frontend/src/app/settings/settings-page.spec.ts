@@ -127,6 +127,31 @@ describe('SettingsPage', () => {
     });
   });
 
+  describe('the goals', () => {
+    const shown = (element: HTMLElement, goal: string) =>
+      element.querySelector(`[aria-label="${goal}"] button[aria-pressed="true"]`)?.textContent?.trim();
+    const press = (element: HTMLElement, goal: string, text: string) =>
+      [...element.querySelectorAll<HTMLButtonElement>(`[aria-label="${goal}"] button`)].find((b) => b.textContent!.trim() === text)!.click();
+
+    it('shows both goals until one is hidden', async () => {
+      const { element } = await render('km');
+
+      expect(shown(element, 'Yearly Goal')).toBe('Show');
+      expect(shown(element, 'Weekly Time Goal')).toBe('Show');
+    });
+
+    it('hides a goal on its own, and saves it', async () => {
+      const { fixture, http, element } = await render('km');
+
+      press(element, 'Weekly Time Goal', 'Hide');
+      fixture.detectChanges();
+
+      expect(shown(element, 'Weekly Time Goal')).toBe('Hide');
+      expect(shown(element, 'Yearly Goal')).toBe('Show');
+      expect(http.expectOne((r) => r.method === 'PATCH' && r.url === '/api/settings').request.body).toEqual({ showWeeklyTimeGoal: false });
+    });
+  });
+
   it('shows who Strava is connected as, since when, and the last sync', async () => {
     const { element } = await render('km');
 

@@ -6,7 +6,12 @@
     </div>
   </div>
 
-  <p class="count"><span class="value">{{ streak().current }}</span> <span class="unit">{{ unit() }}</span></p>
+  <p class="count">
+    <span class="value">{{ streak().current }}</span> <span class="unit">{{ unit() }}</span>
+    @if (since(); as since) {
+      <span class="since">since {{ since }}</span>
+    }
+  </p>
 
   <p class="status" [class.warning]="status().warning">{{ status().text }}</p>
 

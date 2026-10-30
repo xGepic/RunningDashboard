@@ -39,7 +39,7 @@ const nearlyUsedUp = 0.8;
   styleUrl: './settings-page.scss',
 })
 export class SettingsPage {
-  private readonly settings = inject(AthleteSettings);
+  protected readonly settings = inject(AthleteSettings);
   protected readonly units = inject(Units);
   protected readonly connection = httpResource<Connection>(() => '/api/connection');
   protected readonly backup = httpResource<Backup>(() => '/api/backup');

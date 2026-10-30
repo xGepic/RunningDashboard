@@ -1,10 +1,13 @@
 # Running Dashboard v8
 
-v8 adds one feature to v7 ([running-dashboard-v7.md](running-dashboard-v7.md)). Terms follow [CONTEXT.md](../../CONTEXT.md), and the ADRs in [docs/adr](../adr) still apply.
+v8 adds four features to v7 ([running-dashboard-v7.md](running-dashboard-v7.md)). Terms follow [CONTEXT.md](../../CONTEXT.md), and the ADRs in [docs/adr](../adr) still apply.
 
 | # | Feature | Status |
 |---|---|---|
 | 01 | Breaks | done |
+| 02 | Weekly Time Goal | done |
+| 03 | Goals in Settings | done |
+| 04 | Streak start | done |
 
 ---
 
@@ -33,9 +36,50 @@ The Athlete marks the days of an injury, an illness or a holiday, so a gap in th
 - **Fitness**: Aerobic Efficiency, Cardiac Drift and Cadence shade each Break within the dates of the chart's Runs, from its first day to the end of its last, named by its kind.
 - **Training**: a Training Block week's dates are followed by the kind of each Break it has days in, with the note on hover, so a missed Weekly Target reads as, say, an Illness.
 
-### Out of scope
+## 02: Weekly Time Goal
+
+Next to the Yearly Goal's distance, the Athlete sets how many hours a week they want to train, Rides and Swims included.
+
+### The goal
+
+- One Weekly Time Goal, the same for every Training Week, in seconds: more than nothing and at most 100 hours. It is stored in a `WeeklyTimeGoals` table with a single row. `PUT /api/weekly-time-goal` takes `{ time }` and sets or replaces it, `DELETE /api/weekly-time-goal` removes it; a time out of range is refused under `time`.
+- It counts Training Time: the Moving Time of the week's Runs, Rides (outdoor and Virtual) and Swims together, as the Training Time chart adds them up. A week meets it once its Training Time reaches it.
+- `GET /api/overview` gives the goal (`weeklyTimeGoal`, none without one) and the current Training Week's Training Time (`thisWeek`), which is there without Rides and Swims too. A changed goal counts for every week, past ones included; there is no history of goals.
+
+### Weekly goal card
+
+- A "Weekly goal" card on the Overview, between the Yearly Goal and the Streak. Where the window is narrower, the Yearly Goal takes the whole row and the other two share the next.
+- With a goal: this week's Training Time against it ("4h 00m / 7h") and the share done, a bar with a part per sport in its Training Time colour (Runs, then Rides, then Swims, together at most the whole bar), and what the week still needs: "To go", "Days left" (today included, 7 on Monday) and "Needed / day". Once it is reached, "Goal reached".
+- Without one: "No weekly time goal yet." and "Set a goal".
+- "Set a goal" and "Edit" take the hours per week as 7, 7.5, 7,5 or 7:30, to the minute. "Remove" asks first.
+
+### In the Training Time chart
+
+- A dashed line across "Training Time per Training Week" at the goal, labelled "goal 7h".
+- Next to the year's other figures, "Weekly goal met: 12 of 40 weeks": the year's weeks whose Training Time reached the goal, out of its weeks. The current week counts only once it has met the goal.
+- Without Rides and Swims the chart is still left out, and the card is all there is of the goal.
+
+## 03: Goals in Settings
+
+The Athlete chooses which goals the Overview shows.
+
+- A "Goals" card in Settings, under the Theme, with "Show" and "Hide" for the Yearly Goal and for the Weekly Time Goal, each saved on its own as the other settings are (`showYearlyGoal` and `showWeeklyTimeGoal` in `/api/settings`). Both are shown unless hidden, also in a settings row stored before v8.
+- A hidden Yearly Goal leaves out its card. A hidden Weekly Time Goal leaves out its card, its line in the Training Time chart and "Weekly goal met".
+- A hidden goal is kept as it is, and shown again as it was; `GET /api/overview` still gives it.
+- The goal row lays out what it has: three cards as before, two as the Yearly Goal and the Streak were in v7, and the Streak alone across the row.
+
+## 04: Streak start
+
+- The Streak card says since when the current Streak runs, next to its count: "14 weeks since 29 Jun", the Monday of its first Training Week, with the year when that is not the current one ("since 20 Oct 2025").
+- A Streak of 0 has no start. `GET /api/overview` gives it as the Streak's `start`.
+
+---
+
+## Out of scope
 
 - Breaks that change what counts: pausing the Streak, leaving a Break's weeks out of averages, or easing Weekly Targets.
 - Breaks in the Year in Review, its image and story, on a Run's page or in the CSV export.
 - Marking a Break anywhere but the Calendar, e.g. from the Streak card.
 - Breaks for Rides or Swims alone.
+- A Weekly Time Goal for one sport only, a goal per week (e.g. lower in a Recovery Week), or goals for past weeks as they were then.
+- Weekly Time Goal progress in the Streak, the Calendar, the Training page or the Year in Review.

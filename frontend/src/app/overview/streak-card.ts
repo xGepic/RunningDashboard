@@ -20,6 +20,13 @@ export class StreakCard {
   /** "week" or "weeks", for the current Streak. */
   protected readonly unit = computed(() => weeks(this.streak().current));
 
+  /** "6 Jul", the Monday the current Streak started on, with its year when that is not this one; none while it is 0. */
+  protected readonly since = computed(() => {
+    const start = this.streak().start;
+    if (!start) return null;
+    return start.slice(0, 4) === String(today().getFullYear()) ? shortWeekLabel(start) : weekLabel(start);
+  });
+
   /** What this week means for the Streak; worked out again whenever the Streak is reloaded, so a new day counts. */
   protected readonly status = computed(() => {
     const { current, thisWeekHasRun, recentWeeks } = this.streak();

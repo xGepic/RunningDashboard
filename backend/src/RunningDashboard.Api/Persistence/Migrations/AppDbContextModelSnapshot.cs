@@ -30,6 +30,12 @@ namespace RunningDashboard.Api.Persistence.Migrations
                     b.Property<double>("ShoeMaximumDistance")
                         .HasColumnType("REAL");
 
+                    b.Property<bool>("ShowWeeklyTimeGoal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("ShowYearlyGoal")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Theme")
                         .IsRequired()
                         .HasMaxLength(10)
@@ -384,6 +390,19 @@ namespace RunningDashboard.Api.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("SyncStates");
+                });
+
+            modelBuilder.Entity("RunningDashboard.Api.Persistence.WeeklyTimeGoal", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Time")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("WeeklyTimeGoals");
                 });
 
             modelBuilder.Entity("RunningDashboard.Api.Persistence.YearlyGoal", b =>

@@ -176,8 +176,12 @@ What a Running Day is planned for: Easy, Tempo, Intervals or Long. The list is f
 _Avoid_: Workout, session, workout type
 
 **Yearly Goal**:
-The distance the Athlete wants to run in the current calendar year. There is at most one; once its year is over, it no longer counts. Progress is measured against the goal spread evenly over the days of the year.
+The distance the Athlete wants to run in the current calendar year. There is at most one; once its year is over, it no longer counts. Progress is measured against the goal spread evenly over the days of the year. The Overview shows it unless the Athlete hides it in Settings, which keeps it.
 _Avoid_: Annual target, mileage goal
+
+**Weekly Time Goal**:
+The Training Time the Athlete wants in every Training Week, in hours: Runs, Rides and Swims together. There is at most one, the same for every week. Progress is this week's Training Time against it, and a week meets it once its Training Time reaches it. The Overview shows it unless the Athlete hides it in Settings, which keeps it.
+_Avoid_: Hour goal, Weekly Target (that is a Training Plan's planned distance), weekly goal (on its own)
 
 ### Fitness
 

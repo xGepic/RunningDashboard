@@ -5,8 +5,8 @@ using RunningDashboard.Api.Tests.Harness;
 namespace RunningDashboard.Api.Tests;
 
 /// <summary>
-/// The Athlete's settings: the Distance Unit (km or mi), the Shoes' Maximum Distance and the Theme. Each is changed on
-/// its own, leaving the others as they are.
+/// The Athlete's settings: the Distance Unit (km or mi), the Shoes' Maximum Distance, the Theme and which goals the
+/// Overview shows. Each is changed on its own, leaving the others as they are.
 /// </summary>
 public sealed class SettingsTests
 {
@@ -133,6 +133,35 @@ public sealed class SettingsTests
         (await GetSettingsAsync()).ShouldBe(new SettingsResponse("km", 700_000, "blue"));
     }
 
+    [Test]
+    public async Task Both_goals_are_shown_until_the_athlete_hides_one()
+    {
+        (await GetGoalSettingsAsync()).ShouldBe(new GoalSettingsResponse(true, true));
+    }
+
+    [Test]
+    public async Task Each_goal_is_hidden_on_its_own_and_stays_hidden_after_a_restart()
+    {
+        var response = await ChangeAsync(new { showWeeklyTimeGoal = false });
+
+        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        (await response.Content.ReadFromJsonAsync<GoalSettingsResponse>()).ShouldBe(new GoalSettingsResponse(true, false));
+        await ChangeAsync(new { showYearlyGoal = false });
+        await ChangeAsync(new { showWeeklyTimeGoal = true });
+        await using var restarted = new TestApp(_app.DatabasePath);
+        (await restarted.CreateBrowser().GetFromJsonAsync<GoalSettingsResponse>("/api/settings")).ShouldBe(new GoalSettingsResponse(false, true));
+    }
+
+    [Test]
+    public async Task A_hidden_goal_is_kept()
+    {
+        await _browser.PutAsJsonAsync("/api/weekly-time-goal", new { time = 7 * 3600 });
+
+        await ChangeAsync(new { showWeeklyTimeGoal = false });
+
+        (await _browser.GetFromJsonAsync<OverviewGoalsResponse>("/api/overview"))!.WeeklyTimeGoal.ShouldNotBeNull();
+    }
+
     private Task<HttpResponseMessage> ChangeAsync(object changes) => _browser.PatchAsJsonAsync("/api/settings", changes);
 
     private async Task<SettingsResponse> GetSettingsAsync() =>
@@ -140,6 +169,13 @@ public sealed class SettingsTests
 
     /// <param name="ShoeMaximumDistance">Metres.</param>
     private sealed record SettingsResponse(string DistanceUnit, double ShoeMaximumDistance, string Theme);
+
+    private async Task<GoalSettingsResponse> GetGoalSettingsAsync() =>
+        (await _browser.GetFromJsonAsync<GoalSettingsResponse>("/api/settings"))!;
+
+    private sealed record GoalSettingsResponse(bool ShowYearlyGoal, bool ShowWeeklyTimeGoal);
+
+    private sealed record OverviewGoalsResponse(object? WeeklyTimeGoal);
 
     private sealed record ValidationProblem(Dictionary<string, string[]> Errors);
 }

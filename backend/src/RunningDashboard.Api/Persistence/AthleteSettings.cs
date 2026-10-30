@@ -1,8 +1,8 @@
 namespace RunningDashboard.Api.Persistence;
 
 /// <summary>
-/// How the Athlete wants the dashboard shown (the Distance Unit and the Theme), and the Shoes' Maximum Distance. There is at most one row; without it,
-/// the defaults apply.
+/// How the Athlete wants the dashboard shown (the Distance Unit, the Theme and which goals the Overview shows), and the
+/// Shoes' Maximum Distance. There is at most one row; without it, the defaults apply.
 /// </summary>
 public sealed class AthleteSettings
 {
@@ -29,6 +29,12 @@ public sealed class AthleteSettings
 
     /// <summary>The Theme, the dashboard's colours: <see cref="Blue"/> unless the Athlete picks another.</summary>
     public string Theme { get; set; } = Blue;
+
+    /// <summary>Whether the Overview shows the Yearly Goal; a hidden goal is kept for when it is shown again.</summary>
+    public bool ShowYearlyGoal { get; set; } = true;
+
+    /// <summary>Whether the Overview shows the Weekly Time Goal; a hidden goal is kept for when it is shown again.</summary>
+    public bool ShowWeeklyTimeGoal { get; set; } = true;
 
     public static bool IsDistanceUnit(string? unit) => unit is Kilometres or Miles;
 

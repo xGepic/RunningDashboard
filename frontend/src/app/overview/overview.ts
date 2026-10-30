@@ -8,6 +8,8 @@ export interface Overview {
   weeks: WeekDistance[];
   /** The current year's Yearly Goal; none without one. */
   yearlyGoal: YearlyGoal | null;
+  /** None without one. */
+  weeklyTimeGoal: WeeklyTimeGoal | null;
   /** None without Runs. */
   streak: Streak | null;
   /**
@@ -15,6 +17,8 @@ export interface Overview {
    * week; empty without Runs or without Rides and Swims.
    */
   trainingTime: TrainingTimeWeek[];
+  /** The current Training Week's Training Time, Rides and Swims or not; none without Runs. */
+  thisWeek: TrainingTimeWeek | null;
 }
 
 /**
@@ -24,6 +28,8 @@ export interface Overview {
 export interface Streak {
   /** Weeks in the Streak up to now. */
   current: number;
+  /** The Monday of the current Streak's first Training Week (yyyy-MM-dd); none while it is 0. */
+  start: string | null;
   thisWeekHasRun: boolean;
   /** The more recent of two equally long ones, so the ongoing Streak once it ties. */
   longest: LongestStreak;
@@ -43,6 +49,11 @@ export interface StreakWeek {
   /** The Monday (yyyy-MM-dd). */
   start: string;
   hasRun: boolean;
+}
+
+/** The Training Time the Athlete wants in every Training Week, Runs, Rides and Swims together, in seconds. */
+export interface WeeklyTimeGoal {
+  time: number;
 }
 
 /** The distance the Athlete wants to run in a calendar year, in metres. */

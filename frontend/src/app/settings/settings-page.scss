@@ -32,6 +32,10 @@
   background: var(--accent);
 }
 
+.goals .setting + .setting {
+  margin-top: 12px;
+}
+
 .shoes .setting {
   align-items: flex-end;
   justify-content: flex-start;

@@ -90,6 +90,7 @@ public sealed class OverviewTests
         var streak = (await GetOverviewAsync(browser)).Streak!;
 
         streak.Current.ShouldBe(3);
+        streak.Start.ShouldBe(new DateOnly(2026, 9, 21));
         streak.ThisWeekHasRun.ShouldBeTrue();
     }
 
@@ -103,7 +104,20 @@ public sealed class OverviewTests
         var streak = (await GetOverviewAsync(browser)).Streak!;
 
         streak.Current.ShouldBe(2);
+        streak.Start.ShouldBe(new DateOnly(2026, 9, 21));
         streak.ThisWeekHasRun.ShouldBeFalse();
+    }
+
+    [Test]
+    public async Task A_streak_of_none_has_no_start()
+    {
+        // Last week went without a Run.
+        var browser = await _app.ConnectWithActivitiesAsync(Run(1, new DateTime(2026, 9, 22)));
+
+        var streak = (await GetOverviewAsync(browser)).Streak!;
+
+        streak.Current.ShouldBe(0);
+        streak.Start.ShouldBeNull();
     }
 
     [Test]
@@ -254,7 +268,7 @@ public sealed class OverviewTests
 
     private sealed record WeekResponse(DateOnly Start, double Distance);
 
-    private sealed record StreakResponse(int Current, bool ThisWeekHasRun, LongestStreakResponse Longest, List<StreakWeekResponse> RecentWeeks);
+    private sealed record StreakResponse(int Current, DateOnly? Start, bool ThisWeekHasRun, LongestStreakResponse Longest, List<StreakWeekResponse> RecentWeeks);
 
     private sealed record LongestStreakResponse(int Weeks, DateOnly Start, DateOnly End);
 

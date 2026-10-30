@@ -10,10 +10,14 @@ export interface Settings {
   /** Metres after which every Shoe is due to be retired. */
   shoeMaximumDistance: number;
   theme: Theme;
+  /** Whether the Overview shows the Yearly Goal; a hidden goal is kept. */
+  showYearlyGoal: boolean;
+  /** Whether the Overview shows the Weekly Time Goal, its card and its line in the Training Time chart; a hidden goal is kept. */
+  showWeeklyTimeGoal: boolean;
 }
 
 /** What applies until the stored settings are in, or when they cannot be loaded. */
-const defaults: Settings = { distanceUnit: 'km', shoeMaximumDistance: 700_000, theme: 'blue' };
+const defaults: Settings = { distanceUnit: 'km', shoeMaximumDistance: 700_000, theme: 'blue', showYearlyGoal: true, showWeeklyTimeGoal: true };
 
 /**
  * The Athlete's settings, loaded once as the app starts. A change shows at once and is saved in the background;
@@ -31,6 +35,8 @@ export class AthleteSettings {
   readonly distanceUnit = computed(() => this.current().distanceUnit);
   readonly shoeMaximumDistance = computed(() => this.current().shoeMaximumDistance);
   readonly theme = computed(() => this.current().theme);
+  readonly showYearlyGoal = computed(() => this.current().showYearlyGoal);
+  readonly showWeeklyTimeGoal = computed(() => this.current().showWeeklyTimeGoal);
 
   constructor() {
     // Without the settings the dashboard still works with the defaults; there is nothing more to show for it.

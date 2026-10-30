@@ -13,8 +13,14 @@
     @if (overview.totals.runs === 0) {
       <div class="card empty-card"><p class="empty">No Runs yet. Connect Strava and sync to import them.</p></div>
     } @else {
-      <div class="goal-row">
-        <app-yearly-goal-card [goal]="overview.yearlyGoal" [distance]="thisYearsDistance()" (changed)="goalChanged()" />
+      <!-- The goals the Athlete chose in Settings, with the Streak. -->
+      <div class="goal-row" [class]="'cards-' + goalRowCards()">
+        @if (settings.showYearlyGoal()) {
+          <app-yearly-goal-card [goal]="overview.yearlyGoal" [distance]="thisYearsDistance()" (changed)="goalChanged()" />
+        }
+        @if (settings.showWeeklyTimeGoal() && overview.thisWeek; as thisWeek) {
+          <app-weekly-time-goal-card [goal]="overview.weeklyTimeGoal" [thisWeek]="thisWeek" (changed)="goalChanged()" />
+        }
         @if (overview.streak; as streak) {
           <app-streak-card [streak]="streak" [breaks]="breaks.list()" />
         }
@@ -143,6 +149,9 @@
                   </div>
                   <div class="stat"><span class="label">Avg / week</span><span class="value">{{ trainingTimeLabel(stats.average) }}</span></div>
                   <div class="stat"><span class="label">Rides &amp; Swims</span><span class="value">{{ stats.crossTrainingShare }} <span class="unit">%</span></span></div>
+                  @if (stats.goalMet; as met) {
+                    <div class="stat"><span class="label">Weekly goal met</span><span class="value">{{ met.weeks }} <span class="unit">of {{ met.of }} weeks</span></span></div>
+                  }
                 </div>
               }
               <div class="segmented mono" role="group" aria-label="Year">

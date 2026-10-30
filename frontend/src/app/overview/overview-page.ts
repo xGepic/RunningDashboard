@@ -3,6 +3,7 @@ import { httpResource } from '@angular/common/http';
 import { Component, DestroyRef, computed, inject, linkedSignal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { NgxEchartsDirective } from 'ngx-echarts';
+import { AthleteSettings } from '../shared/athlete-settings';
 import { Breaks } from '../shared/breaks';
 import { ChartTheme } from '../shared/chart-theme';
 import {
@@ -16,11 +17,13 @@ import {
   weekLabel,
   weeklyDistanceChart,
 } from '../shared/charts';
+import { isoDate, mondayOf, today } from '../shared/dates';
 import { formatWhole } from '../shared/format';
 import { Units } from '../shared/units';
 import { reloadOnSync } from '../sync/reload-on-sync';
 import { Overview, Totals, YearTotals } from './overview';
 import { StreakCard } from './streak-card';
+import { WeeklyTimeGoalCard } from './weekly-time-goal-card';
 import { YearlyGoalCard } from './yearly-goal-card';
 
 /** One all-time total, with the same figure per year for its mini bars. */
@@ -42,12 +45,14 @@ const kpiDefinitions: { label: string; unit: string | null; icon: string; of: (t
 
 @Component({
   selector: 'app-overview-page',
-  imports: [DecimalPipe, NgxEchartsDirective, RouterLink, StreakCard, YearlyGoalCard],
+  imports: [DecimalPipe, NgxEchartsDirective, RouterLink, StreakCard, WeeklyTimeGoalCard, YearlyGoalCard],
   templateUrl: './overview-page.html',
   styleUrl: './overview-page.scss',
 })
 export class OverviewPage {
   private readonly theme = inject(ChartTheme);
+  /** Which goals to show. */
+  protected readonly settings = inject(AthleteSettings);
   /** Shaded in the weekly charts and named in the Streak's weeks. */
   protected readonly breaks = inject(Breaks);
   private readonly router = inject(Router);
@@ -156,24 +161,43 @@ export class OverviewPage {
     return weeks.filter((w) => weekYear(w) === this.selectedTrainingTimeYear());
   });
 
-  /** The selected year's longest week, its average week and the share of its Training Time spent on Rides and Swims. */
+  /** Seconds; none without a Weekly Time Goal, or while Settings hide it. */
+  private readonly weeklyTimeGoal = computed(() =>
+    this.settings.showWeeklyTimeGoal() && this.overview.hasValue() ? (this.overview.value().weeklyTimeGoal?.time ?? null) : null,
+  );
+
+  /** How many cards the goal row has, for its layout: the goals shown, and the Streak. */
+  protected readonly goalRowCards = computed(() => {
+    const overview = this.overview.hasValue() ? this.overview.value() : null;
+    return [this.settings.showYearlyGoal(), this.settings.showWeeklyTimeGoal() && !!overview?.thisWeek, !!overview?.streak].filter(Boolean).length;
+  });
+
+  /**
+   * The selected year's longest week, its average week, the share of its Training Time spent on Rides and Swims, and
+   * in how many of its weeks the Weekly Time Goal was met: the current week counts once it is.
+   */
   protected readonly trainingTimeStats = computed(() => {
     const weeks = this.selectedTrainingTime();
     const total = weeks.reduce((sum, w) => sum + trainingTimeOf(w), 0);
     if (total === 0) return null;
     const peak = weeks.reduce((a, b) => (trainingTimeOf(b) > trainingTimeOf(a) ? b : a));
     const crossTraining = weeks.reduce((sum, w) => sum + w.rides + w.swims, 0);
+    const goal = this.weeklyTimeGoal();
+    const met = goal === null ? 0 : weeks.filter((w) => trainingTimeOf(w) >= goal).length;
+    const thisWeek = isoDate(mondayOf(today()));
+    const unfinished = goal !== null && weeks.some((w) => w.start === thisWeek && trainingTimeOf(w) < goal) ? 1 : 0;
     return {
       peak: trainingTimeOf(peak),
       peakLabel: shortWeekLabel(peak.start),
       average: total / weeks.length,
       crossTrainingShare: Math.round((crossTraining / total) * 100),
+      goalMet: goal === null ? null : { weeks: met, of: weeks.length - unfinished },
     };
   });
 
   protected readonly trainingTime = computed(() => {
     const weeks = this.selectedTrainingTime();
-    return weeks.length ? trainingTimeChart(weeks, this.theme.colors(), this.breaks.list()) : null;
+    return weeks.length ? trainingTimeChart(weeks, this.theme.colors(), this.breaks.list(), this.weeklyTimeGoal()) : null;
   });
 
   constructor() {

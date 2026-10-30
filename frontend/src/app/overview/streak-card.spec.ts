@@ -14,7 +14,7 @@ describe('StreakCard', () => {
 
   const longest = { weeks: 23, start: '2025-01-06', end: '2025-06-15' };
 
-  const streakOf = (streak: Partial<Streak>): Streak => ({ current: 14, thisWeekHasRun: false, longest, recentWeeks: [], ...streak });
+  const streakOf = (streak: Partial<Streak>): Streak => ({ current: 14, start: '2026-06-29', thisWeekHasRun: false, longest, recentWeeks: [], ...streak });
 
   async function render(streak: Partial<Streak>, breaks: Break[] = []) {
     TestBed.configureTestingModule({ imports: [StreakCard] });
@@ -34,6 +34,18 @@ describe('StreakCard', () => {
     expect(textOf('.count .unit')).toBe('weeks');
     // Friday, Saturday and Sunday.
     expect(textOf('.status')).toBe('This week still needs a Run · 3 days left');
+  });
+
+  it('says since when the current Streak runs, with the year only for another one', async () => {
+    expect((await render({ current: 15, start: '2026-06-29' })).textOf('.count .since')).toBe('since 29 Jun');
+    TestBed.resetTestingModule();
+    expect((await render({ current: 50, start: '2025-10-20' })).textOf('.count .since')).toBe('since 20 Oct 2025');
+  });
+
+  it('gives no start for a Streak of none', async () => {
+    const { textOf } = await render({ current: 0, start: null });
+
+    expect(textOf('.count .since')).toBeUndefined();
   });
 
   it('counts all seven days on Monday', async () => {

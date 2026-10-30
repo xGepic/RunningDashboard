@@ -17,7 +17,13 @@ public static class OverviewEndpoints
                 .ToListAsync(cancellationToken);
             var today = DateOnly.FromDateTime(clock.GetLocalNow().DateTime);
             var goal = await db.GetYearlyGoalAsync(today.Year, cancellationToken);
-            return OverviewResponse.From(runs, listed, goal is null ? null : YearlyGoalResponse.From(goal), today);
+            var weeklyGoal = await db.WeeklyTimeGoals.SingleOrDefaultAsync(cancellationToken);
+            return OverviewResponse.From(
+                runs,
+                listed,
+                goal is null ? null : YearlyGoalResponse.From(goal),
+                weeklyGoal is null ? null : WeeklyTimeGoalResponse.From(weeklyGoal),
+                today);
         });
     }
 }

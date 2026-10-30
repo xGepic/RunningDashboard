@@ -66,6 +66,7 @@ app.MapRideEndpoints();
 app.MapSwimEndpoints();
 app.MapOverviewEndpoints();
 app.MapYearlyGoalEndpoints();
+app.MapWeeklyTimeGoalEndpoints();
 app.MapBreakEndpoints();
 app.MapSettingsEndpoints();
 app.MapBackupEndpoints();

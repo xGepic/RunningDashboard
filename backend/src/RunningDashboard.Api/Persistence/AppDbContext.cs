@@ -25,6 +25,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
     public DbSet<Break> Breaks => Set<Break>();
 
+    public DbSet<WeeklyTimeGoal> WeeklyTimeGoals => Set<WeeklyTimeGoal>();
+
     public DbSet<AthleteSettings> AthleteSettings => Set<AthleteSettings>();
 
     /// <summary>The Yearly Goal for <paramref name="year"/>; none if none is set or it is for another year.</summary>
@@ -103,6 +105,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         model.Entity<SyncState>(state => state.Property(s => s.Id).ValueGeneratedNever());
 
         model.Entity<YearlyGoal>(goal => goal.Property(g => g.Id).ValueGeneratedNever());
+        model.Entity<WeeklyTimeGoal>(goal => goal.Property(g => g.Id).ValueGeneratedNever());
 
         model.Entity<Break>(period =>
         {

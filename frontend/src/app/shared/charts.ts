@@ -144,6 +144,11 @@ export function trainingTimeOf(week: TrainingTimeWeek): number {
   return week.runs + week.rides + week.swims;
 }
 
+/** A Weekly Time Goal: "7h", or "7h 30m" for one that is not whole hours. */
+export function goalTimeLabel(seconds: number): string {
+  return seconds % 3600 === 0 ? `${seconds / 3600}h` : formatHoursMinutes(seconds);
+}
+
 /** "1h 06m", or "–" for nothing. */
 export function trainingTimeLabel(seconds: number): string {
   return seconds > 0 ? formatHoursMinutes(seconds) : '–';
@@ -152,9 +157,14 @@ export function trainingTimeLabel(seconds: number): string {
 /**
  * Stacked columns of Training Time per Training Week, in hours: Runs at the bottom in the Theme's colour, then Rides and
  * Swims. Only a column's top segment is rounded, and a hairline in the surface colour parts the segments. The weeks of
- * a Break are shaded and named.
+ * a Break are shaded and named, and a dashed line marks the Weekly Time Goal (seconds) when there is one.
  */
-export function trainingTimeChart(weeks: TrainingTimeWeek[], colors: ChartColors, breaks: readonly Break[] = []): EChartsCoreOption {
+export function trainingTimeChart(
+  weeks: TrainingTimeWeek[],
+  colors: ChartColors,
+  breaks: readonly Break[] = [],
+  goal: number | null = null,
+): EChartsCoreOption {
   const base = baseChartOptions(colors);
   // The index of each week's topmost sport with time; -1 for an empty week.
   const topSport = weeks.map((w) => trainingTimeSports.reduce((top, s, index) => (w[s.key] > 0 ? index : top), -1));
@@ -195,8 +205,22 @@ export function trainingTimeChart(weeks: TrainingTimeWeek[], colors: ChartColors
       emphasis: { focus: 'series' },
       animationDuration: 700,
       animationEasing: 'cubicOut',
-      ...(index === 0 ? breakBands(weeks, breaks, colors) : {}),
+      ...(index === 0 ? { ...breakBands(weeks, breaks, colors), ...goalLine(goal, colors) } : {}),
     })),
+  };
+}
+
+/** A dashed line across a Training Time chart at the Weekly Time Goal, in hours; nothing without a goal. */
+function goalLine(goal: number | null, colors: ChartColors) {
+  if (goal === null) return {};
+  return {
+    markLine: {
+      silent: true,
+      symbol: 'none',
+      lineStyle: { color: colors.muted, type: 'dashed', width: 1 },
+      label: { position: 'insideEndTop', color: colors.muted, fontSize: 10.5, formatter: `goal ${goalTimeLabel(goal)}` },
+      data: [{ yAxis: Math.round((goal / 3600) * 100) / 100 }],
+    },
   };
 }
 
