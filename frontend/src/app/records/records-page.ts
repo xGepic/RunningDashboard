@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import type { EChartsCoreOption } from 'echarts/core';
 import { NgxEchartsDirective } from 'ngx-echarts';
 import { ChartColors, ChartTheme, baseChartOptions, escapeHtml, tooltipHtml } from '../shared/chart-theme';
@@ -25,6 +25,7 @@ const newDays = 60;
 })
 export class RecordsPage {
   private readonly theme = inject(ChartTheme);
+  private readonly router = inject(Router);
 
   protected readonly records = httpResource<RecordDistance[]>(() => '/api/records');
   protected readonly formatDuration = formatDuration;
@@ -79,6 +80,12 @@ export class RecordsPage {
     const shown = new Set(this.shown());
     if (!shown.delete(distance)) shown.add(distance);
     this.picked.set(shown);
+  }
+
+  /** A dot opens the Run that set that Personal Best; the point carrying it on to today has none. */
+  protected openRun(record: RecordDistance, index: number): void {
+    const best = record.progression[index];
+    if (best) this.router.navigate(['/runs', best.runId]);
   }
 
   protected isNew(best: PersonalBest): boolean {
@@ -145,6 +152,7 @@ function progressionChart(record: RecordDistance, unit: DistanceUnit, colors: Ch
         itemStyle: { color: colors.background, borderColor: colors.series, borderWidth: 2 },
         symbol: 'circle',
         symbolSize: 9,
+        cursor: 'pointer',
       },
     ],
   };

@@ -97,6 +97,7 @@
                 <span class="best">{{ formatDuration(chart.record.personalBest.elapsedTime) }}</span>
               </figcaption>
               <div class="chart" echarts [options]="chart.options" [autoResize]="true" role="img"
+                   (chartClick)="openRun(chart.record, $event.dataIndex)"
                    [attr.aria-label]="'Step chart of the ' + chart.record.name + ' Personal Best over time; the table above has the current one'"></div>
               <div class="chart-foot">
                 <span>First <span class="mono">{{ formatDuration(chart.first.elapsedTime) }} · {{ chart.first.date | date: 'MMM y' }}</span></span>
