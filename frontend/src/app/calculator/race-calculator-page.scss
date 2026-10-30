@@ -101,3 +101,71 @@
     line-height: 1;
   }
 }
+
+.pacing {
+  /* The title and the chooser under it read as one header. */
+  > .card-header {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  /* Its own row under the title, so the title's text never shares a line with it. */
+  .strategy {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px 16px;
+    border-bottom: 1px solid var(--divider);
+
+    select {
+      width: auto;
+    }
+  }
+
+  /* A Checkpoint's row, which opens to the Splits of the stretch up to it. */
+  .opener {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--text);
+    font: inherit;
+    font-weight: 500;
+    cursor: pointer;
+
+    &::before {
+      content: '▸';
+      color: var(--text-faint);
+      font-family: var(--mono);
+    }
+
+    &[aria-expanded='true']::before {
+      content: '▾';
+    }
+
+    &:hover::before {
+      color: var(--text);
+    }
+  }
+
+  tr.split td {
+    padding-top: 7px;
+    padding-bottom: 7px;
+    border-top-color: transparent;
+    background: var(--inset);
+    font-size: 12.5px;
+  }
+
+  tr.split td:first-child {
+    padding-left: 40px;
+  }
+
+  .pacing-foot {
+    padding: 8px 11px;
+    border-top: 1px solid var(--divider);
+  }
+}
+
