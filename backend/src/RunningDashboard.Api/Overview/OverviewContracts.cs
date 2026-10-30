@@ -74,9 +74,7 @@ internal sealed record TrainingTimeWeekResponse(DateOnly Start, int Runs, int Ri
         var firstWeek = weeksWithActivities.MinBy(w => w.Start);
         // A Run or Ride abroad can already be in the next week by its local time.
         var lastWeek = weeksWithActivities.Append(thisWeek).MaxBy(w => w.Start);
-        return TrainingWeek.Range(firstWeek, lastWeek)
-            .Select(w => new TrainingTimeWeekResponse(w.Start, runTime.GetValueOrDefault(w), rideTime.GetValueOrDefault(w), swimTime.GetValueOrDefault(w)))
-            .ToList();
+        return [.. TrainingWeek.Range(firstWeek, lastWeek).Select(w => new TrainingTimeWeekResponse(w.Start, runTime.GetValueOrDefault(w), rideTime.GetValueOrDefault(w), swimTime.GetValueOrDefault(w)))];
     }
 
     private static Dictionary<TrainingWeek, int> TimeByWeek(IEnumerable<ListedFigures> activities) =>
