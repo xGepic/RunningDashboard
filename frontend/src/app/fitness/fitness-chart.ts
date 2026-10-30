@@ -1,7 +1,8 @@
 import type { EChartsCoreOption } from 'echarts/core';
+import { Break, breaksWithin, kindLabel } from '../shared/breaks';
 import { ChartColors, baseChartOptions, escapeHtml, tooltipHtml } from '../shared/chart-theme';
 import { withAlpha } from '../shared/charts';
-import { fullMonthNames } from '../shared/dates';
+import { addDays, fullMonthNames, isoDate, localDate } from '../shared/dates';
 
 /** One figure over time: a dot per Run and a line through the monthly averages. */
 export interface FitnessChartData {
@@ -11,6 +12,8 @@ export interface FitnessChartData {
   format: (value: number) => string;
   /** Shades the band from 0 up to this value as good, e.g. Cardiac Drift up to 5%. */
   goodUpTo?: number;
+  /** Shaded over their days and named by their kind, those within the Runs' dates. */
+  breaks?: readonly Break[];
 }
 
 interface Point {
@@ -84,7 +87,29 @@ export function fitnessChart(data: FitnessChartData, colors: ChartColors): EChar
         symbolSize: 8,
         animationDuration: 700,
         animationEasing: 'cubicOut',
+        ...breakBands(data, colors),
       },
     ],
+  };
+}
+
+/** Each Break within the Runs' dates as a band from its first day to the end of its last, named by its kind. */
+function breakBands(data: FitnessChartData, colors: ChartColors) {
+  const days = data.runs.map((run) => run.startLocal.slice(0, 10)).sort();
+  if (!data.breaks?.length || days.length === 0) return {};
+  const shown = breaksWithin(data.breaks, days[0], days[days.length - 1]);
+  if (shown.length === 0) return {};
+  return {
+    markArea: {
+      silent: true,
+      label: { show: true, position: 'insideTop', fontSize: 10.5 },
+      data: shown.map((period) => {
+        const color = colors.breaks[period.kind];
+        return [
+          { xAxis: period.start, name: kindLabel(period.kind), itemStyle: { color: withAlpha(color, 0.1) }, label: { color } },
+          { xAxis: isoDate(addDays(localDate(period.end), 1)) },
+        ];
+      }),
+    },
   };
 }

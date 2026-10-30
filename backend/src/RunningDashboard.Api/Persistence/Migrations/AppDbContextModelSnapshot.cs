@@ -67,6 +67,32 @@ namespace RunningDashboard.Api.Persistence.Migrations
                     b.ToTable("BestEffort");
                 });
 
+            modelBuilder.Entity("RunningDashboard.Api.Persistence.Break", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateOnly>("End")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly>("Start")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Breaks");
+                });
+
             modelBuilder.Entity("RunningDashboard.Api.Persistence.GoalRace", b =>
                 {
                     b.Property<int>("Id")

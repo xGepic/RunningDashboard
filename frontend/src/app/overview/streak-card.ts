@@ -1,9 +1,13 @@
 import { Component, computed, input } from '@angular/core';
+import { Break, breakLabel, breaksInWeek, kindLabel } from '../shared/breaks';
 import { shortWeekLabel, weekLabel } from '../shared/charts';
 import { daysSinceMonday, today } from '../shared/dates';
 import { Streak } from './overview';
 
-/** The Streak: how many Training Weeks in a row have a Run, and what this week still needs to keep it up. */
+/**
+ * The Streak: how many Training Weeks in a row have a Run, and what this week still needs to keep it up. A week without
+ * a Run in a Break is named by it; the Streak counts as it would without Breaks.
+ */
 @Component({
   selector: 'app-streak-card',
   templateUrl: './streak-card.html',
@@ -11,15 +15,26 @@ import { Streak } from './overview';
 })
 export class StreakCard {
   readonly streak = input.required<Streak>();
+  readonly breaks = input<readonly Break[]>([]);
 
   /** "week" or "weeks", for the current Streak. */
   protected readonly unit = computed(() => weeks(this.streak().current));
 
   /** What this week means for the Streak; worked out again whenever the Streak is reloaded, so a new day counts. */
   protected readonly status = computed(() => {
-    const { current, thisWeekHasRun } = this.streak();
+    const { current, thisWeekHasRun, recentWeeks } = this.streak();
     if (thisWeekHasRun) return { text: 'This week ✓', warning: false };
-    if (current === 0) return { text: 'Run this week to start a new Streak', warning: false };
+    const thisWeek = recentWeeks.at(-1);
+    const onBreak = thisWeek ? breaksInWeek(this.breaks(), thisWeek.start)[0] : undefined;
+    if (onBreak) return { text: `Break this week: ${breakLabel(onBreak)}`, warning: false };
+    if (current === 0) {
+      // The week that ended it, if it was in a Break.
+      const lastWeek = recentWeeks.at(-2);
+      const endedBy = lastWeek && !lastWeek.hasRun ? breaksInWeek(this.breaks(), lastWeek.start)[0] : undefined;
+      return endedBy
+        ? { text: `The Streak ended in a Break (${kindLabel(endedBy.kind)}) · Run this week to start a new one`, warning: false }
+        : { text: 'Run this week to start a new Streak', warning: false };
+    }
     // Days of this Training Week still to come, today included: 7 on Monday, 1 on Sunday.
     const daysLeft = 7 - daysSinceMonday(today());
     if (daysLeft === 1) return { text: 'Last day to keep the Streak', warning: true };
@@ -32,18 +47,23 @@ export class StreakCard {
     return recent.map((week, i) => {
       const isThisWeek = i === recent.length - 1;
       const label = isThisWeek ? 'This week' : `Week of ${shortWeekLabel(week.start)}`;
+      const onBreak = week.hasRun ? undefined : breaksInWeek(this.breaks(), week.start)[0];
+      const run = week.hasRun ? 'Run' : isThisWeek ? 'no Run yet' : 'no Run';
       return {
         start: week.start,
         hasRun: week.hasRun,
         pending: isThisWeek && !week.hasRun,
-        title: `${label}: ${week.hasRun ? 'Run' : isThisWeek ? 'no Run yet' : 'no Run'}`,
+        breakKind: onBreak ? `break-${onBreak.kind}` : '',
+        title: `${label}: ${run}${onBreak ? ` · ${breakLabel(onBreak)}` : ''}`,
       };
     });
   });
 
   protected readonly recentLabel = computed(() => {
     const recent = this.streak().recentWeeks;
-    return `The last ${recent.length} Training ${recent.length === 1 ? 'Week' : 'Weeks'}: ${recent.filter((w) => w.hasRun).length} with a Run`;
+    const onBreak = this.recentWeeks().filter((w) => w.breakKind).length;
+    const label = `The last ${recent.length} Training ${recent.length === 1 ? 'Week' : 'Weeks'}: ${recent.filter((w) => w.hasRun).length} with a Run`;
+    return onBreak ? `${label}, ${onBreak} without one in a Break` : label;
   });
 
   /** None while the current Streak is the longest; it ties a past one at most, and then it counts as the longest. */

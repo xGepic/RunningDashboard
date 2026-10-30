@@ -8,6 +8,7 @@ import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import { Connection } from '../connection/connection';
 import { Ride } from '../rides/ride';
 import { MonthTotals, Run, RunMonths } from '../runs/run';
+import { Break } from '../shared/breaks';
 import { Swim } from '../swims/swim';
 import { ImageDownload } from '../shared/image-download';
 import { calendarRoutes } from './calendar-routes';
@@ -54,7 +55,11 @@ const text = (element: Element) =>
   [...element.children].map((part) => part.textContent!.replace(/\s+/g, ' ').trim()).filter(Boolean).join(' ');
 
 describe('CalendarPage', () => {
+  /** What GET /api/breaks answers, whenever it is asked. */
+  let breaks: Break[] = [];
+
   beforeEach(() => {
+    breaks = [];
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date(2026, 9, 12, 9));
     // The chart resizes with its card; jsdom has no ResizeObserver.
@@ -82,6 +87,7 @@ describe('CalendarPage', () => {
     /** Lets a navigation or a response take effect; requests it sets off stay open. */
     const settle = async () => {
       await new Promise((resolve) => setTimeout(resolve));
+      for (const request of http.match('/api/breaks')) request.flush(breaks);
       harness.detectChanges();
     };
     await harness.navigateByUrl(url);
@@ -125,6 +131,21 @@ describe('CalendarPage', () => {
   };
 
   describe('year view', () => {
+    it("lists the year's Breaks under its months", async () => {
+      breaks = [
+        { id: 1, kind: 'injury', start: '2025-12-28', end: '2026-01-04', note: null },
+        { id: 2, kind: 'holiday', start: '2026-08-01', end: '2026-08-14', note: 'Crete' },
+      ];
+
+      const { element, settle } = await open('/calendar');
+      await settle();
+
+      expect([...element.querySelectorAll('app-breaks-panel li .days')].map((days) => days.textContent!.trim())).toEqual([
+        '28 Dec 2025 – 4 Jan 2026',
+        '1 Aug – 14 Aug 2026',
+      ]);
+    });
+
     it('shows a box per month with its distance and Moving Time', async () => {
       const { boxes } = await open('/calendar');
 
@@ -263,6 +284,39 @@ describe('CalendarPage', () => {
       // The full name shows on hover, as long ones are cut short.
       expect(all[13].querySelector('a')!.getAttribute('title')).toBe('Sunday long run with a very long name');
       expect(harness.routeNativeElement!.querySelector('.month-box')).toBeNull();
+    });
+
+    it("tints a Break's days in its kind's colour and names it on its first day in each Training Week", async () => {
+      breaks = [
+        { id: 1, kind: 'injury', start: '2026-09-10', end: '2026-09-16', note: 'Calf strain' },
+        { id: 2, kind: 'holiday', start: '2026-10-01', end: '2026-10-09', note: null },
+      ];
+
+      const { days } = await openMonth('/calendar#Sep', '2026-08-31', '2026-10-04');
+
+      const all = days();
+      const onBreak = all.filter((cell) => cell.classList.contains('on-break')).map((cell) => cell.querySelector('.date-number')!.textContent!.trim());
+      expect(onBreak).toEqual(['10', '11', '12', '13', '14', '15', '16', '1', '2', '3', '4']);
+      expect(all[10].classList).toContain('break-injury');
+      expect(all[10].getAttribute('title')).toBe('Injury · Calf strain');
+      const named = all.filter((cell) => cell.querySelector('.break-tag'));
+      expect(named.map((cell) => `${cell.querySelector('.date-number')!.textContent!.trim()} ${cell.querySelector('.break-tag')!.textContent!.trim()}`)).toEqual([
+        '10 Injury', '14 Injury', '1 Holiday',
+      ]);
+      expect(all[9].getAttribute('title')).toBeNull();
+    });
+
+    it("lists the month's Breaks under it", async () => {
+      breaks = [
+        { id: 1, kind: 'injury', start: '2026-08-28', end: '2026-09-03', note: 'Calf strain' },
+        { id: 2, kind: 'holiday', start: '2026-10-01', end: '2026-10-09', note: null },
+      ];
+
+      const { element } = await openMonth('/calendar#Sep', '2026-08-31', '2026-10-04');
+
+      // The October holiday's days in the grid are not September's.
+      const items = [...element.querySelectorAll('app-breaks-panel li')].map((li) => [...li.children].slice(0, 4).map((part) => part.textContent!.trim()));
+      expect(items).toEqual([['Injury', '28 Aug – 3 Sept 2026', '7 days', 'Calf strain']]);
     });
 
     it("adds up each whole Training Week next to its Sunday, and shows the month's own totals at the top", async () => {

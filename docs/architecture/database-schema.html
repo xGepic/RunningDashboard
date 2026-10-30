@@ -344,6 +344,8 @@
       ['', 'RawSummaryJson', 'TEXT']] },
     [
       { id: 'YearlyGoals', kind: 'you', columns: [['PK', 'Id', 'INTEGER'], ['', 'Year', 'INTEGER'], ['', 'Distance', 'REAL']] },
+      { id: 'Breaks', kind: 'you', columns: [
+        ['PK', 'Id', 'INTEGER'], ['', 'Kind', 'TEXT'], ['', 'Start', 'TEXT'], ['', 'End', 'TEXT'], ['', 'Note', 'TEXT?']] },
       { id: 'AthleteSettings', kind: 'you', columns: [['PK', 'Id', 'INTEGER'], ['', 'DistanceUnit', 'TEXT'], ['', 'ShoeMaximumDistance', 'REAL'], ['', 'Theme', 'TEXT']] },
       { id: '__EFMigrationsHistory', kind: 'app', columns: [['PK', 'MigrationId', 'TEXT'], ['', 'ProductVersion', 'TEXT']] },
       { id: '__EFMigrationsLock', kind: 'app', columns: [['PK', 'Id', 'INTEGER'], ['', 'Timestamp', 'TEXT']] },

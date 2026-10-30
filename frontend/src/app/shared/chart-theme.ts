@@ -1,6 +1,7 @@
 import { DOCUMENT } from '@angular/common';
 import { Injectable, computed, inject } from '@angular/core';
 import { AthleteSettings } from './athlete-settings';
+import { BreakKind } from './breaks';
 
 /** Chart colours, read from the CSS tokens in styles.scss so charts and the page share one palette. */
 export interface ChartColors {
@@ -23,6 +24,8 @@ export interface ChartColors {
   /** Rides and Swims beside Runs in `series`, e.g. in Training Time. */
   ride: string;
   swim: string;
+  /** A Break's colour by its kind, the same in every Theme. */
+  breaks: Record<BreakKind, string>;
 }
 
 /** The chart colours of the app's dark look, in the Athlete's Theme. */
@@ -54,6 +57,12 @@ export class ChartTheme {
       good: token('--met'),
       ride: token('--chart-ride'),
       swim: token('--chart-swim'),
+      breaks: {
+        injury: token('--break-injury'),
+        illness: token('--break-illness'),
+        holiday: token('--break-holiday'),
+        other: token('--break-other'),
+      },
     };
   });
 }

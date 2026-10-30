@@ -47,6 +47,13 @@
   white-space: nowrap;
 }
 
+/* A Break the week has days in, after its dates. */
+.dates .break-tag {
+  margin-left: 8px;
+  font-family: var(--font);
+  vertical-align: 1px;
+}
+
 .race-week {
   color: var(--amber);
   font-family: var(--font);

@@ -1,0 +1,92 @@
+:host {
+  display: block;
+}
+
+.pad {
+  padding: 16px 20px;
+}
+
+/* A Break per row: its kind, days, length and note, with its actions at the end. */
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 14px;
+    padding: 10px 20px;
+    border-left: 3px solid var(--break);
+
+    & + li {
+      border-top: 1px solid var(--divider);
+    }
+  }
+
+  .days {
+    font-size: 12.5px;
+  }
+
+  .length {
+    color: var(--text-muted);
+    font-size: 12.5px;
+  }
+
+  .note {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-secondary);
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .item-actions {
+    display: flex;
+    gap: 2px;
+    margin-left: auto;
+  }
+}
+
+.form-card {
+  padding: 22px;
+  box-shadow: 0 24px 60px rgb(0 0 0 / 50%);
+}
+
+/* The modal the form opens in: the card itself, over the dimmed page. */
+.break-dialog {
+  width: min(640px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  padding: 0;
+  overflow: auto;
+  border: none;
+  background: transparent;
+  color: var(--text);
+
+  &::backdrop {
+    background: rgb(var(--backdrop-rgb) / 70%);
+    backdrop-filter: blur(3px);
+  }
+}
+
+.break-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+  gap: 12px;
+
+  .note-field,
+  .error,
+  .actions {
+    grid-column: 1 / -1;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    margin-top: 6px;
+  }
+}

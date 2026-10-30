@@ -101,6 +101,10 @@ _Avoid_: Chain, run streak (as a daily streak)
 The longest Streak across all Runs, from the Monday of its first Training Week to the Sunday of its last. Of two equally long ones it is the more recent, so the ongoing Streak becomes the Longest Streak as soon as it ties it.
 _Avoid_: Best streak, record streak
 
+**Break**:
+Days the Athlete marked as off, or as easier, for a reason: an Injury, Illness, Holiday or Other, with an optional note (e.g. "Calf strain"). A Break only explains: it is shown on the Calendar, in the Overview's weekly charts, on the Fitness charts, in a Training Block's weeks and in the Streak's weeks, but totals, Training Weeks, the Streak, Records and goals count as they would without it. Two Breaks never overlap, and one is at most 366 days long.
+_Avoid_: Pause, time off, rest period, Recovery Week (that is planned lower load)
+
 **Relative Effort**:
 Strava's heart-rate-based score for how hard a Run was. Summing it over a week gives the week's training load.
 _Avoid_: Suffer score, load (on its own)

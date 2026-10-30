@@ -3,6 +3,7 @@ import { httpResource } from '@angular/common/http';
 import { Component, DestroyRef, computed, inject, linkedSignal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { NgxEchartsDirective } from 'ngx-echarts';
+import { Breaks } from '../shared/breaks';
 import { ChartTheme } from '../shared/chart-theme';
 import {
   TrainingTimeWeek,
@@ -47,6 +48,8 @@ const kpiDefinitions: { label: string; unit: string | null; icon: string; of: (t
 })
 export class OverviewPage {
   private readonly theme = inject(ChartTheme);
+  /** Shaded in the weekly charts and named in the Streak's weeks. */
+  protected readonly breaks = inject(Breaks);
   private readonly router = inject(Router);
 
   protected readonly overview = httpResource<Overview>(() => '/api/overview');
@@ -123,7 +126,7 @@ export class OverviewPage {
 
   protected readonly weeklyDistance = computed(() => {
     const weeks = this.selectedWeeks();
-    return weeks.length ? weeklyDistanceChart(weeks, this.units.unit(), this.theme.colors()) : null;
+    return weeks.length ? weeklyDistanceChart(weeks, this.units.unit(), this.theme.colors(), this.breaks.list()) : null;
   });
 
   protected readonly trainingTimeLabel = trainingTimeLabel;
@@ -170,7 +173,7 @@ export class OverviewPage {
 
   protected readonly trainingTime = computed(() => {
     const weeks = this.selectedTrainingTime();
-    return weeks.length ? trainingTimeChart(weeks, this.theme.colors()) : null;
+    return weeks.length ? trainingTimeChart(weeks, this.theme.colors(), this.breaks.list()) : null;
   });
 
   constructor() {

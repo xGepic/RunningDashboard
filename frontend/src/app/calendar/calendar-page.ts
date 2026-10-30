@@ -4,6 +4,7 @@ import { Component, computed, inject, input, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgxEchartsDirective } from 'ngx-echarts';
+import { Break, Breaks, breakLabel, breakOn, kindLabel } from '../shared/breaks';
 import { ChartTheme } from '../shared/chart-theme';
 import { daysSinceMonday, fullMonthNames, isoDate, today } from '../shared/dates';
 import { monthlyDistanceChart } from '../shared/charts';
@@ -13,6 +14,7 @@ import { reloadOnSync } from '../sync/reload-on-sync';
 import { RidePage } from '../rides/ride';
 import { Run, RunMonths, RunPage } from '../runs/run';
 import { SwimPage } from '../swims/swim';
+import { BreaksPanel } from './breaks-panel';
 import { monthFragments, yearPath } from './calendar-links';
 import { YearReviewPanel } from './year-review';
 
@@ -45,12 +47,16 @@ interface CalendarDay {
   runs: Run[];
   /** Its Runs, Rides and Swims in the order they started. */
   activities: CalendarActivity[];
+  /** The Break the day is in; none on most days. */
+  break: Break | null;
+  /** Whether the day names its Break: its first day, and the first of it in each Training Week of the grid. */
+  namesBreak: boolean;
 }
 
 /** A year of Runs as a box per month; a month's fragment (/calendar#Sep) shows that month's Training Weeks instead. */
 @Component({
   selector: 'app-calendar-page',
-  imports: [DatePipe, NgxEchartsDirective, RouterLink, YearReviewPanel],
+  imports: [BreaksPanel, DatePipe, NgxEchartsDirective, RouterLink, YearReviewPanel],
   templateUrl: './calendar-page.html',
   styleUrl: './calendar-page.scss',
 })
@@ -58,6 +64,8 @@ export class CalendarPage {
   private readonly router = inject(Router);
   private readonly theme = inject(ChartTheme);
   private readonly fragment = toSignal(inject(ActivatedRoute).fragment);
+  /** Their days tinted in the month, and listed under it. */
+  private readonly breaks = inject(Breaks);
 
   // From the route and the query string (component input binding).
   /** The year from /calendar/2025; the current year at /calendar or when malformed. */
@@ -146,16 +154,20 @@ export class CalendarPage {
       activitiesByDay.set(key, [...(activitiesByDay.get(key) ?? []), { id, name, startLocal, sport }]);
     }
     const todayKey = isoDate(today());
+    const breaks = this.breaks.list();
     const weeks: CalendarDay[][] = [];
     for (let date = range.from; date <= range.to; date = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1)) {
       if (daysSinceMonday(date) === 0) weeks.push([]);
       const key = isoDate(date);
+      const onBreak = breakOn(breaks, key);
       weeks[weeks.length - 1].push({
         date,
         otherMonth: date.getMonth() !== month - 1,
         isToday: key === todayKey,
         runs: runsByDay.get(key) ?? [],
         activities: activitiesByDay.get(key) ?? [],
+        break: onBreak,
+        namesBreak: !!onBreak && (onBreak.start === key || daysSinceMonday(date) === 0),
       });
     }
     return weeks.map((days) => ({ start: days[0].date, days, distance: days.flatMap((d) => d.runs).reduce((sum, r) => sum + r.distance, 0) }));
@@ -171,6 +183,14 @@ export class CalendarPage {
     const month = this.selectedMonth();
     return month !== null && this.months.hasValue() ? (this.months.value().months.find((m) => m.month === month) ?? null) : null;
   });
+  /** The days the Breaks panel lists Breaks of: the month's own, or the whole year's. */
+  protected readonly breakRange = computed(() => {
+    const year = this.selectedYear();
+    const month = this.selectedMonth();
+    if (month === null) return { from: `${year}-01-01`, to: `${year}-12-31` };
+    return { from: isoDate(new Date(year, month - 1, 1)), to: isoDate(new Date(year, month, 0)) };
+  });
+
   /** "September 2026". */
   protected readonly monthTitle = computed(() => {
     const month = this.selectedMonth();
@@ -233,6 +253,8 @@ export class CalendarPage {
   protected readonly weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   protected readonly formatHoursMinutes = formatHoursMinutes;
   protected readonly sports = sports;
+  protected readonly breakLabel = breakLabel;
+  protected readonly kindLabel = kindLabel;
 
   constructor() {
     reloadOnSync(() => {

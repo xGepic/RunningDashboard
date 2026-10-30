@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
+import { Break } from '../shared/breaks';
 import { Fitness } from './fitness';
 import { FitnessPage } from './fitness-page';
 
@@ -20,7 +21,7 @@ const fitness: Fitness = {
 };
 
 interface ChartOptions {
-  series: { name: string; data: { value: [string, number]; title: string }[]; markArea?: { data: { yAxis: number }[][] } }[];
+  series: { name: string; data: { value: [string, number]; title: string }[]; markArea?: { data: Record<string, unknown>[][] } }[];
   tooltip: { formatter: (params: { data: { value: [string, number]; title: string } }) => string };
 }
 
@@ -40,11 +41,12 @@ describe('FitnessPage', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  async function render(answer: Fitness | 'error' = fitness) {
+  async function render(answer: Fitness | 'error' = fitness, breaks: Break[] = []) {
     const fixture = TestBed.createComponent(FitnessPage);
     const http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
     for (const settings of http.match('/api/settings')) settings.flush({ distanceUnit: 'km' });
+    for (const request of http.match('/api/breaks')) request.flush(breaks);
     const request = http.expectOne('/api/fitness');
     if (answer === 'error') request.flush(null, { status: 500, statusText: 'Server Error' });
     else request.flush(answer);
@@ -75,6 +77,20 @@ describe('FitnessPage', () => {
     const drift = charts()['drift'];
     expect(drift.series[0].data.map((p) => p.value)).toEqual([['2026-09-13T08:00:00', 0.05]]);
     expect(drift.series[0].markArea!.data).toEqual([[{ yAxis: 0 }, { yAxis: 0.05 }]]);
+  });
+
+  it('shades each Break within the Runs’ dates over its days, named by its kind', async () => {
+    const injury: Break = { id: 1, kind: 'injury', start: '2026-09-10', end: '2026-09-12', note: 'Calf strain' };
+    const later: Break = { id: 2, kind: 'holiday', start: '2026-12-20', end: '2026-12-31', note: null };
+
+    const { charts } = await render(fitness, [injury, later]);
+
+    const bands = charts()['efficiency'].series[1].markArea!.data;
+    expect(bands.length).toBe(1);
+    expect(bands[0][0]).toEqual(expect.objectContaining({ xAxis: '2026-09-10', name: 'Injury' }));
+    expect(bands[0][1]).toEqual({ xAxis: '2026-09-13' });
+    // Its only Run is after the Break.
+    expect(charts()['drift'].series[1].markArea).toBeUndefined();
   });
 
   it("names the Run in a dot's tooltip, its name made safe for HTML", async () => {

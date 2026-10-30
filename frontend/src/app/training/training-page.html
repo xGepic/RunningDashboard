@@ -168,7 +168,12 @@
                     }
                   </td>
                   @if (row.viewed; as week) {
-                    <td class="dates">{{ week.start | date: 'd MMM' }} – {{ week.end | date: 'd MMM y' }}</td>
+                    <td class="dates">
+                      {{ week.start | date: 'd MMM' }} – {{ week.end | date: 'd MMM y' }}
+                      @for (period of breaksIn(week.start, week.end); track period.id) {
+                        <span [class]="'break-tag break-' + period.kind" [title]="breakLabel(period)">{{ kindLabel(period.kind) }}</span>
+                      }
+                    </td>
                     <td class="number">{{ week.actual?.runs ?? '–' }}</td>
                   } @else {
                     <td class="dates">–</td>

@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { Break } from '../shared/breaks';
 import { Training, TrainingBlockWeek, WeekPlan } from './training';
 import { TrainingPage } from './training-page';
 
@@ -74,7 +75,7 @@ describe('TrainingPage', () => {
 
   afterEach(() => vi.useRealTimers());
 
-  async function render(answer = training) {
+  async function render(answer = training, breaks: Break[] = []) {
     TestBed.configureTestingModule({
       imports: [TrainingPage],
       providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
@@ -86,6 +87,7 @@ describe('TrainingPage', () => {
     http.expectOne('/api/sync').flush({ running: false, importedActivities: 0, lastSyncedAt: null });
     fixture.detectChanges();
     http.expectOne('/api/goal-races').flush([]);
+    for (const request of http.match('/api/breaks')) request.flush(breaks);
     http.match('/api/training').filter((request) => !request.cancelled).forEach((request) => request.flush(answer));
     await fixture.whenStable();
     return { element: fixture.nativeElement as HTMLElement, fixture, http };
@@ -93,6 +95,18 @@ describe('TrainingPage', () => {
 
   const row = (element: HTMLElement, weeksToRace: number) =>
     element.querySelector(`tbody tr[data-weeks-to-race="${weeksToRace}"]`) as HTMLTableRowElement;
+
+  it('names the Breaks a week has days in after its dates', async () => {
+    const breaks: Break[] = [{ id: 1, kind: 'illness', start: '2027-03-06', end: '2027-03-09', note: 'Flu' }];
+
+    const { element } = await render(training, breaks);
+
+    const tags = (weeksToRace: number) => [...row(element, weeksToRace).querySelectorAll('.dates .break-tag')];
+    expect(tags(-11).map((tag) => [tag.textContent!.trim(), tag.getAttribute('title')])).toEqual([['Illness', 'Illness · Flu']]);
+    expect(tags(-10).length).toBe(1);
+    expect(tags(-10)[0].classList).toContain('break-illness');
+    expect(tags(-9).length).toBe(0);
+  });
 
   it('shows each planned week with its calendar strip', async () => {
     const { element } = await render();

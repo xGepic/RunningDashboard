@@ -14,6 +14,12 @@
   --phase-peak: #f2706b;
   --phase-taper: #3dd68c;
 
+  /* Break colours, by kind, the same wherever Breaks show, whatever the Theme. */
+  --break-injury: #e8857a;
+  --break-illness: #f2c46d;
+  --break-holiday: #3dd0db;
+  --break-other: #9aa3b2;
+
   --font: 'Geist', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
 }
@@ -1091,6 +1097,40 @@ input[type='number'] {
     background: transparent;
     color: var(--text-muted);
   }
+}
+
+/* A Break's kind, e.g. "Injury", in its colour; a .break-<kind> class anywhere sets --break for what it holds. */
+.break-injury {
+  --break: var(--break-injury);
+}
+
+.break-illness {
+  --break: var(--break-illness);
+}
+
+.break-holiday {
+  --break: var(--break-holiday);
+}
+
+.break-other {
+  --break: var(--break-other);
+}
+
+.break-tag {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 2px 7px;
+  border: 1px solid color-mix(in srgb, var(--break) 30%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--break) 12%, transparent);
+  color: var(--break);
+  font-size: 10.5px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Charts */

@@ -1,6 +1,7 @@
 import { httpResource } from '@angular/common/http';
 import { Component, computed, inject } from '@angular/core';
 import { NgxEchartsDirective } from 'ngx-echarts';
+import { Breaks } from '../shared/breaks';
 import { ChartTheme } from '../shared/chart-theme';
 import { monthNames } from '../shared/dates';
 import { reloadOnSync } from '../sync/reload-on-sync';
@@ -18,6 +19,8 @@ type Figure = 'aerobicEfficiency' | 'cardiacDrift' | 'cadence';
 })
 export class FitnessPage {
   private readonly theme = inject(ChartTheme);
+  /** Shaded in every chart, as they explain a dip. */
+  private readonly breaks = inject(Breaks);
 
   protected readonly fitness = httpResource<Fitness>(() => '/api/fitness');
 
@@ -55,6 +58,7 @@ export class FitnessPage {
         .map((m) => ({ year: m.year, month: m.month, value: m[figure] })),
       format,
       goodUpTo: withGoodBand ? fitness.goodCardiacDrift : undefined,
+      breaks: this.breaks.list(),
     };
     return fitnessChart(data, this.theme.colors());
   }

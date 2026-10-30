@@ -1,5 +1,6 @@
 import type { EChartsCoreOption } from 'echarts/core';
-import { ChartColors, baseChartOptions, tooltipHtml } from './chart-theme';
+import { Break, breakLabel, breaksInWeek, kindLabel } from './breaks';
+import { ChartColors, baseChartOptions, escapeHtml, tooltipHtml } from './chart-theme';
 import { fullMonthNames, monthNames } from './dates';
 import { DistanceUnit, distanceIn, formatHoursMinutes, formatPace } from './format';
 
@@ -66,8 +67,32 @@ export function valueAxis(colors: ChartColors, formatter: (value: number) => str
   };
 }
 
-/** Column chart of distance per Training Week, in kilometres or miles; a column can be clicked. */
-export function weeklyDistanceChart(weeks: WeekDistance[], unit: DistanceUnit, colors: ChartColors): EChartsCoreOption {
+/**
+ * A column chart's shading of each Break over the Training Weeks it has days in, named by its kind; for its first
+ * series. Nothing without a Break among `weeks`.
+ */
+export function breakBands(weeks: readonly { start: string }[], breaks: readonly Break[], colors: ChartColors) {
+  const data = breaks.flatMap((period) => {
+    const indexes = weeks.flatMap((week, index) => (breaksInWeek([period], week.start).length ? [index] : []));
+    if (indexes.length === 0) return [];
+    const color = colors.breaks[period.kind];
+    return [[{ xAxis: indexes[0], name: kindLabel(period.kind), itemStyle: { color: withAlpha(color, 0.1) }, label: { color } }, { xAxis: indexes.at(-1) }]];
+  });
+  return data.length ? { markArea: { silent: true, label: { show: true, position: 'insideTop', fontSize: 10.5 }, data } } : {};
+}
+
+/** A week's tooltip lines for the Breaks it has days in, each in its kind's colour. */
+export function breakTooltip(start: string, breaks: readonly Break[], colors: ChartColors): string {
+  return breaksInWeek(breaks, start)
+    .map((period) => `<div style="font-size:11px;color:${colors.breaks[period.kind]};margin-top:4px">${escapeHtml(breakLabel(period))}</div>`)
+    .join('');
+}
+
+/**
+ * Column chart of distance per Training Week, in kilometres or miles; a column can be clicked. The weeks of a Break are
+ * shaded and named.
+ */
+export function weeklyDistanceChart(weeks: WeekDistance[], unit: DistanceUnit, colors: ChartColors, breaks: readonly Break[] = []): EChartsCoreOption {
   const base = baseChartOptions(colors);
   return {
     ...base,
@@ -77,7 +102,7 @@ export function weeklyDistanceChart(weeks: WeekDistance[], unit: DistanceUnit, c
       formatter: (params: { dataIndex: number }[]) => {
         const week = weeks[params[0]?.dataIndex];
         if (!week) return '';
-        return tooltipHtml(colors, `Week of ${weekLabel(week.start)}`, distanceIn(week.distance, unit).toFixed(1), unit);
+        return tooltipHtml(colors, `Week of ${weekLabel(week.start)}`, distanceIn(week.distance, unit).toFixed(1), unit) + breakTooltip(week.start, breaks, colors);
       },
     },
     xAxis: categoryAxis(weeks.map((w) => shortWeekLabel(w.start)), colors),
@@ -93,6 +118,7 @@ export function weeklyDistanceChart(weeks: WeekDistance[], unit: DistanceUnit, c
         cursor: 'pointer',
         animationDuration: 700,
         animationEasing: 'cubicOut',
+        ...breakBands(weeks, breaks, colors),
       },
     ],
   };
@@ -125,9 +151,10 @@ export function trainingTimeLabel(seconds: number): string {
 
 /**
  * Stacked columns of Training Time per Training Week, in hours: Runs at the bottom in the Theme's colour, then Rides and
- * Swims. Only a column's top segment is rounded, and a hairline in the surface colour parts the segments.
+ * Swims. Only a column's top segment is rounded, and a hairline in the surface colour parts the segments. The weeks of
+ * a Break are shaded and named.
  */
-export function trainingTimeChart(weeks: TrainingTimeWeek[], colors: ChartColors): EChartsCoreOption {
+export function trainingTimeChart(weeks: TrainingTimeWeek[], colors: ChartColors, breaks: readonly Break[] = []): EChartsCoreOption {
   const base = baseChartOptions(colors);
   // The index of each week's topmost sport with time; -1 for an empty week.
   const topSport = weeks.map((w) => trainingTimeSports.reduce((top, s, index) => (w[s.key] > 0 ? index : top), -1));
@@ -149,7 +176,7 @@ export function trainingTimeChart(weeks: TrainingTimeWeek[], colors: ChartColors
               `<span style="margin-left:auto;padding-left:14px;font-family:${colors.fontMono};color:${colors.text}">${trainingTimeLabel(week[s.key])}</span></div>`,
           )
           .join('');
-        return tooltipHtml(colors, `Week of ${weekLabel(week.start)}`, trainingTimeLabel(trainingTimeOf(week))) + rows;
+        return tooltipHtml(colors, `Week of ${weekLabel(week.start)}`, trainingTimeLabel(trainingTimeOf(week))) + rows + breakTooltip(week.start, breaks, colors);
       },
     },
     xAxis: categoryAxis(weeks.map((w) => shortWeekLabel(w.start)), colors),
@@ -168,6 +195,7 @@ export function trainingTimeChart(weeks: TrainingTimeWeek[], colors: ChartColors
       emphasis: { focus: 'series' },
       animationDuration: 700,
       animationEasing: 'cubicOut',
+      ...(index === 0 ? breakBands(weeks, breaks, colors) : {}),
     })),
   };
 }

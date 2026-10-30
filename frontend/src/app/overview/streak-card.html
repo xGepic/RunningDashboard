@@ -18,7 +18,8 @@
 
   <div class="strip" role="img" [attr.aria-label]="recentLabel()">
     @for (week of recentWeeks(); track week.start) {
-      <span class="week" [class.has-run]="week.hasRun" [class.pending]="week.pending" [title]="week.title"></span>
+      <span [class]="'week ' + week.breakKind" [class.has-run]="week.hasRun" [class.pending]="week.pending" [class.on-break]="week.breakKind"
+            [title]="week.title"></span>
     }
   </div>
 </section>

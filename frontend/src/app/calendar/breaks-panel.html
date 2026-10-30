@@ -1,0 +1,94 @@
+<section class="card flush breaks" aria-labelledby="breaks-title">
+  <div class="card-header">
+    <div class="titles">
+      <h2 id="breaks-title" class="card-title">Breaks</h2>
+      <p class="card-sub">Injuries, illnesses and holidays, shown in the charts and the Streak; they change no numbers.</p>
+    </div>
+    <button type="button" class="btn" (click)="mark()">Mark a Break</button>
+  </div>
+
+  @if (!open()) {
+    @for (error of errors()[formError]; track error) {
+      <p class="error pad" role="alert">{{ error }}</p>
+    }
+  }
+
+  @if (shown().length === 0) {
+    <p class="empty pad">No Breaks in {{ period() }}.</p>
+  } @else {
+    <ul class="list">
+      @for (period of shown(); track period.id) {
+        <li [class]="'break-' + period.kind">
+          <span class="break-tag">{{ kindLabel(period.kind) }}</span>
+          <span class="days mono">{{ days(period) }}</span>
+          <span class="length">{{ breakDays(period) }} {{ breakDays(period) === 1 ? 'day' : 'days' }}</span>
+          <span class="note">{{ period.note ?? '' }}</span>
+          <span class="item-actions">
+            <button type="button" class="link quiet" (click)="edit(period)">Edit</button>
+            <button type="button" class="link danger" (click)="remove(period)">Remove</button>
+          </span>
+        </li>
+      }
+    </ul>
+  }
+</section>
+
+<!-- Esc or Cancel closes it without saving. -->
+<dialog #dialog class="break-dialog" aria-labelledby="break-form-title" (close)="dialogClosed()">
+  @if (open()) {
+    <section class="card form-card">
+      <div class="card-header">
+        <div class="titles">
+          <h2 id="break-form-title" class="card-title">{{ editing() ? 'Change the Break' : 'Mark a Break' }}</h2>
+          <p class="card-sub">Days off or easier for a reason; the Streak and every total count as they would without it.</p>
+        </div>
+      </div>
+      <form class="break-form" [formGroup]="form" (ngSubmit)="save()" novalidate>
+        <label class="field">
+          Kind
+          <select formControlName="kind" name="kind" [attr.aria-invalid]="!!errors()['kind']">
+            @for (option of kinds; track option.kind) {
+              <option [value]="option.kind">{{ option.label }}</option>
+            }
+          </select>
+          @for (error of errors()['kind']; track error) {
+            <span class="field-error">{{ error }}</span>
+          }
+        </label>
+
+        <label class="field">
+          From
+          <input type="date" formControlName="start" name="start" required [attr.aria-invalid]="!!errors()['start']" />
+          @for (error of errors()['start']; track error) {
+            <span class="field-error">{{ error }}</span>
+          }
+        </label>
+
+        <label class="field">
+          To
+          <input type="date" formControlName="end" name="end" required [attr.aria-invalid]="!!errors()['end']" />
+          @for (error of errors()['end']; track error) {
+            <span class="field-error">{{ error }}</span>
+          }
+        </label>
+
+        <label class="field note-field">
+          <span>Note <span class="optional">(optional)</span></span>
+          <input formControlName="note" name="note" maxlength="200" placeholder="e.g. Calf strain" [attr.aria-invalid]="!!errors()['note']" />
+          @for (error of errors()['note']; track error) {
+            <span class="field-error">{{ error }}</span>
+          }
+        </label>
+
+        @for (error of errors()[formError]; track error) {
+          <p class="error" role="alert">{{ error }}</p>
+        }
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary" [disabled]="saving()">{{ editing() ? 'Save' : 'Mark Break' }}</button>
+          <button type="button" class="btn" (click)="cancel()">Cancel</button>
+        </div>
+      </form>
+    </section>
+  }
+</dialog>

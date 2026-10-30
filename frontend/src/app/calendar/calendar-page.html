@@ -65,10 +65,16 @@
         @for (week of weeks(); track week.start.getTime()) {
           <div class="week">
             @for (calendarDay of week.days; track calendarDay.date.getTime()) {
-              <div class="day" [class.other-month]="calendarDay.otherMonth" [class.today]="calendarDay.isToday"
-                   [class.without-activities]="calendarDay.activities.length === 0">
+              <div [class]="'day' + (calendarDay.break ? ' on-break break-' + calendarDay.break.kind : '')"
+                   [class.other-month]="calendarDay.otherMonth" [class.today]="calendarDay.isToday"
+                   [class.without-activities]="calendarDay.activities.length === 0" [class.names-break]="calendarDay.namesBreak"
+                   [attr.title]="calendarDay.break ? breakLabel(calendarDay.break) : null">
                 <span class="date"><span class="weekday">{{ calendarDay.date | date: 'EEE' }}</span>
-                  <span class="date-number">{{ calendarDay.date.getDate() }}</span></span>
+                  <span class="date-number">{{ calendarDay.date.getDate() }}</span>
+                  @if (calendarDay.namesBreak) {
+                    <span class="break-tag">{{ kindLabel(calendarDay.break!.kind) }}</span>
+                  }
+                </span>
                 @if (calendarDay.activities.length) {
                   <ul class="day-activities">
                     @for (activity of calendarDay.activities; track activity.sport + activity.id) {
@@ -93,6 +99,7 @@
           <span class="note">The week's distance counts Runs only.</span>
         </p>
       }
+      <app-breaks-panel [from]="breakRange().from" [to]="breakRange().to" [period]="monthTitle()!" />
     }
   } @else {
     <ol class="year-grid">
@@ -135,5 +142,7 @@
              [attr.aria-label]="'Line chart of distance per month in ' + selectedYear() + '; the boxes above have the same numbers'"></div>
       </section>
     }
+
+    <app-breaks-panel [from]="breakRange().from" [to]="breakRange().to" [period]="'' + selectedYear()" />
   }
 </div>

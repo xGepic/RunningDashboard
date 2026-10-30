@@ -148,6 +148,15 @@ a.month-box {
     color: var(--on-accent);
     font-weight: 600;
   }
+
+  /* A day of a Break, tinted in its kind's colour; its name is on the first of its days in each week. */
+  &.on-break {
+    background: color-mix(in srgb, var(--break) 9%, transparent);
+  }
+
+  .break-tag {
+    min-width: 0;
+  }
 }
 
 .date {
@@ -273,7 +282,7 @@ a.month-box {
       border-left: 0;
     }
 
-    &.without-activities {
+    &.without-activities:not(.names-break) {
       display: none;
     }
 

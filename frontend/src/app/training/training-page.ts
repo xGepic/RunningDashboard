@@ -4,6 +4,7 @@ import { Component, computed, effect, inject, input, signal, untracked, viewChil
 import { RouterLink } from '@angular/router';
 import { NgxEchartsDirective } from 'ngx-echarts';
 import { GoalRace, targetPaceOf } from '../goal-races/goal-race';
+import { Breaks, breakLabel, breaksWithin, kindLabel } from '../shared/breaks';
 import { GoalRacePanel } from '../goal-races/goal-race-panel';
 import { ChartTheme } from '../shared/chart-theme';
 import { weekLabel, weeklyDistanceChart } from '../shared/charts';
@@ -62,6 +63,8 @@ export class TrainingPage {
     return goalRaceId ? { url: '/api/training', params: { goalRaceId } } : { url: '/api/training' };
   });
   protected readonly goalRaces = httpResource<GoalRace[]>(() => '/api/goal-races');
+  /** Named in the weeks they have days in, so a missed Weekly Target reads as, say, an Injury. */
+  private readonly breaks = inject(Breaks);
 
   protected readonly formatDuration = formatDuration;
   /** Distances, Pace and the gap to the Target Pace in the Distance Unit. */
@@ -207,6 +210,14 @@ export class TrainingPage {
   }
 
   /** Marks an actual value against the plan as the API judged it: met, short, or neither yet. */
+  /** The Breaks with a day from `start` to `end` (yyyy-MM-dd). */
+  protected breaksIn(start: string, end: string) {
+    return breaksWithin(this.breaks.list(), start, end);
+  }
+
+  protected readonly breakLabel = breakLabel;
+  protected readonly kindLabel = kindLabel;
+
   protected metClass(met: boolean | null | undefined): string {
     return met === true ? 'met' : met === false ? 'short' : '';
   }

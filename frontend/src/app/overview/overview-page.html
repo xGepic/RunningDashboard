@@ -16,7 +16,7 @@
       <div class="goal-row">
         <app-yearly-goal-card [goal]="overview.yearlyGoal" [distance]="thisYearsDistance()" (changed)="goalChanged()" />
         @if (overview.streak; as streak) {
-          <app-streak-card [streak]="streak" />
+          <app-streak-card [streak]="streak" [breaks]="breaks.list()" />
         }
       </div>
 

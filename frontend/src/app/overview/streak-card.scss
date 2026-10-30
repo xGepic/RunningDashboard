@@ -72,5 +72,15 @@
       border: 1.5px dashed var(--accent-light);
       background: transparent;
     }
+
+    /* A week without a Run in a Break, in its kind's colour. */
+    &.on-break {
+      border-color: var(--break);
+      background: color-mix(in srgb, var(--break) 25%, transparent);
+    }
+
+    &.pending.on-break {
+      border-color: var(--break);
+    }
   }
 }

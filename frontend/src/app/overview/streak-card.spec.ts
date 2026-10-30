@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { Break } from '../shared/breaks';
 import { Streak } from './overview';
 import { StreakCard } from './streak-card';
 
@@ -15,10 +16,11 @@ describe('StreakCard', () => {
 
   const streakOf = (streak: Partial<Streak>): Streak => ({ current: 14, thisWeekHasRun: false, longest, recentWeeks: [], ...streak });
 
-  async function render(streak: Partial<Streak>) {
+  async function render(streak: Partial<Streak>, breaks: Break[] = []) {
     TestBed.configureTestingModule({ imports: [StreakCard] });
     const fixture = TestBed.createComponent(StreakCard);
     fixture.componentRef.setInput('streak', streakOf(streak));
+    fixture.componentRef.setInput('breaks', breaks);
     await fixture.whenStable();
     const element = fixture.nativeElement as HTMLElement;
     const textOf = (selector: string) => element.querySelector(selector)?.textContent!.replace(/\s+/g, ' ').trim();
@@ -134,5 +136,51 @@ describe('StreakCard', () => {
     expect(square.classList).toContain('has-run');
     expect(square.classList).not.toContain('pending');
     expect(square.getAttribute('title')).toBe('This week: Run');
+  });
+
+  describe('with Breaks', () => {
+    const injury: Break = { id: 1, kind: 'injury', start: '2026-09-20', end: '2026-10-02', note: 'Calf strain' };
+    const holiday: Break = { id: 2, kind: 'holiday', start: '2026-10-07', end: '2026-10-16', note: null };
+
+    it('names the Break of a week without a Run, counting the Streak as without it', async () => {
+      const recentWeeks = [
+        { start: '2026-09-14', hasRun: true },
+        { start: '2026-09-21', hasRun: false },
+        { start: '2026-09-28', hasRun: true },
+        { start: '2026-10-05', hasRun: true },
+      ];
+      const { element, textOf } = await render({ current: 2, thisWeekHasRun: true, recentWeeks }, [injury]);
+
+      const squares = [...element.querySelectorAll('.strip .week')];
+      expect(squares.map((s) => s.classList.contains('on-break'))).toEqual([false, true, false, false]);
+      expect(squares[1].classList).toContain('break-injury');
+      expect(squares[1].getAttribute('title')).toBe('Week of 21 Sep: no Run · Injury · Calf strain');
+      // A week with a Run is a Run week, Break or not.
+      expect(squares[2].getAttribute('title')).toBe('Week of 28 Sep: Run');
+      expect(element.querySelector('.strip')!.getAttribute('aria-label')).toBe('The last 4 Training Weeks: 3 with a Run, 1 without one in a Break');
+      expect(textOf('.count .value')).toBe('2');
+    });
+
+    it('says this week is a Break instead of what it still needs', async () => {
+      vi.setSystemTime(new Date(2026, 9, 11, 9));
+
+      const { textOf, element } = await render({ current: 14, thisWeekHasRun: false, recentWeeks: [{ start: '2026-10-05', hasRun: false }] }, [holiday]);
+
+      expect(textOf('.status')).toBe('Break this week: Holiday');
+      expect(element.querySelector('.status')!.classList).not.toContain('warning');
+      expect(element.querySelector('.strip .week')!.classList).toContain('pending');
+    });
+
+    it('says the Streak ended in a Break', async () => {
+      const recentWeeks = [
+        { start: '2026-09-21', hasRun: false },
+        { start: '2026-09-28', hasRun: false },
+        { start: '2026-10-05', hasRun: false },
+      ];
+
+      const { textOf } = await render({ current: 0, thisWeekHasRun: false, recentWeeks }, [injury]);
+
+      expect(textOf('.status')).toBe('The Streak ended in a Break (Injury) · Run this week to start a new one');
+    });
   });
 });
