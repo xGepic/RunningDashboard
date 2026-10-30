@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   Source of database-schema.png. After changing the tables below, render it again (from the repo root):
-  msedge --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --window-size=1600,1590
+  msedge --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --window-size=1600,1680
          --virtual-time-budget=5000 --screenshot=docs/architecture/database-schema.png file:///<repo>/docs/architecture/database-schema.html
   The tables follow backend/src/RunningDashboard.Api/Persistence/Migrations/AppDbContextModelSnapshot.cs, besides EF Core's
   own __EFMigrationsHistory and __EFMigrationsLock, which are not in the model.
@@ -347,9 +347,9 @@
       { id: 'WeeklyTimeGoals', kind: 'you', columns: [['PK', 'Id', 'INTEGER'], ['', 'Time', 'INTEGER']] },
       { id: 'Breaks', kind: 'you', columns: [
         ['PK', 'Id', 'INTEGER'], ['', 'Kind', 'TEXT'], ['', 'Start', 'TEXT'], ['', 'End', 'TEXT'], ['', 'Note', 'TEXT?']] },
-      { id: 'AthleteSettings', kind: 'you', columns: [['PK', 'Id', 'INTEGER'], ['', 'DistanceUnit', 'TEXT'], ['', 'ShoeMaximumDistance', 'REAL'], ['', 'Theme', 'TEXT']] },
-      { id: '__EFMigrationsHistory', kind: 'app', columns: [['PK', 'MigrationId', 'TEXT'], ['', 'ProductVersion', 'TEXT']] },
-      { id: '__EFMigrationsLock', kind: 'app', columns: [['PK', 'Id', 'INTEGER'], ['', 'Timestamp', 'TEXT']] },
+      { id: 'AthleteSettings', kind: 'you', columns: [
+        ['PK', 'Id', 'INTEGER'], ['', 'DistanceUnit', 'TEXT'], ['', 'ShoeMaximumDistance', 'REAL'],
+        ['', 'ShowWeeklyTimeGoal', 'INTEGER'], ['', 'ShowYearlyGoal', 'INTEGER'], ['', 'Theme', 'TEXT']] },
     ],
     [
       { id: 'StravaConnections', kind: 'app', columns: [
@@ -357,9 +357,13 @@
         ['', 'RefreshToken', 'TEXT'], ['', 'AccessTokenExpiresAt', 'TEXT'], ['', 'ConnectedAt', 'TEXT']] },
       { id: 'StravaApps', kind: 'you', columns: [['PK', 'Id', 'INTEGER'], ['', 'ClientId', 'TEXT'], ['', 'ClientSecret', 'TEXT']] },
     ],
-    { id: 'SyncStates', kind: 'app', columns: [
-      ['PK', 'Id', 'INTEGER'], ['', 'InitialImportCompleted', 'INTEGER'], ['', 'ImportCursor', 'TEXT?'], ['', 'LatestActivityStart', 'TEXT?'],
-      ['', 'LastSyncedAt', 'TEXT?'], ['', 'LastError', 'TEXT?'], ['', 'ReconnectRequired', 'INTEGER']] },
+    [
+      { id: 'SyncStates', kind: 'app', columns: [
+        ['PK', 'Id', 'INTEGER'], ['', 'InitialImportCompleted', 'INTEGER'], ['', 'ImportCursor', 'TEXT?'], ['', 'LatestActivityStart', 'TEXT?'],
+        ['', 'LastSyncedAt', 'TEXT?'], ['', 'LastError', 'TEXT?'], ['', 'ReconnectRequired', 'INTEGER']] },
+      { id: '__EFMigrationsHistory', kind: 'app', columns: [['PK', 'MigrationId', 'TEXT'], ['', 'ProductVersion', 'TEXT']] },
+      { id: '__EFMigrationsLock', kind: 'app', columns: [['PK', 'Id', 'INTEGER'], ['', 'Timestamp', 'TEXT']] },
+    ],
   ];
 
   // [from table.column, side, to table.column, side, style, label, source end, target end, x of the vertical stretch]

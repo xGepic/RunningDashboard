@@ -2,7 +2,7 @@
 <!--
   The runtime view (arc42): the building blocks at work in the four scenarios that matter most. To render it as an
   image (from the repo root):
-  msedge --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --window-size=1600,5002
+  msedge --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --window-size=1600,5042
          --virtual-time-budget=5000 --screenshot=docs/architecture/runtime-view.png file:///<repo>/docs/architecture/runtime-view.html
   The steps follow Program.cs, Strava/StravaAuthEndpoints.cs, Sync/ and frontend/src/app/sync/.
 -->
@@ -470,8 +470,8 @@
       ],
       steps: [
         ['msg', 'page', 'api', 'GET /api/overview', 'http'],
-        ['msg', 'api', 'db', 'every Run\'s date, distance, Moving Time, elevation; the Yearly Goal'],
-        ['msg', 'api', 'api', 'totals, years, Training Weeks,\nmonths, Streak'],
+        ['msg', 'api', 'db', 'every Run\'s date, distance, Moving Time, elevation;\nRides\' and Swims\' Moving Time; the Yearly and Weekly Time Goal'],
+        ['msg', 'api', 'api', 'totals, years, Training Weeks, months,\nStreak and its start, this week\'s Training Time'],
         ['msg', 'api', 'page', 'JSON', 'reply'],
         ['msg', 'page', 'echarts', 'weekly distance and Training Time charts'],
         ['group', 'loop', 'every 2 seconds, while the last status says a sync runs'],
@@ -486,6 +486,7 @@
       ],
       notes: [
         'When the tab comes back into view more than 15 minutes after the last sync, SyncState first asks for the status, then starts a sync with POST /api/sync unless one runs or Strava waits to be reconnected; the page reloads as above.',
+        'The Overview also needs the Breaks (GET /api/breaks) and the Settings (GET /api/settings), which shared services load once for all pages; the Settings say whether each goal is shown.',
         'The sidebar\'s newest activity and Shoe badge reload the same way. A Run\'s page also loads Leaflet, and its map loads tiles straight from the tile servers. The first time a Run\'s page is opened, it asks for the Temperature apart from the Run (GET /api/runs/{id}/temperature), and the backend looks it up on Open-Meteo and keeps it.',
       ],
     },
