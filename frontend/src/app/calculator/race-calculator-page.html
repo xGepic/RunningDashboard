@@ -3,7 +3,9 @@
     <div class="titles">
       <span class="eyebrow">Calculator</span>
       <h1>Pace and Race Time</h1>
-      <p class="subtitle">Type a pace for the finish time, or a finish time for the pace, over a race distance.</p>
+      <p class="subtitle">
+        Type a pace for the finish time, or a finish time for the pace, over a race distance, and see how to split it.
+      </p>
     </div>
   </header>
 
@@ -11,7 +13,7 @@
     <div class="inputs">
       <label class="field">
         Distance
-        <select #distancePicker (change)="distance.set(+distancePicker.value)">
+        <select #distancePicker name="distance" (change)="distance.set(+distancePicker.value)">
           @for (option of distances; track option.distance) {
             <option [value]="option.distance" [selected]="option.distance === distance()">{{ option.name }}</option>
           }
@@ -67,5 +69,79 @@
         <dd class="mono">{{ units.distance(distance()) }}</dd>
       </div>
     </dl>
+  </section>
+
+  @let pacing = plan();
+  <section class="card flush pacing" aria-labelledby="pacing-title">
+    <div class="card-header">
+      <div class="titles">
+        <h2 id="pacing-title" class="card-title">Pacing Plan</h2>
+        <p class="card-sub">
+          @if (finishTime() === null) {
+            Type a pace or a finish time, or move a slider, for the clock time at each Checkpoint.
+          } @else if (strategy() === 'even') {
+            Every {{ units.unit() }} at {{ units.pace(pacing.startPace) }}.
+          } @else {
+            From {{ units.pace(pacing.startPace) }} at the start to {{ units.pace(pacing.finishPace) }} at the finish: the second
+            half {{ share() }}% {{ strategy() === 'negative' ? 'faster' : 'slower' }} than the first.
+          }
+        </p>
+      </div>
+    </div>
+
+    <!-- The share keeps its place while hidden, so choosing a strategy moves nothing. -->
+    <div class="strategy">
+      <div class="segmented" role="group" aria-label="Pacing Strategy">
+        <button type="button" [attr.aria-pressed]="strategy() === 'even'" (click)="strategy.set('even')">Even</button>
+        <button type="button" [attr.aria-pressed]="strategy() === 'negative'" (click)="strategy.set('negative')">Negative Split</button>
+        <button type="button" [attr.aria-pressed]="strategy() === 'positive'" (click)="strategy.set('positive')">Positive Split</button>
+      </div>
+      <select #sharePicker name="share" aria-label="Second half" [style.visibility]="strategy() === 'even' ? 'hidden' : null"
+              (change)="share.set(+sharePicker.value)">
+        @for (option of shares; track option) {
+          <option [value]="option" [selected]="option === share()">{{ option }}% {{ strategy() === 'positive' ? 'slower' : 'faster' }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Checkpoint</th>
+            <th class="number">Clock</th>
+            <th class="number">Pace</th>
+            <th class="number">Stretch</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (stretch of stretches(); track stretch.checkpoint.end) {
+            <tr class="stretch">
+              <td>
+                <button type="button" class="opener" [attr.aria-expanded]="isOpen(stretch)" (click)="toggle(stretch)">
+                  {{ stretch.checkpoint.checkpoint }}
+                </button>
+              </td>
+              <td class="number">{{ duration(stretch.checkpoint.clock) }}</td>
+              <td class="number">{{ splitPace(stretch.pace) }}</td>
+              <td class="number muted">{{ duration(stretch.time) }}</td>
+            </tr>
+            @if (isOpen(stretch)) {
+              @for (split of stretch.splits; track split.end) {
+                <tr class="split">
+                  <td class="muted">{{ units.unit() }} {{ split.split }}</td>
+                  <td class="number">{{ duration(split.clock) }}</td>
+                  <td class="number">{{ splitPace(split.pace!) }}</td>
+                  <td class="number muted">{{ duration(split.time!) }}</td>
+                </tr>
+              }
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="pacing-foot">
+      <button type="button" class="link" (click)="toggleAll()">{{ allOpen() ? 'Show Checkpoints only' : 'Show every ' + units.unit() }}</button>
+    </div>
   </section>
 </div>

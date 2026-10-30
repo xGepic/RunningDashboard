@@ -125,6 +125,18 @@ _Avoid_: Taper week
 The Best Effort over the Goal Race's distance from the longest Run on race day. If that distance has no Best Effort, the Run's elapsed time is used. With no Run on race day, there is no Race Result.
 _Avoid_: Finish time, official time
 
+**Pacing Plan**:
+How to run a race distance in a finish time: the Calculator's Splits (per km, or per mile when the Distance Unit is miles) with each one's Pace, time and clock time, and the Checkpoints among them. It follows a Pacing Strategy. It is never stored, and is not tied to a Goal Race.
+_Avoid_: Race plan, pace band, splits (on their own)
+
+**Pacing Strategy**:
+How a Pacing Plan spreads the Pace over the race: Even (the same Pace throughout), Negative Split (steadily faster from start to finish, so the second half takes a chosen 1–10% less time than the first) or Positive Split (steadily slower, so it takes that much more). The finish time is the same in each.
+_Avoid_: Pacing (on its own), split strategy
+
+**Checkpoint**:
+A point of a Pacing Plan where race timing mats usually are: every 5 km, half-way (in races of 15 km and longer) and the finish, whatever the Distance Unit.
+_Avoid_: Timing mat, waypoint
+
 **Training Block**:
 The Training Weeks that lead up to a Goal Race and end with its Race Week. With a Training Plan, it is 12, 16 or 20 weeks long. Without one, it can be any length (e.g. 14 weeks).
 _Avoid_: Plan, cycle, build
