@@ -2,7 +2,7 @@
 <!--
   The deployment view (arc42): where the dashboard runs during development, as the packaged app on a friend's computer,
   and how GitHub builds that app. To render it as an image (from the repo root):
-  msedge --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --window-size=1600,2426
+  msedge --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --window-size=1600,2448
          --virtual-time-budget=5000 --screenshot=docs/architecture/deployment-view.png file:///<repo>/docs/architecture/deployment-view.html
   It follows README.md, frontend/proxy.conf.json, publish.ps1 and .github/workflows/release.yml.
   Layout: each section is a board of its own; zones, blocks, arrows and labels are placed in px on it (see the script).
@@ -427,19 +427,19 @@
       },
       {
         title: 'Build and release',
-        intro: 'The Release workflow tests the backend and the frontend on Linux side by side, then builds both apps on Windows with <code>publish.ps1</code>. For a version tag, it attaches them to a GitHub Release, where friends download the zip or the tarball (about 50 MB) and unpack it as above.',
+        intro: 'The Release workflow, run by hand, tests the backend and the frontend on Linux side by side with the Tests workflow, then builds both apps on Windows with <code>publish.ps1</code>. It attaches them to the GitHub Release "latest", replacing the one before, so friends download the zip or the tarball (about 50 MB) from the same links every time and unpack it as above.',
         height: 528,
         zones: [
           ['ci', 288, 0, 912, 376, 'GitHub Actions', '<span class="mono">.github/workflows/release.yml</span>'],
         ],
         blocks: [
-          ['repo', 'external', 0, 160, 224, 112, 'GitHub repository', 'git push of a version tag v*, or Run workflow by hand', null],
+          ['repo', 'external', 0, 160, 224, 112, 'GitHub repository', 'Actions → Release → Run workflow, by hand', null],
           ['testback', 'ci', 312, 96, 240, 104, 'test-backend', 'ubuntu-latest: dotnet test backend -c Release', null],
           ['testfront', 'ci', 312, 240, 240, 104, 'test-frontend', 'ubuntu-latest: npm ci, then npm test', null],
           ['build', 'ci', 616, 156, 272, 128, 'build', 'windows-latest: publish.ps1 builds the frontend, then the backend for win-x64 and osx-arm64', null],
-          ['publish', 'ci', 952, 156, 224, 128, 'publish', 'ubuntu-latest, for a v* tag only: gh release create with both files', null],
+          ['publish', 'ci', 952, 156, 224, 128, 'publish', 'ubuntu-latest: gh release delete latest, then gh release create latest with both files', null],
           ['artifact', 'data', 616, 432, 352, 96, 'Run artifact RunningDashboard', 'RunningDashboard-win.zip and RunningDashboard-mac.tar.gz', null],
-          ['release', 'external', 1248, 164, 224, 112, 'GitHub Release', 'Both files, for friends to download', null],
+          ['release', 'external', 1248, 164, 224, 112, 'GitHub Release', '"latest": both files, for friends to download', null],
         ],
         arrows: [
           { from: ['repo', 'right'], to: ['testback', 'left'], via: [['H', 256]] },
