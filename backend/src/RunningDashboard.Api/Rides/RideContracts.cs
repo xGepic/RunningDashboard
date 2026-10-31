@@ -65,21 +65,25 @@ internal sealed record RideDetailResponse(
     string? Route,
     string StravaUrl)
 {
-    public static RideDetailResponse From(ListedActivity ride) => new(
-        ride.Id,
-        ride.Name,
-        ride.SportType,
-        ride.StartLocal,
-        ride.Distance,
-        ride.MovingTime,
-        ride.ElapsedTime,
-        ListedActivity.AvgSpeedOf(ride.MovingTime, ride.Distance),
-        ride.MaxSpeed,
-        ride.ElevationGain,
-        ride.AverageHeartRate,
-        ride.MaxHeartRate,
-        ride.AveragePower,
-        ride.AverageCadence,
-        ride.SportType == Sports.VirtualRide ? null : ride.Route,
-        $"https://www.strava.com/activities/{ride.Id}");
+    public static RideDetailResponse From(ListedActivity ride)
+    {
+        var summary = ride.ReadSummary();
+        return new(
+            ride.Id,
+            ride.Name,
+            ride.SportType,
+            ride.StartLocal,
+            ride.Distance,
+            ride.MovingTime,
+            ride.ElapsedTime,
+            ListedActivity.AvgSpeedOf(ride.MovingTime, ride.Distance),
+            summary.MaxSpeed,
+            ride.ElevationGain,
+            summary.AverageHeartRate,
+            summary.MaxHeartRate,
+            summary.AveragePower,
+            summary.AverageCadence,
+            ride.SportType == Sports.VirtualRide ? null : summary.Route,
+            $"https://www.strava.com/activities/{ride.Id}");
+    }
 }

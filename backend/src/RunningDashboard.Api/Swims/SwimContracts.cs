@@ -48,15 +48,19 @@ internal sealed record SwimDetailResponse(
     double? MaxHeartRate,
     string StravaUrl)
 {
-    public static SwimDetailResponse From(ListedActivity swim) => new(
-        swim.Id,
-        swim.Name,
-        swim.StartLocal,
-        swim.Distance,
-        swim.MovingTime,
-        swim.ElapsedTime,
-        ListedActivity.SwimPaceOf(swim.MovingTime, swim.Distance),
-        swim.AverageHeartRate,
-        swim.MaxHeartRate,
-        $"https://www.strava.com/activities/{swim.Id}");
+    public static SwimDetailResponse From(ListedActivity swim)
+    {
+        var summary = swim.ReadSummary();
+        return new(
+            swim.Id,
+            swim.Name,
+            swim.StartLocal,
+            swim.Distance,
+            swim.MovingTime,
+            swim.ElapsedTime,
+            ListedActivity.SwimPaceOf(swim.MovingTime, swim.Distance),
+            summary.AverageHeartRate,
+            summary.MaxHeartRate,
+            $"https://www.strava.com/activities/{swim.Id}");
+    }
 }

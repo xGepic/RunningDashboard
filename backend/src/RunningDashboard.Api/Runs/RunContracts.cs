@@ -22,7 +22,11 @@ internal sealed record RunPageResponse(IReadOnlyList<RunResponse> Items, int Pag
 /// <param name="MovingTime">Seconds.</param>
 /// <param name="Pace">Seconds per kilometre.</param>
 /// <param name="ShoeName">Name of the Shoe logged with the Run, if Strava still lists it.</param>
-internal sealed record RunResponse(long Id, string Name, string SportType, DateTime StartLocal, double Distance, int MovingTime, double? Pace, string? ShoeName);
+internal sealed record RunResponse(long Id, string Name, string SportType, DateTime StartLocal, double Distance, int MovingTime, double? Pace, string? ShoeName)
+{
+    public static RunResponse From(RunExportResponse run) =>
+        new(run.Id, run.Name, run.SportType, run.StartLocal, run.Distance, run.MovingTime, run.Pace, run.ShoeName);
+}
 
 /// <summary>A Run as exported: what the list shows, and more.</summary>
 /// <param name="Distance">Metres.</param>

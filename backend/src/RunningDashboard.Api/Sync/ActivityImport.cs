@@ -117,7 +117,7 @@ public sealed class ActivityImport(AppDbContext db, StravaClient strava)
         if (state.LatestActivityStart is null || newest > state.LatestActivityStart)
             state.LatestActivityStart = newest;
 
-        var runs = activities.Where(a => Run.IsRunningSportType(a.SportType)).ToList();
+        var runs = activities.Where(a => Sports.IsRun(a.SportType)).ToList();
         var ids = runs.Select(a => a.Id).ToList();
         var stored = await db.Runs.Where(r => ids.Contains(r.Id)).ToDictionaryAsync(r => r.Id, cancellationToken);
 

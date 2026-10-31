@@ -35,44 +35,18 @@ public sealed class ListedActivity
 
     public required string RawSummaryJson { get; set; }
 
-    /// <summary>Beats per minute, from the stored summary; none without a heart-rate recording.</summary>
-    public double? AverageHeartRate => NumberIn(RawSummaryJson, "average_heartrate");
-
-    /// <inheritdoc cref="AverageHeartRate"/>
-    public double? MaxHeartRate => NumberIn(RawSummaryJson, "max_heartrate");
-
-    /// <summary>Kilometres per hour, from the stored summary; none if Strava sent none.</summary>
-    public double? MaxSpeed => NumberIn(RawSummaryJson, "max_speed") * 3.6;
-
-    /// <summary>Watts, from the stored summary: measured with a power meter, or else Strava's estimate for a Ride; none for most Swims.</summary>
-    public double? AveragePower => NumberIn(RawSummaryJson, "average_watts");
-
-    /// <summary>Pedal revolutions per minute for a Ride, from the stored summary; none without a cadence sensor.</summary>
-    public double? AverageCadence => NumberIn(RawSummaryJson, "average_cadence");
-
-    /// <summary>
-    /// The simplified route from the stored summary, as Strava encodes it (Google's encoded polyline). None for an
-    /// Activity without GPS, such as a Swim in a pool.
-    /// </summary>
-    public string? Route
+    /// <summary>What its page shows beyond the columns, from the stored summary, read in one go.</summary>
+    public ListedActivitySummary ReadSummary()
     {
-        get
-        {
-            using var activity = JsonDocument.Parse(RawSummaryJson);
-            return activity.RootElement.TryGetProperty("map", out var map)
-                && map.ValueKind == JsonValueKind.Object
-                && map.TryGetProperty("summary_polyline", out var polyline)
-                && polyline.ValueKind == JsonValueKind.String
-                && polyline.GetString() is { Length: > 0 } route
-                    ? route
-                    : null;
-        }
-    }
-
-    private static double? NumberIn(string activityJson, string property)
-    {
-        using var activity = JsonDocument.Parse(activityJson);
-        return activity.RootElement.TryGetProperty(property, out var value) && value.ValueKind == JsonValueKind.Number ? value.GetDouble() : null;
+        using var json = JsonDocument.Parse(RawSummaryJson);
+        var activity = json.RootElement;
+        return new ListedActivitySummary(
+            ActivityJson.NumberIn(activity, "average_heartrate"),
+            ActivityJson.NumberIn(activity, "max_heartrate"),
+            ActivityJson.NumberIn(activity, "max_speed") * 3.6,
+            ActivityJson.NumberIn(activity, "average_watts"),
+            ActivityJson.NumberIn(activity, "average_cadence"),
+            ActivityJson.PolylineIn(activity, "summary_polyline"));
     }
 
     /// <summary>
@@ -105,3 +79,21 @@ public sealed class ListedActivity
         RawSummaryJson = activity.RawJson;
     }
 }
+
+/// <summary>A Listed Activity's figures from its stored summary.</summary>
+/// <param name="AverageHeartRate">Beats per minute; none without a heart-rate recording.</param>
+/// <param name="MaxHeartRate">Beats per minute; none without a heart-rate recording.</param>
+/// <param name="MaxSpeed">Kilometres per hour; none if Strava sent none.</param>
+/// <param name="AveragePower">Watts: measured with a power meter, or else Strava's estimate for a Ride; none for most Swims.</param>
+/// <param name="AverageCadence">Pedal revolutions per minute for a Ride; none without a cadence sensor.</param>
+/// <param name="Route">
+/// The simplified route, as Strava encodes it (Google's encoded polyline). None for an Activity without GPS, such as a
+/// Swim in a pool.
+/// </param>
+public sealed record ListedActivitySummary(
+    double? AverageHeartRate,
+    double? MaxHeartRate,
+    double? MaxSpeed,
+    double? AveragePower,
+    double? AverageCadence,
+    string? Route);

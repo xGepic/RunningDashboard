@@ -11,14 +11,7 @@ namespace RunningDashboard.Api.Runs;
 public static class RunEndpoints
 {
     /// <summary>What the Runs list sorts by, besides date.</summary>
-    private static readonly Dictionary<string, Func<RunResponse, double?>> Figures = new()
-    {
-        ["distance"] = r => r.Distance,
-        ["movingTime"] = r => r.MovingTime,
-        ["pace"] = r => r.Pace,
-    };
-
-    private static readonly Dictionary<string, Func<RunExportResponse, double?>> ExportFigures = new()
+    private static readonly Dictionary<string, Func<RunExportResponse, double?>> Figures = new()
     {
         ["distance"] = r => r.Distance,
         ["movingTime"] = r => r.MovingTime,
@@ -34,21 +27,9 @@ public static class RunEndpoints
             if (errors.Count > 0)
                 return Results.ValidationProblem(errors);
 
-            // Filtered and sorted in memory over a lean projection: a few thousand Runs at most, and it keeps the
-            // name search case-insensitive beyond ASCII (SQLite's LIKE is not), independent of the server's culture.
-            var shoeNames = await db.GetShoeNamesAsync(cancellationToken);
-            var runs = (await db.Runs
-                    .Where(r => shoe == null || r.ShoeId == shoe)
-                    .Select(r => new { r.Id, r.Name, r.SportType, r.StartLocal, r.Distance, r.MovingTime, r.ShoeId })
-                    .ToListAsync(cancellationToken))
-                .Select(r => new RunResponse(
-                    r.Id, r.Name, r.SportType, r.StartLocal, r.Distance, r.MovingTime, Run.PaceOf(r.MovingTime, r.Distance),
-                    r.ShoeId is null ? null : shoeNames.GetValueOrDefault(r.ShoeId)))
-                .ToList();
-
-            var matching = runs.Where(r => query.Matches(r.Name, r.StartLocal)).ToList();
-            var page = query.PageOf(matching, r => r.StartLocal, Figures);
-            return Results.Ok(new RunPageResponse(page, query.PageOrDefault, query.PageSizeOrDefault, matching.Count));
+            var runs = await MatchingAsync(query, shoe, db, cancellationToken);
+            var page = query.PageOf(runs, r => r.StartLocal, Figures).Select(RunResponse.From).ToList();
+            return Results.Ok(new RunPageResponse(page, query.PageOrDefault, query.PageSizeOrDefault, runs.Count));
         });
 
         // Every Run the list would show, on one "page", with what a spreadsheet wants besides; the page and its size
@@ -59,21 +40,7 @@ public static class RunEndpoints
             if (errors.Count > 0)
                 return Results.ValidationProblem(errors);
 
-            var shoeNames = await db.GetShoeNamesAsync(cancellationToken);
-            var runs = (await db.Runs
-                    .Where(r => shoe == null || r.ShoeId == shoe)
-                    .Select(r => new
-                    {
-                        r.Id, r.Name, r.SportType, r.StartLocal, r.Distance, r.MovingTime, r.ElevationGain, r.AverageHeartRate, r.Cadence,
-                        r.RelativeEffort, r.ShoeId,
-                    })
-                    .ToListAsync(cancellationToken))
-                .Where(r => query.Matches(r.Name, r.StartLocal))
-                .Select(r => new RunExportResponse(
-                    r.Id, r.Name, r.SportType, r.StartLocal, r.Distance, r.MovingTime, Run.PaceOf(r.MovingTime, r.Distance), r.ElevationGain,
-                    r.AverageHeartRate, r.Cadence, r.RelativeEffort, r.ShoeId is null ? null : shoeNames.GetValueOrDefault(r.ShoeId),
-                    $"https://www.strava.com/activities/{r.Id}"));
-            return Results.Ok(query.Sorted(runs, r => r.StartLocal, ExportFigures).ToList());
+            return Results.Ok(query.Sorted(await MatchingAsync(query, shoe, db, cancellationToken), r => r.StartLocal, Figures).ToList());
         });
 
         // One year's Runs, road, trail and treadmill alike, added up per calendar month, by local start; all twelve
@@ -137,6 +104,30 @@ public static class RunEndpoints
             await LookUpTemperatureAsync(run, db, weather, cancellationToken);
             return Results.Ok(new RunTemperatureResponse(run.Temperature));
         });
+    }
+
+    /// <summary>
+    /// The Runs matching the search and date range (with a shoe, only those logged with it), unsorted, with all the
+    /// export has of each; the list shows less. Filtered in memory over a lean projection: a few thousand Runs at most,
+    /// and it keeps the name search case-insensitive beyond ASCII (SQLite's LIKE is not), independent of the server's
+    /// culture.
+    /// </summary>
+    private static async Task<List<RunExportResponse>> MatchingAsync(ListQuery query, string? shoe, AppDbContext db, CancellationToken cancellationToken)
+    {
+        var shoeNames = await db.GetShoeNamesAsync(cancellationToken);
+        return [.. (await db.Runs
+                .Where(r => shoe == null || r.ShoeId == shoe)
+                .Select(r => new
+                {
+                    r.Id, r.Name, r.SportType, r.StartLocal, r.Distance, r.MovingTime, r.ElevationGain, r.AverageHeartRate, r.Cadence,
+                    r.RelativeEffort, r.ShoeId,
+                })
+                .ToListAsync(cancellationToken))
+            .Where(r => query.Matches(r.Name, r.StartLocal))
+            .Select(r => new RunExportResponse(
+                r.Id, r.Name, r.SportType, r.StartLocal, r.Distance, r.MovingTime, Run.PaceOf(r.MovingTime, r.Distance), r.ElevationGain,
+                r.AverageHeartRate, r.Cadence, r.RelativeEffort, r.ShoeId is null ? null : shoeNames.GetValueOrDefault(r.ShoeId),
+                $"https://www.strava.com/activities/{r.Id}"))];
     }
 
     /// <summary>

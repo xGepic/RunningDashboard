@@ -4,12 +4,10 @@ using RunningDashboard.Api.Strava;
 namespace RunningDashboard.Api.Persistence;
 
 /// <summary>
-/// A Strava activity with a running sport type. Rides and Swims are stored apart (see <see cref="ListedActivity"/>); other Activities never.
+/// A Strava activity with a running sport type (see <see cref="Sports.Runs"/>). Rides and Swims are stored apart (see <see cref="ListedActivity"/>); other Activities never.
 /// </summary>
 public sealed class Run
 {
-    private static readonly HashSet<string> RunningSportTypes = ["Run", "TrailRun", "VirtualRun"];
-
     /// <summary>Strava's activity id.</summary>
     public long Id { get; set; }
 
@@ -48,7 +46,7 @@ public sealed class Run
     /// <summary>On a treadmill or virtual: its Pace is unreliable, so it is no Fitness Run.</summary>
     public bool IsTreadmill => IsTreadmillRun(Trainer, SportType);
 
-    public static bool IsTreadmillRun(bool trainer, string sportType) => trainer || sportType == "VirtualRun";
+    public static bool IsTreadmillRun(bool trainer, string sportType) => trainer || sportType == Sports.VirtualRun;
 
     /// <summary>Strava's gear id of the Shoe, if one was logged.</summary>
     public string? ShoeId { get; set; }
@@ -87,8 +85,6 @@ public sealed class Run
 
     public List<Split> Splits { get; } = [];
 
-    public static bool IsRunningSportType(string sportType) => RunningSportTypes.Contains(sportType);
-
     /// <summary>
     /// Pace: Moving Time per kilometre, in seconds. A Run without distance has none.
     /// </summary>
@@ -102,20 +98,15 @@ public sealed class Run
     /// simplified one from the summary while the detail is still to come. None for a Run without GPS, e.g. on a
     /// treadmill.
     /// </summary>
-    public string? Route =>
-        PolylineIn(RawDetailJson, "polyline") ?? PolylineIn(RawDetailJson, "summary_polyline") ?? PolylineIn(RawSummaryJson, "summary_polyline");
+    public string? Route => RouteIn(RawDetailJson, "polyline", "summary_polyline") ?? RouteIn(RawSummaryJson, "summary_polyline");
 
-    private static string? PolylineIn(string? activityJson, string property)
+    /// <summary>The first route found under map.<paramref name="properties"/>, in that order; none without JSON.</summary>
+    private static string? RouteIn(string? activityJson, params string[] properties)
     {
         if (activityJson is null)
             return null;
-        using var activity = JsonDocument.Parse(activityJson);
-        return activity.RootElement.TryGetProperty("map", out var map)
-            && map.ValueKind == JsonValueKind.Object
-            && map.TryGetProperty(property, out var polyline)
-            && polyline.GetString() is { Length: > 0 } route
-                ? route
-                : null;
+        using var json = JsonDocument.Parse(activityJson);
+        return properties.Select(p => ActivityJson.PolylineIn(json.RootElement, p)).FirstOrDefault(route => route is not null);
     }
 
     public RunDetailStatus DetailStatus => (DetailFetchedAt, RawDetailJson) switch
