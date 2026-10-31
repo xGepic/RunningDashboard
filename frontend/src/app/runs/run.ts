@@ -1,3 +1,4 @@
+import { Weekday } from '../goal-races/training-plan';
 import { ListPage } from '../shared/history-list';
 
 /** A Run as listed by GET /api/runs. Distance in metres, times in seconds, pace in seconds per km. */
@@ -24,6 +25,15 @@ export interface RunMonths {
   firstYear: number | null;
   /** January to December; months without Runs as zero. */
   months: MonthTotals[];
+  /** Monday to Sunday; days without Runs as zero. */
+  weekdays: WeekdayTotals[];
+}
+
+/** The year's Runs on one day of the week added up, by their local start. */
+export interface WeekdayTotals {
+  day: Weekday;
+  runs: number;
+  distance: number;
 }
 
 export interface MonthTotals {

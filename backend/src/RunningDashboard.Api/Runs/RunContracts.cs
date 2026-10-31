@@ -3,7 +3,12 @@ using RunningDashboard.Api.Persistence;
 namespace RunningDashboard.Api.Runs;
 
 /// <param name="FirstYear">The year of the first Run; none without Runs.</param>
-internal sealed record RunMonthsResponse(int Year, int? FirstYear, IReadOnlyList<MonthTotalsResponse> Months);
+/// <param name="Weekdays">Monday to Sunday; days without Runs as zero.</param>
+internal sealed record RunMonthsResponse(int Year, int? FirstYear, IReadOnlyList<MonthTotalsResponse> Months, IReadOnlyList<WeekdayTotalsResponse> Weekdays);
+
+/// <param name="Day">"monday" to "sunday", by the Runs' local start.</param>
+/// <param name="Distance">Metres.</param>
+internal sealed record WeekdayTotalsResponse(string Day, int Runs, double Distance);
 
 /// <param name="Month">1 for January.</param>
 /// <param name="Distance">Metres.</param>

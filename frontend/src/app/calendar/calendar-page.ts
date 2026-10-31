@@ -4,10 +4,11 @@ import { Component, computed, inject, input, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NgxEchartsDirective } from 'ngx-echarts';
+import { weekdays } from '../goal-races/training-plan';
 import { Break, Breaks, breakLabel, breakOn, kindLabel } from '../shared/breaks';
 import { ChartTheme } from '../shared/chart-theme';
 import { daysSinceMonday, fullMonthNames, isoDate, today } from '../shared/dates';
-import { monthlyDistanceChart } from '../shared/charts';
+import { monthlyDistanceChart, weekdayDistanceChart } from '../shared/charts';
 import { formatHoursMinutes } from '../shared/format';
 import { Units } from '../shared/units';
 import { reloadOnSync } from '../sync/reload-on-sync';
@@ -251,6 +252,23 @@ export class CalendarPage {
   protected readonly monthlyDistance = computed(() =>
     monthlyDistanceChart(this.selectedYear(), this.boxes(), this.units.unit(), this.theme.colors()),
   );
+
+  /** The year's distance and Runs per day of the week, Monday first; none without Runs in the year. */
+  protected readonly weekdayTotals = computed(() => {
+    if (!this.months.hasValue()) return [];
+    const days = this.months.value().weekdays;
+    if (days.every((d) => d.runs === 0)) return [];
+    return days.map((d) => ({ ...d, name: weekdays.find((w) => w.day === d.day)!.name }));
+  });
+  /** "Sundays", the day of the week with the most distance, with its share of the year's; none without Runs. */
+  protected readonly mostRunWeekday = computed(() => {
+    const days = this.weekdayTotals();
+    if (days.length === 0) return null;
+    const most = days.reduce((top, d) => (d.distance > top.distance ? d : top));
+    const total = days.reduce((sum, d) => sum + d.distance, 0);
+    return { name: `${most.name}s`, share: Math.round((100 * most.distance) / total) };
+  });
+  protected readonly weekdayDistance = computed(() => weekdayDistanceChart(this.weekdayTotals(), this.units.unit(), this.theme.colors()));
 
   protected readonly weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   protected readonly formatHoursMinutes = formatHoursMinutes;

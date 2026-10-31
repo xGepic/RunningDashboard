@@ -137,6 +137,34 @@ public sealed class RunsListTests
     }
 
     [Test]
+    public async Task The_years_runs_are_added_up_per_day_of_the_week_too_monday_first()
+    {
+        var year = await MonthsAsync("year=2026");
+
+        year.Weekdays.Select(d => (d.Day, d.Runs)).ShouldBe([
+            ("monday", 1), ("tuesday", 1), ("wednesday", 0), ("thursday", 1), ("friday", 0), ("saturday", 1), ("sunday", 1),
+        ]);
+        year.Weekdays[6].Distance.ShouldBe(42582.8, 0.05);
+        year.Weekdays[2].Distance.ShouldBe(0);
+    }
+
+    [Test]
+    public async Task A_run_counts_for_the_day_of_the_week_of_its_local_start()
+    {
+        await using var app = new TestApp();
+        var browser = await app.ConnectWithActivitiesAsync(
+            new TestActivity(20500000011, "Morning run", new DateTime(2026, 3, 4, 6, 30, 0), 8000, 2900),
+            new TestActivity(20500000012, "Late shakeout", new DateTime(2026, 3, 4, 23, 30, 0), 3000, 1100),
+            new TestActivity(20500000013, "Just after midnight", new DateTime(2026, 3, 5, 0, 10, 0), 5000, 1800),
+            new TestActivity(20500000014, "A week later", new DateTime(2026, 3, 11, 7, 0, 0), 6000, 2200));
+        await TestApp.WaitForSyncAsync(browser);
+
+        var year = (await browser.GetFromJsonAsync<RunMonths>("/api/runs/months?year=2026"))!;
+
+        (year.Weekdays[2], year.Weekdays[3]).ShouldBe((new WeekdayTotals("wednesday", 3, 17000), new WeekdayTotals("thursday", 1, 5000)));
+    }
+
+    [Test]
     public async Task Months_are_for_the_current_year_by_default()
     {
         (await MonthsAsync("")).Year.ShouldBe(2026);
@@ -188,7 +216,9 @@ public sealed class RunsListTests
     private async Task<RunMonths> MonthsAsync(string query) =>
         (await _browser.GetFromJsonAsync<RunMonths>($"/api/runs/months?{query}"))!;
 
-    private sealed record RunMonths(int Year, int? FirstYear, List<MonthTotals> Months);
+    private sealed record RunMonths(int Year, int? FirstYear, List<MonthTotals> Months, List<WeekdayTotals> Weekdays);
+
+    private sealed record WeekdayTotals(string Day, int Runs, double Distance);
 
     private sealed record MonthTotals(int Month, int Runs, double Distance, int MovingTime, double? Pace);
 

@@ -316,6 +316,57 @@ export function monthlyDistanceChart(year: number, months: MonthDistance[], unit
   };
 }
 
+/** Distance (metres) and number of Runs of a year on one day of the week, e.g. "Monday". */
+export interface WeekdayDistance {
+  name: string;
+  runs: number;
+  distance: number;
+}
+
+/**
+ * Column chart of a year's distance per day of the week, Monday to Sunday, in kilometres or miles. The day with the
+ * most stands out, labelled with its share of the year's distance.
+ */
+export function weekdayDistanceChart(days: WeekdayDistance[], unit: DistanceUnit, colors: ChartColors): EChartsCoreOption {
+  const base = baseChartOptions(colors);
+  const total = days.reduce((sum, d) => sum + d.distance, 0);
+  const most = Math.max(...days.map((d) => d.distance));
+  const share = (distance: number) => `${Math.round((100 * distance) / total)}%`;
+  return {
+    ...base,
+    tooltip: {
+      ...base.tooltip,
+      axisPointer: { type: 'shadow', shadowStyle: { color: withAlpha(colors.series, 0.06) } },
+      formatter: (params: { dataIndex: number }[]) => {
+        const day = days[params[0]?.dataIndex];
+        if (!day) return '';
+        if (day.runs === 0) return tooltipHtml(colors, day.name, 'no Runs');
+        const runs = `${day.runs} ${day.runs === 1 ? 'Run' : 'Runs'} · ${share(day.distance)} of the year's distance`;
+        return tooltipHtml(colors, day.name, distanceIn(day.distance, unit).toFixed(1), unit, runs);
+      },
+    },
+    xAxis: categoryAxis(days.map((d) => d.name.slice(0, 3)), colors),
+    yAxis: valueAxis(colors, (value) => `${value} ${unit}`, true),
+    series: [
+      {
+        type: 'bar',
+        data: days.map((d) => {
+          const value = Math.round(distanceIn(d.distance, unit) * 10) / 10;
+          if (d.distance === most && most > 0) return { value, label: { show: true, position: 'top', color: colors.text, formatter: share(d.distance) } };
+          // The other days recede, so the one with the most is read first.
+          return { value, itemStyle: { color: verticalGradient(withAlpha(colors.barTop, 0.45), withAlpha(colors.seriesDeep, 0.45)) } };
+        }),
+        barMaxWidth: 56,
+        barCategoryGap: '28%',
+        itemStyle: { color: verticalGradient(colors.barTop, colors.seriesDeep), borderRadius: [3, 3, 1, 1] },
+        emphasis: { itemStyle: { color: colors.barHover } },
+        animationDuration: 700,
+        animationEasing: 'cubicOut',
+      },
+    ],
+  };
+}
+
 /** Pace as "4:58", per km or mile, without the unit: for axis labels and tooltips that show the unit apart. */
 export function paceLabel(secondsPerKm: number, unit: DistanceUnit): string {
   return formatPace(secondsPerKm, unit).replace(` /${unit}`, '');

@@ -141,6 +141,32 @@
              (chartClick)="openChartMonth($event.dataIndex)"
              [attr.aria-label]="'Line chart of distance per month in ' + selectedYear() + '; the boxes above have the same numbers'"></div>
       </section>
+
+      @if (mostRunWeekday(); as most) {
+        <section class="card">
+          <div class="card-header">
+            <div class="titles">
+              <h2 class="card-title">Distance per weekday</h2>
+              <p class="card-sub">{{ selectedYear() }}, in {{ units.unit() }}. Most on {{ most.name }}: {{ most.share }}% of the year's distance.</p>
+            </div>
+          </div>
+          <div class="chart" echarts [options]="weekdayDistance()" [autoResize]="true" role="img"
+               [attr.aria-label]="'Column chart of distance per day of the week in ' + selectedYear() + '; the table below has the same numbers'"></div>
+          <details class="as-table">
+            <summary>Show as table</summary>
+            <div class="table-box">
+              <table class="data-table">
+                <thead><tr><th>Day</th><th class="number">Runs</th><th class="number">Distance</th></tr></thead>
+                <tbody>
+                  @for (day of weekdayTotals(); track day.day) {
+                    <tr><td class="muted">{{ day.name }}</td><td class="number">{{ day.runs }}</td><td class="number">{{ units.distance(day.distance, 1) }}</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </details>
+        </section>
+      }
     }
 
     <app-breaks-panel [from]="breakRange().from" [to]="breakRange().to" [period]="'' + selectedYear()" />

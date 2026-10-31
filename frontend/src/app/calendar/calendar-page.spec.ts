@@ -27,6 +27,15 @@ const year2026: RunMonths = {
         ? { month: 10, runs: 2, distance: 9594.9, movingTime: 3981, pace: 414.9 }
         : m,
   ),
+  weekdays: [
+    { day: 'monday', runs: 0, distance: 0 },
+    { day: 'tuesday', runs: 3, distance: 18081.2 },
+    { day: 'wednesday', runs: 0, distance: 0 },
+    { day: 'thursday', runs: 0, distance: 0 },
+    { day: 'friday', runs: 0, distance: 0 },
+    { day: 'saturday', runs: 1, distance: 4513.7 },
+    { day: 'sunday', runs: 1, distance: 47688.2 },
+  ],
 };
 
 const run = (id: number, name: string, startLocal: string, distance: number): Run => ({
@@ -263,6 +272,63 @@ describe('CalendarPage', () => {
       chart.triggerEventHandler('chartClick', { dataIndex: 8 });
       await settle();
       expect(TestBed.inject(Router).url).toBe('/calendar#Sep');
+    });
+
+    describe('distance per weekday', () => {
+      type WeekdayOptions = {
+        xAxis: { data: string[] };
+        series: { data: { value: number; label?: { show: boolean; formatter: string } }[] }[];
+        tooltip: { formatter: (params: { dataIndex: number }[]) => string };
+      };
+      /** The weekday chart's options, under the chart of the months. */
+      const weekdayOptions = (harness: RouterTestingHarness) =>
+        harness.fixture.debugElement.queryAll(By.directive(NgxEchartsDirective))[1].injector.get(NgxEchartsDirective).options() as WeekdayOptions;
+      const card = (element: Element) =>
+        [...element.querySelectorAll('section.card')].find((section) => section.querySelector('.card-title')?.textContent === 'Distance per weekday');
+
+      it("charts the year's distance per day of the week, Monday first, labelling the day with the most with its share", async () => {
+        const { harness, element } = await open('/calendar');
+
+        const options = weekdayOptions(harness);
+        expect(options.xAxis.data).toEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
+        expect(options.series[0].data.map((d) => d.value)).toEqual([0, 18.1, 0, 0, 0, 4.5, 47.7]);
+        expect(options.series[0].data.flatMap((d) => (d.label?.show ? [d.label.formatter] : []))).toEqual(['68%']);
+        expect(card(element)!.querySelector('.card-sub')!.textContent).toBe("2026, in km. Most on Sundays: 68% of the year's distance.");
+      });
+
+      it('names the Runs and the share of the year of a day on hover', async () => {
+        const { harness } = await open('/calendar');
+
+        const tooltip = (index: number) => weekdayOptions(harness).tooltip.formatter([{ dataIndex: index }]).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        expect(tooltip(1)).toBe("Tuesday 18.1 km 3 Runs · 26% of the year's distance");
+        expect(tooltip(6)).toBe("Sunday 47.7 km 1 Run · 68% of the year's distance");
+        expect(tooltip(0)).toBe('Monday no Runs');
+      });
+
+      it('has the same numbers as a table', async () => {
+        const { element } = await open('/calendar');
+
+        expect([...card(element)!.querySelectorAll('tbody tr')].map(text)).toEqual([
+          'Monday 0 0.0 km', 'Tuesday 3 18.1 km', 'Wednesday 0 0.0 km', 'Thursday 0 0.0 km', 'Friday 0 0.0 km', 'Saturday 1 4.5 km', 'Sunday 1 47.7 km',
+        ]);
+      });
+
+      it('shows miles when they are chosen in Settings', async () => {
+        const { harness, element } = await open('/calendar', year2026, 'mi');
+
+        expect(weekdayOptions(harness).series[0].data[6].value).toBe(29.6);
+        expect(card(element)!.querySelector('.card-sub')!.textContent).toBe("2026, in mi. Most on Sundays: 68% of the year's distance.");
+      });
+
+      it('is left out of a year without Runs', async () => {
+        const { element } = await open('/calendar', {
+          ...year2026,
+          months: year2026.months.map((m) => empty(m.month)),
+          weekdays: year2026.weekdays.map((d) => ({ ...d, runs: 0, distance: 0 })),
+        });
+
+        expect(card(element)).toBeUndefined();
+      });
     });
   });
 

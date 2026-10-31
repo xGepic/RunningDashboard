@@ -77,7 +77,7 @@ public static class RunEndpoints
         });
 
         // One year's Runs, road, trail and treadmill alike, added up per calendar month, by local start; all twelve
-        // months, empty ones as zero.
+        // months, empty ones as zero. Also per day of the week, Monday to Sunday.
         app.MapGet("/api/runs/months", async (int? year, AppDbContext db, TimeProvider clock, CancellationToken cancellationToken) =>
         {
             if (YearParameter.Reject(year) is { } rejected)
@@ -86,11 +86,11 @@ public static class RunEndpoints
             var selectedYear = year ?? clock.GetLocalNow().Year;
             var from = new DateTime(selectedYear, 1, 1);
             var until = from.AddYears(1);
-            var byMonth = (await db.Runs
-                    .Where(r => r.StartLocal >= from && r.StartLocal < until)
-                    .Select(r => new { r.StartLocal, r.Distance, r.MovingTime })
-                    .ToListAsync(cancellationToken))
-                .ToLookup(r => r.StartLocal.Month);
+            var runs = await db.Runs
+                .Where(r => r.StartLocal >= from && r.StartLocal < until)
+                .Select(r => new { r.StartLocal, r.Distance, r.MovingTime })
+                .ToListAsync(cancellationToken);
+            var byMonth = runs.ToLookup(r => r.StartLocal.Month);
             var months = Enumerable.Range(1, 12)
                 .Select(month =>
                 {
@@ -100,8 +100,14 @@ public static class RunEndpoints
                     return new MonthTotalsResponse(month, inMonth.Count, distance, movingTime, Run.PaceOf(movingTime, distance));
                 })
                 .ToList();
+            var byWeekday = runs.ToLookup(r => r.StartLocal.DayOfWeek);
+            var weekdays = Enumerable.Range(1, 7)
+                // Monday to Saturday, then Sunday, as Training Weeks run.
+                .Select(i => (DayOfWeek)(i % 7))
+                .Select(day => new WeekdayTotalsResponse(ApiNames.Of(day), byWeekday[day].Count(), byWeekday[day].Sum(r => r.Distance)))
+                .ToList();
             var firstRun = await db.Runs.MinAsync(r => (DateTime?)r.StartLocal, cancellationToken);
-            return Results.Ok(new RunMonthsResponse(selectedYear, firstRun?.Year, months));
+            return Results.Ok(new RunMonthsResponse(selectedYear, firstRun?.Year, months, weekdays));
         });
 
         app.MapGet("/api/runs/{id:long}", async (long id, AppDbContext db, CancellationToken cancellationToken) =>
