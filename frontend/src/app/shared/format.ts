@@ -114,3 +114,8 @@ export function percentChange(current: number, previous: number): { text: string
   const percent = Math.round(((current - previous) / previous) * 100);
   return { text: `${percent > 0 ? '+' : percent < 0 ? '−' : '±'}${Math.abs(percent)}%`, up: percent >= 0 };
 }
+
+/** "1 Run" or "12 Runs". */
+export function runCount(runs: number): string {
+  return `${runs} ${runs === 1 ? 'Run' : 'Runs'}`;
+}

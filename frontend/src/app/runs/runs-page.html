@@ -159,7 +159,7 @@
             <span>Page {{ page.page }} of {{ pageCount() }} · {{ page.totalCount }} Runs</span>
             <button type="button" class="btn" (click)="goToPage(page.page + 1)" [disabled]="page.page >= pageCount()">Next →</button>
           } @else {
-            <span>{{ page.totalCount }} {{ page.totalCount === 1 ? 'Run' : 'Runs' }}</span>
+            <span>{{ runCount(page.totalCount) }}</span>
           }
           <span class="note">Pace = Moving Time ÷ distance</span>
         </nav>

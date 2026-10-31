@@ -3,7 +3,7 @@ import { Component, LOCALE_ID, booleanAttribute, computed, inject, input } from 
 import { RouterLink } from '@angular/router';
 import { MonthTotals } from '../runs/run';
 import { fullMonthNames, monthNames } from '../shared/dates';
-import { formatDifference, formatDuration, formatHoursMinutes, formatWhole, percentChange } from '../shared/format';
+import { formatDifference, formatDuration, formatHoursMinutes, formatWhole, percentChange, runCount } from '../shared/format';
 import { Units } from '../shared/units';
 import { ReviewTotals, YearReview, comparedWith, isSoFar, reviewTitle } from './review';
 
@@ -133,6 +133,7 @@ export class YearReviewContent {
   protected readonly fullMonthNames = fullMonthNames;
   protected readonly formatDuration = formatDuration;
   protected readonly formatDifference = formatDifference;
+  protected readonly runCount = runCount;
 }
 
 /** Personal Bests side by side on a wide page. */

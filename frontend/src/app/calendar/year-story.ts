@@ -3,7 +3,7 @@ import { Component, ElementRef, afterNextRender, computed, inject, input, output
 import { MonthTotals } from '../runs/run';
 import { CountUp } from '../shared/count-up';
 import { fullMonthNames, monthNames } from '../shared/dates';
-import { formatDifference, formatDuration, formatOneDecimal, formatWhole, percentChange } from '../shared/format';
+import { formatDifference, formatDuration, formatOneDecimal, formatWhole, percentChange, runCount } from '../shared/format';
 import { prefersReducedMotion } from '../shared/motion';
 import { Units } from '../shared/units';
 import { YearReview, comparedWith, isSoFar, reviewTitle } from './review';
@@ -212,6 +212,7 @@ export class YearStory {
 
   protected readonly fullMonthNames = fullMonthNames;
   protected readonly formatDuration = formatDuration;
+  protected readonly runCount = runCount;
   protected readonly formatDifference = formatDifference;
   protected readonly formatWhole = formatWhole;
   protected readonly formatOneDecimal = formatOneDecimal;

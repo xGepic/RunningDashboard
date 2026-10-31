@@ -2,7 +2,7 @@ import type { EChartsCoreOption } from 'echarts/core';
 import { Break, breakLabel, breaksInWeek, kindLabel } from './breaks';
 import { ChartColors, baseChartOptions, escapeHtml, tooltipHtml } from './chart-theme';
 import { fullMonthNames, monthNames } from './dates';
-import { DistanceUnit, distanceIn, formatHoursMinutes, formatPace } from './format';
+import { DistanceUnit, distanceIn, formatHoursMinutes, formatPace, runCount } from './format';
 
 /** Distance (metres) run in the Training Week starting on the Monday <code>start</code> (yyyy-MM-dd). */
 export interface WeekDistance {
@@ -282,7 +282,7 @@ export function monthlyDistanceChart(year: number, months: MonthDistance[], unit
         const title = `${fullMonthNames[month.month - 1]} ${year}`;
         if (month.future) return tooltipHtml(colors, title, 'still to come');
         if (month.runs === 0) return tooltipHtml(colors, title, 'no Runs');
-        return tooltipHtml(colors, title, distanceIn(month.distance, unit).toFixed(1), unit, `${month.runs} ${month.runs === 1 ? 'Run' : 'Runs'}`);
+        return tooltipHtml(colors, title, distanceIn(month.distance, unit).toFixed(1), unit, runCount(month.runs));
       },
     },
     xAxis: { ...categoryAxis(months.map((m) => monthNames[m.month - 1]), colors), boundaryGap: false },
@@ -354,7 +354,7 @@ export function weekdayDistanceChart(days: WeekdayDistance[], unit: DistanceUnit
         const day = days[params[0]?.dataIndex];
         if (!day) return '';
         if (day.runs === 0) return tooltipHtml(colors, day.name, 'no Runs');
-        const runs = `${day.runs} ${day.runs === 1 ? 'Run' : 'Runs'} · ${share(day.distance)} of the year's distance`;
+        const runs = `${runCount(day.runs)} · ${share(day.distance)} of the year's distance`;
         return tooltipHtml(colors, day.name, distanceIn(day.distance, unit).toFixed(1), unit, runs);
       },
     },

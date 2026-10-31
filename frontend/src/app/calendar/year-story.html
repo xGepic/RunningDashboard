@@ -63,7 +63,7 @@
           @if (review.biggestMonth; as month) {
             <p class="lead in" style="--i: 6">
               <strong>{{ fullMonthNames[month.month - 1] }}</strong> was the biggest:
-              {{ units.distance(month.distance, 1) }} in {{ month.runs }} {{ month.runs === 1 ? 'Run' : 'Runs' }}.
+              {{ units.distance(month.distance, 1) }} in {{ runCount(month.runs) }}.
             </p>
           }
         }
@@ -79,7 +79,7 @@
             <div class="pair-block in" style="--i: 4">
               <p class="eyebrow">Biggest Training Week</p>
               <p class="big-line"><span [appCountUp]="units.fromMetres(week.distance)" [countUpFormat]="formatOneDecimal" [countUpDelay]="1200"></span> {{ units.unit() }}</p>
-              <p class="lead">{{ week.start | date: 'd MMM' }} – {{ week.end | date: 'd MMM' }} · {{ week.runs }} {{ week.runs === 1 ? 'Run' : 'Runs' }}</p>
+              <p class="lead">{{ week.start | date: 'd MMM' }} – {{ week.end | date: 'd MMM' }} · {{ runCount(week.runs) }}</p>
             </div>
           }
         }
@@ -131,7 +131,7 @@
           @if (review.mostUsedShoe; as shoe) {
             <p class="eyebrow in" style="--i: 0">Most-used Shoe</p>
             <h2 class="giant in" style="--i: 1">{{ shoe.name }}</h2>
-            <p class="lead in" style="--i: 2">{{ units.distance(shoe.distance, 0) }} together, in {{ shoe.runs }} {{ shoe.runs === 1 ? 'Run' : 'Runs' }}.</p>
+            <p class="lead in" style="--i: 2">{{ units.distance(shoe.distance, 0) }} together, in {{ runCount(shoe.runs) }}.</p>
           }
         }
         @case ('outro') {

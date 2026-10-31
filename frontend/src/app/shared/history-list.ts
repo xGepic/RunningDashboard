@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { reloadOnSync } from '../sync/reload-on-sync';
 import { CsvTable, saveCsv } from './csv';
 import { isoDate, today } from './dates';
+import { openUnlessLink } from './open-unless-link';
 
 /** One page of a history, as GET /api/runs, /api/rides and /api/swims return it. */
 export interface ListPage<Item> {
@@ -43,6 +44,9 @@ export abstract class HistoryList<SortKey extends string, Item extends { distanc
 
   /** Columns whose first click sorts ascending, such as Pace with the fastest first; the others start with the biggest. */
   protected abstract readonly ascendingFirst: readonly SortKey[];
+
+  /** Where an item's own page is, followed by its id: "/runs". */
+  protected abstract readonly detailPath: string;
 
   protected readonly sortKey = computed(() => this.sort() ?? 'date');
   protected readonly ascending = computed(() => this.direction() === 'asc');
@@ -90,6 +94,11 @@ export abstract class HistoryList<SortKey extends string, Item extends { distanc
   protected sortBy(key: SortKey): void {
     const direction = key === this.sortKey() ? (this.ascending() ? 'desc' : 'asc') : this.ascendingFirst.includes(key) ? 'asc' : 'desc';
     this.navigate({ sort: key === 'date' && direction === 'desc' ? null : key, direction: direction === 'desc' ? null : direction, page: null });
+  }
+
+  /** The whole row opens the item's page; a link in it, such as its name, stays a link of its own. */
+  protected open(id: number, event: MouseEvent): void {
+    openUnlessLink(event, this.router, [this.detailPath, id]);
   }
 
   protected goToPage(page: number): void {

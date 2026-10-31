@@ -4,6 +4,7 @@ import { Component, computed, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AthleteSettings } from '../shared/athlete-settings';
 import { formatOneDecimal } from '../shared/format';
+import { openUnlessLink } from '../shared/open-unless-link';
 import { shoeWear } from '../shared/shoe-wear';
 import { Units } from '../shared/units';
 import { reloadOnSync } from '../sync/reload-on-sync';
@@ -65,8 +66,7 @@ export class ShoesPage {
 
   /** The whole card opens the Shoe's Runs; its name stays a link of its own. */
   protected open(shoeId: string, event: MouseEvent): void {
-    if ((event.target as HTMLElement).closest('a')) return;
-    this.router.navigate(['/runs'], { queryParams: { shoe: shoeId } });
+    openUnlessLink(event, this.router, ['/runs'], { queryParams: { shoe: shoeId } });
   }
 
   /** How far a Shoe is towards the Maximum Distance, the same for every Shoe and set in Settings. */

@@ -34,6 +34,7 @@ export class RidesPage extends HistoryList<RideSortKey, Ride> {
   protected readonly list = this.rides;
   /** Every column starts with the biggest. */
   protected readonly ascendingFirst: readonly RideSortKey[] = [];
+  protected readonly detailPath = '/rides';
 
   /** Of all Rides of the kind, for the page header; none until they are in, or when they could not be loaded. */
   protected readonly totals = computed(() => (this.rides.hasValue() ? this.rides.value().totals : null));
@@ -48,12 +49,6 @@ export class RidesPage extends HistoryList<RideSortKey, Ride> {
 
   protected badge(ride: Ride): RideBadge {
     return rideBadge(ride.sportType);
-  }
-
-  /** Opens the Ride's page, unless a link in the row was clicked. */
-  protected open(rideId: number, event: MouseEvent): void {
-    if ((event.target as HTMLElement).closest('a')) return;
-    this.router.navigate(['/rides', rideId]);
   }
 
   /** Lists only the Rides of the kind, or all of them, from the first page. */

@@ -7,7 +7,7 @@ import { NgxEchartsDirective } from 'ngx-echarts';
 import { weekdays } from '../goal-races/training-plan';
 import { Break, Breaks, breakLabel, breakOn, kindLabel } from '../shared/breaks';
 import { ChartTheme } from '../shared/chart-theme';
-import { daysSinceMonday, fullMonthNames, isoDate, today } from '../shared/dates';
+import { dayOf, daysSinceMonday, fullMonthNames, isoDate, today } from '../shared/dates';
 import { monthlyDistanceChart, weekdayDistanceChart } from '../shared/charts';
 import { formatHoursMinutes } from '../shared/format';
 import { Units } from '../shared/units';
@@ -143,7 +143,7 @@ export class CalendarPage {
     if (!range || month === null || this.gridFailed() || !this.runs.hasValue() || !this.rides.hasValue() || !this.swims.hasValue()) return [];
     const runsByDay = new Map<string, Run[]>();
     for (const run of this.runs.value().items) {
-      const key = run.startLocal.slice(0, 10);
+      const key = dayOf(run.startLocal);
       runsByDay.set(key, [...(runsByDay.get(key) ?? []), run]);
     }
     const activitiesByDay = new Map<string, CalendarActivity[]>();
@@ -153,7 +153,7 @@ export class CalendarPage {
       ...this.swims.value().items.map((a) => ({ ...a, sport: 'swim' as const })),
     ].sort((a, b) => a.startLocal.localeCompare(b.startLocal));
     for (const { id, name, startLocal, sport, distance } of activities) {
-      const key = startLocal.slice(0, 10);
+      const key = dayOf(startLocal);
       activitiesByDay.set(key, [...(activitiesByDay.get(key) ?? []), { id, name, startLocal, sport, distance }]);
     }
     const todayKey = isoDate(today());

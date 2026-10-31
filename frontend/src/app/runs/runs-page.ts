@@ -2,8 +2,8 @@ import { DatePipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { Component, computed, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { addDays, currentMonth, isoDate, lastDayOf, localDate, mondayOf, monthDate, monthKey, today } from '../shared/dates';
-import { formatDuration, formatHoursMinutes } from '../shared/format';
+import { addDays, currentMonth, dayOf, isoDate, lastDayOf, localDate, mondayOf, monthDate, monthKey, today } from '../shared/dates';
+import { formatDuration, formatHoursMinutes, runCount } from '../shared/format';
 import { HistoryList, ListParams, requestParams } from '../shared/history-list';
 import { SportSwitch } from '../shared/sport-switch';
 import { Units } from '../shared/units';
@@ -76,6 +76,7 @@ export class RunsPage extends HistoryList<RunSortKey, Run> {
   protected readonly list = this.runs;
   /** Pace starts with the fastest. */
   protected readonly ascendingFirst: readonly RunSortKey[] = ['pace'];
+  protected readonly detailPath = '/runs';
 
   protected readonly searched = computed(() => !!this.search());
 
@@ -88,15 +89,10 @@ export class RunsPage extends HistoryList<RunSortKey, Run> {
   /** Totals of the Runs listed: count, distance, Moving Time and their average Pace. */
   protected readonly summary = computed(() => {
     // Read in the page header, outside the template's error check: value() throws while the Runs failed to load.
-    const parts = (this.runs.hasValue() ? this.runs.value().items : []).map((r) => ({ runs: 1, distance: r.distance, movingTime: r.movingTime }));
-    const distance = parts.reduce((sum, p) => sum + p.distance, 0);
-    const movingTime = parts.reduce((sum, p) => sum + p.movingTime, 0);
-    return {
-      runs: parts.reduce((sum, p) => sum + p.runs, 0),
-      distance,
-      movingTime,
-      pace: distance > 0 ? movingTime / (distance / 1000) : null,
-    };
+    const runs = this.runs.hasValue() ? this.runs.value().items : [];
+    const distance = runs.reduce((sum, r) => sum + r.distance, 0);
+    const movingTime = runs.reduce((sum, r) => sum + r.movingTime, 0);
+    return { runs: runs.length, distance, movingTime, pace: distance > 0 ? movingTime / (distance / 1000) : null };
   });
 
   /**
@@ -106,17 +102,18 @@ export class RunsPage extends HistoryList<RunSortKey, Run> {
   protected readonly rows = computed(() => {
     const items = this.runs.hasValue() ? this.runs.value().items : [];
     const runsPerDay = new Map<string, number>();
-    for (const run of items) runsPerDay.set(day(run), (runsPerDay.get(day(run)) ?? 0) + 1);
+    for (const run of items) runsPerDay.set(dayOf(run.startLocal), (runsPerDay.get(dayOf(run.startLocal)) ?? 0) + 1);
     const byDate = this.sortKey() === 'date';
     return items.map((run, i) => ({
       run,
-      sameDayRuns: runsPerDay.get(day(run))!,
-      continuesDay: byDate && i > 0 && day(items[i - 1]) === day(run),
+      sameDayRuns: runsPerDay.get(dayOf(run.startLocal))!,
+      continuesDay: byDate && i > 0 && dayOf(items[i - 1].startLocal) === dayOf(run.startLocal),
     }));
   });
 
   protected readonly formatDuration = formatDuration;
   protected readonly formatHoursMinutes = formatHoursMinutes;
+  protected readonly runCount = runCount;
 
   /** A changed search or filter starts again at page 1. */
   protected filter(params: ListParams): void {
@@ -161,12 +158,6 @@ export class RunsPage extends HistoryList<RunSortKey, Run> {
     return monthKey(this.weekStart()!);
   }
 
-  /** The whole row opens the Run; its name stays a link of its own. */
-  protected open(runId: number, event: MouseEvent): void {
-    if ((event.target as HTMLElement).closest('a')) return;
-    this.router.navigate(['/runs', runId]);
-  }
-
   /** The month, Training Week or Shoe as listed, search and sort order included, or every Run in the list's sort order. */
   protected exportRuns(scope: 'period' | 'all'): void {
     const order = { sort: this.sort(), direction: this.direction() };
@@ -199,9 +190,4 @@ export class RunsPage extends HistoryList<RunSortKey, Run> {
 /** "nike-pegasus-41" for "Nike Pegasus 41". */
 function slug(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-}
-
-/** "2026-10-12": the day a Run started, where it happened. */
-function day(run: Run): string {
-  return run.startLocal.slice(0, 10);
 }

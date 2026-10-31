@@ -24,6 +24,11 @@ export function daysUntil(date: string): number {
   return daysBetween(today(), localDate(date));
 }
 
+/** "2026-10-12": the day an Activity started, where it happened, from its local start. */
+export function dayOf(startLocal: string): string {
+  return startLocal.slice(0, 10);
+}
+
 /** "2026-10-31" for a local date. */
 export function isoDate(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;

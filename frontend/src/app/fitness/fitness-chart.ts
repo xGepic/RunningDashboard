@@ -2,7 +2,7 @@ import type { EChartsCoreOption } from 'echarts/core';
 import { Break, breaksWithin, kindLabel } from '../shared/breaks';
 import { ChartColors, baseChartOptions, escapeHtml, tooltipHtml } from '../shared/chart-theme';
 import { withAlpha } from '../shared/charts';
-import { addDays, fullMonthNames, isoDate, localDate } from '../shared/dates';
+import { addDays, dayOf, fullMonthNames, isoDate, localDate } from '../shared/dates';
 
 /** One figure over time: a dot per Run and a line through the monthly averages. */
 export interface FitnessChartData {
@@ -83,7 +83,7 @@ export function fitnessChart(data: FitnessChartData, colors: ChartColors): EChar
 
 /** Each Break within the Runs' dates as a band from its first day to the end of its last, named by its kind. */
 function breakBands(data: FitnessChartData, colors: ChartColors) {
-  const days = data.runs.map((run) => run.startLocal.slice(0, 10)).sort();
+  const days = data.runs.map((run) => dayOf(run.startLocal)).sort();
   if (!data.breaks?.length || days.length === 0) return {};
   const shown = breaksWithin(data.breaks, days[0], days[days.length - 1]);
   if (shown.length === 0) return {};

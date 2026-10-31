@@ -27,6 +27,7 @@ export class SwimsPage extends HistoryList<SwimSortKey, Swim> {
   protected readonly list = this.swims;
   /** Swim Pace starts with the fastest. */
   protected readonly ascendingFirst: readonly SwimSortKey[] = ['pace'];
+  protected readonly detailPath = '/swims';
 
   /** Of all Swims, for the page header; none until they are in, or when they could not be loaded. */
   protected readonly totals = computed(() => (this.swims.hasValue() ? this.swims.value().totals : null));
@@ -35,12 +36,6 @@ export class SwimsPage extends HistoryList<SwimSortKey, Swim> {
   protected readonly formatDuration = formatDuration;
   protected readonly formatHoursMinutes = formatHoursMinutes;
   protected readonly formatSwimPace = formatSwimPace;
-
-  /** Opens the Swim's page, unless a link in the row was clicked. */
-  protected open(swimId: number, event: MouseEvent): void {
-    if ((event.target as HTMLElement).closest('a')) return;
-    this.router.navigate(['/swims', swimId]);
-  }
 
   /** Every Swim, in the list's sort order. */
   protected exportSwims(): void {
