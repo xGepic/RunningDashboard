@@ -29,6 +29,8 @@ interface CalendarActivity {
   name: string;
   startLocal: string;
   sport: Sport;
+  /** A Run's distance, shown under its name; Rides and Swims go without, as the calendar counts Runs only. */
+  distance: number | null;
 }
 
 /** The pages Runs, Rides and Swims have, and what a Ride or Swim is called for a screen reader (Runs go without). */
@@ -146,12 +148,12 @@ export class CalendarPage {
     const activitiesByDay = new Map<string, CalendarActivity[]>();
     const activities = [
       ...this.runs.value().items.map((a) => ({ ...a, sport: 'run' as const })),
-      ...this.rides.value().items.map((a) => ({ ...a, sport: 'ride' as const })),
-      ...this.swims.value().items.map((a) => ({ ...a, sport: 'swim' as const })),
+      ...this.rides.value().items.map((a) => ({ ...a, sport: 'ride' as const, distance: null })),
+      ...this.swims.value().items.map((a) => ({ ...a, sport: 'swim' as const, distance: null })),
     ].sort((a, b) => a.startLocal.localeCompare(b.startLocal));
-    for (const { id, name, startLocal, sport } of activities) {
+    for (const { id, name, startLocal, sport, distance } of activities) {
       const key = startLocal.slice(0, 10);
-      activitiesByDay.set(key, [...(activitiesByDay.get(key) ?? []), { id, name, startLocal, sport }]);
+      activitiesByDay.set(key, [...(activitiesByDay.get(key) ?? []), { id, name, startLocal, sport, distance }]);
     }
     const todayKey = isoDate(today());
     const breaks = this.breaks.list();

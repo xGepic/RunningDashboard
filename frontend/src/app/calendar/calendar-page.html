@@ -79,7 +79,7 @@
                   <ul class="day-activities">
                     @for (activity of calendarDay.activities; track activity.sport + activity.id) {
                       <li><a [class]="activity.sport" [routerLink]="[sports[activity.sport].path, activity.id]"
-                             [title]="activity.name">@if (sports[activity.sport].label; as label) {<span class="visually-hidden">{{ label }}: </span>}{{ activity.name }}</a></li>
+                             [title]="activity.name"><span class="name">@if (sports[activity.sport].label; as label) {<span class="visually-hidden">{{ label }}: </span>}{{ activity.name }}</span>@if (activity.distance !== null) {<span class="distance">{{ units.distance(activity.distance, 1) }}</span>}</a></li>
                     }
                   </ul>
                 }

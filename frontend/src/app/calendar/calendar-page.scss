@@ -194,14 +194,29 @@ a.month-box {
 
   a {
     display: block;
-    overflow: hidden;
     padding: 3px 6px;
     border-radius: 5px;
     background: color-mix(in srgb, var(--accent) 14%, transparent);
     color: var(--text);
     font-size: 12px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+
+    /* Long names are cut short; the full one shows on hover. */
+    .name {
+      display: block;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* A Run's distance, under its name. */
+    .distance {
+      display: block;
+      color: var(--text-secondary);
+      font-family: var(--mono);
+      font-size: 11px;
+      white-space: nowrap;
+    }
 
     &:hover {
       background: color-mix(in srgb, var(--accent) 26%, transparent);
@@ -304,6 +319,13 @@ a.month-box {
     flex: 1;
     min-width: 0;
     margin: 0;
+
+    /* A Run's distance beside its name, as the day has the width. */
+    a {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
   }
 
   /* The week's total heads its days. */

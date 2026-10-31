@@ -125,7 +125,7 @@ describe('CalendarPage', () => {
 
   /** A day as "8: Tempo Tuesday, Evening shakeout", with "(other month)" for the faded days around the month. */
   const day = (cell: Element) => {
-    const names = [...cell.querySelectorAll('a')].map((a) => a.textContent!.trim());
+    const names = [...cell.querySelectorAll('a .name')].map((name) => name.textContent!.trim());
     const date = cell.querySelector('.date-number')!.textContent!.trim();
     return `${date}${cell.classList.contains('other-month') ? ' (other month)' : ''}${names.length ? ': ' + names.join(', ') : ''}`;
   };
@@ -349,6 +349,22 @@ describe('CalendarPage', () => {
         '5.0 km', '34.0 km', '–', '–', '8.0 km',
       ]);
       expect(text(element.querySelector('.sport-legend')!)).toBe("Runs Rides Swims The week's distance counts Runs only.");
+    });
+
+    it("shows each Run's distance under its name, but none for Rides and Swims", async () => {
+      const { days } = await openMonth('/calendar#Sep', '2026-08-31', '2026-10-04', septemberWeeks, 'km', {
+        rides: [ride(11, 'Zwift spin', '2026-09-08T19:30:00')],
+        swims: [swim(21, 'Morning swim', '2026-09-08T06:30:00')],
+      });
+
+      const distances = [...days()[8].querySelectorAll('a')].map((a) => a.querySelector('.distance')?.textContent!.trim() ?? null);
+      expect(distances).toEqual([null, '10.0 km', null, '3.0 km']);
+    });
+
+    it("shows a Run's distance in miles when they are chosen in Settings", async () => {
+      const { days } = await openMonth('/calendar#Sep', '2026-08-31', '2026-10-04', septemberWeeks, 'mi');
+
+      expect(days()[13].querySelector('a .distance')!.textContent!.trim()).toBe('13.0 mi');
     });
 
     it('leaves the legend out when the month has only Runs', async () => {
