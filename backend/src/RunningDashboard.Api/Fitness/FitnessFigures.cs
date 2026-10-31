@@ -18,9 +18,6 @@ public static class FitnessFigures
     /// <summary>Metres; a shorter Long Run gets no Cardiac Drift, as its drift is noise.</summary>
     public const double CardiacDriftMinimumDistance = 10_000;
 
-    /// <summary>Up to this much Cardiac Drift is good.</summary>
-    public const double GoodCardiacDrift = 0.05;
-
     /// <summary>Not on a treadmill or virtual, whose Pace is unreliable, and not on a Goal Race's race day.</summary>
     public static bool IsFitnessRun(bool isTreadmill, DateTime startLocal, IReadOnlySet<DateOnly> raceDays) =>
         !isTreadmill && !raceDays.Contains(DateOnly.FromDateTime(startLocal));

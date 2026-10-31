@@ -8,10 +8,8 @@ import { addDays, fullMonthNames, isoDate, localDate } from '../shared/dates';
 export interface FitnessChartData {
   runs: { startLocal: string; name: string; value: number }[];
   months: { year: number; month: number; value: number }[];
-  /** "1.19 m/beat" from a value as charted. */
+  /** "168 spm" from a value as charted. */
   format: (value: number) => string;
-  /** Shades the band from 0 up to this value as good, e.g. Cardiac Drift up to 5%. */
-  goodUpTo?: number;
   /** Shaded over their days and named by their kind, those within the Runs' dates. */
   breaks?: readonly Break[];
 }
@@ -52,7 +50,7 @@ export function fitnessChart(data: FitnessChartData, colors: ChartColors): EChar
     },
     yAxis: {
       type: 'value',
-      scale: data.goodUpTo === undefined,
+      scale: true,
       splitNumber: 4,
       axisLabel: { color: colors.faint, formatter: data.format },
       splitLine: { lineStyle: { color: colors.grid, width: 1, type: 'dashed' } },
@@ -65,16 +63,6 @@ export function fitnessChart(data: FitnessChartData, colors: ChartColors): EChar
         symbolSize: 8,
         itemStyle: { color: withAlpha(colors.series, 0.35), borderColor: colors.surface, borderWidth: 1 },
         emphasis: { itemStyle: { color: colors.seriesLight } },
-        ...(data.goodUpTo === undefined
-          ? {}
-          : {
-              markArea: {
-                silent: true,
-                itemStyle: { color: withAlpha(colors.good, 0.08) },
-                label: { show: true, position: 'insideTopLeft', color: colors.muted, fontSize: 10.5, formatter: `good, up to ${data.format(data.goodUpTo)}` },
-                data: [[{ yAxis: 0 }, { yAxis: data.goodUpTo }]],
-              },
-            }),
       },
       {
         name: 'Monthly average',

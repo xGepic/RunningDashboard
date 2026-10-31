@@ -9,8 +9,9 @@ using RunningDashboard.Api.Tests.Harness;
 namespace RunningDashboard.Api.Tests;
 
 /// <summary>
-/// Aerobic Efficiency, Cardiac Drift and Cadence of the Fitness Runs: every Run except treadmill ones and those on a
-/// Goal Race's race day. Cardiac Drift only for a week's Long Run of at least 10 km.
+/// The Fitness page charts the Cadence of the Fitness Runs: every Run except treadmill ones and those on a Goal Race's
+/// race day. A Fitness Run's details show its Aerobic Efficiency and, as a week's Long Run of at least 10 km, its
+/// Cardiac Drift.
 ///
 /// | Run            | Date           | Distance | Splits (km)                                   | Notes                     |
 /// |----------------|----------------|----------|-----------------------------------------------|---------------------------|
@@ -70,27 +71,23 @@ public sealed class FitnessTests
     [Test]
     public async Task Aerobic_efficiency_is_grade_adjusted_metres_per_minute_over_the_average_heart_rate()
     {
-        var runs = (await FitnessAsync()).Runs.ToDictionary(r => r.Id);
-
-        runs[Easy].AerobicEfficiency!.Value.ShouldBe(1000.0 / 360 * 60 / 140, 1e-9); // 1.19 m per beat
-        runs[Long].AerobicEfficiency!.Value.ShouldBe(2.5 * 60 / 143.5, 1e-9);
-        runs[Shakeout].AerobicEfficiency.ShouldBeNull();
+        (await DetailAsync(Easy))!.AerobicEfficiency!.Value.ShouldBe(1000.0 / 360 * 60 / 140, 1e-9); // 1.19 m per beat
+        (await DetailAsync(Long))!.AerobicEfficiency!.Value.ShouldBe(2.5 * 60 / 143.5, 1e-9);
+        (await DetailAsync(Shakeout))!.AerobicEfficiency.ShouldBeNull();
     }
 
     [Test]
     public async Task Cardiac_drift_compares_the_second_half_of_a_long_run_of_10_km_or_more_with_the_first()
     {
-        var runs = (await FitnessAsync()).Runs.ToDictionary(r => r.Id);
-
-        runs[Long].CardiacDrift!.Value.ShouldBe(0.05, 1e-9); // 147 against 140 bpm at the same speed
-        runs[Easy].CardiacDrift.ShouldBeNull();
-        runs[ShortLongRun].CardiacDrift.ShouldBeNull();
+        (await DetailAsync(Long))!.CardiacDrift!.Value.ShouldBe(0.05, 1e-9); // 147 against 140 bpm at the same speed
+        (await DetailAsync(Easy))!.CardiacDrift.ShouldBeNull();
+        (await DetailAsync(ShortLongRun))!.CardiacDrift.ShouldBeNull();
     }
 
     [Test]
     public async Task A_split_across_the_middle_counts_in_both_halves_by_its_distance()
     {
-        var straddle = (await FitnessAsync()).Runs.Single(r => r.Id == Straddle);
+        var straddle = (await DetailAsync(Straddle))!;
 
         // First half: 5 splits at 140 bpm and a quarter of one at 150; second half: the rest at 150, same speed.
         var first = (5 * 140 * 400 + 0.25 * 150 * 400) / (5 * 1000 + 0.25 * 1000);
@@ -104,12 +101,9 @@ public sealed class FitnessTests
         var fitness = await FitnessAsync();
 
         fitness.Runs.Single(r => r.Id == Easy).Cadence.ShouldBe(168);
-        fitness.GoodCardiacDrift.ShouldBe(0.05);
         fitness.Months.Select(m => (m.Year, m.Month)).ShouldBe([(2026, 9), (2026, 10)]);
-        var september = fitness.Months[0];
-        september.Cadence.ShouldBe(166); // Easy 168, Long 164; the others have none
-        september.CardiacDrift!.Value.ShouldBe(0.05, 1e-9);
-        september.AerobicEfficiency!.Value.ShouldBe((1000.0 / 360 * 60 / 140 + 2.5 * 60 / 143.5 + 2.5 * 60 / 150) / 3, 1e-9);
+        fitness.Months[0].Cadence.ShouldBe(166); // Easy 168, Long 164; the others have none
+        fitness.Months[1].Cadence.ShouldBeNull();
     }
 
     [Test]
@@ -131,11 +125,11 @@ public sealed class FitnessTests
 
     private async Task<RunFitness?> DetailAsync(long id) => (await _browser.GetFromJsonAsync<RunDetail>($"/api/runs/{id}"))!.Fitness;
 
-    private sealed record FitnessResponse(double GoodCardiacDrift, List<FitnessRun> Runs, List<FitnessMonth> Months);
+    private sealed record FitnessResponse(List<FitnessRun> Runs, List<FitnessMonth> Months);
 
-    private sealed record FitnessRun(long Id, string Name, DateTime StartLocal, double Distance, double? AerobicEfficiency, double? CardiacDrift, double? Cadence);
+    private sealed record FitnessRun(long Id, string Name, DateTime StartLocal, double Distance, double? Cadence);
 
-    private sealed record FitnessMonth(int Year, int Month, double? AerobicEfficiency, double? CardiacDrift, double? Cadence);
+    private sealed record FitnessMonth(int Year, int Month, double? Cadence);
 
     private sealed record RunDetail(long Id, RunFitness? Fitness);
 
@@ -174,12 +168,13 @@ public sealed class StoredFitnessDataTests
         var app = new TestApp(path);
         try
         {
-            var fitness = (await app.CreateBrowser().GetFromJsonAsync<FitnessResponse>("/api/fitness"))!;
+            var browser = app.CreateBrowser();
+            var fitness = (await browser.GetFromJsonAsync<FitnessResponse>("/api/fitness"))!;
+            var outdoors = (await browser.GetFromJsonAsync<RunDetail>("/api/runs/1"))!;
 
+            fitness.Runs.ShouldHaveSingleItem().Name.ShouldBe("Outdoors");
             // (2.5 × 400 + 3.0 × 320) m in 720 s, per minute, over 140 bpm.
-            fitness.Runs.ShouldHaveSingleItem().ShouldSatisfyAllConditions(
-                run => run.Name.ShouldBe("Outdoors"),
-                run => run.AerobicEfficiency!.Value.ShouldBe((2.5 * 400 + 3.0 * 320) / 720 * 60 / 140, 1e-9));
+            outdoors.Fitness!.AerobicEfficiency!.Value.ShouldBe((2.5 * 400 + 3.0 * 320) / 720 * 60 / 140, 1e-9);
         }
         finally
         {
@@ -192,5 +187,9 @@ public sealed class StoredFitnessDataTests
 
     private sealed record FitnessResponse(List<FitnessRun> Runs);
 
-    private sealed record FitnessRun(string Name, double? AerobicEfficiency);
+    private sealed record FitnessRun(string Name);
+
+    private sealed record RunDetail(RunFitness? Fitness);
+
+    private sealed record RunFitness(double? AerobicEfficiency);
 }
