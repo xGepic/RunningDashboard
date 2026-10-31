@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using RunningDashboard.Api.Lists;
 using RunningDashboard.Api.Persistence;
+using RunningDashboard.Api.Strava;
 
 namespace RunningDashboard.Api.Swims;
 
@@ -55,6 +56,6 @@ public static class SwimEndpoints
             .ToListAsync(cancellationToken))
         .Select(a => new SwimResponse(
             a.Id, a.Name, a.StartLocal, a.Distance, a.MovingTime, ListedActivity.SwimPaceOf(a.MovingTime, a.Distance),
-            $"https://www.strava.com/activities/{a.Id}"))
+            StravaLinks.Activity(a.Id)))
         .Where(s => query.Matches(s.Name, s.StartLocal))];
 }

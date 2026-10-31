@@ -1,4 +1,5 @@
 using RunningDashboard.Api.Persistence;
+using RunningDashboard.Api.Strava;
 
 namespace RunningDashboard.Api.Runs;
 
@@ -89,7 +90,7 @@ internal sealed record RunDetailResponse(
         run.ElevationGain,
         run.RelativeEffort,
         run.AverageHeartRate,
-        $"https://www.strava.com/activities/{run.Id}",
+        StravaLinks.Activity(run.Id),
         shoeName,
         run.DetailStatus.ToString().ToLowerInvariant(),
         run.Route,

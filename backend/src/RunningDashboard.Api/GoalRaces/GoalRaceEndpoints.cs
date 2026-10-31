@@ -65,7 +65,7 @@ public static class GoalRaceEndpoints
         var block = TrainingBlock.Ending(request.Date!.Value, existing?.TrainingPlan?.Length ?? request.TrainingBlockWeeks!.Value);
         var excludedId = existing?.Id;
         var otherRaces = await db.GoalRaces.Where(r => r.Id != excludedId).ToListAsync(cancellationToken);
-        var today = DateOnly.FromDateTime(clock.GetLocalNow().DateTime);
+        var today = clock.Today();
         if (PlanningRules.UpcomingRaceError(request.Date!.Value, otherRaces, today) is { } upcoming)
             return Results.ValidationProblem(new Dictionary<string, string[]> { ["date"] = [upcoming] });
 

@@ -3,6 +3,7 @@ using RunningDashboard.Api.Fitness;
 using RunningDashboard.Api.Lists;
 using RunningDashboard.Api.Persistence;
 using RunningDashboard.Api.Records;
+using RunningDashboard.Api.Strava;
 using RunningDashboard.Api.Training;
 using RunningDashboard.Api.Weather;
 
@@ -127,7 +128,7 @@ public static class RunEndpoints
             .Select(r => new RunExportResponse(
                 r.Id, r.Name, r.SportType, r.StartLocal, r.Distance, r.MovingTime, Run.PaceOf(r.MovingTime, r.Distance), r.ElevationGain,
                 r.AverageHeartRate, r.Cadence, r.RelativeEffort, r.ShoeId is null ? null : shoeNames.GetValueOrDefault(r.ShoeId),
-                $"https://www.strava.com/activities/{r.Id}"))];
+                StravaLinks.Activity(r.Id)))];
     }
 
     /// <summary>

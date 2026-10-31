@@ -1,4 +1,5 @@
 using RunningDashboard.Api.Persistence;
+using RunningDashboard.Api.Strava;
 
 namespace RunningDashboard.Api.Rides;
 
@@ -84,6 +85,6 @@ internal sealed record RideDetailResponse(
             summary.AveragePower,
             summary.AverageCadence,
             ride.SportType == Sports.VirtualRide ? null : summary.Route,
-            $"https://www.strava.com/activities/{ride.Id}");
+            StravaLinks.Activity(ride.Id));
     }
 }

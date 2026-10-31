@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using RunningDashboard.Api.Lists;
 using RunningDashboard.Api.Persistence;
+using RunningDashboard.Api.Strava;
 
 namespace RunningDashboard.Api.Rides;
 
@@ -77,6 +78,6 @@ public static class RideEndpoints
             .ToListAsync(cancellationToken))
         .Select(a => new RideResponse(
             a.Id, a.Name, a.SportType, a.StartLocal, a.Distance, a.MovingTime, ListedActivity.AvgSpeedOf(a.MovingTime, a.Distance), a.ElevationGain,
-            $"https://www.strava.com/activities/{a.Id}"))
+            StravaLinks.Activity(a.Id)))
         .Where(r => IsOfKind(r.SportType, kind) && query.Matches(r.Name, r.StartLocal))];
 }

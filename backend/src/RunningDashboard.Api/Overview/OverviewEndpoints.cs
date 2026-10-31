@@ -15,7 +15,7 @@ public static class OverviewEndpoints
             var listed = await db.ListedActivities
                 .Select(a => new ListedFigures(a.StartLocal, a.MovingTime, a.SportType))
                 .ToListAsync(cancellationToken);
-            var today = DateOnly.FromDateTime(clock.GetLocalNow().DateTime);
+            var today = clock.Today();
             var goal = await db.GetYearlyGoalAsync(today.Year, cancellationToken);
             var weeklyGoal = await db.WeeklyTimeGoals.SingleOrDefaultAsync(cancellationToken);
             return OverviewResponse.From(

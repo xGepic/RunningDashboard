@@ -15,7 +15,7 @@ public static class ReviewEndpoints
             if (YearParameter.Reject(year) is { } rejected)
                 return rejected;
 
-            var today = DateOnly.FromDateTime(clock.GetLocalNow().DateTime);
+            var today = clock.Today();
             var selectedYear = year ?? today.Year;
             var yearStart = new DateTime(selectedYear, 1, 1);
             var nextYearStart = yearStart.AddYears(1);

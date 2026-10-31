@@ -1,4 +1,5 @@
 using RunningDashboard.Api.Persistence;
+using RunningDashboard.Api.Strava;
 
 namespace RunningDashboard.Api.Swims;
 
@@ -61,6 +62,6 @@ internal sealed record SwimDetailResponse(
             ListedActivity.SwimPaceOf(swim.MovingTime, swim.Distance),
             summary.AverageHeartRate,
             summary.MaxHeartRate,
-            $"https://www.strava.com/activities/{swim.Id}");
+            StravaLinks.Activity(swim.Id));
     }
 }

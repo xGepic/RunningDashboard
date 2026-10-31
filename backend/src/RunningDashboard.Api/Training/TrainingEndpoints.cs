@@ -17,7 +17,7 @@ public static class TrainingEndpoints
             TimeProvider clock,
             CancellationToken cancellationToken) =>
         {
-            var today = DateOnly.FromDateTime(clock.GetLocalNow().DateTime);
+            var today = clock.Today();
             var races = await db.GoalRaces.ToListAsync(cancellationToken);
             GoalRace? race;
             if (goalRaceId is not null)
