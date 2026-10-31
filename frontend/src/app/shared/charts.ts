@@ -28,6 +28,21 @@ export function withAlpha(hex: string, alpha: number): string {
   return `rgba(${red},${green},${blue},${alpha})`;
 }
 
+/** Metres in kilometres or miles to one decimal, as the charts plot them. */
+function chartDistance(metres: number, unit: DistanceUnit): number {
+  return Math.round(distanceIn(metres, unit) * 10) / 10;
+}
+
+/** A column chart's tooltip pointer: a faint band over the column hovered. */
+function columnPointer(colors: ChartColors) {
+  return { type: 'shadow', shadowStyle: { color: withAlpha(colors.series, 0.06) } };
+}
+
+/** Columns per Training Week: narrower and closer together past a quarter's worth of weeks. */
+function weekColumns(weekCount: number) {
+  return { barMaxWidth: weekCount > 12 ? 24 : 56, barCategoryGap: weekCount > 12 ? '18%' : '28%' };
+}
+
 /** A top-to-bottom gradient between two colours. */
 function verticalGradient(top: string, bottom: string) {
   return {
@@ -98,7 +113,7 @@ export function weeklyDistanceChart(weeks: WeekDistance[], unit: DistanceUnit, c
     ...base,
     tooltip: {
       ...base.tooltip,
-      axisPointer: { type: 'shadow', shadowStyle: { color: withAlpha(colors.series, 0.06) } },
+      axisPointer: columnPointer(colors),
       formatter: (params: { dataIndex: number }[]) => {
         const week = weeks[params[0]?.dataIndex];
         if (!week) return '';
@@ -110,9 +125,8 @@ export function weeklyDistanceChart(weeks: WeekDistance[], unit: DistanceUnit, c
     series: [
       {
         type: 'bar',
-        data: weeks.map((w) => Math.round(distanceIn(w.distance, unit) * 10) / 10),
-        barMaxWidth: weeks.length > 12 ? 24 : 56,
-        barCategoryGap: weeks.length > 12 ? '18%' : '28%',
+        data: weeks.map((w) => chartDistance(w.distance, unit)),
+        ...weekColumns(weeks.length),
         itemStyle: { color: verticalGradient(colors.barTop, colors.seriesDeep), borderRadius: [3, 3, 1, 1] },
         emphasis: { itemStyle: { color: colors.barHover } },
         cursor: 'pointer',
@@ -172,7 +186,7 @@ export function trainingTimeChart(
     ...base,
     tooltip: {
       ...base.tooltip,
-      axisPointer: { type: 'shadow', shadowStyle: { color: withAlpha(colors.series, 0.06) } },
+      axisPointer: columnPointer(colors),
       formatter: (params: { dataIndex: number }[]) => {
         const week = weeks[params[0]?.dataIndex];
         if (!week) return '';
@@ -199,8 +213,7 @@ export function trainingTimeChart(
         value: Math.round((w[sport.key] / 3600) * 100) / 100,
         itemStyle: { borderRadius: topSport[i] === index ? [3, 3, 0, 0] : 0 },
       })),
-      barMaxWidth: weeks.length > 12 ? 24 : 56,
-      barCategoryGap: weeks.length > 12 ? '18%' : '28%',
+      ...weekColumns(weeks.length),
       itemStyle: { color: sport.color(colors), borderColor: colors.surface, borderWidth: 1 },
       emphasis: { focus: 'series' },
       animationDuration: 700,
@@ -254,7 +267,7 @@ function linearTrend(values: number[], count: number): number[] | null {
  */
 export function monthlyDistanceChart(year: number, months: MonthDistance[], unit: DistanceUnit, colors: ChartColors): EChartsCoreOption {
   const base = baseChartOptions(colors);
-  const values = months.map((m) => (m.future ? null : Math.round(distanceIn(m.distance, unit) * 10) / 10));
+  const values = months.map((m) => (m.future ? null : chartDistance(m.distance, unit)));
   // Months run from January, so the finished ones come first, then the unfinished one and those still ahead.
   const finished = values.filter((value, i): value is number => value !== null && !months[i].unfinished);
   const trend = linearTrend(finished, months.length);
@@ -336,7 +349,7 @@ export function weekdayDistanceChart(days: WeekdayDistance[], unit: DistanceUnit
     ...base,
     tooltip: {
       ...base.tooltip,
-      axisPointer: { type: 'shadow', shadowStyle: { color: withAlpha(colors.series, 0.06) } },
+      axisPointer: columnPointer(colors),
       formatter: (params: { dataIndex: number }[]) => {
         const day = days[params[0]?.dataIndex];
         if (!day) return '';
@@ -351,7 +364,7 @@ export function weekdayDistanceChart(days: WeekdayDistance[], unit: DistanceUnit
       {
         type: 'bar',
         data: days.map((d) => {
-          const value = Math.round(distanceIn(d.distance, unit) * 10) / 10;
+          const value = chartDistance(d.distance, unit);
           if (d.distance === most && most > 0) return { value, label: { show: true, position: 'top', color: colors.text, formatter: share(d.distance) } };
           // The other days recede, so the one with the most is read first.
           return { value, itemStyle: { color: verticalGradient(withAlpha(colors.barTop, 0.45), withAlpha(colors.seriesDeep, 0.45)) } };

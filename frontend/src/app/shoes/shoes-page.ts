@@ -27,7 +27,7 @@ export class ShoesPage {
 
   /** Each Shoe with its share of all Shoes' distance; the first active one is the most recently used. */
   protected readonly cards = computed(() => {
-    const shoes = this.shoes.value() ?? [];
+    const shoes = this.shoes.hasValue() ? this.shoes.value() : [];
     const total = shoes.reduce((sum, s) => sum + s.distance, 0);
     const latest = shoes.find((s) => !s.retired && s.lastRun);
     return shoes.map((shoe, i) => ({

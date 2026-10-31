@@ -36,12 +36,15 @@ export class RecordsPage {
   /** Distances (metres) the Athlete picked; until they pick, the ones shown by default. */
   private readonly picked = signal<ReadonlySet<number> | null>(null);
 
+  /** None until they are in, or when they could not be loaded. */
+  private readonly loaded = computed(() => (this.records.hasValue() ? this.records.value() : []));
+
   protected readonly shown = computed<ReadonlySet<number>>(
-    () => this.picked() ?? new Set((this.records.value() ?? []).filter((r) => r.shownByDefault).map((r) => r.distance)),
+    () => this.picked() ?? new Set(this.loaded().filter((r) => r.shownByDefault).map((r) => r.distance)),
   );
 
   protected readonly featured = computed(() => {
-    const records = this.records.value() ?? [];
+    const records = this.loaded();
     return featuredNames
       .map((name) => records.find((r) => r.name === name))
       .filter((r): r is RecordDistance => !!r)
@@ -50,7 +53,7 @@ export class RecordsPage {
 
   /** Every distance, with the width of its pace bar: the fastest pace fills it, the slowest a third. */
   protected readonly rows = computed(() => {
-    const records = this.records.value() ?? [];
+    const records = this.loaded();
     const paces = records.map((r) => r.personalBest.timePerKm).filter((p): p is number => p !== null);
     const [fastest, slowest] = [Math.min(...paces), Math.max(...paces)];
     return records.map((record) => {
@@ -63,7 +66,7 @@ export class RecordsPage {
   protected readonly charts = computed(() => {
     const colors = this.theme.colors();
     const now = new Date();
-    return (this.records.value() ?? [])
+    return this.loaded()
       .filter((record) => this.shown().has(record.distance))
       .map((record) => {
         const first = record.progression[0];

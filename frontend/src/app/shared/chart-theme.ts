@@ -19,8 +19,6 @@ export interface ChartColors {
   tooltip: string;
   tooltipBorder: string;
   fontMono: string;
-  /** For what is good, e.g. the Cardiac Drift band up to 5%. */
-  good: string;
   /** Rides and Swims beside Runs in `series`, e.g. in Training Time. */
   ride: string;
   swim: string;
@@ -54,7 +52,6 @@ export class ChartTheme {
       tooltip: token('--tooltip'),
       tooltipBorder: token('--border-hover'),
       fontMono: token('--mono'),
-      good: token('--met'),
       ride: token('--chart-ride'),
       swim: token('--chart-swim'),
       breaks: {
