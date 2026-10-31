@@ -79,7 +79,7 @@
                   <ul class="day-activities">
                     @for (activity of calendarDay.activities; track activity.sport + activity.id) {
                       <li><a [class]="activity.sport" [routerLink]="[sports[activity.sport].path, activity.id]"
-                             [title]="activity.name"><span class="name">@if (sports[activity.sport].label; as label) {<span class="visually-hidden">{{ label }}: </span>}{{ activity.name }}</span>@if (activity.distance !== null) {<span class="distance">{{ units.distance(activity.distance, 1) }}</span>}</a></li>
+                             [title]="activity.name"><span class="name">@if (sports[activity.sport].label; as label) {<span class="visually-hidden">{{ label }}: </span>}{{ activity.name }}</span>@if (activity.distance > 0) {<span class="distance">{{ activity.sport === 'swim' ? (activity.distance | number: '1.0-0') + ' m' : units.distance(activity.distance, 1) }}</span>}</a></li>
                     }
                   </ul>
                 }

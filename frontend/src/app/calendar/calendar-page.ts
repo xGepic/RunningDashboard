@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { httpResource } from '@angular/common/http';
 import { Component, computed, inject, input, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -29,8 +29,8 @@ interface CalendarActivity {
   name: string;
   startLocal: string;
   sport: Sport;
-  /** A Run's distance, shown under its name; Rides and Swims go without, as the calendar counts Runs only. */
-  distance: number | null;
+  /** In metres, shown under its name; a Swim's in metres as on the Swims page, the others' in the Distance Unit. */
+  distance: number;
 }
 
 /** The pages Runs, Rides and Swims have, and what a Ride or Swim is called for a screen reader (Runs go without). */
@@ -58,7 +58,7 @@ interface CalendarDay {
 /** A year of Runs as a box per month; a month's fragment (/calendar#Sep) shows that month's Training Weeks instead. */
 @Component({
   selector: 'app-calendar-page',
-  imports: [BreaksPanel, DatePipe, NgxEchartsDirective, RouterLink, YearReviewPanel],
+  imports: [BreaksPanel, DatePipe, DecimalPipe, NgxEchartsDirective, RouterLink, YearReviewPanel],
   templateUrl: './calendar-page.html',
   styleUrl: './calendar-page.scss',
 })
@@ -148,8 +148,8 @@ export class CalendarPage {
     const activitiesByDay = new Map<string, CalendarActivity[]>();
     const activities = [
       ...this.runs.value().items.map((a) => ({ ...a, sport: 'run' as const })),
-      ...this.rides.value().items.map((a) => ({ ...a, sport: 'ride' as const, distance: null })),
-      ...this.swims.value().items.map((a) => ({ ...a, sport: 'swim' as const, distance: null })),
+      ...this.rides.value().items.map((a) => ({ ...a, sport: 'ride' as const })),
+      ...this.swims.value().items.map((a) => ({ ...a, sport: 'swim' as const })),
     ].sort((a, b) => a.startLocal.localeCompare(b.startLocal));
     for (const { id, name, startLocal, sport, distance } of activities) {
       const key = startLocal.slice(0, 10);

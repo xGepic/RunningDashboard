@@ -209,7 +209,7 @@ a.month-box {
       white-space: nowrap;
     }
 
-    /* A Run's distance, under its name. */
+    /* Its distance, under its name. */
     .distance {
       display: block;
       color: var(--text-secondary);
@@ -320,7 +320,7 @@ a.month-box {
     min-width: 0;
     margin: 0;
 
-    /* A Run's distance beside its name, as the day has the width. */
+    /* The distance beside its name, as the day has the width. */
     a {
       display: flex;
       justify-content: space-between;

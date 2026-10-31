@@ -351,20 +351,24 @@ describe('CalendarPage', () => {
       expect(text(element.querySelector('.sport-legend')!)).toBe("Runs Rides Swims The week's distance counts Runs only.");
     });
 
-    it("shows each Run's distance under its name, but none for Rides and Swims", async () => {
+    it("shows each activity's distance under its name, a Swim's in metres, and none without one", async () => {
       const { days } = await openMonth('/calendar#Sep', '2026-08-31', '2026-10-04', septemberWeeks, 'km', {
-        rides: [ride(11, 'Zwift spin', '2026-09-08T19:30:00')],
+        rides: [ride(11, 'Zwift spin', '2026-09-08T19:30:00'), { ...ride(12, 'Trainer', '2026-09-20T10:00:00'), distance: 0 }],
         swims: [swim(21, 'Morning swim', '2026-09-08T06:30:00')],
       });
 
-      const distances = [...days()[8].querySelectorAll('a')].map((a) => a.querySelector('.distance')?.textContent!.trim() ?? null);
-      expect(distances).toEqual([null, '10.0 km', null, '3.0 km']);
+      const distances = (cell: Element) => [...cell.querySelectorAll('a')].map((a) => a.querySelector('.distance')?.textContent!.trim() ?? null);
+      expect(distances(days()[8])).toEqual(['2,000 m', '10.0 km', '30.0 km', '3.0 km']);
+      expect(distances(days()[20])).toEqual([null]);
     });
 
-    it("shows a Run's distance in miles when they are chosen in Settings", async () => {
-      const { days } = await openMonth('/calendar#Sep', '2026-08-31', '2026-10-04', septemberWeeks, 'mi');
+    it("shows Run and Ride distances in miles when they are chosen in Settings, but a Swim's still in metres", async () => {
+      const { days } = await openMonth('/calendar#Sep', '2026-08-31', '2026-10-04', septemberWeeks, 'mi', {
+        rides: [ride(11, 'Zwift spin', '2026-09-13T15:00:00')],
+        swims: [swim(21, 'Morning swim', '2026-09-13T06:30:00')],
+      });
 
-      expect(days()[13].querySelector('a .distance')!.textContent!.trim()).toBe('13.0 mi');
+      expect([...days()[13].querySelectorAll('a .distance')].map((d) => d.textContent!.trim())).toEqual(['2,000 m', '13.0 mi', '18.6 mi']);
     });
 
     it('leaves the legend out when the month has only Runs', async () => {
