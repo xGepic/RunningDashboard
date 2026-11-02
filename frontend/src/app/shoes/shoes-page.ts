@@ -3,12 +3,13 @@ import { httpResource } from '@angular/common/http';
 import { Component, computed, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { AthleteSettings } from '../shared/athlete-settings';
+import { addDays, monthNames, today } from '../shared/dates';
 import { formatOneDecimal } from '../shared/format';
 import { openUnlessLink } from '../shared/open-unless-link';
 import { shoeWear } from '../shared/shoe-wear';
 import { Units } from '../shared/units';
 import { reloadOnSync } from '../sync/reload-on-sync';
-import { Shoe } from './shoe';
+import { Shoe, recentWeeks } from './shoe';
 
 /** The Shoes' colours, in list order; they repeat past the last. */
 const shoeColors = ['var(--accent)', 'var(--teal)', 'var(--amber)', 'var(--met)', '#a78bfa'];
@@ -78,6 +79,15 @@ export class ShoesPage {
       percent: Math.min(100, (shoe.distance / maxDistance) * 100),
       status: shoeWear(shoe.distance, maxDistance),
       note: left < 0 ? `${this.units.totalDistance(-left)} over` : `${this.units.totalDistance(left)} left`,
+      due: left > 0 ? this.due(shoe, left) : null,
     };
+  }
+
+  /** When the Shoe reaches the Maximum Distance if it keeps the distance of its recent weeks: "Due around Mar 2027 · 24.5 km/week lately". */
+  private due(shoe: Shoe, left: number): string {
+    if (shoe.recentDistance <= 0) return `No Runs in the last ${recentWeeks} weeks`;
+    const perDay = shoe.recentDistance / (recentWeeks * 7);
+    const date = addDays(today(), Math.ceil(left / perDay));
+    return `Due around ${monthNames[date.getMonth()]} ${date.getFullYear()} · ${this.units.distance(shoe.recentDistance / recentWeeks, 1)}/week lately`;
   }
 }

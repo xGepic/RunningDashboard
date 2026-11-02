@@ -36,6 +36,9 @@
                   <span class="mono note" [class.near]="wear.status === 'near'" [class.over]="wear.status === 'over'">{{ wear.note }}</span>
                 </div>
                 <div class="track" [class.near]="wear.status === 'near'" [class.over]="wear.status === 'over'"><span [style.width.%]="wear.percent"></span></div>
+                @if (wear.due; as due) {
+                  <p class="due">{{ due }}</p>
+                }
               </div>
             }
             <dl class="foot">

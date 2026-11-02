@@ -9,4 +9,9 @@ export interface Shoe {
   runs: number;
   /** Local start of the latest Run in this Shoe. */
   lastRun: string | null;
+  /** Metres of its Runs in the last {@link recentWeeks} weeks, today included. */
+  recentDistance: number;
 }
+
+/** How many weeks back a Shoe's recent distance goes, as GET /api/shoes counts it. */
+export const recentWeeks = 5;

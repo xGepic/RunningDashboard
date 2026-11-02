@@ -44,6 +44,21 @@ public sealed class ShoesTests
     }
 
     [Test]
+    public async Task A_shoes_recent_distance_counts_its_runs_of_the_last_five_weeks_today_included()
+    {
+        // Sunday 25 Oct: the five weeks start on Monday 21 Sep, the day of the Wienerwald trail.
+        _app.Clock.SetUtcNow(new DateTimeOffset(2026, 10, 25, 18, 0, 0, TimeSpan.Zero));
+        var lastDayIn = (await _browser.GetFromJsonAsync<List<ShoeRecentDistance>>("/api/shoes"))!;
+        _app.Clock.SetUtcNow(new DateTimeOffset(2026, 10, 26, 18, 0, 0, TimeSpan.Zero));
+        var dayAfter = (await _browser.GetFromJsonAsync<List<ShoeRecentDistance>>("/api/shoes"))!;
+
+        lastDayIn.Single(s => s.Name == "Adidas Adizero SL2").RecentDistance.ShouldBe(42582.8 + 12105.4, 0.01);
+        dayAfter.Single(s => s.Name == "Adidas Adizero SL2").RecentDistance.ShouldBe(42582.8, 0.01);
+        dayAfter.Single(s => s.Name == "Nike Pegasus 41").RecentDistance.ShouldBe(5081.2 + 4513.7 + 6000, 0.01);
+        dayAfter.Single(s => s.Name == "Asics Novablast 4").RecentDistance.ShouldBe(0);
+    }
+
+    [Test]
     public async Task A_shoe_retired_on_strava_is_retired_here_and_listed_after_the_active_ones()
     {
         await SyncAgainAsync("athlete-shoe-retired.json");
@@ -131,6 +146,8 @@ public sealed class ShoesTests
         (await _browser.GetFromJsonAsync<List<ShoeResponse>>("/api/shoes"))!;
 
     private sealed record ShoeResponse(string Id, string Name, double Distance, bool Retired, int Runs, DateTime? LastRun);
+
+    private sealed record ShoeRecentDistance(string Name, double RecentDistance);
 
     private sealed record RunPage(List<RunWithShoe> Items);
 

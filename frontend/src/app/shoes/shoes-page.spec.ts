@@ -5,9 +5,11 @@ import { Router, provideRouter } from '@angular/router';
 import { Shoe } from './shoe';
 import { ShoesPage } from './shoes-page';
 
-const shoe = (id: string, name: string, distance: number): Shoe => ({ id, name, distance, retired: false, runs: 10, lastRun: '2026-10-06T20:35:26' });
+const shoe = (id: string, name: string, distance: number, recentDistance = 0): Shoe => ({ id, name, distance, retired: false, runs: 10, lastRun: '2026-10-06T20:35:26', recentDistance });
 
 describe('ShoesPage', () => {
+  afterEach(() => vi.useRealTimers());
+
   async function render(shoeMaximumDistance: number, shoes: Shoe[]) {
     TestBed.configureTestingModule({ imports: [ShoesPage], providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])] });
     const fixture = TestBed.createComponent(ShoesPage);
@@ -36,6 +38,19 @@ describe('ShoesPage', () => {
       'Maximum Distance 500 km: 40 km left (near)',
       'Maximum Distance 500 km: 380 km left (ok)',
       'Maximum Distance 500 km: 30 km over (over)',
+    ]);
+  });
+
+  it('dates when each Shoe reaches the Maximum Distance at the distance of its last 5 weeks', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 10, 2, 18));
+    // 122.5 km in 5 weeks is 3.5 km a day, so the 240 km left take 69 days: 10 Jan 2027.
+    const { element } = await render(700_000, [shoe('g1', 'Pegasus', 460_000, 122_500), shoe('g2', 'Vaporfly', 120_000), shoe('g3', 'Ghost', 730_000, 50_000)]);
+
+    expect([...element.querySelectorAll('.shoe')].map((card) => card.querySelector('.due')?.textContent?.trim() ?? null)).toEqual([
+      'Due around Jan 2027 · 24.5 km/week lately',
+      'No Runs in the last 5 weeks',
+      null,
     ]);
   });
 

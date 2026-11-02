@@ -100,6 +100,12 @@
   .note.over {
     color: var(--error);
   }
+
+  .due {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 11.5px;
+  }
 }
 
 .foot {
