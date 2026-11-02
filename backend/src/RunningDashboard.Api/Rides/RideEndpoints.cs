@@ -30,9 +30,11 @@ public static class RideEndpoints
             if (errors.Count > 0)
                 return Results.ValidationProblem(errors);
 
-            var rides = await MatchingAsync(query, kind, db, cancellationToken);
+            var all = await AllAsync(db, cancellationToken);
+            var rides = Matching(all, query, kind);
             return Results.Ok(new RidePageResponse(
-                query.PageOf(rides, r => r.StartLocal, Figures), query.PageOrDefault, query.PageSizeOrDefault, rides.Count, RideTotalsResponse.Of(rides)));
+                query.PageOf(rides, r => r.StartLocal, Figures), query.PageOrDefault, query.PageSizeOrDefault, rides.Count, RideTotalsResponse.Of(rides),
+                ListYears.Of(all, r => r.StartLocal)));
         });
 
         // Every Ride the list would show, on one "page"; the page and its size are ignored.
@@ -42,7 +44,7 @@ public static class RideEndpoints
             if (errors.Count > 0)
                 return Results.ValidationProblem(errors);
 
-            return Results.Ok(query.Sorted(await MatchingAsync(query, kind, db, cancellationToken), r => r.StartLocal, Figures).ToList());
+            return Results.Ok(query.Sorted(Matching(await AllAsync(db, cancellationToken), query, kind), r => r.StartLocal, Figures).ToList());
         });
 
         app.MapGet("/api/rides/{id:long}", async (long id, AppDbContext db, CancellationToken cancellationToken) =>
@@ -67,17 +69,20 @@ public static class RideEndpoints
         _ => true,
     };
 
-    /// <summary>
-    /// The Rides of the kind (all without one) matching the search and date range, unsorted. Filtered in memory, as the Runs are: it keeps the name
-    /// search case-insensitive beyond ASCII.
-    /// </summary>
-    private static async Task<List<RideResponse>> MatchingAsync(ListQuery query, string? kind, AppDbContext db, CancellationToken cancellationToken) =>
+    /// <summary>Every Ride, of every kind, unsorted.</summary>
+    private static async Task<List<RideResponse>> AllAsync(AppDbContext db, CancellationToken cancellationToken) =>
         [.. (await db.ListedActivities
             .Where(a => Sports.Rides.Contains(a.SportType))
             .Select(a => new { a.Id, a.Name, a.SportType, a.StartLocal, a.Distance, a.MovingTime, a.ElevationGain })
             .ToListAsync(cancellationToken))
         .Select(a => new RideResponse(
             a.Id, a.Name, a.SportType, a.StartLocal, a.Distance, a.MovingTime, ListedActivity.AvgSpeedOf(a.MovingTime, a.Distance), a.ElevationGain,
-            StravaLinks.Activity(a.Id)))
-        .Where(r => IsOfKind(r.SportType, kind) && query.Matches(r.Name, r.StartLocal))];
+            StravaLinks.Activity(a.Id)))];
+
+    /// <summary>
+    /// The Rides of the kind (all without one) matching the search and date range, unsorted. Filtered in memory, as the Runs are: it keeps the name
+    /// search case-insensitive beyond ASCII.
+    /// </summary>
+    private static List<RideResponse> Matching(IEnumerable<RideResponse> rides, ListQuery query, string? kind) =>
+        [.. rides.Where(r => IsOfKind(r.SportType, kind) && query.Matches(r.Name, r.StartLocal))];
 }

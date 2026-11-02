@@ -1,4 +1,4 @@
-import { ListPage } from '../shared/history-list';
+import { YearPage } from '../shared/history-list';
 
 /** A Ride as listed by GET /api/rides. Distance and elevation in metres, times in seconds, speed in km/h. */
 export interface Ride {
@@ -17,8 +17,8 @@ export interface Ride {
 }
 
 /** One page of GET /api/rides. */
-export interface RidePage extends ListPage<Ride> {
-  /** Of every Ride, not just this page's. */
+export interface RidePage extends YearPage<Ride> {
+  /** Of every Ride that matches, not just this page's. */
   totals: RideTotals;
 }
 

@@ -4,7 +4,9 @@ using RunningDashboard.Api.Strava;
 namespace RunningDashboard.Api.Rides;
 
 /// <param name="Totals">Of every Ride that matches, not just this page's.</param>
-internal sealed record RidePageResponse(IReadOnlyList<RideResponse> Items, int Page, int PageSize, int TotalCount, RideTotalsResponse Totals);
+/// <param name="Years">Every year with a Ride of any kind, newest first, whatever is asked for: what the list can be narrowed to.</param>
+internal sealed record RidePageResponse(
+    IReadOnlyList<RideResponse> Items, int Page, int PageSize, int TotalCount, RideTotalsResponse Totals, IReadOnlyList<int> Years);
 
 /// <param name="Distance">Metres.</param>
 /// <param name="MovingTime">Seconds.</param>

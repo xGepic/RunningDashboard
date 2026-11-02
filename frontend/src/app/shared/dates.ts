@@ -34,6 +34,11 @@ export function isoDate(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
+/** 2026 for today's year, in local time. */
+export function currentYear(): number {
+  return new Date().getFullYear();
+}
+
 /** "2026-10" for today's month, in local time. */
 export function currentMonth(): string {
   return monthKey(new Date());

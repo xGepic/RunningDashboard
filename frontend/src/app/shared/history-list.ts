@@ -4,7 +4,7 @@ import { Directive, computed, inject, input, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { reloadOnSync } from '../sync/reload-on-sync';
 import { CsvTable, saveCsv } from './csv';
-import { isoDate, today } from './dates';
+import { currentYear, isoDate, today } from './dates';
 import { openUnlessLink } from './open-unless-link';
 
 /** One page of a history, as GET /api/runs, /api/rides and /api/swims return it. */
@@ -18,6 +18,12 @@ export interface ListPage<Item> {
 
 /** The list's state, kept in the URL so the back button and shared links work; null or empty drops a parameter. */
 export type ListParams = Partial<Record<string, string | null>>;
+
+/** One page of a history listed a year at a time, as GET /api/rides and /api/swims return it. */
+export interface YearPage<Item> extends ListPage<Item> {
+  /** Every year with an item of the history, newest first, whatever is asked for. */
+  years: number[];
+}
 
 /** The request's query parameters: those without a value are left out. */
 export function requestParams(params: Record<string, string | null | undefined>): Record<string, string> {
@@ -116,5 +122,59 @@ export abstract class HistoryList<SortKey extends string, Item extends { distanc
   protected navigate(params: ListParams): void {
     const queryParams = Object.fromEntries(Object.entries(params).map(([key, value]) => [key, value || null]));
     this.router.navigate([], { queryParams, queryParamsHandling: 'merge' });
+  }
+}
+
+/**
+ * What Ride and Swim history add: they list a year at a time, the current one unless the URL says otherwise, stepped
+ * through with ← and → as the Runs step through months.
+ */
+@Directive()
+export abstract class YearlyHistoryList<SortKey extends string, Item extends { distance: number }> extends HistoryList<SortKey, Item> {
+  /** From the query string: "2025"; the current year when missing or malformed. */
+  readonly year = input<string>();
+
+  protected abstract override readonly list: HttpResourceRef<YearPage<Item> | undefined>;
+
+  protected readonly selectedYear = computed(() => {
+    const year = this.year();
+    return year && /^\d{4}$/.test(year) ? Number(year) : currentYear();
+  });
+  protected readonly isCurrentYear = computed(() => this.selectedYear() >= currentYear());
+
+  /** The years with items; none until they are in. */
+  private readonly years = computed(() => (this.list.hasValue() ? this.list.value().years : []));
+
+  /** ← stops at the first year with items. */
+  protected readonly isFirstYear = computed(() => this.years().length > 0 && this.selectedYear() <= this.years().at(-1)!);
+
+  /** The newest year with items, to go to from a year without any; none when that is the year listed. */
+  protected readonly latestYear = computed(() => {
+    const latest = this.years()[0];
+    return latest !== undefined && latest !== this.selectedYear() ? latest : null;
+  });
+
+  /** The year's days as the request's from and to. */
+  protected yearParams(): { from: string; to: string } {
+    return { from: `${this.selectedYear()}-01-01`, to: `${this.selectedYear()}-12-31` };
+  }
+
+  /** Steps a year back or forward; the filters and sort order stay. */
+  protected shiftYear(years: number): void {
+    this.showYear(this.selectedYear() + years);
+  }
+
+  protected thisYear(): number {
+    return currentYear();
+  }
+
+  /** The current year stays out of the URL, so the page always opens on it. */
+  protected showYear(year: number): void {
+    this.navigate({ year: year === currentYear() ? null : String(year), page: null });
+  }
+
+  /** "rides-2025.csv" for the year listed, or "rides-2026-10-14.csv", named after today, for all of them. */
+  protected exportFileName(name: string, scope: 'year' | 'all'): string {
+    return scope === 'all' ? this.datedFileName(name) : `${name}-${this.selectedYear()}.csv`;
   }
 }

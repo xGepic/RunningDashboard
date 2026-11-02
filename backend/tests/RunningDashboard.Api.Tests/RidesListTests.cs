@@ -136,6 +136,23 @@ public sealed class RidesListTests
     }
 
     [Test]
+    public async Task The_years_with_a_ride_of_any_kind_come_newest_first_whatever_is_asked_for()
+    {
+        await using var app = new TestApp();
+        var browser = await app.ConnectWithActivitiesAsync(
+            new TestActivity(20600000011, "Zwift Watopia", new DateTime(2026, 1, 3, 19, 0, 0), 30000, 3600, "VirtualRide"),
+            new TestActivity(20600000012, "Pool 2k", new DateTime(2025, 6, 1, 7, 0, 0), 2000, 2400, "Swim"),
+            new TestActivity(20600000013, "E-bike shopping", new DateTime(2025, 5, 1, 11, 0, 0), 8000, 1500, "EBikeRide"),
+            new TestActivity(20600000014, "Gravel Marchfeld", new DateTime(2024, 9, 26, 9, 0, 0), 61200, 9000, "GravelRide"));
+        await TestApp.WaitForSyncAsync(browser);
+
+        var page = (await browser.GetFromJsonAsync<RidePage>("/api/rides?kind=outdoor&from=2024-01-01&to=2024-12-31"))!;
+
+        page.Names.ShouldBe(["Gravel Marchfeld"]);
+        page.Years.ShouldBe([2026, 2024]);
+    }
+
+    [Test]
     public async Task The_export_has_only_the_rides_of_the_kind_listed()
     {
         var rides = (await _browser.GetFromJsonAsync<List<RideItem>>("/api/rides/export?kind=virtual"))!;
@@ -194,7 +211,7 @@ public sealed class RidesListTests
     private async Task<RidePage> ListAsync(string query) =>
         (await _browser.GetFromJsonAsync<RidePage>($"/api/rides?{query}"))!;
 
-    private sealed record RidePage(List<RideItem> Items, int Page, int PageSize, int TotalCount, RideTotals Totals)
+    private sealed record RidePage(List<RideItem> Items, int Page, int PageSize, int TotalCount, RideTotals Totals, List<int> Years)
     {
         public List<string> Names => [.. Items.Select(i => i.Name)];
     }

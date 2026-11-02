@@ -1,4 +1,4 @@
-import { ListPage } from '../shared/history-list';
+import { YearPage } from '../shared/history-list';
 
 /** A Swim as listed by GET /api/swims. Distance in metres, times in seconds, pace in seconds per 100 m. */
 export interface Swim {
@@ -14,8 +14,8 @@ export interface Swim {
 }
 
 /** One page of GET /api/swims. */
-export interface SwimPage extends ListPage<Swim> {
-  /** Of every Swim, not just this page's. */
+export interface SwimPage extends YearPage<Swim> {
+  /** Of every Swim that matches, not just this page's. */
   totals: SwimTotals;
 }
 

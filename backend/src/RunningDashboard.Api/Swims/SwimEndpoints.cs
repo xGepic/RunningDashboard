@@ -23,9 +23,11 @@ public static class SwimEndpoints
             if (errors.Count > 0)
                 return Results.ValidationProblem(errors);
 
-            var swims = await MatchingAsync(query, db, cancellationToken);
+            var all = await AllAsync(db, cancellationToken);
+            var swims = Matching(all, query);
             return Results.Ok(new SwimPageResponse(
-                query.PageOf(swims, s => s.StartLocal, Figures), query.PageOrDefault, query.PageSizeOrDefault, swims.Count, SwimTotalsResponse.Of(swims)));
+                query.PageOf(swims, s => s.StartLocal, Figures), query.PageOrDefault, query.PageSizeOrDefault, swims.Count, SwimTotalsResponse.Of(swims),
+                ListYears.Of(all, s => s.StartLocal)));
         });
 
         // Every Swim the list would show, on one "page"; the page and its size are ignored.
@@ -35,7 +37,7 @@ public static class SwimEndpoints
             if (errors.Count > 0)
                 return Results.ValidationProblem(errors);
 
-            return Results.Ok(query.Sorted(await MatchingAsync(query, db, cancellationToken), s => s.StartLocal, Figures).ToList());
+            return Results.Ok(query.Sorted(Matching(await AllAsync(db, cancellationToken), query), s => s.StartLocal, Figures).ToList());
         });
 
         app.MapGet("/api/swims/{id:long}", async (long id, AppDbContext db, CancellationToken cancellationToken) =>
@@ -45,17 +47,20 @@ public static class SwimEndpoints
         });
     }
 
-    /// <summary>
-    /// The Swims matching the search and date range, unsorted. Filtered in memory, as the Runs are: it keeps the name
-    /// search case-insensitive beyond ASCII.
-    /// </summary>
-    private static async Task<List<SwimResponse>> MatchingAsync(ListQuery query, AppDbContext db, CancellationToken cancellationToken) =>
+    /// <summary>Every Swim, unsorted.</summary>
+    private static async Task<List<SwimResponse>> AllAsync(AppDbContext db, CancellationToken cancellationToken) =>
         [.. (await db.ListedActivities
             .Where(a => Sports.Swims.Contains(a.SportType))
             .Select(a => new { a.Id, a.Name, a.StartLocal, a.Distance, a.MovingTime })
             .ToListAsync(cancellationToken))
         .Select(a => new SwimResponse(
             a.Id, a.Name, a.StartLocal, a.Distance, a.MovingTime, ListedActivity.SwimPaceOf(a.MovingTime, a.Distance),
-            StravaLinks.Activity(a.Id)))
-        .Where(s => query.Matches(s.Name, s.StartLocal))];
+            StravaLinks.Activity(a.Id)))];
+
+    /// <summary>
+    /// The Swims matching the search and date range, unsorted. Filtered in memory, as the Runs are: it keeps the name
+    /// search case-insensitive beyond ASCII.
+    /// </summary>
+    private static List<SwimResponse> Matching(IEnumerable<SwimResponse> swims, ListQuery query) =>
+        [.. swims.Where(s => query.Matches(s.Name, s.StartLocal))];
 }

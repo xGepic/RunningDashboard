@@ -111,6 +111,23 @@ public sealed class SwimsListTests
         totals.Pace!.Value.ShouldBe(126, 0.0005); // 9,450 s for 75 × 100 m
     }
 
+    [Test]
+    public async Task The_years_with_a_swim_come_newest_first_whatever_is_asked_for()
+    {
+        await using var app = new TestApp();
+        var browser = await app.ConnectWithActivitiesAsync(
+            new TestActivity(20600000001, "New Year's dip", new DateTime(2026, 1, 1, 11, 0, 0), 100, 120, "Swim"),
+            new TestActivity(20600000002, "Kahlenberg climb", new DateTime(2025, 6, 1, 10, 0, 0), 42300, 5400, "Ride"),
+            new TestActivity(20600000003, "Silvester swim", new DateTime(2024, 12, 31, 23, 0, 0), 1000, 1350, "Swim"),
+            new TestActivity(20600000004, "Summer lake", new DateTime(2024, 7, 1, 9, 0, 0), 2000, 2400, "Swim"));
+        await TestApp.WaitForSyncAsync(browser);
+
+        var page = (await browser.GetFromJsonAsync<SwimPage>("/api/swims?from=2026-01-01&to=2026-12-31&search=dip"))!;
+
+        page.Names.ShouldBe(["New Year's dip"]);
+        page.Years.ShouldBe([2026, 2024]);
+    }
+
     [TestCase("page=0")]
     [TestCase("pageSize=0")]
     [TestCase("pageSize=201")]
@@ -157,7 +174,7 @@ public sealed class SwimsListTests
     private async Task<SwimPage> ListAsync(string query) =>
         (await _browser.GetFromJsonAsync<SwimPage>($"/api/swims?{query}"))!;
 
-    private sealed record SwimPage(List<SwimItem> Items, int Page, int PageSize, int TotalCount, SwimTotals Totals)
+    private sealed record SwimPage(List<SwimItem> Items, int Page, int PageSize, int TotalCount, SwimTotals Totals, List<int> Years)
     {
         public List<string> Names => [.. Items.Select(i => i.Name)];
     }

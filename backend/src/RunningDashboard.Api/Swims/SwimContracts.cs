@@ -4,7 +4,9 @@ using RunningDashboard.Api.Strava;
 namespace RunningDashboard.Api.Swims;
 
 /// <param name="Totals">Of every Swim that matches, not just this page's.</param>
-internal sealed record SwimPageResponse(IReadOnlyList<SwimResponse> Items, int Page, int PageSize, int TotalCount, SwimTotalsResponse Totals);
+/// <param name="Years">Every year with a Swim, newest first, whatever is asked for: what the list can be narrowed to.</param>
+internal sealed record SwimPageResponse(
+    IReadOnlyList<SwimResponse> Items, int Page, int PageSize, int TotalCount, SwimTotalsResponse Totals, IReadOnlyList<int> Years);
 
 /// <param name="Distance">Metres.</param>
 /// <param name="MovingTime">Seconds.</param>

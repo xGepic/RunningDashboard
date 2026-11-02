@@ -5,12 +5,18 @@
       <div class="title-row">
         <h1>Swim history</h1>
         <app-sport-switch current="swims" />
-        <button type="button" class="btn export" [disabled]="exporting()" (click)="exportSwims()">Export CSV</button>
+        <details class="export-menu" #exportMenu>
+          <summary class="btn" [class.busy]="exporting()">Export CSV</summary>
+          <div class="menu">
+            <button type="button" [disabled]="exporting()" (click)="exportMenu.open = false; exportSwims('year')">This year</button>
+            <button type="button" [disabled]="exporting()" (click)="exportMenu.open = false; exportSwims('all')">All Swims</button>
+          </div>
+        </details>
       </div>
     </div>
     @if (totals(); as totals) {
       @if (totals.swims > 0) {
-        <div class="stats summary" aria-label="Totals of all Swims">
+        <div class="stats summary" [attr.aria-label]="'Totals of the Swims in ' + selectedYear()">
           <div class="stat"><span class="label">Swims</span><span class="value">{{ totals.swims }}</span></div>
           <div class="stat"><span class="label">Distance</span><span class="value">{{ formatDistance(totals.distance, 'km', 1) }}</span></div>
           <div class="stat"><span class="label">Moving Time</span><span class="value">{{ formatHoursMinutes(totals.movingTime) }}</span></div>
@@ -19,6 +25,19 @@
       }
     }
   </header>
+
+  <div class="toolbar">
+    <nav class="period-nav" aria-label="Year">
+      <button type="button" class="step" (click)="shiftYear(-1)" [disabled]="isFirstYear()"
+              [attr.aria-label]="'Previous year: ' + (selectedYear() - 1)" [title]="selectedYear() - 1">←</button>
+      <h2>{{ selectedYear() }}</h2>
+      <button type="button" class="step" (click)="shiftYear(1)" [disabled]="isCurrentYear()"
+              [attr.aria-label]="'Next year: ' + (selectedYear() + 1)" [title]="selectedYear() + 1">→</button>
+      <button type="button" class="step today" (click)="showYear(thisYear())" [disabled]="isCurrentYear()"
+              title="Back to this year">Today</button>
+    </nav>
+  </div>
+
   @if (exportError(); as error) {
     <p class="error" role="alert">{{ error }}</p>
   }
@@ -26,7 +45,7 @@
   @if (swims.error()) {
     <p class="error" role="alert">
       Swims could not be loaded with these options.
-      <a routerLink="/swims">Show all Swims</a>
+      <a routerLink="/swims">Show this year's Swims</a>
     </p>
   } @else if (swims.value(); as page) {
     @if (page.totalCount === 0) {
@@ -36,14 +55,17 @@
             There are no Swims on page {{ page.page }}.
             <button type="button" class="link" (click)="goToPage(1)">Go to the first page</button>
           } @else {
-            No Swims yet.
+            No Swims in {{ selectedYear() }}.
+            @if (latestYear(); as latest) {
+              <button type="button" class="link" (click)="showYear(latest)">Go to {{ latest }}</button>
+            }
           }
         </p>
       </div>
     } @else if (page.items.length === 0) {
       <div class="card empty-card">
         <p class="empty">
-          There are only {{ pageCount() }} pages of Swims.
+          There are only {{ pageCount() }} pages of Swims in {{ selectedYear() }}.
           <button type="button" class="link" (click)="goToPage(pageCount())">Go to the last page</button>
         </p>
       </div>
