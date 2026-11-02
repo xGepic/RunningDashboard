@@ -1,0 +1,27 @@
+<section class="card on-this-day" aria-labelledby="on-this-day-title">
+  <div class="card-header">
+    <div class="titles">
+      <h2 id="on-this-day-title" class="card-title">On this day</h2>
+      <p class="card-sub">{{ day() }}, a year ago</p>
+    </div>
+  </div>
+
+  <div class="day">
+    <p class="distance"><span class="value">{{ total().distance }}</span> <span class="unit">{{ units.unit() }}</span></p>
+    <ul class="runs">
+      @for (run of runs(); track run.id) {
+        <li>
+          <a class="name" [routerLink]="['/runs', run.id]" [title]="run.name">{{ run.name }}</a>
+          @if (run.distance; as distance) {
+            <span class="run-distance">{{ distance }}</span>
+          }
+        </li>
+      }
+    </ul>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><span class="label">Pace</span><span class="value">{{ total().pace }}</span></div>
+    <div class="stat"><span class="label">Moving Time</span><span class="value">{{ total().movingTime }}</span></div>
+  </div>
+</section>

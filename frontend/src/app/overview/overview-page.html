@@ -13,7 +13,7 @@
     @if (overview.totals.runs === 0) {
       <div class="card empty-card"><p class="empty">No Runs yet. Connect Strava and sync to import them.</p></div>
     } @else {
-      <!-- The goals the Athlete chose in Settings, with the Streak. -->
+      <!-- The goals the Athlete chose in Settings, with the Streak and On this day. -->
       <div class="goal-row" [class]="'cards-' + goalRowCards()">
         @if (settings.showYearlyGoal()) {
           <app-yearly-goal-card [goal]="overview.yearlyGoal" [distance]="thisYearsDistance()" (changed)="goalChanged()" />
@@ -23,6 +23,9 @@
         }
         @if (overview.streak; as streak) {
           <app-streak-card [streak]="streak" [breaks]="breaks.list()" />
+        }
+        @if (overview.onThisDay; as onThisDay) {
+          <app-on-this-day-card [onThisDay]="onThisDay" />
         }
       </div>
 

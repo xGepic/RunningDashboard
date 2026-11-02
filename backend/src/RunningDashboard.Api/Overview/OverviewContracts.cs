@@ -18,6 +18,7 @@ internal sealed record ListedFigures(DateTime StartLocal, int MovingTime, string
 /// without Runs or without Rides and Swims, as there is nothing to add to the running figures then.
 /// </param>
 /// <param name="ThisWeek">The current Training Week's Training Time, for the Weekly Time Goal; none without Runs.</param>
+/// <param name="OnThisDay">Today's date a year ago; none without Runs on it.</param>
 internal sealed record OverviewResponse(
     TotalsResponse Totals,
     IReadOnlyList<YearResponse> Years,
@@ -26,18 +27,20 @@ internal sealed record OverviewResponse(
     WeeklyTimeGoalResponse? WeeklyTimeGoal,
     StreakResponse? Streak,
     IReadOnlyList<TrainingTimeWeekResponse> TrainingTime,
-    TrainingTimeWeekResponse? ThisWeek)
+    TrainingTimeWeekResponse? ThisWeek,
+    OnThisDayResponse? OnThisDay)
 {
     public static OverviewResponse From(
         IReadOnlyList<RunFigures> runs,
         IReadOnlyList<ListedFigures> listed,
         YearlyGoalResponse? yearlyGoal,
         WeeklyTimeGoalResponse? weeklyTimeGoal,
+        OnThisDayResponse? onThisDay,
         DateOnly today)
     {
         var totals = TotalsResponse.Of(runs);
         if (runs.Count == 0)
-            return new OverviewResponse(totals, [], [], yearlyGoal, weeklyTimeGoal, null, [], null);
+            return new OverviewResponse(totals, [], [], yearlyGoal, weeklyTimeGoal, null, [], null, onThisDay);
 
         var years = runs
             .GroupBy(r => r.StartLocal.Year)
@@ -66,7 +69,8 @@ internal sealed record OverviewResponse(
             weeklyTimeGoal,
             streak,
             TrainingTimeWeekResponse.Of(runs, listed, thisWeek),
-            TrainingTimeWeekResponse.For(thisWeek, runs, listed));
+            TrainingTimeWeekResponse.For(thisWeek, runs, listed),
+            onThisDay);
     }
 
     private static DateOnly Max(DateOnly a, DateOnly b) => a > b ? a : b;
@@ -128,6 +132,14 @@ internal sealed record YearResponse(int Year, int Runs, double Distance, int Mov
 
 /// <param name="Start">The Monday of the Training Week.</param>
 internal sealed record WeekResponse(DateOnly Start, double Distance);
+
+/// <summary>Today's date a year ago, by local time; on 29 February, 28 February a year ago.</summary>
+/// <param name="Runs">At least one, newest first.</param>
+internal sealed record OnThisDayResponse(DateOnly Day, IReadOnlyList<OnThisDayRunResponse> Runs);
+
+/// <param name="Distance">Metres.</param>
+/// <param name="MovingTime">Seconds.</param>
+internal sealed record OnThisDayRunResponse(long Id, string Name, DateTime StartLocal, double Distance, int MovingTime);
 
 /// <summary>
 /// The Streak: consecutive Training Weeks with at least one Run. The current week adds to it once it has a Run and

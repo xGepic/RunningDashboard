@@ -21,6 +21,7 @@ import { isoDate, mondayOf, today } from '../shared/dates';
 import { formatWhole } from '../shared/format';
 import { Units } from '../shared/units';
 import { reloadOnSync } from '../sync/reload-on-sync';
+import { OnThisDayCard } from './on-this-day-card';
 import { Overview, Totals, YearTotals } from './overview';
 import { StreakCard } from './streak-card';
 import { WeeklyTimeGoalCard } from './weekly-time-goal-card';
@@ -45,7 +46,7 @@ const kpiDefinitions: { label: string; unit: string | null; icon: string; of: (t
 
 @Component({
   selector: 'app-overview-page',
-  imports: [DecimalPipe, NgxEchartsDirective, RouterLink, StreakCard, WeeklyTimeGoalCard, YearlyGoalCard],
+  imports: [DecimalPipe, NgxEchartsDirective, OnThisDayCard, RouterLink, StreakCard, WeeklyTimeGoalCard, YearlyGoalCard],
   templateUrl: './overview-page.html',
   styleUrl: './overview-page.scss',
 })
@@ -166,10 +167,15 @@ export class OverviewPage {
     this.settings.showWeeklyTimeGoal() && this.overview.hasValue() ? (this.overview.value().weeklyTimeGoal?.time ?? null) : null,
   );
 
-  /** How many cards the goal row has, for its layout: the goals shown, and the Streak. */
+  /** How many cards the goal row has, for its layout: the goals shown, the Streak, and On this day when it has Runs. */
   protected readonly goalRowCards = computed(() => {
     const overview = this.overview.hasValue() ? this.overview.value() : null;
-    return [this.settings.showYearlyGoal(), this.settings.showWeeklyTimeGoal() && !!overview?.thisWeek, !!overview?.streak].filter(Boolean).length;
+    return [
+      this.settings.showYearlyGoal(),
+      this.settings.showWeeklyTimeGoal() && !!overview?.thisWeek,
+      !!overview?.streak,
+      !!overview?.onThisDay,
+    ].filter(Boolean).length;
   });
 
   /**

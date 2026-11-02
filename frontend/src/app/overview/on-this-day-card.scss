@@ -1,0 +1,68 @@
+/* As tall as the other cards in the goal row. */
+.on-this-day {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  .card-header {
+    margin: 0;
+  }
+}
+
+.day {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.distance {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+
+  .value {
+    font-size: 38px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+
+  .unit {
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 14px;
+  }
+}
+
+.runs {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+  }
+}
+
+.name {
+  overflow: hidden;
+  font-size: 13.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.run-distance {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 12px;
+}

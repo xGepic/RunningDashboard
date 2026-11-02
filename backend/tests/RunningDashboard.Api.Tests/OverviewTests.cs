@@ -26,6 +26,8 @@ public sealed class OverviewTests
         overview.Totals.ShouldBe(new TotalsResponse(3, 23000, 8400, 100));
         overview.Years.ShouldBe(
             [new YearResponse(2025, 1, 5000, 1800, 20), new YearResponse(2026, 2, 18000, 6600, 80)]);
+        // No Run on 9 Oct 2025.
+        overview.OnThisDay.ShouldBeNull();
     }
 
     [Test]
@@ -242,6 +244,41 @@ public sealed class OverviewTests
         (await GetOverviewAsync(browser)).TrainingTime.ShouldBeEmpty();
     }
 
+    [Test]
+    public async Task On_this_day_lists_the_runs_on_todays_date_a_year_ago_by_local_time_newest_first()
+    {
+        var browser = await _app.ConnectWithActivitiesAsync(
+            new TestActivity(1, "Two years ago", new DateTime(2024, 10, 9, 7, 0, 0), 8000, 2900),
+            new TestActivity(2, "Last year's morning", new DateTime(2025, 10, 9, 7, 0, 0), 6000, 2200),
+            // 10 Oct in UTC, but still 9 Oct in New York.
+            new TestActivity(3, "Last year abroad", new DateTime(2025, 10, 9, 22, 30, 0), 10000, 3500, UtcOffsetHours: -4),
+            new TestActivity(4, "The day before", new DateTime(2025, 10, 8, 18, 0, 0), 5000, 1800),
+            new TestActivity(5, "The day after", new DateTime(2025, 10, 10, 0, 30, 0), 5000, 1800),
+            new TestActivity(6, "A ride last year", new DateTime(2025, 10, 9, 9, 0, 0), 40000, 5400, "Ride"),
+            new TestActivity(7, "Today", new DateTime(2026, 10, 9, 7, 0, 0), 6000, 2100));
+
+        var overview = await GetOverviewAsync(browser);
+
+        var onThisDay = overview.OnThisDay!;
+        onThisDay.Day.ShouldBe(new DateOnly(2025, 10, 9));
+        onThisDay.Runs.ShouldBe(
+            [
+                new OnThisDayRunResponse(3, "Last year abroad", new DateTime(2025, 10, 9, 22, 30, 0), 10000, 3500),
+                new OnThisDayRunResponse(2, "Last year's morning", new DateTime(2025, 10, 9, 7, 0, 0), 6000, 2200),
+            ]);
+    }
+
+    [Test]
+    public async Task On_29_february_on_this_day_lists_the_runs_on_28_february_a_year_ago()
+    {
+        var browser = await _app.ConnectWithActivitiesAsync(new TestActivity(1, "Last February", new DateTime(2027, 2, 28, 7, 0, 0), 8000, 2900));
+        _app.Clock.SetUtcNow(new DateTimeOffset(2028, 2, 29, 18, 0, 0, TimeSpan.Zero));
+
+        var overview = await GetOverviewAsync(browser);
+
+        overview.OnThisDay!.Runs.Select(r => r.Name).ShouldBe(["Last February"]);
+    }
+
     private static IEnumerable<DateOnly> TrainingWeeks(DateOnly firstMonday, int count) =>
         Enumerable.Range(0, count).Select(i => firstMonday.AddDays(7 * i));
 
@@ -258,7 +295,12 @@ public sealed class OverviewTests
         List<YearResponse> Years,
         List<WeekResponse> Weeks,
         StreakResponse? Streak,
-        List<TrainingTimeWeekResponse> TrainingTime);
+        List<TrainingTimeWeekResponse> TrainingTime,
+        OnThisDayResponse? OnThisDay);
+
+    private sealed record OnThisDayResponse(DateOnly Day, List<OnThisDayRunResponse> Runs);
+
+    private sealed record OnThisDayRunResponse(long Id, string Name, DateTime StartLocal, double Distance, int MovingTime);
 
     private sealed record TrainingTimeWeekResponse(DateOnly Start, int Runs, int Rides, int Swims);
 

@@ -19,6 +19,27 @@ export interface Overview {
   trainingTime: TrainingTimeWeek[];
   /** The current Training Week's Training Time, Rides and Swims or not; none without Runs. */
   thisWeek: TrainingTimeWeek | null;
+  /** Today's date a year ago; none without Runs on it. */
+  onThisDay: OnThisDay | null;
+}
+
+/** Today's date a year ago, by local time; on 29 February, 28 February a year ago. */
+export interface OnThisDay {
+  /** yyyy-MM-dd. */
+  day: string;
+  /** At least one, newest first. */
+  runs: OnThisDayRun[];
+}
+
+export interface OnThisDayRun {
+  id: number;
+  name: string;
+  /** Local start, e.g. "2025-11-02T07:30:00". */
+  startLocal: string;
+  /** Metres. */
+  distance: number;
+  /** Seconds. */
+  movingTime: number;
 }
 
 /**

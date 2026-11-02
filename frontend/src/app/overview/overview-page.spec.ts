@@ -17,6 +17,7 @@ const overview: Overview = {
   streak: { current: 1, start: '2026-10-05', thisWeekHasRun: true, longest: { weeks: 1, start: '2026-10-05', end: '2026-10-11' }, recentWeeks: [{ start: '2026-10-05', hasRun: true }] },
   trainingTime: [{ start: '2026-10-05', runs: 3600, rides: 7200, swims: 0 }],
   thisWeek: { start: '2026-10-05', runs: 3600, rides: 7200, swims: 0 },
+  onThisDay: null,
 };
 
 interface ChartOptions {
@@ -45,7 +46,7 @@ describe('OverviewPage', () => {
     vi.unstubAllGlobals();
   });
 
-  async function render(settings: { showYearlyGoal?: boolean; showWeeklyTimeGoal?: boolean } = {}) {
+  async function render(settings: { showYearlyGoal?: boolean; showWeeklyTimeGoal?: boolean } = {}, changes: Partial<Overview> = {}) {
     const fixture = TestBed.createComponent(OverviewPage);
     const http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
@@ -53,7 +54,7 @@ describe('OverviewPage', () => {
     for (const request of http.match('/api/sync')) request.flush({ running: false, importedActivities: 0, lastSyncedAt: null });
     for (const request of http.match('/api/breaks')) request.flush([]);
     fixture.detectChanges();
-    for (const request of http.match('/api/overview')) request.flush(overview);
+    for (const request of http.match('/api/overview')) request.flush({ ...overview, ...changes });
     await fixture.whenStable();
     fixture.detectChanges();
     const element = fixture.nativeElement as HTMLElement;
@@ -88,5 +89,33 @@ describe('OverviewPage', () => {
     expect(element.querySelector('app-yearly-goal-card')).toBeNull();
     expect(element.querySelector('app-weekly-time-goal-card')).not.toBeNull();
     expect(element.querySelector('.goal-row')!.classList).toContain('cards-2');
+  });
+
+  it("shows today's date a year ago: its distance, Runs, Pace and Moving Time", async () => {
+    const { element } = await render({}, {
+      onThisDay: {
+        day: '2025-10-09',
+        runs: [
+          { id: 2, name: 'Half marathon', startLocal: '2025-10-09T17:00:00', distance: 21_097, movingTime: 7200 },
+          { id: 1, name: 'Lakeside loop', startLocal: '2025-10-09T07:30:00', distance: 12_000, movingTime: 3600 },
+        ],
+      },
+    });
+
+    const card = element.querySelector('app-on-this-day-card')!;
+    const text = (selector: string) => [...card.querySelectorAll(selector)].map((e) => e.textContent!.replace(/\s+/g, ' ').trim());
+    expect(text('.card-sub')).toEqual(['9 Oct 2025, a year ago']);
+    expect(text('.distance .value, .distance .unit')).toEqual(['33.1', 'km']);
+    expect(text('.runs li')).toEqual(['Half marathon21.1 km', 'Lakeside loop12.0 km']);
+    expect(text('.stat .value')).toEqual(['5:26 /km', '3:00:00']);
+    expect([...element.querySelectorAll('app-on-this-day-card a')].map((a) => a.getAttribute('href'))).toEqual(['/runs/2', '/runs/1']);
+    expect(element.querySelector('.goal-row > app-on-this-day-card')).not.toBeNull();
+    expect(element.querySelector('.goal-row')!.classList).toContain('cards-4');
+  });
+
+  it('leaves out On this day without Runs on this date a year ago', async () => {
+    const { element } = await render();
+
+    expect(element.querySelector('app-on-this-day-card')).toBeNull();
   });
 });

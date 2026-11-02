@@ -18,11 +18,20 @@ public static class OverviewEndpoints
             var today = clock.Today();
             var goal = await db.GetYearlyGoalAsync(today.Year, cancellationToken);
             var weeklyGoal = await db.WeeklyTimeGoals.SingleOrDefaultAsync(cancellationToken);
+            // On 29 February, 28 February a year ago.
+            var yearAgo = today.AddYears(-1);
+            var yearAgoStart = yearAgo.ToDateTime(TimeOnly.MinValue);
+            var runsYearAgo = await db.Runs
+                .Where(r => r.StartLocal >= yearAgoStart && r.StartLocal < yearAgoStart.AddDays(1))
+                .OrderByDescending(r => r.StartLocal)
+                .Select(r => new OnThisDayRunResponse(r.Id, r.Name, r.StartLocal, r.Distance, r.MovingTime))
+                .ToListAsync(cancellationToken);
             return OverviewResponse.From(
                 runs,
                 listed,
                 goal is null ? null : YearlyGoalResponse.From(goal),
                 weeklyGoal is null ? null : WeeklyTimeGoalResponse.From(weeklyGoal),
+                runsYearAgo.Count == 0 ? null : new OnThisDayResponse(yearAgo, runsYearAgo),
                 today);
         });
     }

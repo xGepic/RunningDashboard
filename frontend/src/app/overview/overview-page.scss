@@ -1,4 +1,4 @@
-/* The Yearly Goal and the Streak side by side, the goal wider; stacked on narrow screens. */
+/* The goals, the Streak and On this day side by side, the first card wider; stacked on narrow screens. */
 .goal-row {
   display: grid;
   gap: 12px;
@@ -20,6 +20,17 @@
   &.cards-3 {
     grid-template-columns: 3fr 2fr 2fr;
   }
+
+  &.cards-4 {
+    grid-template-columns: 3fr 2fr 2fr 2fr;
+  }
+}
+
+/* Four cards: two by two until the window is wide enough for all four in a row. */
+@media (width < 1600px) {
+  .goal-row.cards-4 {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 /* Three cards: the first across the row, the other two side by side under it. */
@@ -35,7 +46,8 @@
 
 @media (width < 900px) {
   .goal-row.cards-2,
-  .goal-row.cards-3 {
+  .goal-row.cards-3,
+  .goal-row.cards-4 {
     grid-template-columns: 1fr;
   }
 }
