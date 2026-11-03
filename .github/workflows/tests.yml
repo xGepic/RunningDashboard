@@ -55,9 +55,10 @@ jobs:
 
       - run: npm ci
 
-      # The HTML report and Cobertura results land in frontend/coverage/frontend.
+      # The HTML report and Cobertura results land in frontend/coverage/frontend. Only the default reporter: in GitHub
+      # Actions, Vitest would otherwise add its own test report to the run's summary page.
       - run: >-
-          npm test -- --watch=false --coverage
+          npm test -- --watch=false --reporters=default --coverage
           --coverage-reporters=html --coverage-reporters=text-summary --coverage-reporters=cobertura
 
       - uses: actions/upload-artifact@v7
@@ -87,9 +88,14 @@ jobs:
         run: |
           dotnet tool restore
           summarise() {
-            dotnet reportgenerator "-reports:$1" "-targetdir:../coverage/summary-$2" -reporttypes:MarkdownSummaryGithub "-title:$3" > /dev/null
-            # The free edition names a figure it leaves out; drop that line.
-            grep -v 'only available for sponsors' "../coverage/summary-$2/SummaryGithub.md" >> "$GITHUB_STEP_SUMMARY"
+            dotnet reportgenerator "-reports:$1" "-targetdir:../coverage/summary-$2" -reporttypes:MarkdownSummaryGithub > /dev/null
+            # A heading of our own instead of ReportGenerator's "Summary - …" and "Coverage", and "Totals" for its
+            # table; the free edition also names a figure it leaves out, so that line goes too.
+            {
+              echo "## $3"
+              grep -v -e '^# Summary' -e '^## Coverage$' -e 'only available for sponsors' "../coverage/summary-$2/SummaryGithub.md" |
+                sed 's|<summary>Summary</summary>|<summary>Totals</summary>|'
+            } >> "$GITHUB_STEP_SUMMARY"
           }
           summarise ../coverage/backend-coverage/Cobertura.xml backend 'Backend coverage'
           summarise ../coverage/frontend-coverage/cobertura-coverage.xml frontend 'Frontend coverage'
