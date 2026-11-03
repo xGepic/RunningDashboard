@@ -32,7 +32,8 @@ public sealed class JourneyTests
         journey.Year.ShouldBe(2026);
         journey.Distance.ShouldBe(270000);
         journey.Length.ShouldBe(2_062_000, tolerance: 1000);
-        journey.YearlyGoal.ShouldBeNull();
+        // The current year without a Yearly Goal follows the capitals tour.
+        (journey.YearlyGoal, journey.Finished).ShouldBe((null, false));
         journey.Stops.Select(s => s.Name).ShouldBe(
             ["Vienna", "Bratislava", "Budapest", "Zagreb", "Ljubljana", "Vaduz", "Bern", "Prague", "Vienna"]);
 
@@ -132,11 +133,42 @@ public sealed class JourneyTests
 
         page.Journey.Year.ShouldBe(2024);
         page.Journey.Distance.ShouldBe(60000);
-        // The Yearly Goal is only ever the current year's.
+        // This year's goal is not 2024's.
         page.Journey.YearlyGoal.ShouldBeNull();
-        page.Journey.Length.ShouldBe(2_062_000, tolerance: 1000);
+        page.Journey.Finished.ShouldBeTrue();
         page.Journey.Stops[1].Reached!.RunName.ShouldBe("Old");
         page.Years.ShouldBe([2026, 2025, 2024]);
+    }
+
+    [Test]
+    public async Task A_finished_year_without_a_goal_gets_the_longest_tour_its_distance_completed()
+    {
+        var browser = await _app.ConnectWithActivitiesAsync(
+            new TestActivity(1, "Spring", new DateTime(2025, 4, 1, 9, 0, 0), 500_000, 180_000),
+            new TestActivity(2, "Autumn", new DateTime(2025, 10, 1, 9, 0, 0), 527_000, 190_000));
+
+        var journey = (await browser.GetFromJsonAsync<JourneyPageResponse>("/api/journey?year=2025"))!.Journey;
+
+        (journey.YearlyGoal, journey.Finished).ShouldBe((null, true));
+        // 1,027 km completes the 958 km tour but not the 1,086 km one.
+        journey.Length.ShouldBe(958_000, tolerance: 1000);
+        journey.Stops[^1].Reached!.RunName.ShouldBe("Autumn");
+    }
+
+    [Test]
+    public async Task A_finished_year_keeps_the_tour_picked_for_its_goal_after_the_next_years_goal_is_set()
+    {
+        var browser = await _app.ConnectWithActivitiesAsync(new TestActivity(1, "Long year", new DateTime(2026, 6, 1, 9, 0, 0), 1_700_000, 600_000));
+        await SetYearlyGoalAsync(browser, 1_600_000);
+        _app.Clock.SetUtcNow(new DateTimeOffset(2027, 1, 2, 8, 0, 0, TimeSpan.Zero));
+        await SetYearlyGoalAsync(browser, 2_000_000);
+
+        var journey = (await browser.GetFromJsonAsync<JourneyPageResponse>("/api/journey?year=2026"))!.Journey;
+
+        (journey.YearlyGoal, journey.Finished).ShouldBe((1_600_000, true));
+        // Not the 1,680 km tour its 1,700 km would have completed.
+        journey.Length.ShouldBe(1_590_000, tolerance: 1000);
+        (await GetJourneyAsync(browser)).Journey.YearlyGoal.ShouldBe(2_000_000);
     }
 
     [Test]
@@ -171,7 +203,7 @@ public sealed class JourneyTests
 
     private sealed record JourneyPageResponse(JourneyResponse Journey, List<int> Years);
 
-    private sealed record JourneyResponse(int Year, double Distance, double Length, double? YearlyGoal, List<StopResponse> Stops);
+    private sealed record JourneyResponse(int Year, double Distance, double Length, double? YearlyGoal, bool Finished, List<StopResponse> Stops);
 
     private sealed record StopResponse(string Name, string Country, double Latitude, double Longitude, double At, ArrivalResponse? Reached);
 

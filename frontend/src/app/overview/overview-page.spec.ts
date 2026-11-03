@@ -24,6 +24,7 @@ const overview: Overview = {
     distance: 163_400,
     length: 400_000,
     yearlyGoal: null,
+    finished: false,
     stops: [
       { name: 'Vienna', country: 'Austria', latitude: 48, longitude: 16, at: 0, reached: null },
       { name: 'Bratislava', country: 'Slovakia', latitude: 48, longitude: 17, at: 50_000, reached: { date: '2026-09-14', runId: 7, runName: 'Long one' } },

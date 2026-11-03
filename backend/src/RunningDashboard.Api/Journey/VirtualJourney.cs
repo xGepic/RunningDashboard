@@ -34,7 +34,8 @@ internal sealed class JourneyTour(params JourneyCity[] cities)
 /// <summary>
 /// The Virtual Journey: each calendar year, the year's running distance carries the Athlete along a loop of real cities
 /// from Vienna and back. The year's tour is the longest that fits within its Yearly Goal, so reaching the goal always
-/// completes it; without a goal, the capitals tour.
+/// completes it. Without a goal, the current year follows the capitals tour, and a finished year the longest tour its
+/// distance completed.
 /// </summary>
 internal static class VirtualJourney
 {
@@ -120,14 +121,16 @@ internal static class VirtualJourney
     ];
 
     /// <summary>
-    /// The longest tour no longer than <paramref name="yearlyGoal"/> (metres), or the shortest if none is; the capitals
-    /// tour without a goal.
+    /// The longest tour no longer than <paramref name="yearlyGoal"/> (metres). Without a goal, the longest no longer than
+    /// the <paramref name="distance"/> a finished year ran, or the capitals tour for a year still running. The shortest
+    /// if none fits.
     /// </summary>
-    public static JourneyTour TourFor(double? yearlyGoal) =>
-        yearlyGoal is not { } goal ? Capitals : Tours.LastOrDefault(t => t.Length <= goal) ?? Tours[0];
+    public static JourneyTour TourFor(double? yearlyGoal, double distance, bool finished) =>
+        (yearlyGoal ?? (finished ? distance : null)) is { } fit ? Tours.LastOrDefault(t => t.Length <= fit) ?? Tours[0] : Capitals;
 
-    /// <summary>The year's Runs, by local start, on the tour that fits the year's Yearly Goal.</summary>
-    public static async Task<JourneyResponse> ForYearAsync(AppDbContext db, int year, CancellationToken cancellationToken)
+    /// <summary>The year's Runs, by local start, on the tour for the year's Yearly Goal.</summary>
+    /// <param name="thisYear">The current year: years before it are finished.</param>
+    public static async Task<JourneyResponse> ForYearAsync(AppDbContext db, int year, int thisYear, CancellationToken cancellationToken)
     {
         var yearStart = new DateTime(year, 1, 1);
         var nextYearStart = yearStart.AddYears(1);
@@ -136,7 +139,7 @@ internal static class VirtualJourney
             .Select(r => new JourneyRun(r.Id, r.Name, r.StartLocal, r.Distance))
             .ToListAsync(cancellationToken);
         var goal = await db.GetYearlyGoalAsync(year, cancellationToken);
-        return JourneyResponse.Of(year, runs, goal?.Distance);
+        return JourneyResponse.Of(year, runs, goal?.Distance, finished: year < thisYear);
     }
 
     /// <summary>Metres between two points on the Earth's surface, along a great circle.</summary>

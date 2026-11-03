@@ -50,6 +50,8 @@ public sealed class YearlyGoalTests
         (await GetOverviewAsync()).YearlyGoal.ShouldBeNull();
         await _browser.PutAsJsonAsync("/api/yearly-goal", new YearlyGoalRequest(2_500_000));
         (await GetOverviewAsync()).YearlyGoal.ShouldBe(new YearlyGoalResponse(2027, 2_500_000));
+        // Last year's is kept, for its Virtual Journey.
+        (await GetJourneyGoalAsync(2026)).ShouldBe(2_000_000);
     }
 
     [TestCase(null)]
@@ -76,6 +78,27 @@ public sealed class YearlyGoalTests
         response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
         (await GetOverviewAsync()).YearlyGoal.ShouldBeNull();
     }
+
+    [Test]
+    public async Task Removing_the_goal_keeps_last_years()
+    {
+        await _browser.PutAsJsonAsync("/api/yearly-goal", new YearlyGoalRequest(2_000_000));
+        _app.Clock.SetUtcNow(new DateTimeOffset(2027, 3, 1, 8, 0, 0, TimeSpan.Zero));
+        await _browser.PutAsJsonAsync("/api/yearly-goal", new YearlyGoalRequest(2_500_000));
+
+        await _browser.DeleteAsync("/api/yearly-goal");
+
+        (await GetOverviewAsync()).YearlyGoal.ShouldBeNull();
+        (await GetJourneyGoalAsync(2026)).ShouldBe(2_000_000);
+    }
+
+    /// <summary>The goal a year's Virtual Journey was picked for.</summary>
+    private async Task<double?> GetJourneyGoalAsync(int year) =>
+        (await _browser.GetFromJsonAsync<JourneyPageResponse>($"/api/journey?year={year}"))!.Journey.YearlyGoal;
+
+    private sealed record JourneyPageResponse(JourneyResponse Journey);
+
+    private sealed record JourneyResponse(double? YearlyGoal);
 
     private async Task<OverviewResponse> GetOverviewAsync() =>
         (await _browser.GetFromJsonAsync<OverviewResponse>("/api/overview"))!;

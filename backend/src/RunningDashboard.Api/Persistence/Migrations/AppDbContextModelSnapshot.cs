@@ -407,16 +407,13 @@ namespace RunningDashboard.Api.Persistence.Migrations
 
             modelBuilder.Entity("RunningDashboard.Api.Persistence.YearlyGoal", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("Year")
                         .HasColumnType("INTEGER");
 
                     b.Property<double>("Distance")
                         .HasColumnType("REAL");
 
-                    b.Property<int>("Year")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
+                    b.HasKey("Year");
 
                     b.ToTable("YearlyGoals");
                 });

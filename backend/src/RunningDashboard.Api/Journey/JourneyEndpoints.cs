@@ -14,7 +14,7 @@ public static class JourneyEndpoints
                 return rejected;
 
             var thisYear = clock.Today().Year;
-            var journey = await VirtualJourney.ForYearAsync(db, year ?? thisYear, cancellationToken);
+            var journey = await VirtualJourney.ForYearAsync(db, year ?? thisYear, thisYear, cancellationToken);
             var years = await db.Runs.Select(r => r.StartLocal.Year).Distinct().ToListAsync(cancellationToken);
             return Results.Ok(new JourneyPageResponse(journey, [.. years.Append(thisYear).Distinct().OrderDescending()]));
         });

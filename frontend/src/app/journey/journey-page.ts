@@ -43,6 +43,7 @@ export class JourneyPage {
     if (!this.page.hasValue()) return '';
     const { journey } = this.page.value();
     const tour = `${tourName(journey)}, ${tourFit(journey, this.units)}`;
+    if (journey.finished) return `${tour}.`;
     return journey.yearlyGoal !== null
       ? `${tour}: reach the goal and you are back in ${journey.stops[0].name}.`
       : `${tour}. With a Yearly Goal for the year, you get the longest tour that fits within it.`;

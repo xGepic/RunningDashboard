@@ -8,7 +8,7 @@ function testJourney(distance: number, reached: JourneyStop['reached'][] = []): 
     { name: 'Budapest', country: 'Hungary', latitude: 47, longitude: 19, at: 200_000 },
     { name: 'Vienna', country: 'Austria', latitude: 48, longitude: 16, at: 400_000 },
   ];
-  return { year: 2026, distance, length: 400_000, yearlyGoal: null, stops: stops.map((s, i) => ({ ...s, reached: reached[i - 1] ?? null })) };
+  return { year: 2026, distance, length: 400_000, yearlyGoal: null, finished: false, stops: stops.map((s, i) => ({ ...s, reached: reached[i - 1] ?? null })) };
 }
 
 describe('journeyProgress', () => {
@@ -64,7 +64,11 @@ describe('tourFit', () => {
     expect(tourFit({ ...testJourney(0), yearlyGoal: 410_000 }, units)).toBe('400 km, picked for your 410 km Yearly Goal');
   });
 
-  it('gives the tour alone without one', () => {
+  it('gives the tour alone without one in the current year', () => {
     expect(tourFit(testJourney(0), units)).toBe('400 km');
+  });
+
+  it('says a finished year without one completed the tour with its distance', () => {
+    expect(tourFit({ ...testJourney(420_000), finished: true }, units)).toBe("400 km, the longest the year's 420 km completed");
   });
 });

@@ -7,6 +7,11 @@ export interface Journey {
   length: number;
   /** The year's Yearly Goal, which the tour was picked for: the longest that fits within it. None without one. */
   yearlyGoal: number | null;
+  /**
+   * The year is over. Without a Yearly Goal, its tour is the longest its distance completed; the current year's is
+   * the capitals tour.
+   */
+  finished: boolean;
   /** The start, then each Stop in order; the last is the start again. */
   stops: JourneyStop[];
 }
@@ -77,10 +82,14 @@ export function journeyProgress(journey: Journey): JourneyProgress {
   };
 }
 
-/** How long the tour is: "1,590 km, picked for your 1,600 km Yearly Goal", or "2,062 km" without one. */
+/**
+ * How long the tour is and why: "1,590 km, picked for your 1,600 km Yearly Goal"; without one, "958 km, the longest
+ * the year's 1,027 km completed" for a finished year and "2,062 km" for the current one.
+ */
 export function tourFit(journey: Journey, units: { totalDistance(metres: number): string }): string {
   const length = units.totalDistance(journey.length);
-  return journey.yearlyGoal !== null ? `${length}, picked for your ${units.totalDistance(journey.yearlyGoal)} Yearly Goal` : length;
+  if (journey.yearlyGoal !== null) return `${length}, picked for your ${units.totalDistance(journey.yearlyGoal)} Yearly Goal`;
+  return journey.finished ? `${length}, the longest the year's ${units.totalDistance(journey.distance)} completed` : length;
 }
 
 /** "Vienna and back via 10 cities". */

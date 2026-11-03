@@ -176,7 +176,7 @@ What a Running Day is planned for: Easy, Tempo, Intervals or Long. The list is f
 _Avoid_: Workout, session, workout type
 
 **Yearly Goal**:
-The distance the Athlete wants to run in the current calendar year. There is at most one; once its year is over, it no longer counts. Progress is measured against the goal spread evenly over the days of the year. The Overview shows it unless the Athlete hides it in Settings, which keeps it.
+The distance the Athlete wants to run in a calendar year, set for the current one. Once its year is over it no longer counts, but it is kept, so that year's Virtual Journey stays on the tour picked for it. Progress is measured against the goal spread evenly over the days of the year. The Overview shows it unless the Athlete hides it in Settings, which keeps it.
 _Avoid_: Annual target, mileage goal
 
 **Weekly Time Goal**:
@@ -184,7 +184,7 @@ The Training Time the Athlete wants in every Training Week, in hours: Runs, Ride
 _Avoid_: Hour goal, Weekly Target (that is a Training Plan's planned distance), weekly goal (on its own)
 
 **Virtual Journey**:
-A tour of European cities from Vienna and back, as the crow flies, that each calendar year's running distance carries the Athlete along, starting again on 1 January. The year's tour is the longest of a fixed set (about 194 to 2,970 km) that fits within its Yearly Goal, so reaching the goal brings the Athlete back to Vienna; without a goal it is the capitals tour (2,062 km). Only Runs move the Athlete; it only shows progress and counts toward nothing.
+A tour of European cities from Vienna and back, as the crow flies, that each calendar year's running distance carries the Athlete along, starting again on 1 January. The year's tour is the longest of a fixed set (about 194 to 2,970 km) that fits within its Yearly Goal, so reaching the goal brings the Athlete back to Vienna. Without a goal, the current year follows the capitals tour (2,062 km) and a finished year the longest tour its distance completed. Only Runs move the Athlete; it only shows progress and counts toward nothing.
 _Avoid_: Virtual race, challenge, route (on its own)
 
 **Stop**:

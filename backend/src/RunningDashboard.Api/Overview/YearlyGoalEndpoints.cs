@@ -11,7 +11,7 @@ public static class YearlyGoalEndpoints
 
     public static void MapYearlyGoalEndpoints(this IEndpointRouteBuilder app)
     {
-        // Always for the current year: a goal left from an earlier year is replaced.
+        // Always for the current year; earlier years' goals are kept for their Virtual Journey.
         app.MapPut("/api/yearly-goal", async (YearlyGoalRequest request, AppDbContext db, TimeProvider clock, CancellationToken cancellationToken) =>
         {
             if (request.Distance is not (> 0 and <= MaxDistance))
@@ -20,22 +20,24 @@ public static class YearlyGoalEndpoints
                     ["distance"] = [$"The goal is a positive number of metres, at most {MaxDistance / 1000:0} km."],
                 });
 
-            var goal = await db.YearlyGoals.SingleOrDefaultAsync(cancellationToken);
+            var year = clock.Today().Year;
+            var goal = await db.GetYearlyGoalAsync(year, cancellationToken);
             if (goal is null)
             {
-                goal = new YearlyGoal();
+                goal = new YearlyGoal { Year = year };
                 db.YearlyGoals.Add(goal);
             }
 
-            goal.Year = clock.GetLocalNow().Year;
             goal.Distance = request.Distance.Value;
             await db.SaveChangesAsync(cancellationToken);
             return Results.Ok(YearlyGoalResponse.From(goal));
         });
 
-        app.MapDelete("/api/yearly-goal", async (AppDbContext db, CancellationToken cancellationToken) =>
+        // The current year's only.
+        app.MapDelete("/api/yearly-goal", async (AppDbContext db, TimeProvider clock, CancellationToken cancellationToken) =>
         {
-            await db.YearlyGoals.ExecuteDeleteAsync(cancellationToken);
+            var year = clock.Today().Year;
+            await db.YearlyGoals.Where(g => g.Year == year).ExecuteDeleteAsync(cancellationToken);
             return Results.NoContent();
         });
     }

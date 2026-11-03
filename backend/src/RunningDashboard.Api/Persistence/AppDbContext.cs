@@ -104,7 +104,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
         model.Entity<SyncState>(state => state.Property(s => s.Id).ValueGeneratedNever());
 
-        model.Entity<YearlyGoal>(goal => goal.Property(g => g.Id).ValueGeneratedNever());
+        model.Entity<YearlyGoal>(goal =>
+        {
+            goal.HasKey(g => g.Year);
+            goal.Property(g => g.Year).ValueGeneratedNever();
+        });
         model.Entity<WeeklyTimeGoal>(goal => goal.Property(g => g.Id).ValueGeneratedNever());
 
         model.Entity<Break>(period =>

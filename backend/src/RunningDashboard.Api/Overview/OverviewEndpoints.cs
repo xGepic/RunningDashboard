@@ -27,7 +27,7 @@ public static class OverviewEndpoints
                 .OrderByDescending(r => r.StartLocal)
                 .Select(r => new OnThisDayRunResponse(r.Id, r.Name, r.StartLocal, r.Distance, r.MovingTime))
                 .ToListAsync(cancellationToken);
-            var journey = await VirtualJourney.ForYearAsync(db, today.Year, cancellationToken);
+            var journey = await VirtualJourney.ForYearAsync(db, today.Year, today.Year, cancellationToken);
             return OverviewResponse.From(
                 runs,
                 listed,

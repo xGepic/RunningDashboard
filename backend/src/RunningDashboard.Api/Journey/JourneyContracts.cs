@@ -4,13 +4,15 @@ namespace RunningDashboard.Api.Journey;
 /// <param name="Distance">The year's running distance, in metres; past <paramref name="Length"/> once the tour is complete.</param>
 /// <param name="Length">The year's tour, in metres as the crow flies.</param>
 /// <param name="YearlyGoal">The year's Yearly Goal in metres, which the tour was picked for; none without one.</param>
+/// <param name="Finished">The year is over; without a Yearly Goal its tour is the longest its distance completed.</param>
 /// <param name="Stops">The start, then each Stop in order; the last is the start again.</param>
-internal sealed record JourneyResponse(int Year, double Distance, double Length, double? YearlyGoal, IReadOnlyList<JourneyStopResponse> Stops)
+internal sealed record JourneyResponse(int Year, double Distance, double Length, double? YearlyGoal, bool Finished, IReadOnlyList<JourneyStopResponse> Stops)
 {
     /// <param name="yearlyGoal">Metres; the tour is the longest that fits within it.</param>
-    public static JourneyResponse Of(int year, IEnumerable<JourneyRun> runs, double? yearlyGoal)
+    /// <param name="finished">The year is over.</param>
+    public static JourneyResponse Of(int year, IReadOnlyCollection<JourneyRun> runs, double? yearlyGoal, bool finished)
     {
-        var tour = VirtualJourney.TourFor(yearlyGoal);
+        var tour = VirtualJourney.TourFor(yearlyGoal, runs.Sum(r => r.Distance), finished);
         var cities = tour.Cities;
         var at = tour.At;
         var reached = new JourneyArrivalResponse?[cities.Count];
@@ -27,7 +29,7 @@ internal sealed record JourneyResponse(int Year, double Distance, double Length,
         var stops = cities
             .Select((city, i) => new JourneyStopResponse(city.Name, city.Country, city.Latitude, city.Longitude, at[i], reached[i]))
             .ToList();
-        return new JourneyResponse(year, distance, tour.Length, yearlyGoal, stops);
+        return new JourneyResponse(year, distance, tour.Length, yearlyGoal, finished, stops);
     }
 }
 

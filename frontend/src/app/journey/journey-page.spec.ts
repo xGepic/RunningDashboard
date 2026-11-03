@@ -22,6 +22,7 @@ function journeyOf(year: number, distance: number): JourneyPageData {
       distance,
       length: 400_000,
       yearlyGoal: year === 2026 ? 410_000 : null,
+      finished: year < 2026,
       stops: [
         { name: 'Vienna', country: 'Austria', latitude: 48, longitude: 16, at: 0, reached: null },
         { name: 'Bratislava', country: 'Slovakia', latitude: 48, longitude: 17, at: 50_000, reached: { date: `${year}-03-01`, runId: 7, runName: 'Long one' } },
@@ -79,11 +80,11 @@ describe('JourneyPage', () => {
       'Vienna and back via 2 cities, 400 km, picked for your 410 km Yearly Goal: reach the goal and you are back in Vienna.');
   });
 
-  it('says how a Yearly Goal would fit the tour in a year without one', async () => {
-    const { element } = await open('/journey?year=2025', 2025);
+  it('says a finished year without a goal got the longest tour its distance completed', async () => {
+    const { element } = await open('/journey?year=2025', 2025, 420_000);
 
-    expect(element.querySelector('.subtitle')!.textContent).toContain(
-      'Vienna and back via 2 cities, 400 km. With a Yearly Goal for the year, you get the longest tour that fits within it.');
+    expect(element.querySelector('.subtitle')!.textContent).toContain("Vienna and back via 2 cities, 400 km, the longest the year's 420 km completed.");
+    expect(element.querySelector('app-journey-card .headline .value')!.textContent).toBe('Back in Vienna');
   });
 
   it('switches to an earlier year, and back to the current one without a year in the address', async () => {
