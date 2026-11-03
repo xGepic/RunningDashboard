@@ -183,6 +183,14 @@ _Avoid_: Annual target, mileage goal
 The Training Time the Athlete wants in every Training Week, in hours: Runs, Rides and Swims together. There is at most one, the same for every week. Progress is this week's Training Time against it, and a week meets it once its Training Time reaches it. The Overview shows it unless the Athlete hides it in Settings, which keeps it.
 _Avoid_: Hour goal, Weekly Target (that is a Training Plan's planned distance), weekly goal (on its own)
 
+**Virtual Journey**:
+A tour of European cities from Vienna and back, as the crow flies, that each calendar year's running distance carries the Athlete along, starting again on 1 January. The year's tour is the longest of a fixed set (about 194 to 2,970 km) that fits within its Yearly Goal, so reaching the goal brings the Athlete back to Vienna; without a goal it is the capitals tour (2,062 km). Only Runs move the Athlete; it only shows progress and counts toward nothing.
+_Avoid_: Virtual race, challenge, route (on its own)
+
+**Stop**:
+One of the cities on the Virtual Journey's tour. It is reached by the Run that brings the year's distance up to it.
+_Avoid_: Checkpoint (that is a Pacing Plan's), waypoint, station
+
 ### Fitness
 
 **Fitness Run**:

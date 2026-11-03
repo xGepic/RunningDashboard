@@ -31,6 +31,8 @@ export const routes: Routes = [
   ...calendarRoutes,
   { path: 'shoes', component: ShoesPage, title: 'Shoes · Running Dashboard' },
   { path: 'calculator', component: RaceCalculatorPage, title: 'Race Calculator · Running Dashboard' },
+  // Loaded when first opened: the Virtual Journey's map brings in Leaflet. Below the Overview in the breadcrumb.
+  { path: 'journey', loadComponent: () => import('./journey/journey-page').then((m) => m.JourneyPage), title: 'Virtual Journey · Running Dashboard' },
   { path: 'settings', component: SettingsPage, title: 'Settings · Running Dashboard' },
   { path: 'training', component: TrainingPage, title: 'Training · Running Dashboard' },
   { path: 'training/plan/:id', component: TrainingPlanPage, title: 'Training Plan · Running Dashboard' },

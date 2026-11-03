@@ -1,0 +1,41 @@
+<section class="card journey" aria-labelledby="journey-title" (click)="open($event)">
+  <div class="card-header">
+    <div class="titles">
+      <h2 id="journey-title" class="card-title">Virtual Journey</h2>
+      <p class="card-sub">{{ journey().year }} · {{ tourName() }}, {{ fit() }}</p>
+    </div>
+    @if (opensPage()) {
+      <a class="map-link" routerLink="/journey">Map →</a>
+    }
+  </div>
+
+  <div class="body">
+    <div class="where">
+      @if (progress().next; as next) {
+        <p class="headline"><span class="value">{{ headline() }}</span> <span class="unit">{{ units.unit() }} to {{ next.name }}</span></p>
+        <p class="leg">{{ leg() }}</p>
+      } @else {
+        <p class="headline"><span class="value">Back in {{ progress().last.name }}</span></p>
+        <p class="leg">Tour complete · {{ headline() }} {{ units.unit() }} beyond it</p>
+      }
+    </div>
+
+    <!-- The headline and figures say where the Athlete is; the line only draws it. -->
+    <div class="line" aria-hidden="true">
+      <div class="track"><span class="fill" [style.width.%]="share()"></span></div>
+      @for (stop of stops(); track $index) {
+        <span class="stop" [class.reached]="stop.reached" [class.above]="stop.above" [class.current]="stop.current"
+              [class.first]="stop.edge === 'first'" [class.last]="stop.edge === 'last'" [style.left.%]="stop.left">
+          <span class="dot"></span><span class="name">{{ stop.name }}</span>
+        </span>
+      }
+      <span class="marker" [style.left.%]="share()"></span>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><span class="label">This year</span><span class="value">{{ units.totalDistance(journey().distance) }}</span></div>
+    <div class="stat"><span class="label">Stops reached</span><span class="value">{{ progress().reached }} <span class="unit">of {{ progress().of }}</span></span></div>
+    <div class="stat"><span class="label">Of the tour</span><span class="value">{{ formatWhole(share()) }} <span class="unit">%</span></span></div>
+  </div>
+</section>

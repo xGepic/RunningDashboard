@@ -1,3 +1,4 @@
+import { Journey } from '../journey/journey';
 import { TrainingTimeWeek, WeekDistance } from '../shared/charts';
 
 /** As returned by GET /api/overview. Distances in metres, times in seconds. */
@@ -21,6 +22,8 @@ export interface Overview {
   thisWeek: TrainingTimeWeek | null;
   /** Today's date a year ago; none without Runs on it. */
   onThisDay: OnThisDay | null;
+  /** The current year on the Virtual Journey. */
+  journey: Journey;
 }
 
 /** Today's date a year ago, by local time; on 29 February, 28 February a year ago. */

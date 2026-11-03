@@ -18,6 +18,19 @@ const overview: Overview = {
   trainingTime: [{ start: '2026-10-05', runs: 3600, rides: 7200, swims: 0 }],
   thisWeek: { start: '2026-10-05', runs: 3600, rides: 7200, swims: 0 },
   onThisDay: null,
+  // Vienna, Bratislava at 50 km (reached on 14 Sep), Budapest at 200 km, back to Vienna at 400 km.
+  journey: {
+    year: 2026,
+    distance: 163_400,
+    length: 400_000,
+    yearlyGoal: null,
+    stops: [
+      { name: 'Vienna', country: 'Austria', latitude: 48, longitude: 16, at: 0, reached: null },
+      { name: 'Bratislava', country: 'Slovakia', latitude: 48, longitude: 17, at: 50_000, reached: { date: '2026-09-14', runId: 7, runName: 'Long one' } },
+      { name: 'Budapest', country: 'Hungary', latitude: 47, longitude: 19, at: 200_000, reached: null },
+      { name: 'Vienna', country: 'Austria', latitude: 48, longitude: 16, at: 400_000, reached: null },
+    ],
+  },
 };
 
 interface ChartOptions {
@@ -111,6 +124,22 @@ describe('OverviewPage', () => {
     expect([...element.querySelectorAll('app-on-this-day-card a')].map((a) => a.getAttribute('href'))).toEqual(['/runs/2', '/runs/1']);
     expect(element.querySelector('.goal-row > app-on-this-day-card')).not.toBeNull();
     expect(element.querySelector('.goal-row')!.classList).toContain('cards-4');
+  });
+
+  it('shows where the Athlete is on the Virtual Journey, and opens its page', async () => {
+    const { element } = await render();
+
+    const card = element.querySelector('app-journey-card')!;
+    const text = (selector: string) => [...card.querySelectorAll(selector)].map((e) => e.textContent!.replace(/\s+/g, ' ').trim());
+    expect(text('.card-sub')).toEqual(['2026 · Vienna and back via 2 cities, 400 km']);
+    expect(text('.headline .value, .headline .unit')).toEqual(['37', 'km to Budapest']);
+    expect(text('.leg')).toEqual(['Left Bratislava on 14 Sep']);
+    expect(text('.stat .value')).toEqual(['163 km', '1 of 3', '41 %']);
+    expect(text('.stop.current .name')).toEqual(['Bratislava', 'Budapest']);
+    expect(card.querySelectorAll('.stop.reached').length).toBe(1);
+    expect(card.querySelector('a')!.getAttribute('href')).toBe('/journey');
+    // Under the goal row, across the Overview.
+    expect(element.querySelector('.goal-row + app-journey-card')).not.toBeNull();
   });
 
   it('leaves out On this day without Runs on this date a year ago', async () => {

@@ -1,0 +1,58 @@
+<div class="page">
+  <header class="page-header">
+    <div class="titles">
+      <span class="eyebrow">Overview</span>
+      <h1>Virtual Journey</h1>
+      <p class="subtitle">Each year's Runs carry you along a tour of European cities from 1 January, as the crow flies. {{ subtitle() }}</p>
+    </div>
+    <div class="segmented mono" role="group" aria-label="Year">
+      @for (y of years(); track y) {
+        <button type="button" [attr.aria-pressed]="y === selectedYear()" (click)="pick(y)">{{ y }}</button>
+      }
+    </div>
+  </header>
+
+  @if (page.error()) {
+    <p class="error" role="alert">The Virtual Journey could not be loaded.</p>
+  } @else if (page.hasValue()) {
+    <app-journey-card [journey]="page.value().journey" />
+
+    <section class="card flush">
+      <app-journey-map [journey]="page.value().journey" />
+    </section>
+
+    <section class="card flush">
+      <div class="card-header">
+        <h2 class="card-title">Stops</h2>
+        <span class="card-sub">Reached by the Run that brought the year's distance up to them</span>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Stop</th>
+              <th class="number">From {{ page.value().journey.stops[0].name }}</th>
+              <th>Reached</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (stop of stops(); track $index) {
+              <tr [class.reached]="stop.reached">
+                <td>{{ stop.name }} <span class="muted">· {{ stop.country }}</span></td>
+                <td class="number">{{ units.totalDistance(stop.at) }}</td>
+                <td>
+                  @if (stop.reached; as reached) {
+                    <span class="date">{{ shortWeekLabel(reached.date) }}</span>
+                    <a [routerLink]="['/runs', reached.runId]">{{ reached.runName }}</a>
+                  } @else {
+                    <span class="muted">{{ units.totalDistance(stop.toGo!) }} to go</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  }
+</div>

@@ -15,7 +15,7 @@ describe('App', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        provideRouter(['', 'training', 'runs', 'calendar', 'calendar/:year', 'records', 'fitness', 'shoes', 'calculator', 'settings'].map((path) => ({ path, component: Blank }))),
+        provideRouter(['', 'training', 'runs', 'calendar', 'calendar/:year', 'records', 'fitness', 'shoes', 'calculator', 'settings', 'journey'].map((path) => ({ path, component: Blank }))),
       ],
     });
   });
@@ -57,6 +57,13 @@ describe('App', () => {
 
     expect(await crumbs('/calendar/2025')).toEqual(['Calendar']);
     expect(await crumbs('/calendar/2025?ref=mail#Dec')).toEqual(['Calendar', 'December 2025']);
+  });
+
+  it('puts the Virtual Journey below the Overview, which stays highlighted', async () => {
+    const { element } = await render('/journey?year=2025');
+
+    expect([...element.querySelectorAll('.crumbs a, .crumbs .current')].map((c) => c.textContent!.trim())).toEqual(['Overview', 'Virtual Journey']);
+    expect(element.querySelector('.sidebar nav[aria-label="Pages"] a[aria-current="page"] .label')!.textContent).toBe('Overview');
   });
 
   it('leads from a month back to its year, keeping the query string', async () => {

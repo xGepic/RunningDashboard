@@ -18,6 +18,7 @@ import {
   weeklyDistanceChart,
 } from '../shared/charts';
 import { isoDate, mondayOf, today } from '../shared/dates';
+import { JourneyCard } from '../journey/journey-card';
 import { formatWhole } from '../shared/format';
 import { Units } from '../shared/units';
 import { reloadOnSync } from '../sync/reload-on-sync';
@@ -46,7 +47,7 @@ const kpiDefinitions: { label: string; unit: string | null; icon: string; of: (t
 
 @Component({
   selector: 'app-overview-page',
-  imports: [DecimalPipe, NgxEchartsDirective, OnThisDayCard, RouterLink, StreakCard, WeeklyTimeGoalCard, YearlyGoalCard],
+  imports: [DecimalPipe, JourneyCard, NgxEchartsDirective, OnThisDayCard, RouterLink, StreakCard, WeeklyTimeGoalCard, YearlyGoalCard],
   templateUrl: './overview-page.html',
   styleUrl: './overview-page.scss',
 })

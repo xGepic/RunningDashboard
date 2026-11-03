@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using RunningDashboard.Api.Journey;
 using RunningDashboard.Api.Persistence;
 
 namespace RunningDashboard.Api.Overview;
@@ -26,12 +27,14 @@ public static class OverviewEndpoints
                 .OrderByDescending(r => r.StartLocal)
                 .Select(r => new OnThisDayRunResponse(r.Id, r.Name, r.StartLocal, r.Distance, r.MovingTime))
                 .ToListAsync(cancellationToken);
+            var journey = await VirtualJourney.ForYearAsync(db, today.Year, cancellationToken);
             return OverviewResponse.From(
                 runs,
                 listed,
                 goal is null ? null : YearlyGoalResponse.From(goal),
                 weeklyGoal is null ? null : WeeklyTimeGoalResponse.From(weeklyGoal),
                 runsYearAgo.Count == 0 ? null : new OnThisDayResponse(yearAgo, runsYearAgo),
+                journey,
                 today);
         });
     }
