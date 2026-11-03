@@ -9,6 +9,13 @@ on:
   pull_request:
   workflow_call:
 
+# A newer push to a branch, or to a pull request, cancels the run still going for the older commit. Called from the
+# Release workflow (whose event is workflow_dispatch), each run has a group of its own, so a push never cancels a
+# release's tests.
+concurrency:
+  group: tests-${{ github.event_name == 'workflow_dispatch' && github.run_id || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   # The tests run on Linux: cheaper than Windows, and closer to the Mac the app also runs on.
   test-backend:
