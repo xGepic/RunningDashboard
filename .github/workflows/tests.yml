@@ -1,5 +1,6 @@
 # Tests the backend and the frontend on every push to a branch and every pull request; the Release workflow runs it
-# too before it builds the apps.
+# too before it builds the apps. Both measure code coverage: the run's summary page shows it for each side, and each
+# side's HTML report is attached to the run as an artifact (backend-coverage, frontend-coverage).
 name: Tests
 
 on:
@@ -20,7 +21,15 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - run: dotnet test backend -c Release
+      # The tests with coverage, as locally; the report lands in backend/coverage.
+      - shell: pwsh
+        run: ./backend/coverage.ps1
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: backend-coverage
+          path: backend/coverage
+          retention-days: 14
 
   test-frontend:
     name: Test the frontend
@@ -39,4 +48,41 @@ jobs:
 
       - run: npm ci
 
-      - run: npm test -- --watch=false
+      # The HTML report and Cobertura results land in frontend/coverage/frontend.
+      - run: >-
+          npm test -- --watch=false --coverage
+          --coverage-reporters=html --coverage-reporters=text-summary --coverage-reporters=cobertura
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/frontend
+          retention-days: 14
+
+  coverage:
+    name: Sum up coverage
+    needs: [test-backend, test-frontend]
+    runs-on: ubuntu-latest
+    steps:
+      # For ReportGenerator, a local tool in backend/dotnet-tools.json.
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: '*-coverage'
+          path: coverage
+
+      - working-directory: backend
+        run: |
+          dotnet tool restore
+          summarise() {
+            dotnet reportgenerator "-reports:$1" "-targetdir:../coverage/summary-$2" -reporttypes:MarkdownSummaryGithub "-title:$3" > /dev/null
+            # The free edition names a figure it leaves out; drop that line.
+            grep -v 'only available for sponsors' "../coverage/summary-$2/SummaryGithub.md" >> "$GITHUB_STEP_SUMMARY"
+          }
+          summarise ../coverage/backend-coverage/Cobertura.xml backend 'Backend coverage'
+          summarise ../coverage/frontend-coverage/cobertura-coverage.xml frontend 'Frontend coverage'
