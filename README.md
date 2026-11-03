@@ -72,3 +72,10 @@ A backup holds everything in the database, the Strava refresh token and any Stra
 dotnet test backend
 npm test --prefix frontend -- --watch=false
 ```
+
+With code coverage, each as an HTML report (open its `index.html`):
+
+```sh
+pwsh backend/coverage.ps1                                 # backend/coverage
+npm test --prefix frontend -- --watch=false --coverage   # frontend/coverage
+```
