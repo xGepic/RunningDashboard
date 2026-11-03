@@ -91,8 +91,10 @@ jobs:
             dotnet reportgenerator "-reports:$1" "-targetdir:../coverage/summary-$2" -reporttypes:MarkdownSummaryGithub > /dev/null
             # A heading of our own instead of ReportGenerator's "Summary - …" and "Coverage", and "Totals" for its
             # table; the free edition also names a figure it leaves out, so that line goes too.
+            # Blank lines around the heading: right after the HTML that ends the section before, Markdown would read it
+            # as more HTML and show it as text.
             {
-              echo "## $3"
+              printf '\n## %s\n\n' "$3"
               grep -v -e '^# Summary' -e '^## Coverage$' -e 'only available for sponsors' "../coverage/summary-$2/SummaryGithub.md" |
                 sed 's|<summary>Summary</summary>|<summary>Totals</summary>|'
             } >> "$GITHUB_STEP_SUMMARY"
