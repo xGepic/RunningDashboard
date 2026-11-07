@@ -4,7 +4,7 @@
   and how GitHub builds that app. To render it as an image (from the repo root):
   msedge --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --window-size=1600,2448
          --virtual-time-budget=5000 --screenshot=docs/architecture/deployment-view.png file:///<repo>/docs/architecture/deployment-view.html
-  It follows README.md, frontend/proxy.conf.json, publish.ps1 and .github/workflows/release.yml.
+  It follows README.md, frontend/proxy.conf.json, publish.ps1, .github/workflows/release.yml and .github/workflows/tests.yml.
   Layout: each section is a board of its own; zones, blocks, arrows and labels are placed in px on it (see the script).
 -->
 <html lang="en">
@@ -427,7 +427,7 @@
       },
       {
         title: 'Build and release',
-        intro: 'The Release workflow, run by hand, tests the backend and the frontend on Linux side by side with the Tests workflow (which also measures their code coverage, sums it up on the run's page and attaches each side's HTML report), then builds both apps on Windows with <code>publish.ps1</code>. It attaches them to the GitHub Release "latest", replacing the one before, so friends download the zip or the tarball (about 50 MB) from the same links every time and unpack it as above.',
+        intro: 'The Release workflow, run by hand, first runs the Tests workflow, the one every push runs too: it tests the backend and the frontend on Linux side by side, measures their code coverage, sums it up on the run\'s page and attaches each side\'s HTML report. Then it builds both apps on Windows with <code>publish.ps1</code>. It attaches them to the GitHub Release "latest", replacing the one before, so friends download the zip or the tarball (about 50 MB) from the same links every time and unpack it as above.',
         height: 528,
         zones: [
           ['ci', 288, 0, 912, 376, 'GitHub Actions', '<span class="mono">.github/workflows/release.yml</span>'],

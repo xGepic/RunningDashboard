@@ -79,3 +79,5 @@ With code coverage, each as an HTML report (open its `index.html`):
 pwsh backend/coverage.ps1                                 # backend/coverage
 npm test --prefix frontend -- --watch=false --coverage   # frontend/coverage
 ```
+
+GitHub runs both on every push to a branch and every pull request (**Actions → Tests**); a newer push to the same branch cancels the run still going. Each run's page sums up the backend and the frontend coverage, and has each side's HTML report attached as an artifact (`backend-coverage`, `frontend-coverage`, kept for 14 days).
