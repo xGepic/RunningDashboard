@@ -1,0 +1,60 @@
+<!-- No title: where the Athlete is in their training heads the card. -->
+<section class="card freshness" aria-label="Fitness &amp; Freshness">
+  @if (freshness.error()) {
+    <p class="error" role="alert">Fitness &amp; Freshness could not be loaded.</p>
+  } @else if (freshness.hasValue()) {
+    @if (phase(); as phase) {
+      <div class="card-header">
+        <h2 class="headline">{{ phase }}</h2>
+        <div class="segmented mono" role="group" aria-label="Range">
+          @for (r of ranges; track r.key) {
+            <button type="button" [attr.aria-pressed]="r.key === range()" (click)="range.set(r.key)">{{ r.label }}</button>
+          }
+        </div>
+      </div>
+
+      @if (today(); as t) {
+        <div class="stats" aria-label="Today">
+          <div class="stat"><span class="label"><span class="swatch fitness" aria-hidden="true"></span>Fitness</span><span class="value">{{ t.fitness }}</span></div>
+          <div class="stat"><span class="label"><span class="swatch fatigue" aria-hidden="true"></span>Fatigue</span><span class="value">{{ t.fatigue }}</span></div>
+          <div class="stat" title="Fitness minus Fatigue"><span class="label">Form</span><span class="value">{{ t.form }}</span></div>
+        </div>
+      }
+
+      @if (chart(); as options) {
+        <div class="chart" echarts [options]="options" [autoResize]="true" (chartClick)="open($event)" role="img"
+             aria-label="Fitness and Fatigue day by day, with Goal Races and the hardest days named; the table below has them week by week"></div>
+      }
+
+      <details class="as-table">
+        <summary>Show week by week as a table</summary>
+        <div class="table-box">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Week</th>
+                <th class="number">Training Load</th>
+                <th class="number">Fitness</th>
+                <th class="number">Fatigue</th>
+                <th class="number">Form</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (week of weeks(); track week.label) {
+                <tr>
+                  <td class="muted">{{ week.label }}</td>
+                  <td class="number">{{ week.load }}</td>
+                  <td class="number">{{ week.fitness }}</td>
+                  <td class="number">{{ week.fatigue }}</td>
+                  <td class="number">{{ week.form }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </details>
+    } @else {
+      <p class="empty">No Runs yet, so no Fitness or Fatigue.</p>
+    }
+  }
+</section>

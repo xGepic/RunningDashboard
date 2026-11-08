@@ -24,6 +24,29 @@ public static class FitnessEndpoints
 
             return new FitnessResponse(points, FitnessMonthResponse.Of(points));
         });
+
+        // Fitness & Freshness from every Run's Relative Effort, treadmill and race day alike: they load the body all
+        // the same. Rides and Swims count toward nothing. A Run without Relative Effort (recorded without heart rate)
+        // adds no load.
+        app.MapGet("/api/fitness/freshness", async (AppDbContext db, TimeProvider clock, CancellationToken cancellationToken) =>
+        {
+            var runs = await db.Runs.Select(r => new { r.Id, r.Name, r.StartLocal, r.RelativeEffort }).ToListAsync(cancellationToken);
+            var byDay = runs.GroupBy(r => DateOnly.FromDateTime(r.StartLocal)).ToList();
+            var loadByDay = byDay.ToDictionary(g => g.Key, g => g.Sum(r => r.RelativeEffort ?? 0));
+            // Of equally hard Runs, the first.
+            var hardestByDay = byDay.ToDictionary(
+                g => g.Key,
+                g => g.OrderByDescending(r => r.RelativeEffort ?? 0).ThenBy(r => r.StartLocal).ThenBy(r => r.Id).Select(r => (r.Id, r.Name)).First());
+            var races = await db.GoalRaces
+                .OrderBy(r => r.Date)
+                .Select(r => new FreshnessRaceResponse(r.Date, r.Name))
+                .ToListAsync(cancellationToken);
+
+            var days = FitnessFreshness.Of(loadByDay, clock.Today())
+                .Select(day => FreshnessDayResponse.From(day, hardestByDay.TryGetValue(day.Date, out var run) ? run : null))
+                .ToList();
+            return new FreshnessResponse(days, races);
+        });
     }
 
     private sealed record FitnessRunData(long Id, string Name, string SportType, bool Trainer, DateTime StartLocal, double Distance, double? Cadence)

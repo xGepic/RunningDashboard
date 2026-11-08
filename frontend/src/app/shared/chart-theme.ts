@@ -22,6 +22,8 @@ export interface ChartColors {
   /** Rides and Swims beside Runs in `series`, e.g. in Training Time. */
   ride: string;
   swim: string;
+  /** Fatigue beside Fitness in `series`: the Theme's second chart colour, the one Rides have elsewhere. */
+  fatigue: string;
   /** A Break's colour by its kind, the same in every Theme. */
   breaks: Record<BreakKind, string>;
 }
@@ -54,6 +56,7 @@ export class ChartTheme {
       fontMono: token('--mono'),
       ride: token('--chart-ride'),
       swim: token('--chart-swim'),
+      fatigue: token('--chart-ride'),
       breaks: {
         injury: token('--break-injury'),
         illness: token('--break-illness'),

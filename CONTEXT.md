@@ -204,3 +204,23 @@ _Avoid_: Decoupling, Pa:HR
 **Cadence**:
 Steps per minute, both feet together: twice the per-foot value Strava stores.
 _Avoid_: SPM, stride rate
+
+**Training Load**:
+The Relative Effort of a day's Runs, summed; treadmill Runs and race days count like any other. A Run without Relative Effort (recorded without heart rate) adds none. Rides and Swims never do.
+_Avoid_: TSS, load (on its own)
+
+**Fitness**:
+The Training Load averaged over about the last six weeks, recent days weighing more: each day moves it a 42nd of the way towards that day's load, from zero on the first day with a Run.
+_Avoid_: CTL, chronic load
+
+**Fatigue**:
+The same over about the last week: each day moves it a 7th of the way towards that day's load.
+_Avoid_: ATL, acute load, tiredness
+
+**Form**:
+Fitness minus Fatigue. Above zero the last week was lighter than the weeks before (fresher), below zero harder (loading).
+_Avoid_: TSB, freshness (on its own)
+
+**Fitness & Freshness**:
+Fitness and Fatigue day by day, with Form as the gap between them, as Strava's chart of the same name, on the Fitness page; it says in words where the Athlete is in their training (building, holding steady, recovering, tapering).
+_Avoid_: Performance management chart, PMC

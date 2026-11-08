@@ -7,11 +7,15 @@ import { monthNames } from '../shared/dates';
 import { reloadOnSync } from '../sync/reload-on-sync';
 import { Fitness, FitnessMonth, FitnessRun, formatCadence } from './fitness';
 import { fitnessChart } from './fitness-chart';
+import { FreshnessCard } from './freshness-card';
 
-/** The Cadence of the Fitness Runs over the whole history. A Run's Aerobic Efficiency and Cardiac Drift are on its own page. */
+/**
+ * Fitness & Freshness from every Run, and the Cadence of the Fitness Runs over the whole history. A Run's Aerobic
+ * Efficiency and Cardiac Drift are on its own page.
+ */
 @Component({
   selector: 'app-fitness-page',
-  imports: [NgxEchartsDirective],
+  imports: [FreshnessCard, NgxEchartsDirective],
   templateUrl: './fitness-page.html',
   styleUrl: './fitness-page.scss',
 })

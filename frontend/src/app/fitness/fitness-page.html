@@ -3,10 +3,11 @@
     <div class="titles">
       <span class="eyebrow">Fitness</span>
       <h1>Getting fitter?</h1>
-      <p class="subtitle">From every Fitness Run: all Runs except treadmill ones and those on a Goal Race's race day. A dot is a Run,
-        the line the monthly average.</p>
+      <p class="subtitle">How your training builds Fitness and Fatigue, and how your Cadence changes.</p>
     </div>
   </header>
+
+  <app-freshness-card />
 
   @if (fitness.error()) {
     <p class="error" role="alert">The fitness figures could not be loaded.</p>
@@ -18,7 +19,8 @@
         <div class="card-header">
           <div class="titles">
             <h2 class="card-title">Cadence</h2>
-            <p class="card-sub">Steps per minute, both feet together.</p>
+            <p class="card-sub">Steps per minute, both feet together, from every Fitness Run: all Runs except treadmill ones and those on
+              a Goal Race's race day. A dot is a Run, the line the monthly average.</p>
           </div>
         </div>
         @if (cadenceChart(); as options) {

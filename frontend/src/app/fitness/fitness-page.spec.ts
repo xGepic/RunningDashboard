@@ -1,11 +1,17 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import { Break } from '../shared/breaks';
 import { Fitness } from './fitness';
 import { FitnessPage } from './fitness-page';
+import { FreshnessCard } from './freshness-card';
+
+/** Fitness & Freshness loads and is tested on its own (freshness-card.spec.ts). */
+@Component({ selector: 'app-freshness-card', template: '' })
+class StubFreshnessCard {}
 
 const fitness: Fitness = {
   runs: [
@@ -36,6 +42,7 @@ describe('FitnessPage', () => {
         provideEchartsCore({ echarts: { init: () => new Proxy({}, { get: () => () => undefined }) } }),
       ],
     });
+    TestBed.overrideComponent(FitnessPage, { remove: { imports: [FreshnessCard] }, add: { imports: [StubFreshnessCard] } });
   });
 
   afterEach(() => vi.unstubAllGlobals());
