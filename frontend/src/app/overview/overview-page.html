@@ -29,8 +29,6 @@
         }
       </div>
 
-      <app-journey-card [journey]="overview.journey" [opensPage]="true" />
-
       <section class="kpis" aria-label="All-time totals">
         @for (kpi of kpis(); track kpi.label) {
           <div class="card kpi">

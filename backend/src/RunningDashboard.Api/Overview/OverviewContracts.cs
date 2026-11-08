@@ -1,4 +1,3 @@
-using RunningDashboard.Api.Journey;
 using RunningDashboard.Api.Persistence;
 using RunningDashboard.Api.Training;
 
@@ -20,7 +19,6 @@ internal sealed record ListedFigures(DateTime StartLocal, int MovingTime, string
 /// </param>
 /// <param name="ThisWeek">The current Training Week's Training Time, for the Weekly Time Goal; none without Runs.</param>
 /// <param name="OnThisDay">Today's date a year ago; none without Runs on it.</param>
-/// <param name="Journey">The current year on the Virtual Journey.</param>
 internal sealed record OverviewResponse(
     TotalsResponse Totals,
     IReadOnlyList<YearResponse> Years,
@@ -30,8 +28,7 @@ internal sealed record OverviewResponse(
     StreakResponse? Streak,
     IReadOnlyList<TrainingTimeWeekResponse> TrainingTime,
     TrainingTimeWeekResponse? ThisWeek,
-    OnThisDayResponse? OnThisDay,
-    JourneyResponse Journey)
+    OnThisDayResponse? OnThisDay)
 {
     public static OverviewResponse From(
         IReadOnlyList<RunFigures> runs,
@@ -39,12 +36,11 @@ internal sealed record OverviewResponse(
         YearlyGoalResponse? yearlyGoal,
         WeeklyTimeGoalResponse? weeklyTimeGoal,
         OnThisDayResponse? onThisDay,
-        JourneyResponse journey,
         DateOnly today)
     {
         var totals = TotalsResponse.Of(runs);
         if (runs.Count == 0)
-            return new OverviewResponse(totals, [], [], yearlyGoal, weeklyTimeGoal, null, [], null, onThisDay, journey);
+            return new OverviewResponse(totals, [], [], yearlyGoal, weeklyTimeGoal, null, [], null, onThisDay);
 
         var years = runs
             .GroupBy(r => r.StartLocal.Year)
@@ -74,8 +70,7 @@ internal sealed record OverviewResponse(
             streak,
             TrainingTimeWeekResponse.Of(runs, listed, thisWeek),
             TrainingTimeWeekResponse.For(thisWeek, runs, listed),
-            onThisDay,
-            journey);
+            onThisDay);
     }
 
     private static DateOnly Max(DateOnly a, DateOnly b) => a > b ? a : b;

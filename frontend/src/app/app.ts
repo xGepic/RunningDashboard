@@ -31,7 +31,7 @@ interface NavItem {
 const shoesPath = '/shoes';
 
 const navItems: NavItem[] = [
-  { label: 'Overview', path: '/', icon: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z', also: ['/journey'] },
+  { label: 'Overview', path: '/', icon: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z' },
   { label: 'Training', path: '/training', icon: 'M3 12h4l3-7 4 14 3-7h4' },
   { label: 'Activities', path: '/runs', icon: 'M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01', also: ['/rides', '/swims', '/heatmap'] },
   { label: 'Calendar', path: '/calendar', icon: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4' },
@@ -89,7 +89,7 @@ export class App {
 
   /**
    * "Runs" and, on a page below it, that page's name: the header's breadcrumb. A month of the Calendar
-   * (/calendar/2025#Dec) is below its year (/calendar/2025); Ride and Swim history (/rides, /swims), the Heatmap (/heatmap) and each Run's, Ride's and Swim's page are below the Activities, the Virtual Journey (/journey) below the Overview. The section
+   * (/calendar/2025#Dec) is below its year (/calendar/2025); Ride and Swim history (/rides, /swims), the Heatmap (/heatmap) and each Run's, Ride's and Swim's page are below the Activities. The section
    * is also the page highlighted in the navigation.
    */
   protected readonly breadcrumb = computed(() => {
@@ -114,11 +114,9 @@ export class App {
               ? 'Swims'
               : /^\/training\/plan\/[^/]+$/.test(path)
                 ? 'Training Plan'
-                : path === '/journey'
-                  ? 'Virtual Journey'
-                  : path === '/heatmap'
-                    ? 'Heatmap'
-                    : null;
+                : path === '/heatmap'
+                  ? 'Heatmap'
+                  : null;
     // Back up keeps the filters, but the Rides' and Swims' sort order and page mean nothing to the Runs (as with the switch),
     // nor does the Heatmap's year.
     const dropParams =

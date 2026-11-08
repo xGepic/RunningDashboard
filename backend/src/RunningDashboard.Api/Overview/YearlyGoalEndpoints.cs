@@ -11,7 +11,7 @@ public static class YearlyGoalEndpoints
 
     public static void MapYearlyGoalEndpoints(this IEndpointRouteBuilder app)
     {
-        // Always for the current year; earlier years' goals are kept for their Virtual Journey.
+        // Always for the current year; earlier years' goals are kept, but no longer count.
         app.MapPut("/api/yearly-goal", async (YearlyGoalRequest request, AppDbContext db, TimeProvider clock, CancellationToken cancellationToken) =>
         {
             if (request.Distance is not (> 0 and <= MaxDistance))
