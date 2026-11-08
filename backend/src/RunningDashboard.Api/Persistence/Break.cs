@@ -21,12 +21,3 @@ public sealed class Break
     /// <summary>What it was, in the Athlete's words, e.g. "Calf strain"; none if they gave none.</summary>
     public string? Note { get; set; }
 }
-
-/// <summary>Why the Athlete took a Break.</summary>
-public enum BreakKind
-{
-    Injury,
-    Illness,
-    Holiday,
-    Other,
-}

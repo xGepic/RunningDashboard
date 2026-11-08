@@ -2,13 +2,6 @@ using RunningDashboard.Api.Persistence;
 
 namespace RunningDashboard.Api.Fitness;
 
-/// <summary>One km Split as the fitness figures need it.</summary>
-/// <param name="Distance">Metres.</param>
-/// <param name="MovingTime">Seconds.</param>
-/// <param name="HeartRate">Beats per minute.</param>
-/// <param name="GradeAdjustedSpeed">Metres per second.</param>
-public sealed record FitnessSplit(int Index, double Distance, int MovingTime, double? HeartRate, double? GradeAdjustedSpeed);
-
 /// <summary>
 /// Aerobic Efficiency and Cardiac Drift, from a Run's km Splits. Pure calculations: which Runs get them (Fitness Runs,
 /// Long Runs) is up to the caller, through <see cref="IsFitnessRun"/> and <see cref="HasCardiacDrift"/>.

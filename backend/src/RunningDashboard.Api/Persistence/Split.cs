@@ -30,10 +30,3 @@ public sealed class Split
     /// <summary>Metres per second, as Strava reckons the split would have been run on the flat.</summary>
     public double? GradeAdjustedSpeed { get; set; }
 }
-
-/// <summary>What a Split is one of: Strava splits every Run both ways.</summary>
-public enum SplitUnit
-{
-    Kilometre,
-    Mile,
-}

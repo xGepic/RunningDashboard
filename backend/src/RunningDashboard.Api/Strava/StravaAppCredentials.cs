@@ -23,5 +23,3 @@ public sealed class StravaAppCredentials(IOptions<StravaOptions> options, AppDbC
         return stored is null ? null : new StravaAppCredential(stored.ClientId, stored.ClientSecret);
     }
 }
-
-public sealed record StravaAppCredential(string ClientId, string ClientSecret);

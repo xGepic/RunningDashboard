@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace RunningDashboard.Api.Weather;
 
@@ -65,12 +64,4 @@ public sealed class WeatherClient(HttpClient http, TimeProvider clock, ILogger<W
 
         return null;
     }
-
-    private sealed record WeatherResponse(HourlyResponse? Hourly);
-
-    /// <param name="Time">Unix seconds of each hour.</param>
-    /// <param name="Temperature">°C at each hour; null where Open-Meteo has none yet.</param>
-    private sealed record HourlyResponse(
-        IReadOnlyList<long> Time,
-        [property: JsonPropertyName("temperature_2m")] IReadOnlyList<double?> Temperature);
 }

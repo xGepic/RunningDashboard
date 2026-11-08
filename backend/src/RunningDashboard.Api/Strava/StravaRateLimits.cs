@@ -155,10 +155,3 @@ public sealed class StravaRateLimits(TimeProvider clock)
 
     private sealed record Usage(int Limit, int Used, DateTimeOffset ObservedAt);
 }
-
-/// <summary>One of Strava's counters as it stands now.</summary>
-/// <param name="ReadsOnly">Counts read requests only; otherwise all requests.</param>
-/// <param name="Daily">Per UTC day; otherwise per 15 minutes.</param>
-/// <param name="ResetsAt">When the counter starts again from zero.</param>
-/// <param name="ObservedAt">When Strava reported it.</param>
-public sealed record RateLimitUsage(bool ReadsOnly, bool Daily, int Used, int Limit, DateTimeOffset ResetsAt, DateTimeOffset ObservedAt);

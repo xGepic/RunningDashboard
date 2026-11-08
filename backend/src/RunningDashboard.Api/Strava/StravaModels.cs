@@ -103,3 +103,12 @@ public sealed record StravaSplit(int Index, double Distance, int MovingTime, int
 /// <param name="Id">Strava's gear id.</param>
 /// <param name="Distance">Metres, as Strava counts them.</param>
 public sealed record StravaShoe(string Id, string Name, double Distance, bool Retired, string RawJson);
+
+public sealed record StravaAppCredential(string ClientId, string ClientSecret);
+
+/// <summary>One of Strava's counters as it stands now.</summary>
+/// <param name="ReadsOnly">Counts read requests only; otherwise all requests.</param>
+/// <param name="Daily">Per UTC day; otherwise per 15 minutes.</param>
+/// <param name="ResetsAt">When the counter starts again from zero.</param>
+/// <param name="ObservedAt">When Strava reported it.</param>
+public sealed record RateLimitUsage(bool ReadsOnly, bool Daily, int Used, int Limit, DateTimeOffset ResetsAt, DateTimeOffset ObservedAt);

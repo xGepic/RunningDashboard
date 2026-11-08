@@ -1,15 +1,5 @@
 namespace RunningDashboard.Api.Fitness;
 
-/// <summary>One day of Fitness &amp; Freshness.</summary>
-/// <param name="Load">The day's Training Load: the Relative Effort of its Runs, summed.</param>
-/// <param name="Fitness">The Training Load averaged over about the last six weeks, recent days weighing more.</param>
-/// <param name="Fatigue">The same over about the last week.</param>
-public sealed record FreshnessDay(DateOnly Date, double Load, double Fitness, double Fatigue)
-{
-    /// <summary>Fitness minus Fatigue: above zero the last week was lighter than the weeks before, below it harder.</summary>
-    public double Form => Fitness - Fatigue;
-}
-
 /// <summary>
 /// Fitness &amp; Freshness: Fitness, Fatigue and Form day by day, from each day's Training Load. Fitness and Fatigue
 /// are exponentially weighted averages of the daily load with time constants of 42 and 7 days (Banister's
