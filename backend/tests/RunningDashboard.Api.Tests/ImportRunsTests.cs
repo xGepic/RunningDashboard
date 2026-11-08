@@ -33,7 +33,7 @@ public sealed class ImportRunsTests
         eveningRun.StartLocal.ShouldBe(new DateTime(2026, 10, 6, 20, 35, 26));
         eveningRun.Distance.ShouldBe(5081.2);
         eveningRun.MovingTime.ShouldBe(2096);
-        eveningRun.Pace.ShouldBe(412.5, 0.05); // 2096 s over 5.0812 km ≈ 6:52.5 /km
+        eveningRun.Pace!.Value.ShouldBe(412.5, 0.05); // 2096 s over 5.0812 km ≈ 6:52.5 /km
     }
 
     [Test]
@@ -224,9 +224,5 @@ public sealed class ImportRunsTests
     }
 
     private static async Task<List<RunResponse>> GetRunsAsync(HttpClient browser) =>
-        (await browser.GetFromJsonAsync<RunPage>("/api/runs"))!.Items;
-
-    private sealed record RunPage(List<RunResponse> Items);
-
-    private sealed record RunResponse(long Id, string Name, string SportType, DateTime StartLocal, double Distance, int MovingTime, double Pace);
+        (await browser.ListRunsAsync()).Items;
 }

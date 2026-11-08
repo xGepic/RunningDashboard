@@ -55,9 +55,7 @@ public sealed class YearReviewTests
             new TestActivity(7, "Last Run", new DateTime(2025, 12, 30, 8, 0, 0), 5000, 1800),
             new TestActivity(8, "Spring Run", new DateTime(2026, 2, 1, 9, 0, 0), 10000, 3500));
 
-        var race = await _browser.PostAsJsonAsync("/api/goal-races", new { name = "Spring Half", date = "2025-03-15", distance = 21097, targetTime = 7200, trainingBlockWeeks = 12 });
-        race.EnsureSuccessStatusCode();
-        _goalRaceId = (await race.Content.ReadFromJsonAsync<IdOnly>())!.Id;
+        _goalRaceId = (await _browser.CreateGoalRaceAsync(new GoalRaceRequest("Spring Half", new DateOnly(2025, 3, 15), 21097, 7200, 12))).Id;
     }
 
     [OneTimeTearDown]
@@ -149,8 +147,6 @@ public sealed class YearReviewTests
     }
 
     private async Task<YearReview> ReviewAsync(int year) => (await _browser.GetFromJsonAsync<YearReview>($"/api/review?year={year}"))!;
-
-    private sealed record IdOnly(int Id);
 
     private sealed record YearReview(
         int Year,

@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Json;
 using RunningDashboard.Api.Tests.Harness;
 
 namespace RunningDashboard.Api.Tests;
@@ -31,7 +30,7 @@ public sealed class RunDetailsTests
 
         await _app.ConnectStravaAsync(browser);
         var finished = await TestApp.WaitForSyncAsync(browser);
-        var run = (await browser.GetFromJsonAsync<RunDetailResponse>($"/api/runs/{EveningRun}"))!;
+        var run = await browser.GetRunAsync(EveningRun);
 
         finished.DetailedRuns.ShouldBe(2);
         run.Detail.ShouldBe("loaded");
@@ -55,7 +54,7 @@ public sealed class RunDetailsTests
         var lastSplit = run.Splits[^1];
         lastSplit.Distance.ShouldBe(81.2);
         lastSplit.MovingTime.ShouldBe(33);
-        lastSplit.Pace.ShouldBe(406.4, 0.05); // 33 s over 81.2 m = 6:46.4 /km
+        lastSplit.Pace!.Value.ShouldBe(406.4, 0.05); // 33 s over 81.2 m = 6:46.4 /km
     }
 
     [Test]
@@ -68,12 +67,12 @@ public sealed class RunDetailsTests
 
         await _app.ConnectStravaAsync(browser);
         await TestApp.WaitForSyncAsync(browser);
-        var run = (await browser.GetFromJsonAsync<RunDetailResponse>($"/api/runs/{EveningRun}"))!;
+        var run = await browser.GetRunAsync(EveningRun);
 
         run.MileSplits.Select(s => (s.Index, s.Distance, s.MovingTime, s.ElevationDifference))
             .ShouldBe([(1, 1609.3, 661, 2.0), (2, 1609.4, 663, -1.4), (3, 1609.3, 668, 0.6), (4, 253.2, 104, 0.2)]);
         // Pace is still per kilometre: 661 s over 1609.3 m = 6:50.7 /km.
-        run.MileSplits[0].Pace.ShouldBe(410.7, 0.05);
+        run.MileSplits[0].Pace!.Value.ShouldBe(410.7, 0.05);
     }
 
     [Test]
@@ -86,7 +85,7 @@ public sealed class RunDetailsTests
 
         await _app.ConnectStravaAsync(browser);
         await TestApp.WaitForStatusAsync(browser, s => !s.Running && s.LastError is not null);
-        var run = (await browser.GetFromJsonAsync<RunDetailResponse>($"/api/runs/{EveningRun}"))!;
+        var run = await browser.GetRunAsync(EveningRun);
 
         run.MileSplits.ShouldBeEmpty();
     }
@@ -135,7 +134,7 @@ public sealed class RunDetailsTests
 
             finished.DetailedRuns.ShouldBe(2);
             restarted.Strava.Requests.ShouldNotContain(r => r.Uri.AbsolutePath == DetailPath(EveningRun));
-            var lauf = (await browser.GetFromJsonAsync<RunDetailResponse>($"/api/runs/{LaufAmNachmittag}"))!;
+            var lauf = await browser.GetRunAsync(LaufAmNachmittag);
             lauf.Splits.Count.ShouldBe(5);
         }
         finally
@@ -154,7 +153,7 @@ public sealed class RunDetailsTests
 
         await _app.ConnectStravaAsync(browser);
         var finished = await TestApp.WaitForSyncAsync(browser);
-        var lauf = (await browser.GetFromJsonAsync<RunDetailResponse>($"/api/runs/{LaufAmNachmittag}"))!;
+        var lauf = await browser.GetRunAsync(LaufAmNachmittag);
 
         finished.LastError.ShouldBeNull();
         finished.DetailedRuns.ShouldBe(2);
@@ -173,8 +172,8 @@ public sealed class RunDetailsTests
 
         await _app.ConnectStravaAsync(browser);
         var finished = await TestApp.WaitForStatusAsync(browser, s => !s.Running && s.LastError is not null);
-        var eveningRun = (await browser.GetFromJsonAsync<RunDetailResponse>($"/api/runs/{EveningRun}"))!;
-        var lauf = (await browser.GetFromJsonAsync<RunDetailResponse>($"/api/runs/{LaufAmNachmittag}"))!;
+        var eveningRun = await browser.GetRunAsync(EveningRun);
+        var lauf = await browser.GetRunAsync(LaufAmNachmittag);
 
         finished.DetailedRuns.ShouldBe(1);
         finished.LastError.ShouldNotBeNull().ShouldContain("details of 1 Run");
@@ -208,8 +207,8 @@ public sealed class RunDetailsTests
 
         await _app.ConnectStravaAsync(browser);
         await TestApp.WaitForSyncAsync(browser);
-        var withRoute = (await browser.GetFromJsonAsync<RunDetailResponse>($"/api/runs/{EveningRun}"))!;
-        var withoutRoute = (await browser.GetFromJsonAsync<RunDetailResponse>($"/api/runs/{LaufAmNachmittag}"))!;
+        var withRoute = await browser.GetRunAsync(EveningRun);
+        var withoutRoute = await browser.GetRunAsync(LaufAmNachmittag);
 
         withRoute.Route.ShouldBe(FullRoute);
         withoutRoute.Route.ShouldBeNull();
@@ -226,7 +225,7 @@ public sealed class RunDetailsTests
 
         await _app.ConnectStravaAsync(browser);
         await TestApp.WaitForStatusAsync(browser, s => s.Phase == "importing-details");
-        var pending = (await browser.GetFromJsonAsync<RunDetailResponse>($"/api/runs/{EveningRun}"))!;
+        var pending = await browser.GetRunAsync(EveningRun);
         releaseDetail.SetResult();
         await TestApp.WaitForSyncAsync(browser);
 
@@ -252,25 +251,4 @@ public sealed class RunDetailsTests
         app.Strava.RespondWithFixture(HttpMethod.Get, ActivitiesPath, "activities-page-1.json");
         app.Strava.RespondWithFixture(HttpMethod.Get, ActivitiesPath, "activities-empty.json");
     }
-
-    private sealed record RunDetailResponse(
-        long Id,
-        string Name,
-        double Distance,
-        int MovingTime,
-        int ElapsedTime,
-        double? Pace,
-        double ElevationGain,
-        double? RelativeEffort,
-        double? AverageHeartRate,
-        string StravaUrl,
-        string Detail,
-        string? Route,
-        List<BestEffortResponse> BestEfforts,
-        List<SplitResponse> Splits,
-        List<SplitResponse> MileSplits);
-
-    private sealed record BestEffortResponse(string Name, double Distance, int ElapsedTime, double? TimePerKm);
-
-    private sealed record SplitResponse(int Index, double Distance, int MovingTime, double Pace, double ElevationDifference);
 }

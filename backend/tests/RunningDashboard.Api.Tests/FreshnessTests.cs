@@ -33,8 +33,7 @@ public sealed class FreshnessTests
             new TestActivity(4, "Ride", new DateTime(2026, 10, 8, 12, 0, 0), 40000, 5400, "Ride", RelativeEffort: 80),
             // Recorded without heart rate: no Relative Effort, so no load.
             new TestActivity(5, "No strap", new DateTime(2026, 10, 9, 7, 0, 0), 5000, 1800));
-        var race = await browser.PostAsJsonAsync("/api/goal-races", new { name = "Spring Half", date = "2027-04-11", distance = 21097, trainingBlockWeeks = 12 });
-        race.EnsureSuccessStatusCode();
+        await browser.CreateGoalRaceAsync(new GoalRaceRequest("Spring Half", new DateOnly(2027, 4, 11), 21097, null, 12));
 
         var freshness = (await browser.GetFromJsonAsync<Freshness>("/api/fitness/freshness"))!;
 

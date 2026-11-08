@@ -24,7 +24,7 @@ public sealed class StravaAppTests
 
         connect.StatusCode.ShouldBe(HttpStatusCode.Redirect);
         connect.Headers.Location!.OriginalString.ShouldBe("/settings?strava=error&reason=no-strava-app");
-        (await GetConnectionAsync(browser)).StravaApp.ShouldBeNull();
+        (await browser.GetConnectionAsync()).StravaApp.ShouldBeNull();
     }
 
     [Test]
@@ -36,7 +36,7 @@ public sealed class StravaAppTests
 
         saved.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await saved.Content.ReadFromJsonAsync<StravaAppResponse>()).ShouldBe(new StravaAppResponse("67890", false));
-        (await GetConnectionAsync(browser)).StravaApp.ShouldBe(new StravaAppResponse("67890", false));
+        (await browser.GetConnectionAsync()).StravaApp.ShouldBe(new StravaAppResponse("67890", false));
 
         var connect = await browser.GetAsync("/api/strava/connect");
         var query = QueryHelpers.ParseQuery(connect.Headers.Location!.Query);
@@ -49,7 +49,7 @@ public sealed class StravaAppTests
         var form = QueryHelpers.ParseQuery(tokenRequest.Body);
         form["client_id"].ToString().ShouldBe("67890");
         form["client_secret"].ToString().ShouldBe("entered-secret");
-        (await GetConnectionAsync(browser)).Connected.ShouldBeTrue();
+        (await browser.GetConnectionAsync()).Connected.ShouldBeTrue();
     }
 
     [Test]
@@ -76,7 +76,7 @@ public sealed class StravaAppTests
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         var problem = await response.Content.ReadFromJsonAsync<ValidationProblem>();
         problem!.Errors.Keys.ShouldBe(["clientId", "clientSecret"], ignoreOrder: true);
-        (await GetConnectionAsync(browser)).StravaApp.ShouldBeNull();
+        (await browser.GetConnectionAsync()).StravaApp.ShouldBeNull();
     }
 
     [Test]
@@ -84,19 +84,10 @@ public sealed class StravaAppTests
     {
         await using var app = new TestApp();
         var browser = app.CreateBrowser();
-        (await GetConnectionAsync(browser)).StravaApp.ShouldBe(new StravaAppResponse(TestApp.ClientId, true));
+        (await browser.GetConnectionAsync()).StravaApp.ShouldBe(new StravaAppResponse(TestApp.ClientId, true));
 
         await browser.PutAsJsonAsync("/api/strava/app", new { clientId = "67890", clientSecret = "entered-secret" });
 
-        (await GetConnectionAsync(browser)).StravaApp.ShouldBe(new StravaAppResponse(TestApp.ClientId, true));
+        (await browser.GetConnectionAsync()).StravaApp.ShouldBe(new StravaAppResponse(TestApp.ClientId, true));
     }
-
-    private static async Task<ConnectionResponse> GetConnectionAsync(HttpClient browser) =>
-        (await browser.GetFromJsonAsync<ConnectionResponse>("/api/connection"))!;
-
-    private sealed record ConnectionResponse(bool Connected, StravaAppResponse? StravaApp);
-
-    private sealed record StravaAppResponse(string ClientId, bool InConfiguration);
-
-    private sealed record ValidationProblem(Dictionary<string, string[]> Errors);
 }

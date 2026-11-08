@@ -35,7 +35,7 @@ public sealed class RunsListTests
     [Test]
     public async Task Without_options_the_newest_runs_come_first()
     {
-        var page = await ListAsync("");
+        var page = await _browser.ListRunsAsync();
 
         page.Names.ShouldBe(["Evening Run", "Lauf am Nachmittag", "Finisher.", "Treadmill intervals", "Wienerwald trail"]);
         page.TotalCount.ShouldBe(5);
@@ -46,13 +46,13 @@ public sealed class RunsListTests
     [TestCase("marathon", new string[0])]
     public async Task Searching_matches_part_of_the_name_ignoring_case(string search, string[] expected)
     {
-        (await ListAsync($"search={search}")).Names.ShouldBe(expected);
+        (await _browser.ListRunsAsync($"search={search}")).Names.ShouldBe(expected);
     }
 
     [Test]
     public async Task A_date_range_includes_both_days()
     {
-        var page = await ListAsync("from=2026-09-24&to=2026-10-03");
+        var page = await _browser.ListRunsAsync("from=2026-09-24&to=2026-10-03");
 
         page.Names.ShouldBe(["Lauf am Nachmittag", "Finisher.", "Treadmill intervals"]);
     }
@@ -61,20 +61,20 @@ public sealed class RunsListTests
     [TestCase("to=2026-09-24", new[] { "Treadmill intervals", "Wienerwald trail" })]
     public async Task A_date_range_can_be_open_at_either_end(string query, string[] expected)
     {
-        (await ListAsync(query)).Names.ShouldBe(expected);
+        (await _browser.ListRunsAsync(query)).Names.ShouldBe(expected);
     }
 
     [Test]
     public async Task Road_trail_and_treadmill_runs_are_all_listed_whatever_type_is_asked_for()
     {
-        (await ListAsync("sportType=TrailRun")).Names.ShouldBe(
+        (await _browser.ListRunsAsync("sportType=TrailRun")).Names.ShouldBe(
             ["Evening Run", "Lauf am Nachmittag", "Finisher.", "Treadmill intervals", "Wienerwald trail"]);
     }
 
     [Test]
     public async Task Search_and_date_range_combine()
     {
-        var page = await ListAsync("search=e&from=2026-09-25");
+        var page = await _browser.ListRunsAsync("search=e&from=2026-09-25");
 
         page.Names.ShouldBe(["Evening Run", "Finisher."]);
         page.TotalCount.ShouldBe(2);
@@ -89,7 +89,7 @@ public sealed class RunsListTests
     [TestCase("pace", "desc", new[] { "Wienerwald trail", "Finisher.", "Lauf am Nachmittag", "Evening Run", "Treadmill intervals" })]
     public async Task Runs_sort_by_each_key_in_both_directions(string sort, string direction, string[] expected)
     {
-        (await ListAsync($"sort={sort}&direction={direction}")).Names.ShouldBe(expected);
+        (await _browser.ListRunsAsync($"sort={sort}&direction={direction}")).Names.ShouldBe(expected);
     }
 
     [TestCase(1, new[] { "Evening Run", "Lauf am Nachmittag" })]
@@ -97,7 +97,7 @@ public sealed class RunsListTests
     [TestCase(4, new string[0])]
     public async Task Pages_split_the_list_and_report_the_total(int pageNumber, string[] expected)
     {
-        var page = await ListAsync($"page={pageNumber}&pageSize=2");
+        var page = await _browser.ListRunsAsync($"page={pageNumber}&pageSize=2");
 
         page.Names.ShouldBe(expected);
         page.TotalCount.ShouldBe(5);
@@ -221,14 +221,4 @@ public sealed class RunsListTests
     private sealed record WeekdayTotals(string Day, int Runs, double Distance);
 
     private sealed record MonthTotals(int Month, int Runs, double Distance, int MovingTime, double? Pace);
-
-    private async Task<RunPage> ListAsync(string query) =>
-        (await _browser.GetFromJsonAsync<RunPage>($"/api/runs?{query}"))!;
-
-    private sealed record RunPage(List<RunItem> Items, int Page, int PageSize, int TotalCount)
-    {
-        public List<string> Names => [.. Items.Select(i => i.Name)];
-    }
-
-    private sealed record RunItem(long Id, string Name);
 }

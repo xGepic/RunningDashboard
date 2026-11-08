@@ -16,13 +16,13 @@ public sealed class WeeklyTimeGoalTests
     public async Task The_overview_shows_the_goal_once_it_is_set()
     {
         var browser = _app.CreateBrowser();
-        (await GetOverviewAsync(browser)).WeeklyTimeGoal.ShouldBeNull();
+        (await browser.GetOverviewAsync()).WeeklyTimeGoal.ShouldBeNull();
 
         var response = await browser.PutAsJsonAsync("/api/weekly-time-goal", new WeeklyTimeGoalRequest(7 * 3600));
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await response.Content.ReadFromJsonAsync<WeeklyTimeGoalResponse>()).ShouldBe(new WeeklyTimeGoalResponse(25200));
-        (await GetOverviewAsync(browser)).WeeklyTimeGoal.ShouldBe(new WeeklyTimeGoalResponse(25200));
+        (await browser.GetOverviewAsync()).WeeklyTimeGoal.ShouldBe(new WeeklyTimeGoalResponse(25200));
     }
 
     [Test]
@@ -32,7 +32,7 @@ public sealed class WeeklyTimeGoalTests
         await browser.PutAsJsonAsync("/api/weekly-time-goal", new WeeklyTimeGoalRequest(7 * 3600));
         await browser.PutAsJsonAsync("/api/weekly-time-goal", new WeeklyTimeGoalRequest(5 * 3600 + 1800));
 
-        (await GetOverviewAsync(browser)).WeeklyTimeGoal.ShouldBe(new WeeklyTimeGoalResponse(19800));
+        (await browser.GetOverviewAsync()).WeeklyTimeGoal.ShouldBe(new WeeklyTimeGoalResponse(19800));
     }
 
     [TestCase(null)]
@@ -48,7 +48,7 @@ public sealed class WeeklyTimeGoalTests
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         var problem = await response.Content.ReadFromJsonAsync<ValidationProblem>();
         problem!.Errors["time"].ShouldBe(["The goal is a positive number of seconds, at most 100 hours."]);
-        (await GetOverviewAsync(browser)).WeeklyTimeGoal.ShouldBeNull();
+        (await browser.GetOverviewAsync()).WeeklyTimeGoal.ShouldBeNull();
     }
 
     [Test]
@@ -60,7 +60,7 @@ public sealed class WeeklyTimeGoalTests
         var response = await browser.DeleteAsync("/api/weekly-time-goal");
 
         response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
-        (await GetOverviewAsync(browser)).WeeklyTimeGoal.ShouldBeNull();
+        (await browser.GetOverviewAsync()).WeeklyTimeGoal.ShouldBeNull();
     }
 
     [Test]
@@ -72,7 +72,7 @@ public sealed class WeeklyTimeGoalTests
             new TestActivity(3, "Zwift Watopia", new DateTime(2026, 10, 7, 19, 0, 0), 30000, 3600, "VirtualRide"),
             new TestActivity(4, "Pool", new DateTime(2026, 10, 8, 7, 0, 0), 2000, 2400, "Swim"));
 
-        (await GetOverviewAsync(browser)).ThisWeek.ShouldBe(new TrainingTimeWeekResponse(new DateOnly(2026, 10, 5), 2100, 3600, 2400));
+        (await browser.GetOverviewAsync()).ThisWeek.ShouldBe(new TrainingTimeWeekResponse(new DateOnly(2026, 10, 5), 2100, 3600, 2400));
     }
 
     [Test]
@@ -80,24 +80,12 @@ public sealed class WeeklyTimeGoalTests
     {
         var browser = await _app.ConnectWithActivitiesAsync(new TestActivity(1, "Easy run", new DateTime(2026, 10, 6, 18, 0, 0), 6000, 2100));
 
-        var overview = await GetOverviewAsync(browser);
+        var overview = await browser.GetOverviewAsync();
 
         overview.TrainingTime.ShouldBeEmpty();
         overview.ThisWeek.ShouldBe(new TrainingTimeWeekResponse(new DateOnly(2026, 10, 5), 2100, 0, 0));
     }
 
-    private static async Task<OverviewResponse> GetOverviewAsync(HttpClient browser) =>
-        (await browser.GetFromJsonAsync<OverviewResponse>("/api/overview"))!;
-
-    private sealed record OverviewResponse(WeeklyTimeGoalResponse? WeeklyTimeGoal, List<TrainingTimeWeekResponse> TrainingTime, TrainingTimeWeekResponse? ThisWeek);
-
-    private sealed record TrainingTimeWeekResponse(DateOnly Start, int Runs, int Rides, int Swims);
-
     /// <param name="Time">Seconds.</param>
     private sealed record WeeklyTimeGoalRequest(int? Time);
-
-    /// <param name="Time">Seconds.</param>
-    private sealed record WeeklyTimeGoalResponse(int Time);
-
-    private sealed record ValidationProblem(string Title, Dictionary<string, string[]> Errors);
 }

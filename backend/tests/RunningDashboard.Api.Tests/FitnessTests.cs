@@ -55,8 +55,7 @@ public sealed class FitnessTests
             new TestActivity(Straddle, "Straddle", new DateTime(2026, 10, 4, 8, 0, 0), 10500, 4200, AverageHeartRate: 147, BestEfforts: [],
                 Splits: [.. Splits(5, 400, 140), .. Splits(5, 400, 150), new TestSplit(500, 200, 150, 2.5)]));
 
-        var race = await _browser.PostAsJsonAsync("/api/goal-races", new { name = "Autumn Marathon", date = "2026-09-27", distance = 42195, trainingBlockWeeks = 12 });
-        race.EnsureSuccessStatusCode();
+        await _browser.CreateGoalRaceAsync(new GoalRaceRequest("Autumn Marathon", new DateOnly(2026, 9, 27), 42195, null, 12));
     }
 
     [OneTimeTearDown]
@@ -123,17 +122,13 @@ public sealed class FitnessTests
 
     private async Task<FitnessResponse> FitnessAsync() => (await _browser.GetFromJsonAsync<FitnessResponse>("/api/fitness"))!;
 
-    private async Task<RunFitness?> DetailAsync(long id) => (await _browser.GetFromJsonAsync<RunDetail>($"/api/runs/{id}"))!.Fitness;
+    private async Task<RunFitnessResponse?> DetailAsync(long id) => (await _browser.GetRunAsync(id)).Fitness;
 
     private sealed record FitnessResponse(List<FitnessRun> Runs, List<FitnessMonth> Months);
 
     private sealed record FitnessRun(long Id, string Name, DateTime StartLocal, double Distance, double? Cadence);
 
     private sealed record FitnessMonth(int Year, int Month, double? Cadence);
-
-    private sealed record RunDetail(long Id, RunFitness? Fitness);
-
-    private sealed record RunFitness(double? AerobicEfficiency, double? Cadence, bool IsLongRun, double? CardiacDrift);
 }
 
 /// <summary>Runs stored before get their treadmill flag and their Splits' heart rate and grade-adjusted speed from what is stored.</summary>
@@ -170,7 +165,7 @@ public sealed class StoredFitnessDataTests
         {
             var browser = app.CreateBrowser();
             var fitness = (await browser.GetFromJsonAsync<FitnessResponse>("/api/fitness"))!;
-            var outdoors = (await browser.GetFromJsonAsync<RunDetail>("/api/runs/1"))!;
+            var outdoors = await browser.GetRunAsync(1);
 
             fitness.Runs.ShouldHaveSingleItem().Name.ShouldBe("Outdoors");
             // (2.5 × 400 + 3.0 × 320) m in 720 s, per minute, over 140 bpm.
@@ -188,8 +183,4 @@ public sealed class StoredFitnessDataTests
     private sealed record FitnessResponse(List<FitnessRun> Runs);
 
     private sealed record FitnessRun(string Name);
-
-    private sealed record RunDetail(RunFitness? Fitness);
-
-    private sealed record RunFitness(double? AerobicEfficiency);
 }

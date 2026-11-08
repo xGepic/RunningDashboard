@@ -76,7 +76,7 @@ public sealed class ShoesTests
     {
         // Strava leaves retired (and deleted) Shoes out of the athlete's list.
         await SyncAgainAsync("athlete-without-shoes.json");
-        var list = (await _browser.GetFromJsonAsync<RunPage>("/api/runs"))!;
+        var list = await _browser.ListRunsAsync();
 
         (await GetShoesAsync()).ShouldBe(
             [
@@ -102,8 +102,8 @@ public sealed class ShoesTests
     [Test]
     public async Task Runs_show_the_name_of_their_shoe()
     {
-        var list = (await _browser.GetFromJsonAsync<RunPage>("/api/runs"))!;
-        var marathon = (await _browser.GetFromJsonAsync<RunWithShoe>("/api/runs/20351282630"))!;
+        var list = await _browser.ListRunsAsync();
+        var marathon = await _browser.GetRunAsync(20351282630);
 
         list.Items.Single(r => r.Name == "Evening Run").ShoeName.ShouldBe("Nike Pegasus 41");
         list.Items.Single(r => r.Name == "Wienerwald trail").ShoeName.ShouldBe("Adidas Adizero SL2");
@@ -113,9 +113,9 @@ public sealed class ShoesTests
     [Test]
     public async Task The_runs_of_a_shoe_are_the_ones_logged_with_it_newest_first()
     {
-        var pegasus = (await _browser.GetFromJsonAsync<RunPage>("/api/runs?shoe=g31444377"))!;
-        var adizero = (await _browser.GetFromJsonAsync<RunPage>("/api/runs?shoe=g33395946&sort=distance&direction=asc"))!;
-        var novablast = (await _browser.GetFromJsonAsync<RunPage>("/api/runs?shoe=g29876543"))!;
+        var pegasus = await _browser.ListRunsAsync("shoe=g31444377");
+        var adizero = await _browser.ListRunsAsync("shoe=g33395946&sort=distance&direction=asc");
+        var novablast = await _browser.ListRunsAsync("shoe=g29876543");
 
         pegasus.Items.Select(r => r.Name).ShouldBe(["Evening Run", "Lauf am Nachmittag", "Treadmill intervals"]);
         adizero.Items.Select(r => r.Name).ShouldBe(["Wienerwald trail", "Finisher."]);
@@ -125,9 +125,9 @@ public sealed class ShoesTests
     [Test]
     public async Task A_shoes_export_holds_only_its_runs()
     {
-        var runs = (await _browser.GetFromJsonAsync<List<RunWithShoe>>("/api/runs/export?shoe=g33395946"))!;
+        var runs = (await _browser.GetFromJsonAsync<List<ExportedRun>>("/api/runs/export?shoe=g33395946"))!;
 
-        runs.ShouldBe([new RunWithShoe("Finisher.", "Adidas Adizero SL2"), new RunWithShoe("Wienerwald trail", "Adidas Adizero SL2")]);
+        runs.ShouldBe([new ExportedRun("Finisher.", "Adidas Adizero SL2"), new ExportedRun("Wienerwald trail", "Adidas Adizero SL2")]);
     }
 
     /// <summary>Syncs an hour later, with no new Activities and the athlete's Shoes as in the fixture.</summary>
@@ -149,7 +149,6 @@ public sealed class ShoesTests
 
     private sealed record ShoeRecentDistance(string Name, double RecentDistance);
 
-    private sealed record RunPage(List<RunWithShoe> Items);
-
-    private sealed record RunWithShoe(string Name, string? ShoeName);
+    /// <summary>A Run as /api/runs/export lists it.</summary>
+    private sealed record ExportedRun(string Name, string? ShoeName);
 }

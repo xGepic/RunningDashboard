@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Json;
 using RunningDashboard.Api.Tests.Harness;
 
 namespace RunningDashboard.Api.Tests;
@@ -106,7 +105,7 @@ public sealed class IncrementalSyncTests
     [Test]
     public async Task Fetching_a_detail_again_replaces_the_best_efforts_and_splits()
     {
-        var marathon = (await _browser.GetFromJsonAsync<RunDetailResponse>($"/api/runs/{Marathon}"))!;
+        var marathon = await _browser.GetRunAsync(Marathon);
 
         marathon.Detail.ShouldBe("loaded");
         marathon.BestEfforts.Count.ShouldBe(6);
@@ -119,13 +118,5 @@ public sealed class IncrementalSyncTests
     private IEnumerable<RecordedRequest> SecondSyncRequests() => _app.Strava.Requests.Skip(_requestsBeforeSecondSync);
 
     private async Task<List<string>> RunNamesAsync() =>
-        [.. (await _browser.GetFromJsonAsync<RunPage>("/api/runs"))!.Items.Select(r => r.Name)];
-
-    private sealed record RunPage(List<RunResponse> Items);
-
-    private sealed record RunResponse(long Id, string Name);
-
-    private sealed record RunDetailResponse(double Distance, string Detail, List<object> BestEfforts, List<SplitResponse> Splits);
-
-    private sealed record SplitResponse(int Index);
+        [.. (await _browser.ListRunsAsync()).Items.Select(r => r.Name)];
 }

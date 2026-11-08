@@ -18,7 +18,7 @@ public sealed class ConnectStravaTests
     {
         var browser = _app.CreateBrowser();
 
-        var connection = await GetConnectionAsync(browser);
+        var connection = await browser.GetConnectionAsync();
 
         connection.Connected.ShouldBeFalse();
         connection.Athlete.ShouldBeNull();
@@ -52,9 +52,9 @@ public sealed class ConnectStravaTests
         callback.StatusCode.ShouldBe(HttpStatusCode.Redirect);
         callback.Headers.Location!.OriginalString.ShouldBe("/?strava=connected");
 
-        var connection = await GetConnectionAsync(browser);
+        var connection = await browser.GetConnectionAsync();
         connection.Connected.ShouldBeTrue();
-        connection.Athlete.ShouldBe(new AthleteResponse(133415890, "Stefan", "Simanek"));
+        connection.Athlete.ShouldBe(new ConnectedAthlete(133415890, "Stefan", "Simanek"));
         connection.ConnectedAt.ShouldBe(_app.Clock.GetUtcNow());
     }
 
@@ -83,8 +83,8 @@ public sealed class ConnectStravaTests
         var callback = await _app.ConnectStravaAsync(browser, "token-exchange-other-athlete.json");
 
         callback.Headers.Location!.OriginalString.ShouldBe("/?strava=error&reason=different-athlete");
-        var connection = await GetConnectionAsync(browser);
-        connection.Athlete.ShouldBe(new AthleteResponse(133415890, "Stefan", "Simanek"));
+        var connection = await browser.GetConnectionAsync();
+        connection.Athlete.ShouldBe(new ConnectedAthlete(133415890, "Stefan", "Simanek"));
     }
 
     [Test]
@@ -96,8 +96,8 @@ public sealed class ConnectStravaTests
         var callback = await _app.ConnectStravaAsync(browser, "token-exchange.json");
 
         callback.Headers.Location!.OriginalString.ShouldBe("/?strava=connected");
-        var connection = await GetConnectionAsync(browser);
-        connection.Athlete.ShouldBe(new AthleteResponse(133415890, "Stefan", "Simanek"));
+        var connection = await browser.GetConnectionAsync();
+        connection.Athlete.ShouldBe(new ConnectedAthlete(133415890, "Stefan", "Simanek"));
     }
 
     [Test]
@@ -110,7 +110,7 @@ public sealed class ConnectStravaTests
         var callback = await browser.GetAsync($"/api/strava/callback?state=forged&code=attacker-code&scope={TestApp.AllScopes}");
 
         callback.Headers.Location!.OriginalString.ShouldBe("/?strava=error&reason=invalid-state");
-        (await GetConnectionAsync(browser)).Connected.ShouldBeFalse();
+        (await browser.GetConnectionAsync()).Connected.ShouldBeFalse();
     }
 
     [Test]
@@ -122,7 +122,7 @@ public sealed class ConnectStravaTests
         var callback = await browser.GetAsync($"/api/strava/callback?state={state}&error=access_denied");
 
         callback.Headers.Location!.OriginalString.ShouldBe("/?strava=error&reason=access-denied");
-        (await GetConnectionAsync(browser)).Connected.ShouldBeFalse();
+        (await browser.GetConnectionAsync()).Connected.ShouldBeFalse();
     }
 
     [Test]
@@ -133,7 +133,7 @@ public sealed class ConnectStravaTests
         var callback = await _app.ConnectStravaAsync(browser, "token-exchange.json", scope: "read,profile:read_all");
 
         callback.Headers.Location!.OriginalString.ShouldBe("/?strava=error&reason=missing-permissions");
-        (await GetConnectionAsync(browser)).Connected.ShouldBeFalse();
+        (await browser.GetConnectionAsync()).Connected.ShouldBeFalse();
     }
 
     [Test]
@@ -149,13 +149,6 @@ public sealed class ConnectStravaTests
         var callback = await browser.GetAsync($"/api/strava/callback?state={state}&code=expired-code&scope={TestApp.AllScopes}");
 
         callback.Headers.Location!.OriginalString.ShouldBe("/?strava=error&reason=strava-rejected");
-        (await GetConnectionAsync(browser)).Connected.ShouldBeFalse();
+        (await browser.GetConnectionAsync()).Connected.ShouldBeFalse();
     }
-
-    private static async Task<ConnectionResponse> GetConnectionAsync(HttpClient browser) =>
-        (await browser.GetFromJsonAsync<ConnectionResponse>("/api/connection"))!;
-
-    private sealed record ConnectionResponse(bool Connected, AthleteResponse? Athlete, DateTimeOffset? ConnectedAt);
-
-    private sealed record AthleteResponse(long Id, string FirstName, string LastName);
 }

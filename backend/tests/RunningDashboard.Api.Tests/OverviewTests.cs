@@ -1,4 +1,3 @@
-using System.Net.Http.Json;
 using RunningDashboard.Api.Tests.Harness;
 
 namespace RunningDashboard.Api.Tests;
@@ -21,7 +20,7 @@ public sealed class OverviewTests
             new TestActivity(2, "New Year's run", new DateTime(2026, 1, 1, 0, 30, 0), 10000, 3600, UtcOffsetHours: 1, ElevationGain: 50),
             new TestActivity(3, "Spring run", new DateTime(2026, 3, 10, 18, 0, 0), 8000, 3000, UtcOffsetHours: 1, ElevationGain: 30));
 
-        var overview = await GetOverviewAsync(browser);
+        var overview = await browser.GetOverviewAsync();
 
         overview.Totals.ShouldBe(new TotalsResponse(3, 23000, 8400, 100));
         overview.Years.ShouldBe(
@@ -37,7 +36,7 @@ public sealed class OverviewTests
             new TestActivity(1, "Sunday night", new DateTime(2026, 9, 27, 23, 30, 0), 10000, 3600),
             new TestActivity(2, "Monday just after midnight", new DateTime(2026, 9, 28, 0, 10, 0), 5000, 1800));
 
-        var overview = await GetOverviewAsync(browser);
+        var overview = await browser.GetOverviewAsync();
 
         DistanceInWeek(overview, new DateOnly(2026, 9, 21)).ShouldBe(10000);
         DistanceInWeek(overview, new DateOnly(2026, 9, 28)).ShouldBe(5000);
@@ -50,7 +49,7 @@ public sealed class OverviewTests
         var browser = await _app.ConnectWithActivitiesAsync(
             new TestActivity(1, "Central Park", new DateTime(2026, 8, 2, 23, 30, 0), 8000, 2900, UtcOffsetHours: -4));
 
-        var overview = await GetOverviewAsync(browser);
+        var overview = await browser.GetOverviewAsync();
 
         DistanceInWeek(overview, new DateOnly(2026, 7, 27)).ShouldBe(8000);
         DistanceInWeek(overview, new DateOnly(2026, 8, 3)).ShouldBe(0);
@@ -63,7 +62,7 @@ public sealed class OverviewTests
             new TestActivity(1, "Week one", new DateTime(2026, 9, 8, 18, 0, 0), 6000, 2400),
             new TestActivity(2, "Week three", new DateTime(2026, 9, 23, 18, 0, 0), 7000, 2800));
 
-        var overview = await GetOverviewAsync(browser);
+        var overview = await browser.GetOverviewAsync();
 
         overview.Weeks.Select(w => w.Start).ShouldBe(
             [new DateOnly(2026, 9, 7), new DateOnly(2026, 9, 14), new DateOnly(2026, 9, 21), new DateOnly(2026, 9, 28), new DateOnly(2026, 10, 5)]);
@@ -75,7 +74,7 @@ public sealed class OverviewTests
     {
         var browser = _app.CreateBrowser();
 
-        var overview = await GetOverviewAsync(browser);
+        var overview = await browser.GetOverviewAsync();
 
         overview.Totals.ShouldBe(new TotalsResponse(0, 0, 0, 0));
         overview.Years.ShouldBeEmpty();
@@ -89,7 +88,7 @@ public sealed class OverviewTests
         var browser = await _app.ConnectWithActivitiesAsync(
             Run(1, new DateTime(2026, 9, 24)), Run(2, new DateTime(2026, 9, 29)), Run(3, new DateTime(2026, 10, 6)));
 
-        var streak = (await GetOverviewAsync(browser)).Streak!;
+        var streak = (await browser.GetOverviewAsync()).Streak!;
 
         streak.Current.ShouldBe(3);
         streak.Start.ShouldBe(new DateOnly(2026, 9, 21));
@@ -103,7 +102,7 @@ public sealed class OverviewTests
         var browser = await _app.ConnectWithActivitiesAsync(
             Run(1, new DateTime(2026, 9, 8)), Run(2, new DateTime(2026, 9, 27)), Run(3, new DateTime(2026, 10, 4)));
 
-        var streak = (await GetOverviewAsync(browser)).Streak!;
+        var streak = (await browser.GetOverviewAsync()).Streak!;
 
         streak.Current.ShouldBe(2);
         streak.Start.ShouldBe(new DateOnly(2026, 9, 21));
@@ -116,7 +115,7 @@ public sealed class OverviewTests
         // Last week went without a Run.
         var browser = await _app.ConnectWithActivitiesAsync(Run(1, new DateTime(2026, 9, 22)));
 
-        var streak = (await GetOverviewAsync(browser)).Streak!;
+        var streak = (await browser.GetOverviewAsync()).Streak!;
 
         streak.Current.ShouldBe(0);
         streak.Start.ShouldBeNull();
@@ -130,7 +129,7 @@ public sealed class OverviewTests
             Run(4, new DateTime(2026, 8, 25)), Run(5, new DateTime(2026, 9, 1)), Run(6, new DateTime(2026, 9, 8)),
             Run(7, new DateTime(2026, 9, 29)));
 
-        var streak = (await GetOverviewAsync(browser)).Streak!;
+        var streak = (await browser.GetOverviewAsync()).Streak!;
 
         streak.Current.ShouldBe(1);
         streak.Longest.ShouldBe(new LongestStreakResponse(3, new DateOnly(2026, 8, 24), new DateOnly(2026, 9, 13)));
@@ -143,7 +142,7 @@ public sealed class OverviewTests
             Run(1, new DateTime(2026, 9, 1)), Run(2, new DateTime(2026, 9, 8)),
             Run(3, new DateTime(2026, 9, 22)), Run(4, new DateTime(2026, 9, 29)));
 
-        var streak = (await GetOverviewAsync(browser)).Streak!;
+        var streak = (await browser.GetOverviewAsync()).Streak!;
 
         streak.Longest.ShouldBe(new LongestStreakResponse(2, new DateOnly(2026, 9, 21), new DateOnly(2026, 10, 4)));
     }
@@ -155,7 +154,7 @@ public sealed class OverviewTests
             Run(1, new DateTime(2026, 6, 2)), Run(2, new DateTime(2026, 7, 21)), Run(3, new DateTime(2026, 8, 4)),
             Run(4, new DateTime(2026, 9, 30)), Run(5, new DateTime(2026, 10, 6)));
 
-        var recent = (await GetOverviewAsync(browser)).Streak!.RecentWeeks;
+        var recent = (await browser.GetOverviewAsync()).Streak!.RecentWeeks;
 
         recent.Select(w => w.Start).ShouldBe(TrainingWeeks(new DateOnly(2026, 7, 20), 12));
         recent.Select(w => w.HasRun).ShouldBe([true, false, true, false, false, false, false, false, false, false, true, true]);
@@ -166,7 +165,7 @@ public sealed class OverviewTests
     {
         var browser = await _app.ConnectWithActivitiesAsync(Run(1, new DateTime(2026, 9, 22)));
 
-        var recent = (await GetOverviewAsync(browser)).Streak!.RecentWeeks;
+        var recent = (await browser.GetOverviewAsync()).Streak!.RecentWeeks;
 
         recent.ShouldBe([
             new StreakWeekResponse(new DateOnly(2026, 9, 21), true),
@@ -182,7 +181,7 @@ public sealed class OverviewTests
             Run(1, new DateTime(2026, 9, 22)),
             new TestActivity(2, "Treadmill without distance", new DateTime(2026, 9, 30, 18, 0, 0), 0, 1800, SportType: "VirtualRun"));
 
-        var streak = (await GetOverviewAsync(browser)).Streak!;
+        var streak = (await browser.GetOverviewAsync()).Streak!;
 
         streak.Current.ShouldBe(2);
     }
@@ -194,7 +193,7 @@ public sealed class OverviewTests
         var browser = await _app.ConnectWithActivitiesAsync(
             Run(1, new DateTime(2026, 9, 29)), Run(2, new DateTime(2026, 10, 6)), Run(3, new DateTime(2026, 10, 12)));
 
-        var streak = (await GetOverviewAsync(browser)).Streak!;
+        var streak = (await browser.GetOverviewAsync()).Streak!;
 
         streak.Current.ShouldBe(2);
         streak.Longest.ShouldBe(new LongestStreakResponse(2, new DateOnly(2026, 9, 28), new DateOnly(2026, 10, 11)));
@@ -210,7 +209,7 @@ public sealed class OverviewTests
             new TestActivity(4, "Pool", new DateTime(2026, 10, 2, 7, 0, 0), 2000, 2400, "Swim"),
             new TestActivity(5, "Easy run", new DateTime(2026, 10, 6, 18, 0, 0), 6000, 2100));
 
-        var overview = await GetOverviewAsync(browser);
+        var overview = await browser.GetOverviewAsync();
 
         overview.TrainingTime.ShouldBe([
             new TrainingTimeWeekResponse(new DateOnly(2026, 9, 28), 3000, 5100, 2400),
@@ -227,7 +226,7 @@ public sealed class OverviewTests
             new TestActivity(1, "Gravel Marchfeld", new DateTime(2026, 9, 13, 9, 0, 0), 61200, 9000, "GravelRide"),
             new TestActivity(2, "First run", new DateTime(2026, 9, 29, 18, 0, 0), 5000, 1800));
 
-        var overview = await GetOverviewAsync(browser);
+        var overview = await browser.GetOverviewAsync();
 
         overview.TrainingTime.Select(w => w.Start).ShouldBe(TrainingWeeks(new DateOnly(2026, 9, 7), 5));
         overview.TrainingTime.Select(w => w.Rides).ShouldBe([9000, 0, 0, 0, 0]);
@@ -241,7 +240,7 @@ public sealed class OverviewTests
     {
         var browser = await _app.ConnectWithActivitiesAsync(Run(1, new DateTime(2026, 9, 29)));
 
-        (await GetOverviewAsync(browser)).TrainingTime.ShouldBeEmpty();
+        (await browser.GetOverviewAsync()).TrainingTime.ShouldBeEmpty();
     }
 
     [Test]
@@ -257,7 +256,7 @@ public sealed class OverviewTests
             new TestActivity(6, "A ride last year", new DateTime(2025, 10, 9, 9, 0, 0), 40000, 5400, "Ride"),
             new TestActivity(7, "Today", new DateTime(2026, 10, 9, 7, 0, 0), 6000, 2100));
 
-        var overview = await GetOverviewAsync(browser);
+        var overview = await browser.GetOverviewAsync();
 
         var onThisDay = overview.OnThisDay!;
         onThisDay.Day.ShouldBe(new DateOnly(2025, 10, 9));
@@ -274,7 +273,7 @@ public sealed class OverviewTests
         var browser = await _app.ConnectWithActivitiesAsync(new TestActivity(1, "Last February", new DateTime(2027, 2, 28, 7, 0, 0), 8000, 2900));
         _app.Clock.SetUtcNow(new DateTimeOffset(2028, 2, 29, 18, 0, 0, TimeSpan.Zero));
 
-        var overview = await GetOverviewAsync(browser);
+        var overview = await browser.GetOverviewAsync();
 
         overview.OnThisDay!.Runs.Select(r => r.Name).ShouldBe(["Last February"]);
     }
@@ -286,33 +285,4 @@ public sealed class OverviewTests
 
     private static double DistanceInWeek(OverviewResponse overview, DateOnly monday) =>
         overview.Weeks.Where(w => w.Start == monday).ShouldHaveSingleItem().Distance;
-
-    private static async Task<OverviewResponse> GetOverviewAsync(HttpClient browser) =>
-        (await browser.GetFromJsonAsync<OverviewResponse>("/api/overview"))!;
-
-    private sealed record OverviewResponse(
-        TotalsResponse Totals,
-        List<YearResponse> Years,
-        List<WeekResponse> Weeks,
-        StreakResponse? Streak,
-        List<TrainingTimeWeekResponse> TrainingTime,
-        OnThisDayResponse? OnThisDay);
-
-    private sealed record OnThisDayResponse(DateOnly Day, List<OnThisDayRunResponse> Runs);
-
-    private sealed record OnThisDayRunResponse(long Id, string Name, DateTime StartLocal, double Distance, int MovingTime);
-
-    private sealed record TrainingTimeWeekResponse(DateOnly Start, int Runs, int Rides, int Swims);
-
-    private sealed record TotalsResponse(int Runs, double Distance, int MovingTime, double ElevationGain);
-
-    private sealed record YearResponse(int Year, int Runs, double Distance, int MovingTime, double ElevationGain);
-
-    private sealed record WeekResponse(DateOnly Start, double Distance);
-
-    private sealed record StreakResponse(int Current, DateOnly? Start, bool ThisWeekHasRun, LongestStreakResponse Longest, List<StreakWeekResponse> RecentWeeks);
-
-    private sealed record LongestStreakResponse(int Weeks, DateOnly Start, DateOnly End);
-
-    private sealed record StreakWeekResponse(DateOnly Start, bool HasRun);
 }

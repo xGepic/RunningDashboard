@@ -1,5 +1,5 @@
-using System.Net.Http.Json;
 using RunningDashboard.Api.Tests.Harness;
+using static RunningDashboard.Api.Tests.Harness.TestRaces;
 
 namespace RunningDashboard.Api.Tests;
 
@@ -9,8 +9,6 @@ namespace RunningDashboard.Api.Tests;
 /// </summary>
 public sealed class RaceResultTests
 {
-    private const double Marathon = 42195;
-
     /// <summary>The first marathon, Sun 27 Sep 2026: the watch measured 42.58 km.</summary>
     private static readonly TestActivity Finisher = new(
         20351282630, "Finisher.", new DateTime(2026, 9, 27, 9, 47, 0), 42582.8, 18043, ElapsedTime: 18190,
@@ -27,11 +25,11 @@ public sealed class RaceResultTests
     {
         var browser = await _app.ConnectWithActivitiesAsync(Finisher);
 
-        var race = await CreateAsync(browser, new GoalRaceRequest("Vienna Marathon", new DateOnly(2026, 9, 27), Marathon, 5 * 3600, 14));
+        var race = await browser.CreateGoalRaceAsync(new GoalRaceRequest("Vienna Marathon", new DateOnly(2026, 9, 27), Marathon, 5 * 3600, 14));
 
         // 5:00:11 over the marathon, 11 s over the Target Time; the whole Run took 5:03:10.
         race.RaceResult.ShouldBe(new RaceResultResponse(Finisher.Id, "Finisher.", 18011, "bestEffort", 11));
-        (await ListAsync(browser)).ShouldHaveSingleItem().ShouldBe(race);
+        (await browser.ListGoalRacesAsync()).ShouldHaveSingleItem().ShouldBe(race);
     }
 
     [Test]
@@ -42,7 +40,7 @@ public sealed class RaceResultTests
             Finisher,
             new TestActivity(2, "Shake-out", new DateTime(2026, 9, 27, 17, 0, 0), 3000, 1200, BestEfforts: [new("1K", 1000, 390)]));
 
-        var race = await CreateAsync(browser, new GoalRaceRequest("Vienna Marathon", new DateOnly(2026, 9, 27), Marathon, null, 14));
+        var race = await browser.CreateGoalRaceAsync(new GoalRaceRequest("Vienna Marathon", new DateOnly(2026, 9, 27), Marathon, null, 14));
 
         race.RaceResult.ShouldBe(new RaceResultResponse(Finisher.Id, "Finisher.", 18011, "bestEffort", null));
     }
@@ -53,7 +51,7 @@ public sealed class RaceResultTests
         var browser = await _app.ConnectWithActivitiesAsync(
             new TestActivity(1, "Saturday shake-out", new DateTime(2026, 10, 3, 9, 0, 0), 5000, 1800, BestEfforts: [new("5K", 5000, 1800)]));
 
-        var race = await CreateAsync(browser, new GoalRaceRequest("Autumn 10K", new DateOnly(2026, 10, 4), 10000, 3000, 4));
+        var race = await browser.CreateGoalRaceAsync(new GoalRaceRequest("Autumn 10K", new DateOnly(2026, 10, 4), 10000, 3000, 4));
 
         race.RaceResult.ShouldBeNull();
     }
@@ -66,7 +64,7 @@ public sealed class RaceResultTests
             BestEfforts: [new("10K", 10000, 3790), new("15K", 15000, 5810)]);
         var browser = await _app.ConnectWithActivitiesAsync(trailRace);
 
-        var race = await CreateAsync(browser, new GoalRaceRequest("Wienerwald trail", new DateOnly(2026, 9, 20), 15500, null, 2));
+        var race = await browser.CreateGoalRaceAsync(new GoalRaceRequest("Wienerwald trail", new DateOnly(2026, 9, 20), 15500, null, 2));
 
         race.RaceResult.ShouldBe(new RaceResultResponse(1, "Wienerwald trail race", 6100, "elapsedTime", null));
     }
@@ -80,7 +78,7 @@ public sealed class RaceResultTests
             BestEfforts: [new("20K", 20000, 6290), new("Half-Marathon", 21097, 6620)]);
         var browser = await _app.ConnectWithActivitiesAsync(halfMarathon);
 
-        var race = await CreateAsync(browser, new GoalRaceRequest("Vienna Half", new DateOnly(2026, 4, 12), 21097.5, 6900, 8));
+        var race = await browser.CreateGoalRaceAsync(new GoalRaceRequest("Vienna Half", new DateOnly(2026, 4, 12), 21097.5, 6900, 8));
 
         // 1:50:20 against a Target Time of 1:55:00.
         race.RaceResult.ShouldBe(new RaceResultResponse(1, "Half marathon", 6620, "bestEffort", -280));
@@ -97,29 +95,9 @@ public sealed class RaceResultTests
         await _app.ConnectStravaAsync(browser);
         await TestApp.WaitForStatusAsync(browser, s => s.Phase == "importing-details");
 
-        var race = await CreateAsync(browser, new GoalRaceRequest("Vienna Marathon", new DateOnly(2026, 9, 27), Marathon, 5 * 3600, 14));
+        var race = await browser.CreateGoalRaceAsync(new GoalRaceRequest("Vienna Marathon", new DateOnly(2026, 9, 27), Marathon, 5 * 3600, 14));
 
         // Not the 5:03:10 the whole Run took: the Marathon Best Effort is still to come.
         race.RaceResult.ShouldBe(new RaceResultResponse(Finisher.Id, "Finisher.", null, "pending", null));
     }
-
-    private static async Task<GoalRaceResponse> CreateAsync(HttpClient browser, GoalRaceRequest race)
-    {
-        var response = await browser.PostAsJsonAsync("/api/goal-races", race);
-        response.EnsureSuccessStatusCode();
-        return (await response.Content.ReadFromJsonAsync<GoalRaceResponse>())!;
-    }
-
-    private static async Task<List<GoalRaceResponse>> ListAsync(HttpClient browser) =>
-        (await browser.GetFromJsonAsync<List<GoalRaceResponse>>("/api/goal-races"))!;
-
-    /// <param name="TargetTime">Seconds.</param>
-    private sealed record GoalRaceRequest(string Name, DateOnly Date, double Distance, int? TargetTime, int TrainingBlockWeeks);
-
-    private sealed record GoalRaceResponse(int Id, string Name, int? TargetTime, RaceResultResponse? RaceResult);
-
-    /// <param name="ElapsedTime">Seconds.</param>
-    /// <param name="Source">"bestEffort", "elapsedTime" or "pending".</param>
-    /// <param name="DifferenceFromTarget">Seconds over (positive) or under (negative) the Target Time.</param>
-    private sealed record RaceResultResponse(long RunId, string RunName, int? ElapsedTime, string Source, int? DifferenceFromTarget);
 }

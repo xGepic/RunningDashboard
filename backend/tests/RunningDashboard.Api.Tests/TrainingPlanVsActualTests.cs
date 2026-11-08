@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using RunningDashboard.Api.Tests.Harness;
+using static RunningDashboard.Api.Tests.Harness.TestRaces;
 
 namespace RunningDashboard.Api.Tests;
 
@@ -10,9 +11,8 @@ namespace RunningDashboard.Api.Tests;
 /// </summary>
 public sealed class TrainingPlanVsActualTests
 {
-    private const double Marathon = 42195;
-
-    private static readonly GoalRaceRequest SecondMarathon = new("Second marathon", new DateOnly(2027, 5, 23), Marathon, 5 * 3600, 10);
+    /// <summary>The second marathon with a 10-week block of its own, which the Training Plan's length replaces.</summary>
+    private static readonly GoalRaceRequest SecondMarathon = TestRaces.SecondMarathon with { TrainingBlockWeeks = 10 };
 
     private static readonly RunningDayRequest[] TuesdayThursdaySunday = [new("tuesday", "easy"), new("thursday", "tempo"), new("sunday", "long")];
     private static readonly string[] BuildPeakPeakTaper = ["build", "peak", "peak", "taper"];
@@ -118,10 +118,10 @@ public sealed class TrainingPlanVsActualTests
     {
         var browser = await _app.ConnectWithActivitiesAsync(Run(1, "Tuesday easy", new DateTime(2027, 3, 2, 18, 0, 0), 8000));
         // Its own 16 weeks, as long as the plan would be.
-        await CreateGoalRaceAsync(browser, SecondMarathon with { TrainingBlockWeeks = 16 });
+        await browser.CreateGoalRaceAsync(SecondMarathon with { TrainingBlockWeeks = 16 });
         _app.Clock.SetUtcNow(new DateTimeOffset(2027, 3, 10, 12, 0, 0, TimeSpan.Zero));
 
-        var block = (await browser.GetFromJsonAsync<TrainingResponse>("/api/training"))!.Block!;
+        var block = (await browser.GetTrainingAsync()).Block!;
 
         block.Phases.ShouldBeNull();
         block.Weeks.ShouldAllBe(w => w.Plan == null);
@@ -132,66 +132,19 @@ public sealed class TrainingPlanVsActualTests
     private async Task<BlockResponse> PlannedBlockAsync(TestActivity[] runs, params WeekRequest[] weeks)
     {
         var browser = await _app.ConnectWithActivitiesAsync(runs);
-        var race = await CreateGoalRaceAsync(browser, SecondMarathon);
+        var race = await browser.CreateGoalRaceAsync(SecondMarathon);
         (await browser.PutAsJsonAsync($"/api/goal-races/{race.Id}/training-plan", new { length = 16, phases = BuildPeakPeakTaper }))
             .EnsureSuccessStatusCode();
         (await browser.PutAsJsonAsync($"/api/goal-races/{race.Id}/training-plan/weeks", new { weeks }))
             .EnsureSuccessStatusCode();
         _app.Clock.SetUtcNow(new DateTimeOffset(2027, 3, 10, 12, 0, 0, TimeSpan.Zero));
 
-        return (await browser.GetFromJsonAsync<TrainingResponse>("/api/training"))!.Block!;
+        return (await browser.GetTrainingAsync()).Block!;
     }
 
     /// <summary>A Run in Vienna in winter, at an easy 6:00 /km.</summary>
     private static TestActivity Run(long id, string name, DateTime startLocal, double distance) =>
         new(id, name, startLocal, distance, (int)(distance * 0.36), UtcOffsetHours: 1);
 
-    private static WeekResponse Week(BlockResponse block, int weeksToRace) => block.Weeks.Single(w => w.WeeksToRace == weeksToRace);
-
-    private static async Task<GoalRaceResponse> CreateGoalRaceAsync(HttpClient browser, GoalRaceRequest race)
-    {
-        var response = await browser.PostAsJsonAsync("/api/goal-races", race);
-        response.EnsureSuccessStatusCode();
-        return (await response.Content.ReadFromJsonAsync<GoalRaceResponse>())!;
-    }
-
-    /// <param name="TargetTime">Seconds.</param>
-    private sealed record GoalRaceRequest(string Name, DateOnly Date, double Distance, int? TargetTime, int TrainingBlockWeeks);
-
-    private sealed record GoalRaceResponse(int Id);
-
-    /// <param name="PlannedDistance">Metres.</param>
-    /// <param name="PlannedLongRun">Metres.</param>
-    private sealed record WeekRequest(int WeeksToRace, double? PlannedDistance, double? PlannedLongRun, RunningDayRequest[] RunningDays, bool RecoveryWeek);
-
-    /// <param name="Day">"monday" to "sunday".</param>
-    /// <param name="RunType">"easy", "long", "tempo" or "intervals".</param>
-    private sealed record RunningDayRequest(string Day, string RunType);
-
-    private sealed record TrainingResponse(BlockResponse? Block);
-
-    /// <param name="Phases">None without a Training Plan.</param>
-    private sealed record BlockResponse(List<PhaseResponse>? Phases, List<WeekResponse> Weeks);
-
-    private sealed record PhaseResponse(string Type, int FirstWeeksToRace, int LastWeeksToRace);
-
-    /// <param name="Plan">None without a Training Plan.</param>
-    private sealed record WeekResponse(int WeeksToRace, string Status, ActualResponse? Actual, PlanResponse? Plan);
-
-    /// <param name="Distance">Metres.</param>
-    private sealed record ActualResponse(double Distance);
-
-    /// <param name="DistanceMet">None while the week runs short of it, for a future week, or without a planned distance.</param>
-    /// <param name="Days">Monday to Sunday.</param>
-    private sealed record PlanResponse(
-        string Phase,
-        bool RecoveryWeek,
-        double? PlannedDistance,
-        double? PlannedLongRun,
-        bool? DistanceMet,
-        bool? LongRunMet,
-        List<DayResponse> Days);
-
-    /// <param name="State">"ran", "missed", "unplanned", "planned" (still to come) or "rest".</param>
-    private sealed record DayResponse(DateOnly Date, string State);
+    private static BlockWeekResponse Week(BlockResponse block, int weeksToRace) => block.Weeks.Single(w => w.WeeksToRace == weeksToRace);
 }

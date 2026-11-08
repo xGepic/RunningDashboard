@@ -159,7 +159,7 @@ public sealed class SettingsTests
 
         await ChangeAsync(new { showWeeklyTimeGoal = false });
 
-        (await _browser.GetFromJsonAsync<OverviewGoalsResponse>("/api/overview"))!.WeeklyTimeGoal.ShouldNotBeNull();
+        (await _browser.GetOverviewAsync()).WeeklyTimeGoal.ShouldNotBeNull();
     }
 
     private Task<HttpResponseMessage> ChangeAsync(object changes) => _browser.PatchAsJsonAsync("/api/settings", changes);
@@ -174,8 +174,4 @@ public sealed class SettingsTests
         (await _browser.GetFromJsonAsync<GoalSettingsResponse>("/api/settings"))!;
 
     private sealed record GoalSettingsResponse(bool ShowYearlyGoal, bool ShowWeeklyTimeGoal);
-
-    private sealed record OverviewGoalsResponse(object? WeeklyTimeGoal);
-
-    private sealed record ValidationProblem(Dictionary<string, string[]> Errors);
 }

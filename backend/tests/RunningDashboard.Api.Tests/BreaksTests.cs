@@ -162,6 +162,4 @@ public sealed class BreaksTests
     private sealed record BreakRequest(string? Kind, DateOnly? Start, DateOnly? End, string? Note);
 
     private sealed record BreakResponse(int Id, string Kind, DateOnly Start, DateOnly End, string? Note);
-
-    private sealed record ValidationProblem(string Title, Dictionary<string, string[]> Errors);
 }

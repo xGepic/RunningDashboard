@@ -1,5 +1,5 @@
-using System.Net.Http.Json;
 using RunningDashboard.Api.Tests.Harness;
+using static RunningDashboard.Api.Tests.Harness.TestRaces;
 
 namespace RunningDashboard.Api.Tests;
 
@@ -9,14 +9,6 @@ namespace RunningDashboard.Api.Tests;
 /// </summary>
 public sealed class TrainingCountdownTests
 {
-    private const double Marathon = 42195;
-
-    /// <summary>Sun 27 Sep 2026, 14 weeks: Mon 22 Jun to Sun 27 Sep 2026.</summary>
-    private static readonly GoalRaceRequest FirstMarathon = new("Vienna Marathon", new DateOnly(2026, 9, 27), Marathon, null, 14);
-
-    /// <summary>Sun 23 May 2027, 16 weeks: Mon 1 Feb to Sun 23 May 2027.</summary>
-    private static readonly GoalRaceRequest SecondMarathon = new("Second marathon", new DateOnly(2027, 5, 23), Marathon, 5 * 3600, 16);
-
     private readonly TestApp _app = new();
 
 
@@ -31,10 +23,10 @@ public sealed class TrainingCountdownTests
             new TestActivity(2, "Recovery jog", new DateTime(2026, 9, 30, 18, 0, 0), 6000, 2400),
             new TestActivity(3, "Easy run", new DateTime(2026, 10, 2, 18, 0, 0), 8000, 3100),
             new TestActivity(4, "Evening Run", new DateTime(2026, 10, 6, 20, 35, 0), 5081.2, 2096));
-        await CreateGoalRaceAsync(browser, FirstMarathon);
-        var second = await CreateGoalRaceAsync(browser, SecondMarathon);
+        await browser.CreateGoalRaceAsync(FirstMarathon);
+        var second = await browser.CreateGoalRaceAsync(SecondMarathon);
 
-        var training = await GetTrainingAsync(browser);
+        var training = await browser.GetTrainingAsync();
 
         (training.View, training.Block).ShouldBe(("countdown", null));
         var countdown = training.Countdown!;
@@ -56,11 +48,11 @@ public sealed class TrainingCountdownTests
     public async Task The_day_before_the_block_still_counts_down_one_day()
     {
         var browser = _app.CreateBrowser();
-        await CreateGoalRaceAsync(browser, FirstMarathon);
-        await CreateGoalRaceAsync(browser, SecondMarathon);
+        await browser.CreateGoalRaceAsync(FirstMarathon);
+        await browser.CreateGoalRaceAsync(SecondMarathon);
         _app.Clock.SetUtcNow(new DateTimeOffset(2027, 1, 31, 12, 0, 0, TimeSpan.Zero));
 
-        var training = await GetTrainingAsync(browser);
+        var training = await browser.GetTrainingAsync();
 
         training.View.ShouldBe("countdown");
         (training.Countdown!.TrainingBlockStart, training.Countdown.DaysRemaining).ShouldBe((new DateOnly(2027, 2, 1), 1));
@@ -71,11 +63,11 @@ public sealed class TrainingCountdownTests
     public async Task On_the_first_day_of_the_block_the_page_shows_the_block()
     {
         var browser = _app.CreateBrowser();
-        await CreateGoalRaceAsync(browser, FirstMarathon);
-        var second = await CreateGoalRaceAsync(browser, SecondMarathon);
+        await browser.CreateGoalRaceAsync(FirstMarathon);
+        var second = await browser.CreateGoalRaceAsync(SecondMarathon);
         _app.Clock.SetUtcNow(new DateTimeOffset(2027, 2, 1, 12, 0, 0, TimeSpan.Zero));
 
-        var training = await GetTrainingAsync(browser);
+        var training = await browser.GetTrainingAsync();
 
         (training.View, training.Block!.GoalRace.Id, training.Countdown).ShouldBe(("block", second.Id, null));
     }
@@ -84,37 +76,10 @@ public sealed class TrainingCountdownTests
     public async Task Without_an_upcoming_goal_race_there_is_nothing_to_count_down_to()
     {
         var browser = _app.CreateBrowser();
-        await CreateGoalRaceAsync(browser, FirstMarathon);
+        await browser.CreateGoalRaceAsync(FirstMarathon);
 
-        var training = await GetTrainingAsync(browser);
+        var training = await browser.GetTrainingAsync();
 
         (training.View, training.Block, training.Countdown).ShouldBe(("none", null, null));
     }
-
-    private static async Task<GoalRaceResponse> CreateGoalRaceAsync(HttpClient browser, GoalRaceRequest race)
-    {
-        var response = await browser.PostAsJsonAsync("/api/goal-races", race);
-        response.EnsureSuccessStatusCode();
-        return (await response.Content.ReadFromJsonAsync<GoalRaceResponse>())!;
-    }
-
-    private static async Task<TrainingResponse> GetTrainingAsync(HttpClient browser) =>
-        (await browser.GetFromJsonAsync<TrainingResponse>("/api/training"))!;
-
-    /// <param name="TargetTime">Seconds.</param>
-    private sealed record GoalRaceRequest(string Name, DateOnly Date, double Distance, int? TargetTime, int TrainingBlockWeeks);
-
-    private sealed record GoalRaceResponse(int Id, string Name);
-
-    /// <param name="View">"block", "countdown" or "none".</param>
-    private sealed record TrainingResponse(string View, BlockResponse? Block, CountdownResponse? Countdown);
-
-    private sealed record BlockResponse(GoalRaceResponse GoalRace);
-
-    /// <param name="TrainingBlockStart">The Monday the next Training Block starts.</param>
-    private sealed record CountdownResponse(GoalRaceResponse GoalRace, DateOnly TrainingBlockStart, int DaysRemaining, List<RecentWeekResponse> RecentWeeks);
-
-    /// <param name="Start">The Monday.</param>
-    /// <param name="Distance">Metres.</param>
-    private sealed record RecentWeekResponse(DateOnly Start, double Distance);
 }

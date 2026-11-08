@@ -22,13 +22,13 @@ public sealed class YearlyGoalTests
     [Test]
     public async Task The_overview_shows_the_goal_set_for_the_current_year()
     {
-        (await GetOverviewAsync()).YearlyGoal.ShouldBeNull();
+        (await _browser.GetOverviewAsync()).YearlyGoal.ShouldBeNull();
 
         var response = await _browser.PutAsJsonAsync("/api/yearly-goal", new YearlyGoalRequest(2_000_000));
 
         response.StatusCode.ShouldBe(HttpStatusCode.OK);
         (await response.Content.ReadFromJsonAsync<YearlyGoalResponse>()).ShouldBe(new YearlyGoalResponse(2026, 2_000_000));
-        (await GetOverviewAsync()).YearlyGoal.ShouldBe(new YearlyGoalResponse(2026, 2_000_000));
+        (await _browser.GetOverviewAsync()).YearlyGoal.ShouldBe(new YearlyGoalResponse(2026, 2_000_000));
     }
 
     [Test]
@@ -37,7 +37,7 @@ public sealed class YearlyGoalTests
         await _browser.PutAsJsonAsync("/api/yearly-goal", new YearlyGoalRequest(2_000_000));
         await _browser.PutAsJsonAsync("/api/yearly-goal", new YearlyGoalRequest(1_800_000));
 
-        (await GetOverviewAsync()).YearlyGoal.ShouldBe(new YearlyGoalResponse(2026, 1_800_000));
+        (await _browser.GetOverviewAsync()).YearlyGoal.ShouldBe(new YearlyGoalResponse(2026, 1_800_000));
     }
 
     [Test]
@@ -47,9 +47,9 @@ public sealed class YearlyGoalTests
 
         _app.Clock.SetUtcNow(new DateTimeOffset(2027, 1, 1, 8, 0, 0, TimeSpan.Zero));
 
-        (await GetOverviewAsync()).YearlyGoal.ShouldBeNull();
+        (await _browser.GetOverviewAsync()).YearlyGoal.ShouldBeNull();
         await _browser.PutAsJsonAsync("/api/yearly-goal", new YearlyGoalRequest(2_500_000));
-        (await GetOverviewAsync()).YearlyGoal.ShouldBe(new YearlyGoalResponse(2027, 2_500_000));
+        (await _browser.GetOverviewAsync()).YearlyGoal.ShouldBe(new YearlyGoalResponse(2027, 2_500_000));
     }
 
     [TestCase(null)]
@@ -63,7 +63,7 @@ public sealed class YearlyGoalTests
         response.StatusCode.ShouldBe(HttpStatusCode.BadRequest);
         var problem = await response.Content.ReadFromJsonAsync<ValidationProblem>();
         problem!.Errors["distance"].ShouldBe(["The goal is a positive number of metres, at most 20000 km."]);
-        (await GetOverviewAsync()).YearlyGoal.ShouldBeNull();
+        (await _browser.GetOverviewAsync()).YearlyGoal.ShouldBeNull();
     }
 
     [Test]
@@ -74,19 +74,9 @@ public sealed class YearlyGoalTests
         var response = await _browser.DeleteAsync("/api/yearly-goal");
 
         response.StatusCode.ShouldBe(HttpStatusCode.NoContent);
-        (await GetOverviewAsync()).YearlyGoal.ShouldBeNull();
+        (await _browser.GetOverviewAsync()).YearlyGoal.ShouldBeNull();
     }
-
-    private async Task<OverviewResponse> GetOverviewAsync() =>
-        (await _browser.GetFromJsonAsync<OverviewResponse>("/api/overview"))!;
-
-    private sealed record OverviewResponse(YearlyGoalResponse? YearlyGoal);
 
     /// <param name="Distance">Metres.</param>
     private sealed record YearlyGoalRequest(double? Distance);
-
-    /// <param name="Distance">Metres.</param>
-    private sealed record YearlyGoalResponse(int Year, double Distance);
-
-    private sealed record ValidationProblem(string Title, Dictionary<string, string[]> Errors);
 }

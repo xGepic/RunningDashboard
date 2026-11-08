@@ -101,7 +101,7 @@ public sealed class RecordsTests
 
     private async Task<List<(string, bool)>> PersonalBestMarksAsync(TestActivity activity)
     {
-        var run = (await _browser.GetFromJsonAsync<RunWithBestEfforts>($"/api/runs/{activity.Id}"))!;
+        var run = await _browser.GetRunAsync(activity.Id);
         return [.. run.BestEfforts.Select(e => (e.Name, e.PersonalBest))];
     }
 
@@ -114,8 +114,4 @@ public sealed class RecordsTests
     private sealed record RecordDistanceResponse(string Name, double Distance, bool ShownByDefault, List<PersonalBestResponse> Progression, PersonalBestResponse PersonalBest);
 
     private sealed record PersonalBestResponse(long RunId, string RunName, DateTime Date, int ElapsedTime, double TimePerKm);
-
-    private sealed record RunWithBestEfforts(List<BestEffortResponse> BestEfforts);
-
-    private sealed record BestEffortResponse(string Name, bool PersonalBest);
 }
