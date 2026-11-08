@@ -100,6 +100,12 @@ public sealed class Run
     /// </summary>
     public string? Route => RouteIn(RawDetailJson, "polyline", "summary_polyline") ?? RouteIn(RawSummaryJson, "summary_polyline");
 
+    /// <summary>
+    /// The summary's simplified route in a Run's stored summary (<see cref="RawSummaryJson"/>), as Strava encodes it; none
+    /// for a Run without GPS. Small enough to draw many Runs at once.
+    /// </summary>
+    public static string? SummaryRouteIn(string summaryJson) => RouteIn(summaryJson, "summary_polyline");
+
     /// <summary>The first route found under map.<paramref name="properties"/>, in that order; none without JSON.</summary>
     private static string? RouteIn(string? activityJson, params string[] properties)
     {

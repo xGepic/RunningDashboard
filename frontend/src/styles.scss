@@ -1277,6 +1277,11 @@ p.error {
   filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9) saturate(0.6);
 }
 
+/* Grey and dimmer still, for a map whose lines must stand out, e.g. the Heatmap's. */
+.leaflet-layer.dark-tiles.muted-tiles {
+  filter: invert(1) grayscale(1) brightness(0.6) contrast(0.9);
+}
+
 .leaflet-bar a {
   border-color: var(--border-strong);
   background: var(--surface);

@@ -21,6 +21,8 @@ export const routes: Routes = [
   { path: 'runs', component: RunsPage, title: 'Runs · Running Dashboard' },
   // Loaded when first opened: the Run's map brings in Leaflet.
   { path: 'runs/:id', loadComponent: () => import('./runs/run-detail-page').then((m) => m.RunDetailPage), title: 'Run · Running Dashboard' },
+  // Loaded when first opened: the map brings in Leaflet. Opened from the Run history; below the Activities in the breadcrumb.
+  { path: 'heatmap', loadComponent: () => import('./heatmap/heatmap-page').then((m) => m.HeatmapPage), title: 'Heatmap · Running Dashboard' },
   // Ride and Swim history, opened from the Runs | Rides | Swims switch; they belong to the Runs section.
   { path: 'rides', component: RidesPage, title: 'Rides · Running Dashboard' },
   // Loaded when first opened: the Ride's map brings in Leaflet.

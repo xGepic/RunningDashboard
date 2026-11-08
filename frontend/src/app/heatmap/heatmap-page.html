@@ -1,0 +1,46 @@
+<div class="page">
+  <header class="page-header">
+    <div class="titles">
+      <span class="eyebrow">Runs</span>
+      <h1>Heatmap</h1>
+      <p class="subtitle">Every Run with a route on one map: the more often you ran a road, the brighter it is. Point at a route to see
+        the Run, click it to open it.</p>
+    </div>
+    @if (years().length > 1) {
+      <div class="segmented mono" role="group" aria-label="Year">
+        <button type="button" [attr.aria-pressed]="selectedYear() === null" (click)="pick(null)">All</button>
+        @for (y of years(); track y) {
+          <button type="button" [attr.aria-pressed]="y === selectedYear()" (click)="pick(y)">{{ y }}</button>
+        }
+      </div>
+    }
+  </header>
+
+  @if (heatmap.error()) {
+    <p class="error" role="alert">The Heatmap could not be loaded.</p>
+  } @else if (heatmap.hasValue()) {
+    @if (runs().length === 0) {
+      <p class="empty">
+        @if (selectedYear(); as year) {
+          No Runs with a route in {{ year }}.
+        } @else {
+          No Runs with a route yet. Treadmill Runs and Runs without GPS have none.
+        }
+      </p>
+    } @else {
+      <section class="card flush">
+        <div class="card-header">
+          <div class="titles">
+            <h2 class="card-title">{{ selectedYear() ?? 'All years' }}</h2>
+            <span class="card-sub">{{ runs().length === 1 ? '1 Run' : runs().length + ' Runs' }} · {{ units.totalDistance(distance()) }}</span>
+          </div>
+          <div class="views">
+            <button type="button" class="btn" (click)="map.fit('home')" title="Where most Runs start">Home</button>
+            <button type="button" class="btn" (click)="map.fit('all')" title="Every Run shown, wherever it was">All Runs</button>
+          </div>
+        </div>
+        <app-heatmap-map #map [runs]="runs()" />
+      </section>
+    }
+  }
+</div>

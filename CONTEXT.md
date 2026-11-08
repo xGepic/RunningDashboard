@@ -183,6 +183,10 @@ _Avoid_: Annual target, mileage goal
 The Training Time the Athlete wants in every Training Week, in hours: Runs, Rides and Swims together. There is at most one, the same for every week. Progress is this week's Training Time against it, and a week meets it once its Training Time reaches it. The Overview shows it unless the Athlete hides it in Settings, which keeps it.
 _Avoid_: Hour goal, Weekly Target (that is a Training Plan's planned distance), weekly goal (on its own)
 
+**Heatmap**:
+Every outdoor Run's route drawn on one map, of all years or one, thin and see-through, so the roads the Athlete runs most often add up and glow. It uses each Run's simplified route from Strava's summary; treadmill and virtual Runs, and Runs without GPS, are left out. Rides and Swims are never on it.
+_Avoid_: Route map, Strava heatmap (that is everyone's)
+
 **Virtual Journey**:
 A tour of European cities from Vienna and back, as the crow flies, that each calendar year's running distance carries the Athlete along, starting again on 1 January. The year's tour is the longest of a fixed set (about 194 to 2,970 km) that fits within its Yearly Goal, so reaching the goal brings the Athlete back to Vienna. Without a goal, the current year follows the capitals tour (2,062 km) and a finished year the longest tour its distance completed. Only Runs move the Athlete; it only shows progress and counts toward nothing.
 _Avoid_: Virtual race, challenge, route (on its own)

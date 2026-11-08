@@ -5,6 +5,7 @@
       <div class="title-row">
         <h1>Run history</h1>
         <app-sport-switch current="runs" />
+        <a class="btn" routerLink="/heatmap">Heatmap</a>
         <details class="export-menu" #exportMenu>
           <summary class="btn" [class.busy]="exporting()">Export CSV</summary>
           <div class="menu">

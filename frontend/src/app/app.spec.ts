@@ -15,7 +15,7 @@ describe('App', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        provideRouter(['', 'training', 'runs', 'calendar', 'calendar/:year', 'records', 'fitness', 'shoes', 'calculator', 'settings', 'journey'].map((path) => ({ path, component: Blank }))),
+        provideRouter(['', 'training', 'runs', 'calendar', 'calendar/:year', 'records', 'fitness', 'shoes', 'calculator', 'settings', 'journey', 'heatmap'].map((path) => ({ path, component: Blank }))),
       ],
     });
   });
@@ -64,6 +64,14 @@ describe('App', () => {
 
     expect([...element.querySelectorAll('.crumbs a, .crumbs .current')].map((c) => c.textContent!.trim())).toEqual(['Overview', 'Virtual Journey']);
     expect(element.querySelector('.sidebar nav[aria-label="Pages"] a[aria-current="page"] .label')!.textContent).toBe('Overview');
+  });
+
+  it('puts the Heatmap below the Activities, leading back to the Runs without its year', async () => {
+    const { element } = await render('/heatmap?year=2025');
+
+    expect([...element.querySelectorAll('.crumbs a, .crumbs .current')].map((c) => c.textContent!.trim())).toEqual(['Activities', 'Heatmap']);
+    expect(element.querySelector('.sidebar nav[aria-label="Pages"] a[aria-current="page"] .label')!.textContent).toBe('Activities');
+    expect(element.querySelector('.crumbs a')!.getAttribute('href')).toBe('/runs');
   });
 
   it('leads from a month back to its year, keeping the query string', async () => {
