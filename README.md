@@ -29,30 +29,20 @@ Everything runs locally, except that the maps (a Run's and the Heatmap) load the
 
 ## Give it to a friend
 
-A friend on Windows or on a Mac with Apple Silicon (M1 and later) can run the whole dashboard without installing .NET or Node. Build it with:
+A friend on Windows can run the whole dashboard without installing .NET or Node. Build it with:
 
 ```powershell
 ./publish.ps1
 ```
 
-It fills `deploy/` (not committed; the apps are over 100 MB):
+It fills `deploy/win` and `deploy/RunningDashboard-win.zip` with `RunningDashboard.exe` (not committed; the app is over 100 MB).
 
-- `deploy/win` and `deploy/RunningDashboard-win.zip`: `RunningDashboard.exe` for Windows
-- `deploy/mac` and `deploy/RunningDashboard-mac.tar.gz`: `RunningDashboard` for the Mac
+Send them the zip (about 50 MB). It holds no data and no credentials of yours. They:
 
-GitHub can build them too: **Actions → Release → Run workflow** runs all tests, builds both apps and attaches them to the GitHub Release "latest", replacing the one before (in a private repository, only people with access to it can download them there). The download links stay the same from one run to the next:
-
-- <https://github.com/xGepic/RunningDashboard/releases/latest/download/RunningDashboard-win.zip>
-- <https://github.com/xGepic/RunningDashboard/releases/latest/download/RunningDashboard-mac.tar.gz>
-
-Send them the zip or the tarball (about 50 MB). It holds no data and no credentials of yours. They:
-
-1. Unpack it anywhere and start the app in the `RunningDashboard` folder. The dashboard opens in the browser at http://localhost:5148; closing the console (Terminal) window stops it.
-   - **Windows:** double-click `RunningDashboard.exe`. SmartScreen may warn about an unknown app: **More info → Run anyway**.
-   - **Mac:** the app is not from an identified developer, so macOS blocks it the first time. Either double-click `RunningDashboard`, then allow it under **System Settings → Privacy & Security → Open Anyway**, or run once in Terminal: `xattr -dr com.apple.quarantine ~/Downloads/RunningDashboard` (with the folder's path). After that, a double-click starts it.
+1. Unpack it anywhere and double-click `RunningDashboard.exe` in the `RunningDashboard` folder. SmartScreen may warn about an unknown app: **More info → Run anyway**. The dashboard opens in the browser at http://localhost:5148; closing the console window stops it.
 2. Click **Connect Strava**. It leads to Settings, which asks for a Strava API app of their own: they create one at <https://www.strava.com/settings/api> with **Authorization Callback Domain** `localhost`, enter its Client ID and Client Secret, and then connect. (Strava lets an app's owner connect only, so yours would not let them in.)
 
-The database and its backups go next to the app, so to update, they replace the app (`RunningDashboard.exe` or `RunningDashboard`) and `wwwroot` with the new ones and keep the rest.
+The database and its backups go next to the app, so to update, they replace `RunningDashboard.exe` and `wwwroot` with the new ones and keep the rest.
 
 ## Backups
 
@@ -79,5 +69,3 @@ With code coverage, each as an HTML report (open its `index.html`):
 pwsh backend/coverage.ps1                                 # backend/coverage
 npm test --prefix frontend -- --watch=false --coverage   # frontend/coverage
 ```
-
-GitHub runs both on every push to a branch and every pull request (**Actions → Tests**); a newer push to the same branch cancels the run still going. Each run's page sums up the backend and the frontend coverage, and has each side's HTML report attached as an artifact (`backend-coverage`, `frontend-coverage`, kept for 14 days).

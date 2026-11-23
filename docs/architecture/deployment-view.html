@@ -1,10 +1,10 @@
 <!doctype html>
 <!--
-  The deployment view (arc42): where the dashboard runs during development, as the packaged app on a friend's computer,
-  and how GitHub builds that app. To render it as an image (from the repo root):
-  msedge --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --window-size=1600,2448
+  The deployment view (arc42): where the dashboard runs during development and as the packaged app on a friend's
+  computer. To render it as an image (from the repo root):
+  msedge --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --window-size=1600,1720
          --virtual-time-budget=5000 --screenshot=docs/architecture/deployment-view.png file:///<repo>/docs/architecture/deployment-view.html
-  It follows README.md, frontend/proxy.conf.json, publish.ps1, .github/workflows/release.yml and .github/workflows/tests.yml.
+  It follows README.md, frontend/proxy.conf.json, and publish.ps1.
   Layout: each section is a board of its own; zones, blocks, arrows and labels are placed in px on it (see the script).
 -->
 <html lang="en">
@@ -27,7 +27,6 @@
       --backend: #2F855A;
       --data: #B7791F;
       --external: #C4532D;
-      --ci: #667085;
       --call: #475467;
       --http: #2F6FA8;
       --mono: 'IBM Plex Mono', Consolas, monospace;
@@ -162,11 +161,6 @@
       border-color: #F0D5C6;
     }
 
-    .zone.ci {
-      background: #F5F6F8;
-      border-color: #E1E4E9;
-    }
-
     .zone-name {
       font-size: 12.5px;
       line-height: 18px;
@@ -183,10 +177,6 @@
 
     .zone-name.external b {
       color: #8F3A1D;
-    }
-
-    .zone-name.ci b {
-      color: var(--label);
     }
 
     .zone-name.computer {
@@ -262,11 +252,6 @@
       border-top-color: var(--external);
     }
 
-    .ci.block,
-    .legend i.ci {
-      border-top-color: var(--ci);
-    }
-
     /* Arrows */
     svg.arrows {
       left: 0;
@@ -318,14 +303,13 @@
   <div class="page">
     <div class="kicker">arc42 · Section 7 · Deployment view</div>
     <h1>Running Dashboard Deployment</h1>
-    <p class="subtitle">Where the dashboard runs: on the developer's PC while it is worked on, as one packaged app on a
-      friend's computer, and on GitHub Actions, which builds and releases that app.</p>
+    <p class="subtitle">Where the dashboard runs: on the developer's PC while it is worked on, and as one packaged app on a
+      friend's computer.</p>
     <div class="legend">
       <span><i class="frontend"></i>Frontend</span>
       <span><i class="backend"></i>Backend</span>
       <span><i class="data"></i>Files on disk</span>
       <span><i class="external"></i>Service on the internet</span>
-      <span><i class="ci"></i>GitHub Actions job</span>
       <span><i class="boundary"></i>Computer</span>
       <span><svg aria-hidden="true" width="36" height="10" viewBox="0 0 36 10">
           <path d="M0 5L30 5" fill="none" stroke="#475467" stroke-width="2" stroke-linecap="round" />
@@ -345,7 +329,7 @@
 
   <script>
     // Each section is a board 1472 px wide; everything on it is placed in px from its top left corner.
-    // zones: [kind, left, top, width, height, name, description]; kind is computer (dashed), external or ci (tinted).
+    // zones: [kind, left, top, width, height, name, description]; kind is computer (dashed) or external (tinted).
     // blocks: [id, kind, left, top, width, height, title, description, code].
     // arrows: from and to as [id, side, position along that side from 0 to 1]; via: corners on the way, as ['H', x] or
     // ['V', y]. labels: [text, left, top, kind], kind http for a request.
@@ -390,19 +374,19 @@
       },
       {
         title: 'Packaged app on a friend\'s computer',
-        intro: '<code>publish.ps1</code> packs the backend with the .NET runtime into one file and puts the built frontend next to it, for Windows x64 and for Macs with Apple Silicon. Unpacked anywhere, it needs no .NET or Node, serves the whole dashboard on one port, and keeps its database and backups in its own folder. Each friend connects a Strava API app of their own.',
+        intro: '<code>publish.ps1</code> packs the backend with the .NET runtime into one file and puts the built frontend next to it, for Windows x64. Unpacked anywhere, it needs no .NET or Node, serves the whole dashboard on one port, and keeps its database and backups in its own folder. Each friend connects a Strava API app of their own.',
         height: 528,
         zones: [
-          ['computer', 0, 0, 1056, 464, 'A friend\'s computer', 'Windows x64, or a Mac with Apple Silicon (M1 and later)'],
+          ['computer', 0, 0, 1056, 464, 'A friend\'s computer', 'Windows x64'],
           ['external', 1136, 0, 336, 464, 'Internet', 'Reached over HTTPS'],
         ],
         blocks: [
           ['browser', 'frontend', 24, 104, 224, 152, 'Browser', 'http://localhost:5148, opened by the app once it has started', null],
-          ['app', 'backend', 312, 104, 720, 152, 'RunningDashboard.exe, or RunningDashboard on the Mac',
+          ['app', 'backend', 312, 104, 720, 152, 'RunningDashboard.exe',
             'One self-contained .NET 10 file. Kestrel on localhost:5148 serves the built frontend from wwwroot/ and the /api endpoints, and sends other paths to index.html for Angular\'s routes. It runs while its console window is open.',
             'Program.cs: packaged when wwwroot/ is next to it'],
           ['folder', 'data', 312, 312, 720, 96, 'The RunningDashboard folder, unpacked anywhere',
-            'RunningDashboard.exe or RunningDashboard · wwwroot/ · appsettings.json · running-dashboard.db, made on the first start · backups/', null],
+            'RunningDashboard.exe · wwwroot/ · appsettings.json · running-dashboard.db, made on the first start · backups/', null],
           ['strava', 'external', 1160, 104, 288, 112, 'Strava', 'www.strava.com, with the friend\'s own Strava API app', null],
           ['openmeteo', 'external', 1160, 236, 288, 88, 'Open-Meteo', 'open-meteo.com: a Run\'s Temperature', null],
           ['tiles', 'external', 1160, 344, 288, 88, 'Map tile servers', 'OpenStreetMap, Esri and OpenTopoMap', null],
@@ -423,37 +407,6 @@
           ['HTTPS', 1072, 120, 'http'],
           ['OAuth consent page', 520, 58, 'http'],
           ['map tiles, HTTPS', 520, 504, 'http'],
-        ],
-      },
-      {
-        title: 'Build and release',
-        intro: 'The Release workflow, run by hand, first runs the Tests workflow, the one every push runs too: it tests the backend and the frontend on Linux side by side, measures their code coverage, sums it up on the run\'s page and attaches each side\'s HTML report. Then it builds both apps on Windows with <code>publish.ps1</code>. It attaches them to the GitHub Release "latest", replacing the one before, so friends download the zip or the tarball (about 50 MB) from the same links every time and unpack it as above.',
-        height: 528,
-        zones: [
-          ['ci', 288, 0, 912, 376, 'GitHub Actions', '<span class="mono">.github/workflows/release.yml</span>'],
-        ],
-        blocks: [
-          ['repo', 'external', 0, 160, 224, 112, 'GitHub repository', 'Actions → Release → Run workflow, by hand', null],
-          ['testback', 'ci', 312, 96, 240, 104, 'test-backend', 'ubuntu-latest: backend/coverage.ps1, the tests with coverage', null],
-          ['testfront', 'ci', 312, 240, 240, 104, 'test-frontend', 'ubuntu-latest: npm ci, then npm test with coverage', null],
-          ['build', 'ci', 616, 156, 272, 128, 'build', 'windows-latest: publish.ps1 builds the frontend, then the backend for win-x64 and osx-arm64', null],
-          ['publish', 'ci', 952, 156, 224, 128, 'publish', 'ubuntu-latest: gh release delete latest, then gh release create latest with both files', null],
-          ['artifact', 'data', 616, 432, 352, 96, 'Run artifact RunningDashboard', 'RunningDashboard-win.zip and RunningDashboard-mac.tar.gz', null],
-          ['release', 'external', 1248, 164, 224, 112, 'GitHub Release', '"latest": both files, for friends to download', null],
-        ],
-        arrows: [
-          { from: ['repo', 'right'], to: ['testback', 'left'], via: [['H', 256]] },
-          { from: ['repo', 'right'], to: ['testfront', 'left'], via: [['H', 256]] },
-          { from: ['testback', 'right'], to: ['build', 'left', 0.3], via: [['H', 584]] },
-          { from: ['testfront', 'right'], to: ['build', 'left', 0.7], via: [['H', 584]] },
-          { from: ['build', 'right'], to: ['publish', 'left'] },
-          { from: ['build', 'bottom', 0.5], to: ['artifact', 'top', 136 / 352] },
-          { from: ['artifact', 'right'], to: ['publish', 'bottom'] },
-          { from: ['publish', 'right'], to: ['release', 'left'] },
-        ],
-        labels: [
-          ['upload', 764, 396],
-          ['download', 1076, 396],
         ],
       },
     ];

@@ -1,6 +1,5 @@
 # Runs the backend tests with code coverage and builds an HTML report into backend/coverage (open index.html), with a
-# summary in the terminal and the results as Cobertura.xml, which the Tests workflow sums up on GitHub. The EF
-# migrations are generated code and left out.
+# summary in the terminal. The EF migrations are generated code and left out.
 # Release, as a running backend locks bin/Debug.
 $ErrorActionPreference = 'Stop'
 
@@ -20,7 +19,7 @@ try {
         -- 'DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByFile=**/Migrations/*.cs'
     if ($LASTEXITCODE -ne 0) { throw 'The tests failed.' }
 
-    dotnet reportgenerator "-reports:$results/*/coverage.cobertura.xml" "-targetdir:$report" '-reporttypes:Html;TextSummary;Cobertura' |
+    dotnet reportgenerator "-reports:$results/*/coverage.cobertura.xml" "-targetdir:$report" '-reporttypes:Html;TextSummary' |
         Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'The coverage report could not be built.' }
 

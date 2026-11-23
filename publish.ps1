@@ -1,7 +1,6 @@
-# Builds the packaged app for computers without .NET or Node, into deploy/:
-#   deploy/win  RunningDashboard.exe for Windows, zipped as deploy/RunningDashboard-win.zip
-#   deploy/mac  RunningDashboard for Macs with Apple Silicon (M1 and later), as deploy/RunningDashboard-mac.tar.gz
-# Each has the built frontend next to it in wwwroot. Unpacked anywhere, the app runs the whole dashboard and keeps its
+# Builds the packaged app for Windows computers without .NET or Node, into deploy/:
+#   deploy/win  RunningDashboard.exe, zipped as deploy/RunningDashboard-win.zip
+# It has the built frontend next to it in wwwroot. Unpacked anywhere, the app runs the whole dashboard and keeps its
 # database and backups in that folder.
 $ErrorActionPreference = 'Stop'
 
@@ -32,33 +31,11 @@ function Publish-App([string] $folder, [string] $runtime) {
     return $app
 }
 
-# A zip made on Windows loses the Unix permissions, so the Mac gets a tarball whose app is marked executable.
-function New-MacArchive([string] $app, [string] $archive) {
-    $executable = [IO.UnixFileMode]'UserRead, UserWrite, UserExecute, GroupRead, GroupExecute, OtherRead, OtherExecute'
-    $regular = [IO.UnixFileMode]'UserRead, UserWrite, GroupRead, OtherRead'
-    $file = [IO.File]::Create($archive)
-    $gzip = [IO.Compression.GZipStream]::new($file, [IO.Compression.CompressionLevel]::Optimal)
-    $tar = [Formats.Tar.TarWriter]::new($gzip)
-    try {
-        foreach ($item in Get-ChildItem $app -Recurse -File) {
-            $name = 'RunningDashboard/' + [IO.Path]::GetRelativePath($app, $item.FullName).Replace('\', '/')
-            $entry = [Formats.Tar.PaxTarEntry]::new([Formats.Tar.TarEntryType]::RegularFile, $name)
-            $entry.Mode = if ($item.Name -eq 'RunningDashboard') { $executable } else { $regular }
-            $entry.DataStream = [IO.File]::OpenRead($item.FullName)
-            try { $tar.WriteEntry($entry) } finally { $entry.DataStream.Dispose() }
-        }
-    }
-    finally { $tar.Dispose(); $gzip.Dispose(); $file.Dispose() }
-}
-
-# Both unpack into a RunningDashboard folder.
+# The zip unpacks into a RunningDashboard folder.
 $win = Publish-App 'win' 'win-x64'
 $winZip = Join-Path $deploy 'RunningDashboard'
 Rename-Item $win $winZip
 Compress-Archive -Path $winZip -DestinationPath (Join-Path $deploy 'RunningDashboard-win.zip')
 Rename-Item $winZip $win
 
-$mac = Publish-App 'mac' 'osx-arm64'
-New-MacArchive $mac (Join-Path $deploy 'RunningDashboard-mac.tar.gz')
-
-Write-Host "Done: $(Join-Path $deploy 'RunningDashboard-win.zip') and $(Join-Path $deploy 'RunningDashboard-mac.tar.gz')"
+Write-Host "Done: $(Join-Path $deploy 'RunningDashboard-win.zip')"
