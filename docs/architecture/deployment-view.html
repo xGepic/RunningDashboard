@@ -1,10 +1,9 @@
 <!doctype html>
 <!--
-  The deployment view (arc42): where the dashboard runs during development and as the packaged app on a friend's
-  computer. To render it as an image (from the repo root):
-  msedge --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --window-size=1600,1720
+  The deployment view (arc42): where the dashboard runs. To render it as an image (from the repo root):
+  msedge --headless=new --disable-gpu --hide-scrollbars --force-device-scale-factor=2 --window-size=1600,1040
          --virtual-time-budget=5000 --screenshot=docs/architecture/deployment-view.png file:///<repo>/docs/architecture/deployment-view.html
-  It follows README.md, frontend/proxy.conf.json, and publish.ps1.
+  It follows README.md, and frontend/proxy.conf.json.
   Layout: each section is a board of its own; zones, blocks, arrows and labels are placed in px on it (see the script).
 -->
 <html lang="en">
@@ -303,8 +302,7 @@
   <div class="page">
     <div class="kicker">arc42 · Section 7 · Deployment view</div>
     <h1>Running Dashboard Deployment</h1>
-    <p class="subtitle">Where the dashboard runs: on the developer's PC while it is worked on, and as one packaged app on a
-      friend's computer.</p>
+    <p class="subtitle">Where the dashboard runs: on the developer's PC, from the repository.</p>
     <div class="legend">
       <span><i class="frontend"></i>Frontend</span>
       <span><i class="backend"></i>Backend</span>
@@ -368,43 +366,6 @@
           ['/api/*', 640, 148, 'http'],
           ['reads and writes', 876, 260],
           ['HTTPS', 1072, 116, 'http'],
-          ['OAuth consent page', 520, 58, 'http'],
-          ['map tiles, HTTPS', 520, 504, 'http'],
-        ],
-      },
-      {
-        title: 'Packaged app on a friend\'s computer',
-        intro: '<code>publish.ps1</code> packs the backend with the .NET runtime into one file and puts the built frontend next to it, for Windows x64. Unpacked anywhere, it needs no .NET or Node, serves the whole dashboard on one port, and keeps its database and backups in its own folder. Each friend connects a Strava API app of their own.',
-        height: 528,
-        zones: [
-          ['computer', 0, 0, 1056, 464, 'A friend\'s computer', 'Windows x64'],
-          ['external', 1136, 0, 336, 464, 'Internet', 'Reached over HTTPS'],
-        ],
-        blocks: [
-          ['browser', 'frontend', 24, 104, 224, 152, 'Browser', 'http://localhost:5148, opened by the app once it has started', null],
-          ['app', 'backend', 312, 104, 720, 152, 'RunningDashboard.exe',
-            'One self-contained .NET 10 file. Kestrel on localhost:5148 serves the built frontend from wwwroot/ and the /api endpoints, and sends other paths to index.html for Angular\'s routes. It runs while its console window is open.',
-            'Program.cs: packaged when wwwroot/ is next to it'],
-          ['folder', 'data', 312, 312, 720, 96, 'The RunningDashboard folder, unpacked anywhere',
-            'RunningDashboard.exe · wwwroot/ · appsettings.json · running-dashboard.db, made on the first start · backups/', null],
-          ['strava', 'external', 1160, 104, 288, 112, 'Strava', 'www.strava.com, with the friend\'s own Strava API app', null],
-          ['openmeteo', 'external', 1160, 236, 288, 88, 'Open-Meteo', 'open-meteo.com: a Run\'s Temperature', null],
-          ['tiles', 'external', 1160, 344, 288, 88, 'Map tile servers', 'OpenStreetMap, Esri and OpenTopoMap', null],
-        ],
-        arrows: [
-          { from: ['browser', 'right', 0.3], to: ['app', 'left', 0.3], kind: 'http' },
-          { from: ['app', 'left', 0.7], to: ['browser', 'right', 0.7] },
-          { from: ['app', 'bottom', 0.75], to: ['folder', 'top', 0.75] },
-          { from: ['app', 'right', 0.25], to: ['strava', 'left', 38 / 112], kind: 'http' },
-          { from: ['app', 'right', 0.75], to: ['openmeteo', 'left'], via: [['H', 1096]], kind: 'http' },
-          { from: ['browser', 'top'], to: ['strava', 'top', 0.25], via: [['V', 80]], kind: 'http' },
-          { from: ['browser', 'bottom'], to: ['tiles', 'bottom'], via: [['V', 496]], kind: 'http' },
-        ],
-        labels: [
-          ['HTTP', 262, 128, 'http'],
-          ['opens', 262, 186],
-          ['reads and writes next to itself', 864, 276],
-          ['HTTPS', 1072, 120, 'http'],
           ['OAuth consent page', 520, 58, 'http'],
           ['map tiles, HTTPS', 520, 504, 'http'],
         ],

@@ -6,7 +6,7 @@ using RunningDashboard.Api.Tests.Harness;
 namespace RunningDashboard.Api.Tests;
 
 /// <summary>
-/// The packaged app has no user secrets: the Athlete enters their own Strava API app on the Settings page.
+/// Without the Strava API app in the user secrets, the Athlete enters their own Strava API app on the Settings page.
 /// </summary>
 public sealed class StravaAppTests
 {

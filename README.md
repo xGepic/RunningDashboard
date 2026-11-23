@@ -27,23 +27,6 @@ While the backend runs, it syncs every hour, and the dashboard syncs when its ta
 
 Everything runs locally, except that the maps (a Run's and the Heatmap) load their tiles from OpenStreetMap, Esri and OpenTopoMap, so it needs an internet connection. None of them needs an account or API key.
 
-## Give it to a friend
-
-A friend on Windows can run the whole dashboard without installing .NET or Node. Build it with:
-
-```powershell
-./publish.ps1
-```
-
-It fills `deploy/win` and `deploy/RunningDashboard-win.zip` with `RunningDashboard.exe` (not committed; the app is over 100 MB).
-
-Send them the zip (about 50 MB). It holds no data and no credentials of yours. They:
-
-1. Unpack it anywhere and double-click `RunningDashboard.exe` in the `RunningDashboard` folder. SmartScreen may warn about an unknown app: **More info → Run anyway**. The dashboard opens in the browser at http://localhost:5148; closing the console window stops it.
-2. Click **Connect Strava**. It leads to Settings, which asks for a Strava API app of their own: they create one at <https://www.strava.com/settings/api> with **Authorization Callback Domain** `localhost`, enter its Client ID and Client Secret, and then connect. (Strava lets an app's owner connect only, so yours would not let them in.)
-
-The database and its backups go next to the app, so to update, they replace `RunningDashboard.exe` and `wwwroot` with the new ones and keep the rest.
-
 ## Backups
 
 The backend backs up `running-dashboard.db` when it starts and every 24 hours while it runs (a restart within 24 hours of the last backup makes none), and always right before it applies new migrations. It keeps the 7 most recent backups; those made before migrations are never removed. Settings shows the folder and the last backup, and has **Back up now**.

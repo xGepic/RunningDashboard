@@ -16,8 +16,5 @@ backups/
 .DS_Store
 Thumbs.db
 
-# Packaged apps (publish.ps1)
-deploy/
-
 # Backend coverage report (backend/coverage.ps1)
 backend/coverage/

@@ -40,7 +40,7 @@ public sealed class TestApp(string? databasePath = null) : WebApplicationFactory
     /// </summary>
     public TimeSpan SyncInterval { get; init; } = TimeSpan.Zero;
 
-    /// <summary>False for a PC without the Strava API app in its configuration, as the packaged app runs.</summary>
+    /// <summary>False for a PC without the Strava API app in its configuration, as another Athlete's install runs.</summary>
     public bool StravaInConfiguration { get; init; } = true;
 
     public FakeStrava Strava { get; } = new();

@@ -332,14 +332,13 @@
   const scenarios = [
     {
       title: '1  Starting the backend',
-      intro: 'What <code>Program.cs</code> does when the backend starts, from <code>dotnet run</code> as from the packaged app. Migrations never run on an existing database without a backup first, and a connected Athlete gets a sync right away and every hour after.',
+      intro: 'What <code>Program.cs</code> does when the backend starts, from <code>dotnet run</code>. Migrations never run on an existing database without a backup first, and a connected Athlete gets a sync right away and every hour after.',
       participants: [
         ['program', 'Program', 'Program.cs', 'backend'],
         ['db', 'Database', 'AppDbContext', 'data'],
         ['backup', 'DatabaseBackup', 'Backup/', 'backend'],
         ['sync', 'SyncWorker', 'Sync/, in the background', 'backend'],
         ['backupworker', 'BackupWorker', 'Backup/, in the background', 'backend'],
-        ['browser', 'Browser', 'packaged app only', 'frontend'],
       ],
       steps: [
         ['msg', 'program', 'db', 'applied and pending migrations?'],
@@ -348,7 +347,7 @@
         ['msg', 'backup', 'backup', 'copy to backups/running-dashboard-…-before-migration.db,\nwhich is never removed'],
         ['end'],
         ['msg', 'program', 'db', 'Migrate()'],
-        ['msg', 'program', 'program', 'map the /api endpoints;\npackaged: also wwwroot and the fallback to index.html'],
+        ['msg', 'program', 'program', 'map the /api endpoints'],
         ['msg', 'program', 'sync', 'start', 'async'],
         ['msg', 'sync', 'db', 'Strava connected?'],
         ['group', 'opt', 'connected'],
@@ -366,9 +365,6 @@
         ['group', 'opt', 'due'],
         ['msg', 'backupworker', 'backup', 'BackUp(): keeps the 7 newest regular backups'],
         ['end'],
-        ['end'],
-        ['group', 'opt', 'packaged app, once it listens on localhost:5148'],
-        ['msg', 'program', 'browser', 'open http://localhost:5148', 'async'],
         ['end'],
       ],
       notes: [

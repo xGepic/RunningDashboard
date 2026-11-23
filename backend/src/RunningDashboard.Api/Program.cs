@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using RunningDashboard.Api.Backup;
 using RunningDashboard.Api.Breaks;
@@ -19,15 +18,7 @@ using RunningDashboard.Api.Sync;
 using RunningDashboard.Api.Training;
 using RunningDashboard.Api.Weather;
 
-// The packaged app (see publish.ps1) brings the built frontend along in wwwroot and keeps its database next to the exe,
-// wherever it is started from.
-var packaged = Directory.Exists(Path.Combine(AppContext.BaseDirectory, "wwwroot"));
-if (packaged)
-    Directory.SetCurrentDirectory(AppContext.BaseDirectory);
-
 var builder = WebApplication.CreateBuilder(args);
-if (packaged && builder.Configuration["urls"] is null)
-    builder.WebHost.UseUrls("http://localhost:5148");
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -80,25 +71,7 @@ app.MapGoalRaceEndpoints();
 app.MapTrainingPlanEndpoints();
 app.MapTrainingEndpoints();
 
-if (packaged)
-{
-    app.UseDefaultFiles();
-    app.UseStaticFiles();
-    // Angular's routes, e.g. a Run's page opened from a bookmark; files and unknown API routes stay a 404.
-    app.MapFallbackToFile("{*path:nonfile:regex(^(?!api/).*$)}", "index.html");
-    app.Lifetime.ApplicationStarted.Register(() =>
-    {
-        var url = app.Urls.First();
-        LogOpenAt(app.Logger, url);
-        Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-    });
-}
-
 app.Run();
 
 // Public, for the tests' WebApplicationFactory<Program>.
-public partial class Program
-{
-    [LoggerMessage(Level = LogLevel.Information, Message = "Running Dashboard is open at {Url}. Close this window to stop it.")]
-    private static partial void LogOpenAt(ILogger logger, string url);
-}
+public partial class Program;

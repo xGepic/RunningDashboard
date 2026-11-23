@@ -1,8 +1,8 @@
 namespace RunningDashboard.Api.Persistence;
 
 /// <summary>
-/// The Strava API app's credentials as entered on the Settings page, for a PC without them in its configuration (the
-/// packaged app has no user secrets). There is at most one row.
+/// The Strava API app's credentials as entered on the Settings page, for a PC without them in its user secrets, such as
+/// another Athlete's own install. There is at most one row.
 /// </summary>
 public sealed class StravaApp
 {
